@@ -74,7 +74,7 @@ class MainActivity : Activity() {
     companion object {
         private const val TAG = "Tarven++"
         private const val SERVER_SOURCE_URL =
-            "https://github.com/CAPTCHAAAAA/TarvenPlus/releases/download/v0.2/server-source.zip"
+            "https://github.com/CAPTCHAAAAA/TarvenPlus/releases/download/v0.3/server-source.zip"
         private const val TAVERN_URL = "http://127.0.0.1:8000/"
         private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
         private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
