@@ -1,27 +1,23 @@
-package com.tarven.plus
+ï»¿package com.tarven.plus
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.PixelCopy
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowInsetsController
-import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.WindowManager
 import android.view.animation.OvershootInterpolator
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
@@ -32,10 +28,15 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.tarven.plus.runtime.RuntimePaths
 import com.tarven.plus.runtime.RuntimeFileUtils
 import com.tarven.plus.runtime.TarvenProcessRunner
+import com.tarven.plus.ui.FloatingControlCenter
+import com.tarven.plus.ui.SplashOverlay
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -46,7 +47,8 @@ class MainActivity : Activity() {
 
     private val handler = Handler(Looper.getMainLooper())
 
-    // ©¤©¤ Views ©¤©¤
+    // ---- Views ----
+    private lateinit var root: FrameLayout
     private lateinit var homeScreen: LinearLayout
     private lateinit var webViewScreen: FrameLayout
     private lateinit var webView: WebView
@@ -54,19 +56,15 @@ class MainActivity : Activity() {
     private lateinit var statusDot: View
     private lateinit var progressBar: ProgressBar
     private lateinit var startButton: TextView
-    private lateinit var controlBall: FrameLayout
-    private lateinit var controlBallInner: ImageView
-    private lateinit var controlPanel: LinearLayout
 
-    // ©¤©¤ State ©¤©¤
+    private lateinit var splash: SplashOverlay
+    private lateinit var floatingControl: FloatingControlCenter
+
+    // ---- State ----
     private lateinit var runner: TarvenProcessRunner
     private var serverReady = false
     private var isWebViewVisible = false
-    private var panelVisible = false
-    private var ballX = 0f
-    private var ballY = 0f
-    private var ballSnappedRight = true
-    private var hideBallRunnable: Runnable? = null
+    private var statusBarFixedPx = 0  // fixed physical pixels, never changes
 
     private var fullscreenView: View? = null
     private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
@@ -74,434 +72,695 @@ class MainActivity : Activity() {
     companion object {
         private const val TAG = "Tarven++"
         private const val SERVER_SOURCE_URL =
-            "https://github.com/CAPTCHAAAAA/TarvenPlus/releases/download/v0.3/server-source.zip"
+            "https://github.com/CAPTCHAAAAA/TarvenPlus/releases/download/v0.2/server-source.zip"
         private const val TAVERN_URL = "http://127.0.0.1:8000/"
         private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
         private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
-        // Colors
-        private const val BG = 0xFF0D0B0C.toInt()
+        // Premium dark/pink palette (Tarven++ brand)
+        private const val BG = 0xFF070408.toInt()
         private const val SURFACE = 0xFF1A1418.toInt()
-        private const val PINK = 0xFFE8A0BF.toInt()
-        private const val PINK_DIM = 0xFF8B6B7A.toInt()
+        private const val PINK = 0xFFFF4FA9.toInt()
+        private const val PINK_DIM = 0xFFFF87C8.toInt()
         private const val GOLD = 0xFFC8A96E.toInt()
-        private const val TEXT = 0xFFD4C8BC.toInt()
+        private const val TEXT = 0xFFFFF3FB.toInt()
+        private const val TEXT_MUTED = 0xFFB7A7B6.toInt()
         private const val TEXT_DIM = 0xFF6B5E55.toInt()
-        private const val GREEN = 0xFF7DBA8A.toInt()
+        private const val GREEN = 0xFF72EFBE.toInt()
+        private const val LINE = 0x1AFFFFFF
+        private const val STATE_SERVER_READY = "server_ready"
+        private const val STATE_WEBVIEW_VISIBLE = "webview_visible"
     }
 
-    @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+        // â•‘  DO NOT CHANGE â€” Fullscreen immersion foundation.           â•‘
+        // â•‘  These 4 lines are the result of 2 weeks of trial-and-error â•‘
+        // â•‘  against MIUI/HyperOS window state machines.                â•‘
+        // â•‘  - setDecorFitsSystemWindows(false): content behind bars    â•‘
+        // â•‘  - SHORT_EDGES: tell MIUI "we own the cutout, don't push"  â•‘
+        // â•‘  - statusBarFixedPx: from hardware DisplayCutout (116px),   â•‘
+        // â•‘    NEVER from software insets (they lie).                   â•‘
+        // â•‘  - CONSUMED insets: WebView never sees layout shifts.        â•‘
+        // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
         runner = TarvenProcessRunner()
-        val dp = resources.displayMetrics.density
+        statusBarFixedPx = readStatusBarFixedPx() // hardware truth, never 0
 
-        val root = FrameLayout(this).apply { setBackgroundColor(BG.toInt()) }
+        val wasServerReady = savedInstanceState?.getBoolean(STATE_SERVER_READY, false) ?: false
+        val wasWebViewVisible = savedInstanceState?.getBoolean(STATE_WEBVIEW_VISIBLE, false) ?: false
 
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        // HOME SCREEN
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        homeScreen = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(32), dp(32), dp(32), dp(32))
+        // ---- Root ----
+        root = FrameLayout(this).apply { setBackgroundColor(BG) }
+
+        // ---- Ambient orbs (decorative, safe to modify) ----
+        addOrb(root, 0xFF4FA9, 0.28f, -18f, -14f, 46f)
+        addOrb(root, 0x8D5CFF, 0.16f, 82f, 18f, 40f)
+
+        // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+        // â•‘  DO NOT CHANGE â€” Inset sterilization.                       â•‘
+        // â•‘  Consuming insets here prevents the WebView from ever       â•‘
+        // â•‘  seeing a layout shift when MIUI hides/shows system bars.   â•‘
+        // â•‘  Without this, Chromium re-renders on every bar toggle.     â•‘
+        // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            homeScreen.setPadding(dp(28), dp(36) + statusBarFixedPx, dp(28), dp(36) + navBars.bottom)
+            WindowInsetsCompat.CONSUMED
         }
 
-        val logoRing = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setStroke(dp(2), PINK.toInt())
-            setSize(dp(100), dp(100))
+        // ============================================
+        // HOME SCREEN
+        // ============================================
+        homeScreen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(28), dp(36), dp(28), dp(36))
+        }
+
+        // Spacer top
+        homeScreen.addView(spacer(dp(40)))
+
+        // Logo mark
+        val logoSize = dp(88)
+        val logoDrawable = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dp(22).toFloat()
+            colors = intArrayOf(PINK, 0xFF8D5CFF.toInt())
+            orientation = GradientDrawable.Orientation.TL_BR
         }
         val logoView = ImageView(this).apply {
             setImageResource(android.R.drawable.ic_menu_compass)
-            setColorFilter(GOLD.toInt(), PorterDuff.Mode.SRC_IN)
-            val p = dp(25)
+            setColorFilter(GOLD, PorterDuff.Mode.SRC_IN)
+            val p = dp(22)
             setPadding(p, p, p, p)
-            background = logoRing
+            background = logoDrawable
+            val lp = LinearLayout.LayoutParams(logoSize, logoSize)
+            lp.gravity = Gravity.CENTER
+            layoutParams = lp
+        }
+        homeScreen.addView(logoView)
+
+        // Title
+        homeScreen.addView(textView("Tarven++", dp(28), TEXT, true).apply {
+            setPadding(0, dp(22), 0, dp(4))
+        })
+        // Subtitle
+        homeScreen.addView(textView("SillyTavern for Android", dp(13), TEXT_MUTED, false).apply {
+            setPadding(0, 0, 0, dp(36))
+        })
+
+        // Status card (glass-style)
+        val statusCard = card()
+        val statusCardLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(16), dp(18), dp(16))
         }
 
-        val title = textView("Tarven++", dp(30), TEXT.toInt(), true).apply {
-            setPadding(0, dp(20), 0, dp(4))
-        }
-        val subtitle = textView("SillyTavern for Android", dp(13), TEXT_DIM.toInt(), false)
-            .apply { setPadding(0, 0, 0, dp(48)) }
-
+        // Status row: dot + text
         val statusRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(20))
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
         statusDot = View(this).apply {
-            val s = dp(8)
-            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(TEXT_DIM.toInt()); setSize(s, s) }
-            val p = LinearLayout.LayoutParams(s, s).apply { gravity = Gravity.CENTER_VERTICAL; setMargins(0, 0, dp(8), 0) }
-            layoutParams = p
-        }
-        statusText = textView("Preparing...", dp(13), TEXT_DIM.toInt(), false)
-        statusRow.addView(statusDot)
-        statusRow.addView(statusText)
-
-        progressBar = ProgressBar(this).apply {
-            isIndeterminate = true; visibility = View.GONE
-            indeterminateDrawable.setColorFilter(GOLD.toInt(), PorterDuff.Mode.SRC_IN)
-        }
-
-        startButton = pillButton("LAUNCH TAVERN", PINK.toInt(), BG.toInt()).apply { isEnabled = false; alpha = 0.5f }
-
-        homeScreen.addView(logoView)
-        homeScreen.addView(title)
-        homeScreen.addView(subtitle)
-        homeScreen.addView(statusRow)
-        homeScreen.addView(progressBar)
-        homeScreen.addView(startButton)
-
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        // WEBVIEW SCREEN
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        webViewScreen = FrameLayout(this).apply { visibility = View.GONE; setBackgroundColor(BG.toInt()) }
-
-        webView = WebView(this).apply {
-            setBackgroundColor(BG.toInt())
-            settings.apply {
-                javaScriptEnabled = true; domStorageEnabled = true; allowFileAccess = false
-                databaseEnabled = true; setSupportZoom(true); builtInZoomControls = true
-                displayZoomControls = false; loadWithOverviewMode = true; useWideViewPort = true
-                mediaPlaybackRequiresUserGesture = false
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) isForceDarkAllowed = false
-            }
-            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-            overScrollMode = View.OVER_SCROLL_NEVER
-            webChromeClient = object : WebChromeClient() {
-                override fun onShowCustomView(v: View?, cb: CustomViewCallback?) { v?.let { goFullscreen(it, cb) } }
-                override fun onHideCustomView() { exitFullscreen() }
-            }
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(v: WebView, url: String) { progressBar.visibility = View.GONE }
-                override fun shouldOverrideUrlLoading(v: WebView, url: String): Boolean {
-                    if (url.contains("127.0.0.1")) return false
-                    try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) {}
-                    return true
-                }
-            }
-        }
-        webViewScreen.addView(webView, FrameLayout.LayoutParams(MATCH, MATCH))
-
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        // DRAGGABLE CONTROL BALL
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        controlBall = FrameLayout(this).apply {
-            val size = dp(52)
-            layoutParams = FrameLayout.LayoutParams(size, size).apply {
-                gravity = Gravity.TOP or Gravity.START
-            }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.argb(220, 20, 16, 18))
-                setStroke(dp(1.5f), PINK_DIM.toInt())
+                setSize(dp(9), dp(9))
+                setColor(PINK_DIM)
             }
-            elevation = dp(8).toFloat()
-            setOnTouchListener(BallTouchListener())
+            val lp = LinearLayout.LayoutParams(dp(9), dp(9))
+            lp.rightMargin = dp(10)
+            layoutParams = lp
         }
-        controlBallInner = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_menu_more)
-            setColorFilter(PINK.toInt(), PorterDuff.Mode.SRC_IN)
-            setPadding(dp(12), dp(12), dp(12), dp(12))
-            layoutParams = FrameLayout.LayoutParams(MATCH, MATCH)
+        statusRow.addView(statusDot)
+
+        statusText = textView("Preparing...", dp(14), TEXT_MUTED, false).apply {
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
         }
-        controlBall.addView(controlBallInner)
-        controlBall.setOnClickListener { togglePanel() }
+        statusRow.addView(statusText)
+        statusCardLayout.addView(statusRow)
 
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        // CONTROL PANEL (flies out from ball)
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        controlPanel = LinearLayout(this).apply {
-            visibility = View.GONE; alpha = 0f; scaleX = 0.5f; scaleY = 0.5f
-            orientation = LinearLayout.VERTICAL
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE; cornerRadius = dp(12).toFloat()
-                setColor(Color.argb(235, 18, 14, 16))
-                setStroke(dp(1), PINK_DIM.toInt())
-            }
-            setPadding(dp(4), dp(4), dp(4), dp(4))
-            elevation = dp(12).toFloat()
+        // Progress bar
+        progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            progressDrawable = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dp(3).toFloat()
+                setColor(PINK)
+            }.let { it }
+            isIndeterminate = false
+            max = 100
+            progress = 0
+            setPadding(0, dp(12), 0, dp(8))
         }
+        // Override progress color
+        progressBar.progressTintList = android.content.res.ColorStateList.valueOf(PINK)
+        progressBar.progressBackgroundTintList = android.content.res.ColorStateList.valueOf(Color.argb(18, 255, 255, 255))
+        statusCardLayout.addView(progressBar)
 
-        data class PanelAction(val icon: Int, val label: String, val action: () -> Unit)
-        listOf(
-            PanelAction(android.R.drawable.ic_menu_rotate, "Refresh") { webView.reload() },
-            PanelAction(android.R.drawable.ic_menu_preferences, "Settings") { webView.loadUrl("$TAVERN_URL#/settings") },
-            PanelAction(android.R.drawable.ic_menu_close_clear_cancel, "Exit") { exitTavern() },
-        ).forEach { act ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(12), dp(8), dp(16), dp(8))
-                setOnClickListener { act.action(); hidePanel() }
-            }
-            val icon = ImageView(this).apply {
-                setImageResource(act.icon); setColorFilter(GOLD.toInt(), PorterDuff.Mode.SRC_IN)
-                layoutParams = LinearLayout.LayoutParams(dp(20), dp(20)).apply { setMargins(0, 0, dp(10), 0) }
-            }
-            row.addView(icon)
-            row.addView(textView(act.label, dp(13), TEXT.toInt(), false))
-            controlPanel.addView(row)
+        statusCard.addView(statusCardLayout)
+        homeScreen.addView(statusCard)
+
+        // Spacer
+        homeScreen.addView(spacer(dp(28)))
+
+        // ENTER TAVERN button
+        startButton = pillButton("ENTER TAVERN", PINK, TEXT).apply {
+            isEnabled = false
+            alpha = 0.45f
+            setOnClickListener { enterTavern() }
         }
+        homeScreen.addView(startButton)
 
-        webViewScreen.addView(controlPanel)
-        webViewScreen.addView(controlBall)
+        // Version
+        homeScreen.addView(textView("v0.4", dp(11), TEXT_DIM, false).apply {
+            setPadding(0, dp(16), 0, 0)
+        })
 
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-        // ASSEMBLE
-        // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
         root.addView(homeScreen, FrameLayout.LayoutParams(MATCH, MATCH))
+
+        // ============================================
+        // WEBVIEW SCREEN
+        // ============================================
+        webViewScreen = FrameLayout(this).apply {
+            visibility = View.GONE
+            setBackgroundColor(BG)
+        }
+
+        webView = WebView(this).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.allowFileAccess = false
+            settings.allowContentAccess = false
+            settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                settings.forceDark = android.webkit.WebSettings.FORCE_DARK_AUTO
+            }
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+
+            // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+            // â•‘  TarvenThemeBridge â€” JSâ†’Kotlin color push. DO NOT RENAME.â•‘
+            // â•‘  Route B (JS sentinel) pushes via pushThemeColor().      â•‘
+            // â•‘  If color is null/transparent â†’ Route A (PixelCopy).     â•‘
+            // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            addJavascriptInterface(object : Any() {
+                @android.webkit.JavascriptInterface
+                fun pushThemeColor(cssColor: String) {
+                    runOnUiThread {
+                        val c = parseThemeColor(cssColor)
+                        // If JS failed (empty/transparent), fall back to PixelCopy hardware sample
+                        if (c != null) {
+                            floatingControl.setScrimColor(c)
+                        } else {
+                            samplePixelColor { hwColor ->
+                                if (hwColor != null) floatingControl.setScrimColor(hwColor)
+                            }
+                        }
+                    }
+                }
+            }, "TarvenThemeBridge")
+
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(v: WebView?, url: String?) {
+                    super.onPageFinished(v, url)
+                    android.util.Log.i(TAG, "Page loaded: $url")
+                    injectThemeSentinel()
+                }
+            }
+
+            webChromeClient = object : WebChromeClient() {
+                override fun onShowCustomView(v: View?, cb: CustomViewCallback?) {
+                    fullscreenView?.let { root.removeView(it) }
+                    fullscreenView = v
+                    fullscreenCallback = cb
+                    v?.let {
+                        root.addView(it, FrameLayout.LayoutParams(MATCH, MATCH))
+                        webViewScreen.visibility = View.GONE
+                    }
+                }
+                override fun onHideCustomView() {
+                    exitFullscreen()
+                }
+            }
+        }
+
+        webViewScreen.addView(webView, FrameLayout.LayoutParams(MATCH, MATCH))
         root.addView(webViewScreen, FrameLayout.LayoutParams(MATCH, MATCH))
+
         setContentView(root)
 
-        prepareServer()
-        root.post { snapBallToEdge(true) }
-    }
+        // ---- Splash (minimal: dark + LED + progress) ----
+        splash = SplashOverlay(this)
+        splash.attachTo(root)
+        splash.setLedColor(SplashOverlay.LED_CHECKING)
 
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    // BALL TOUCH ¡ª drag + snap + semi-hide
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    private inner class BallTouchListener : View.OnTouchListener {
-        private var dx = 0f; private var dy = 0f; private var startX = 0f; private var startY = 0f
-        private var dragging = false
+        // ---- Floating control center ----
+        floatingControl = FloatingControlCenter(this)
+        floatingControl.setCallback(object : FloatingControlCenter.Callback {
+            override fun onRefresh() { webView.reload() }
+            override fun onSettings() { /* TODO: open settings */ }
+            override fun onExit() { exitTavern() }
+        })
 
-        override fun onTouch(v: View, event: MotionEvent): Boolean {
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    dx = event.rawX - v.x; dy = event.rawY - v.y
-                    startX = event.rawX; startY = event.rawY; dragging = false
-                    cancelHideBall()
-                    unHideBall()
-                    return true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val moved = Math.abs(event.rawX - startX) + Math.abs(event.rawY - startY)
-                    if (moved > dp(8)) dragging = true
-                    if (dragging) {
-                        val nx = event.rawX - dx
-                        val ny = (event.rawY - dy).coerceIn(0f, (webViewScreen.height - v.height).toFloat())
-                        v.x = nx; v.y = ny
-                        updatePanelPosition()
-                    }
-                    return true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (!dragging) return false
-                    snapBallToEdge(false)
-                    scheduleHideBall()
-                    return true
-                }
+        // Codex++ entrance: fade + micro-scale
+        homeScreen.alpha = 0f
+        homeScreen.translationY = dp(10).toFloat()
+        homeScreen.scaleX = 0.992f
+        homeScreen.scaleY = 0.992f
+
+        // Restore or init
+        if (wasWebViewVisible && wasServerReady) {
+            serverReady = true
+            webView.loadUrl(TAVERN_URL)
+            splash.fadeOut {
+                switchToWebView(false)
+                homeScreen.visibility = View.GONE
+                enterImmersive()
+                floatingControl.attach(root, statusBarFixedPx)
+                floatingControl.setStatus(FloatingControlCenter.LED_OK)
             }
-            return false
-        }
-    }
-
-    private fun snapBallToEdge(immediate: Boolean) {
-        val b = controlBall
-        val cx = b.x + b.width / 2f
-        val screenW = webViewScreen.width.toFloat()
-        val targetX = if (cx < screenW / 2) {
-            ballSnappedRight = false
-            -b.width * 0.3f
-        } else {
-            ballSnappedRight = true
-            screenW - b.width * 0.7f
-        }
-        if (immediate) {
-            b.x = targetX
-            b.y = webViewScreen.height * 0.6f
-            updatePanelPosition()
-        } else {
-            b.animate().x(targetX).setDuration(250).setInterpolator(AccelerateDecelerateInterpolator()).start()
-            handler.postDelayed({ updatePanelPosition() }, 260)
-        }
-    }
-
-    private fun scheduleHideBall() {
-        cancelHideBall()
-        hideBallRunnable = Runnable {
-            val b = controlBall
-            val screenW = webViewScreen.width.toFloat()
-            val target = if (ballSnappedRight) screenW + b.width * 0.1f else -b.width * 0.85f
-            b.animate().x(target).setDuration(400).setInterpolator(AccelerateDecelerateInterpolator()).start()
-        }
-        handler.postDelayed(hideBallRunnable!!, 3000)
-    }
-
-    private fun cancelHideBall() = hideBallRunnable?.let { handler.removeCallbacks(it) }
-
-    private fun unHideBall() {
-        val b = controlBall
-        val screenW = webViewScreen.width.toFloat()
-        val target = if (ballSnappedRight) screenW - b.width * 0.7f else -b.width * 0.3f
-        b.animate().x(target).setDuration(200).start()
-    }
-
-    private fun updatePanelPosition() {
-        if (!panelVisible) return
-        val b = controlBall
-        val panelW = controlPanel.width.coerceAtLeast(dp(140))
-        val screenW = webViewScreen.width
-        val px = if (ballSnappedRight) (b.x - panelW + b.width).coerceAtLeast(dp(8).toFloat())
-                  else (b.x + b.width + dp(8).toFloat())
-        val py = (b.y + b.height / 2f - controlPanel.height / 2f)
-            .coerceIn(dp(8).toFloat(), (webViewScreen.height - controlPanel.height - dp(8)).toFloat())
-        controlPanel.x = px; controlPanel.y = py
-    }
-
-    private fun togglePanel() = if (panelVisible) hidePanel() else showPanel()
-
-    private fun showPanel() {
-        cancelHideBall()
-        updatePanelPosition()
-        controlPanel.visibility = View.VISIBLE
-        controlPanel.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(200)
-            .setInterpolator(OvershootInterpolator(1.1f)).start()
-        panelVisible = true
-    }
-
-    private fun hidePanel() {
-        controlPanel.animate().alpha(0f).scaleX(0.5f).scaleY(0.5f).setDuration(150).withEndAction {
-            controlPanel.visibility = View.GONE
-        }.start()
-        panelVisible = false
-        scheduleHideBall()
-    }
-
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    // TAVERN ENTER / EXIT
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    private fun enterTavern() {
-        hideSystemBars()
-        progressBar.visibility = View.VISIBLE
-        webView.loadUrl(TAVERN_URL)
-        handler.postDelayed({
-            homeScreen.visibility = View.GONE
-            webViewScreen.visibility = View.VISIBLE
-            controlBall.visibility = View.VISIBLE
-            controlBall.alpha = 1f
-            isWebViewVisible = true
-            scheduleHideBall()
-        }, 600)
-    }
-
-    private fun exitTavern() {
-        hidePanel()
-        showSystemBars()
-        controlBall.visibility = View.GONE
-        webViewScreen.visibility = View.GONE
-        homeScreen.visibility = View.VISIBLE
-        startButton.text = "ENTER TAVERN"
-        startButton.isEnabled = true; startButton.alpha = 1f
-        isWebViewVisible = false
-        cancelHideBall()
-        statusText.text = "Server running on port 8000"
-        setStatusDot(GREEN.toInt())
-    }
-
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    // FULLSCREEN (videos etc)
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    private fun goFullscreen(v: View, cb: WebChromeClient.CustomViewCallback?) {
-        fullscreenView = v; fullscreenCallback = cb
-        webView.visibility = View.GONE; controlBall.visibility = View.GONE; hidePanel()
-        webViewScreen.addView(v, FrameLayout.LayoutParams(MATCH, MATCH))
-        hideSystemBars()
-    }
-
-    private fun exitFullscreen() {
-        fullscreenView?.let { webViewScreen.removeView(it) }
-        fullscreenView = null; fullscreenCallback?.onCustomViewHidden(); fullscreenCallback = null
-        webView.visibility = View.VISIBLE; controlBall.visibility = View.VISIBLE
-    }
-
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    // SYSTEM BARS
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    private fun hideSystemBars() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.apply {
-                hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            setStatus("Ready")
+            setStatusDot(GREEN)
+            startButton.isEnabled = true
+            startButton.alpha = 1f
+        } else if (wasServerReady) {
+            serverReady = true
+            splash.fadeOut {
+                homeScreen.animate().alpha(1f).translationY(0f).scaleX(1f).scaleY(1f)
+                    .setDuration(260).setInterpolator(OvershootInterpolator(0.9f)).start()
             }
+            updateHomeReady()
         } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+            provisionAndStart(wasServerReady)
         }
     }
 
-    private fun showSystemBars() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            window.insetsController?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-        else @Suppress("DEPRECATION") window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+    override fun onResume() {
+        super.onResume()
+        if (!isWebViewVisible) showSystemBars()
     }
 
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    // SERVER LIFECYCLE
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
-    private fun prepareServer() {
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_SERVER_READY, serverReady)
+        outState.putBoolean(STATE_WEBVIEW_VISIBLE, isWebViewVisible)
+    }
+
+    private fun provisionAndStart(skipIfExists: Boolean) {
         Thread {
             val paths = RuntimePaths.from(this)
             paths.ensureDirs()
 
-            try {
-                RuntimeFileUtils.unzipAsset(this, "bootstrap/rootfs/rootfs-libs.zip", paths.usrDir)
-                RuntimeFileUtils.copyAsset(this, "bootstrap/scripts/start-server.sh", File(paths.scriptsDir, "start-server.sh"))
-                RuntimeFileUtils.chmodExecutable(File(paths.scriptsDir, "start-server.sh"))
-            } catch (_: Exception) {}
-
             val serverJs = File(paths.serverDir, "server.js")
-            val serverZip = File(paths.tarvenHome, "server-source.zip")
+            val hasServer = serverJs.exists()
 
-            if (!serverJs.isFile) {
-                setStatus("Downloading tavern...")
-                if (!downloadServer(serverZip)) { setStatus("Download failed"); return@Thread }
-                setStatus("Extracting...")
-                try { RuntimeFileUtils.unzipStream(serverZip.inputStream(), paths.serverDir); serverZip.delete() }
-                catch (_: Exception) { setStatus("Extraction failed"); return@Thread }
+            if (!hasServer) {
+                setStatus("Provisioning...")
+                setProgress(0)
+                splash.setStatus("Provisioning...")
+                splash.setLedColor(SplashOverlay.LED_PREP)
+
+                // Extract native libs from APK
+                extractNativeLibs(paths)
+                updateProgress(15)
+
+                // Download server source
+                val ok = downloadAndExtractServer(paths)
+                updateProgress(100)
+                if (!ok) {
+                    setStatus("Download failed")
+                    splash.setStatus("Download failed")
+                    splash.setLedColor(SplashOverlay.LED_FAILED)
+                    return@Thread
+                }
+                splash.setLedColor(SplashOverlay.LED_OK)
+                setStatusDot(GREEN)
+            } else {
+                splash.setLedColor(SplashOverlay.LED_OK)
+                setStatusDot(GREEN)
             }
-            if (!serverJs.isFile) { setStatus("server.js not found"); return@Thread }
 
-            try { File(paths.serverDir, "config.yaml").writeText("listen: false\nprotocol:\n  ipv4: true\n  ipv6: false\nwhitelistMode: false\nbrowserLaunch:\n  enabled: false\ndataRoot: ./data\nport: 8000\n") } catch (_: Exception) {}
-
+            // Start server
             setStatus("Starting server...")
-            if (!startServer(paths)) { setStatus("Server failed"); return@Thread }
-            setStatus("Waiting...")
+            splash.setStatus("Starting server...")
+            splash.setLedColor(SplashOverlay.LED_CHECKING)
+            val started = startServer(paths)
+            if (!started) {
+                setStatus("Start failed")
+                splash.setStatus("Start failed")
+                splash.setLedColor(SplashOverlay.LED_FAILED)
+                return@Thread
+            }
+
             pollUntilReady()
         }.start()
     }
 
-    private fun downloadServer(dest: File): Boolean {
-        android.util.Log.i(TAG, "Download: $SERVER_SOURCE_URL")
+    private fun updateHomeReady() {
+        post {
+            setStatus("Ready")
+            setStatusDot(GREEN)
+            progressBar.progress = 100
+            startButton.apply {
+                isEnabled = true
+                alpha = 1f
+                if (text != "ENTER TAVERN") text = "ENTER TAVERN"
+            }
+        }
+    }
+
+    /**
+     * â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+     * â•‘  DO NOT CHANGE the layout strategy.                              â•‘
+     * â•‘  We manually push WebView down by statusBarHeight so the top    â•‘
+     * â•‘  band is free for our info bar. This is intentional â€” we do NOT â•‘
+     * â•‘  rely on system insets (they change to 0 in immersive and break â•‘
+     * â•‘  everything on MIUI). The fixed topMargin + consumed insets     â•‘
+     * â•‘  combo is the only stable approach found for HyperOS.           â•‘
+     * â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     */
+    private fun enterTavern() {
+        if (!serverReady || isWebViewVisible) return
+        if (webView.url == null || webView.url.isNullOrBlank()) {
+            webView.loadUrl(TAVERN_URL)
+        }
+        val h = statusBarFixedPx
+        val lp = webViewScreen.layoutParams as FrameLayout.LayoutParams
+        lp.topMargin = h
+        webViewScreen.layoutParams = lp
+        enterImmersive()
+        switchToWebView(true)
+        handler.postDelayed({
+            floatingControl.attach(root, h)
+            floatingControl.setStatus(FloatingControlCenter.LED_OK, "Tavern")
+        }, 500)
+    }
+
+    private fun exitTavern() {
+        if (!isWebViewVisible) return
+        floatingControl.hide()
+        showSystemBars()
+        val lp = webViewScreen.layoutParams as FrameLayout.LayoutParams
+        lp.topMargin = 0
+        webViewScreen.layoutParams = lp
+        switchToHome(true)
+    }
+
+    private fun switchToWebView(animate: Boolean) {
+        isWebViewVisible = true
+        if (animate) {
+            homeScreen.animate().alpha(0f).setDuration(200).withEndAction {
+                homeScreen.visibility = View.GONE
+                webViewScreen.visibility = View.VISIBLE
+                webViewScreen.alpha = 0f
+                webViewScreen.animate().alpha(1f).setDuration(220).start()
+            }.start()
+        } else {
+            homeScreen.visibility = View.GONE
+            webViewScreen.visibility = View.VISIBLE
+            webViewScreen.alpha = 1f
+        }
+    }
+
+    private fun switchToHome(animate: Boolean) {
+        isWebViewVisible = false
+        if (animate) {
+            webViewScreen.animate().alpha(0f).setDuration(200).withEndAction {
+                webViewScreen.visibility = View.GONE
+                homeScreen.visibility = View.VISIBLE
+                homeScreen.alpha = 0f
+                homeScreen.animate().alpha(1f).setDuration(220).start()
+            }.start()
+        } else {
+            webViewScreen.visibility = View.GONE
+            homeScreen.visibility = View.VISIBLE
+            homeScreen.alpha = 1f
+        }
+    }
+
+    // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+    // â•‘  DO NOT CHANGE â€” Immersive hide/show.                           â•‘
+    // â•‘  API 30+: WindowInsetsController (modern, clean).                â•‘
+    // â•‘  API 26-29: SYSTEM_UI_FLAG_IMMERSIVE_STICKY (proven fallback).  â•‘
+    // â•‘  DO NOT mix old and new APIs â€” Android 15+ has a concurrency    â•‘
+    // â•‘  bug in ClientWindowFrames when both are active simultaneously. â•‘
+    // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    @Suppress("DEPRECATION")
+    private fun enterImmersive() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let { controller ->
+                controller.systemBarsBehavior =
+                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                controller.hide(WindowInsets.Type.systemBars())
+            }
+        } else {
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            )
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun showSystemBars() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.show(WindowInsets.Type.systemBars())
+        } else {
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+        }
+    }
+
+    // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+    // â•‘  DO NOT REMOVE â€” MIUI re-immersive guard.                       â•‘
+    // â•‘  MIUI forcibly shows system bars after notification shade pull,  â•‘
+    // â•‘  recents, or screen rotation. This callback re-hides them.      â•‘
+    // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && isWebViewVisible) {
+            enterImmersive()
+        }
+    }
+
+    // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+    // â•‘  DO NOT CHANGE â€” Adaptive color fallback (Route A: hardware).   â•‘
+    // â•‘  PixelCopy reads 1 pixel from the GPU framebuffer directly.     â•‘
+    // â•‘  This works even when the WebView has a custom background image â•‘
+    // â•‘  (which JS can never detect). API 26+ only; <26 skips silently. â•‘
+    // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    private fun samplePixelColor(onResult: (Int?) -> Unit) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) { onResult(null); return }
+        val loc = IntArray(2)
+        webView.getLocationInWindow(loc)
+        val sampleX = loc[0] + webView.width / 2
+        val sampleY = loc[1] + dp(30)
+        val srcRect = Rect(sampleX, sampleY, sampleX + 1, sampleY + 1)
+        val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        PixelCopy.request(window, srcRect, bitmap, { result ->
+            if (result == PixelCopy.SUCCESS) {
+                val pixel = bitmap.getPixel(0, 0)
+                bitmap.recycle()
+                if (pixel != Color.TRANSPARENT && android.graphics.Color.alpha(pixel) > 200) {
+                    onResult(pixel)
+                } else {
+                    onResult(null)
+                }
+            } else {
+                bitmap.recycle()
+                onResult(null)
+            }
+        }, handler)
+    }
+
+    // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+    // â•‘  DO NOT CHANGE â€” Adaptive color extraction (Route B: JS).       â•‘
+    // â•‘  elementFromPoint ray-traces the first non-transparent element  â•‘
+    // â•‘  at (center, 60px). MutationObserver catches theme switches.    â•‘
+    // â•‘  This survives webpack SPA hydration (onPageFinished is a liarâ€” â•‘
+    // â•‘  the real DOM isn't there yet; we wait 600ms + observe).        â•‘
+    // â•‘  Falls back to CSS variables (--body-background-color etc.)     â•‘
+    // â•‘  for SillyTavern specifically.                                  â•‘
+    // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    private fun injectThemeSentinel() {
+        webView.evaluateJavascript("""
+            (function(){
+                if (window.__tarvenSentinel) return;
+                window.__tarvenSentinel = true;
+
+                function getVisualTopColor() {
+                    var x = window.innerWidth / 2;
+                    var y = 60;
+                    var el = document.elementFromPoint(x, y);
+                    while (el && el !== document) {
+                        try {
+                            var bg = window.getComputedStyle(el).backgroundColor;
+                            if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+                                var m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+                                if (m) {
+                                    var a = m[4] === undefined ? 1 : parseFloat(m[4]);
+                                    if (a > 0.1) return bg;
+                                }
+                            }
+                        } catch(e) {}
+                        el = el.parentElement;
+                    }
+                    var root = window.getComputedStyle(document.documentElement);
+                    return root.getPropertyValue('--body-background-color') ||
+                           root.getPropertyValue('--SmartThemeBodyColor') || '';
+                }
+
+                function notifyNative() {
+                    var c = getVisualTopColor();
+                    if (c && window.TarvenThemeBridge) {
+                        window.TarvenThemeBridge.pushThemeColor(c.trim());
+                    }
+                }
+
+                new MutationObserver(function() { notifyNative(); })
+                    .observe(document.documentElement, {
+                        attributes: true, subtree: true,
+                        attributeFilter: ['style', 'class']
+                    });
+
+                setTimeout(notifyNative, 600);
+            })();
+        """.trimIndent(), null)
+    }
+
+    // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+    // â•‘  CSS color parser: handles #hex, rgb(), rgba().                 â•‘
+    // â•‘  Returns null for transparent/empty â€” caller falls back to      â•‘
+    // â•‘  PixelCopy (Route A) or brand black.                            â•‘
+    // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    private fun parseThemeColor(raw: String?): Int? {
+        val s = raw?.trim()?.trim('"')?.trim('\'') ?: return null
+        if (s.isBlank() || s == "rgba(0, 0, 0, 0)" || s == "transparent") return null
         return try {
-            val conn = URL(SERVER_SOURCE_URL).openConnection() as HttpURLConnection
-            conn.connectTimeout = 15000; conn.readTimeout = 60000
-            conn.setRequestProperty("User-Agent", "Tarven++/0.2")
+            android.graphics.Color.parseColor(s)
+        } catch (_: Exception) {
+            val nums = Regex("\\d+").findAll(s).map { it.value.toIntOrNull() ?: 0 }.toList()
+            if (nums.size >= 3) android.graphics.Color.rgb(nums[0], nums[1], nums[2])
+            else null
+        }
+    }
+
+    private fun exitFullscreen() {
+        fullscreenView?.let { root.removeView(it) }
+        fullscreenView = null
+        fullscreenCallback?.onCustomViewHidden()
+        fullscreenCallback = null
+        webViewScreen.visibility = View.VISIBLE
+    }
+
+    // ============================================
+    // SERVER PROVISIONING
+    // ============================================
+
+    private fun extractNativeLibs(paths: RuntimePaths) {
+        setStatus("Extracting runtime...")
+        val nativeDir = paths.nativeLibDir
+        val bootstrapDir = paths.bootstrapDir
+        bootstrapDir.mkdirs()
+
+        // Copy native SO files from lib dir to bootstrap for scripts
+        val soFiles = listOf(
+            "libtarven-sh.so",
+            "libtarven-git.so",
+            "libtarven-git-remote-http.so",
+            "libtarven-curl.so"
+        )
+        for (so in soFiles) {
+            val src = File(nativeDir, so)
+            val dst = File(bootstrapDir, so)
+            if (src.exists() && !dst.exists()) {
+                src.copyTo(dst)
+                RuntimeFileUtils.chmodExecutable(dst)
+            }
+        }
+    }
+
+    private fun downloadAndExtractServer(paths: RuntimePaths): Boolean {
+        val destZip = File(paths.tarvenHome, "server-source.zip")
+        val serverDir = paths.serverDir
+        serverDir.mkdirs()
+
+        if (!downloadFile(SERVER_SOURCE_URL, destZip)) return false
+
+        setStatus("Extracting server...")
+        splash.setStatus("Extracting server...")
+        try {
+            destZip.inputStream().use { input ->
+                RuntimeFileUtils.unzipStream(input, serverDir)
+            }
+            destZip.delete()
+            return true
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Extract failed", e)
+            setStatus("Extract failed")
+            splash.setStatus("Extract failed")
+            return false
+        }
+    }
+
+    private fun downloadFile(urlStr: String, dest: File): Boolean {
+        return try {
+            val conn = URL(urlStr).openConnection() as HttpURLConnection
+            conn.connectTimeout = 15000
+            conn.readTimeout = 60000
+            conn.setRequestProperty("User-Agent", "Tarven++/0.4")
+            conn.connect()
+            if (conn.responseCode != 200) {
+                android.util.Log.e(TAG, "Download HTTP ${conn.responseCode}")
+                return false
+            }
             val total = conn.contentLengthLong
             val input = BufferedInputStream(conn.inputStream)
             val output = FileOutputStream(dest)
-            val buf = ByteArray(65536); var dl = 0L; var len: Int
+            val buf = ByteArray(65536)
+            var dl = 0L
+            var len: Int
             while (input.read(buf).also { len = it } != -1) {
-                output.write(buf, 0, len); dl += len
-                if (total > 0 && dl % (10 * 1024 * 1024) < buf.size) setStatus("Downloading... ${dl * 100 / total}%")
+                output.write(buf, 0, len)
+                dl += len
+                if (total > 0 && dl % (5 * 1024 * 1024) < buf.size) {
+                    val pct = (dl * 100 / total).toInt()
+                    post { progressBar.progress = 15 + (pct * 80 / 100) }
+                    val pct2 = pct
+                    setStatus("Downloading... $pct2%")
+                    splash.setProgress(15 + (pct2 * 80 / 100))
+                    splash.setStatus("Downloading... $pct2%")
+                }
             }
-            output.close(); input.close(); conn.disconnect()
+            output.close()
+            input.close()
+            conn.disconnect()
             android.util.Log.i(TAG, "Downloaded: ${dest.length()} bytes")
             true
-        } catch (e: Exception) { dest.delete(); android.util.Log.e(TAG, "Download failed", e); false }
+        } catch (e: Exception) {
+            dest.delete()
+            android.util.Log.e(TAG, "Download failed", e)
+            false
+        }
     }
 
     private fun startServer(paths: RuntimePaths): Boolean {
         val script = File(paths.scriptsDir, "start-server.sh")
-        if (!paths.nodeBin.exists() || !script.exists()) return false
         paths.logsDir.mkdirs()
         try {
             val pb = ProcessBuilder("/system/bin/sh", script.absolutePath)
-            pb.directory(paths.serverDir); pb.redirectErrorStream(true)
+            pb.directory(paths.serverDir)
+            pb.redirectErrorStream(true)
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(File(paths.logsDir, "server.log")))
             val env = pb.environment()
             env["TARVEN_HOME"] = paths.tarvenHome.absolutePath
@@ -509,9 +768,15 @@ class MainActivity : Activity() {
             env["TARVEN_SERVER_DIR"] = paths.serverDir.absolutePath
             env["TARVEN_NODE"] = paths.nodeBin.absolutePath
             env["TARVEN_NATIVE_LIB_DIR"] = paths.nativeLibDir.absolutePath
-            env["TARVEN_TMP"] = paths.tmpDir.absolutePath; env["TARVEN_BOOTSTRAP"] = paths.bootstrapDir.absolutePath; env["HOST"] = "127.0.0.1"; env["PORT"] = "8000"
-            pb.start(); return true
-        } catch (_: Exception) { return false }
+            env["TARVEN_TMP"] = paths.tmpDir.absolutePath
+            env["TARVEN_BOOTSTRAP"] = paths.bootstrapDir.absolutePath
+            env["HOST"] = "127.0.0.1"
+            env["PORT"] = "8000"
+            pb.start()
+            return true
+        } catch (_: Exception) {
+            return false
+        }
     }
 
     private fun pollUntilReady() {
@@ -519,56 +784,147 @@ class MainActivity : Activity() {
         while (a < 120) {
             if (tryConnect(TAVERN_URL)) {
                 serverReady = true
-                setStatus("Ready")
-                setStatusDot(GREEN.toInt())
-                post { startButton.apply { isEnabled = true; alpha = 1f; text = "ENTER TAVERN"
-                    setOnClickListener { enterTavern() } } }
+                splash.setLedColor(SplashOverlay.LED_OK)
+                updateHomeReady()
+                // Fade splash â†’ reveal home with entrance animation
+                post {
+                    splash.fadeOut {
+                        homeScreen.animate().alpha(1f).translationY(0f).scaleX(1f).scaleY(1f)
+                            .setDuration(260).setInterpolator(OvershootInterpolator(0.9f)).start()
+                    }
+                }
                 return
             }
-            a++; try { Thread.sleep(1000) } catch (_: Exception) { break }
+            a++
+            try { Thread.sleep(1000) } catch (_: Exception) { break }
         }
         setStatus("No response")
+        splash.setStatus("No response")
+        splash.setLedColor(SplashOverlay.LED_FAILED)
     }
 
     private fun tryConnect(url: String) = try {
         val c = URL(url).openConnection() as HttpURLConnection
-        c.connectTimeout = 3000; c.readTimeout = 3000; c.responseCode in 200..499
+        c.connectTimeout = 3000
+        c.readTimeout = 3000
+        c.responseCode in 200..499
     } catch (_: Exception) { false }
 
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
+    // ============================================
     // HELPERS
-    // ¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T¨T
+    // ============================================
+
     private fun setStatus(t: String) { post { statusText.text = t } }
     private fun setStatusDot(color: Int) {
         post { (statusDot.background as GradientDrawable).setColor(color) }
     }
+    private fun updateProgress(pct: Int) { post { progressBar.progress = pct } }
     private fun post(r: Runnable) { handler.post(r) }
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
-    private fun dp(v: Float) = (v * resources.displayMetrics.density).toInt()
+
+    /**
+     * Hardware radar: read the physical camera cutout height â€” never lies, never changes.
+     * Fallback: system status_bar_height resource â†’ 24dp absolute last-resort.
+     */
+    // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+    // â•‘  DO NOT CHANGE this read chain.                                 â•‘
+    // â•‘  Priority: DisplayCutout (hardware, burned at factory) â†’         â•‘
+    // â•‘  status_bar_height resource â†’ 24dp fallback.                     â•‘
+    // â•‘  NEVER use WindowInsets for status bar height â€” they report 0   â•‘
+    // â•‘  when the bar is hidden, breaking all layout calculations.       â•‘
+    // â•‘  The camera cutout is part of the phone glass. It doesn't care  â•‘
+    // â•‘  whether Android thinks the status bar is visible.               â•‘
+    // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    private fun readStatusBarFixedPx(): Int {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val cutout = window.decorView.rootWindowInsets?.displayCutout
+            if (cutout != null) {
+                val h = cutout.safeInsetTop
+                if (h > 0) return h
+            }
+        }
+        val id = resources.getIdentifier("status_bar_height", "dimen", "android")
+        if (id > 0) return resources.getDimensionPixelSize(id)
+        return dp(24)
+    }
+
+    private fun statusBarHeight() = statusBarFixedPx
 
     private fun textView(t: String, size: Int, color: Int, bold: Boolean) = TextView(this).apply {
-        text = t; textSize = size.toFloat(); setTextColor(color); gravity = Gravity.CENTER
+        text = t
+        textSize = size.toFloat()
+        setTextColor(color)
+        gravity = Gravity.CENTER
         if (bold) paint.isFakeBoldText = true
     }
 
     private fun pillButton(t: String, borderColor: Int, textColor: Int) = TextView(this).apply {
-        text = t; textSize = 16f; setTextColor(textColor); gravity = Gravity.CENTER
-        setPadding(dp(48), dp(14), dp(48), dp(14))
+        text = t
+        textSize = 15f
+        setTextColor(textColor)
+        gravity = Gravity.CENTER
+        setPadding(dp(52), dp(14), dp(52), dp(14))
         background = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE; cornerRadius = dp(24).toFloat()
-            setStroke(dp(1.5f), borderColor); setColor(Color.TRANSPARENT)
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dp(26).toFloat()
+            setStroke(dp(2), borderColor)
+            setColor(0x0DFFFFFF)
         }
+        val lp = LinearLayout.LayoutParams(WRAP, WRAP)
+        lp.gravity = Gravity.CENTER
+        layoutParams = lp
+    }
+
+    private fun spacer(h: Int) = View(this).apply {
+        layoutParams = LinearLayout.LayoutParams(MATCH, h)
+    }
+
+    private fun card() = FrameLayout(this).apply {
+        background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dp(24).toFloat()
+            setColor(SURFACE)
+            setStroke(dp(1), LINE)
+        }
+        val lp = LinearLayout.LayoutParams(MATCH, WRAP)
+        lp.setMargins(0, 0, 0, 0)
+        layoutParams = lp
+    }
+
+    private fun addOrb(root: FrameLayout, colorHex: Int, opacity: Float, xPct: Float, yPct: Float, sizePct: Float) {
+        val orb = View(this).apply {
+            val orbColor = Color.argb(
+                (255 * opacity).toInt(),
+                Color.red(colorHex),
+                Color.green(colorHex),
+                Color.blue(colorHex)
+            )
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(orbColor)
+            }
+        }
+        val screenW = resources.displayMetrics.widthPixels
+        val screenH = resources.displayMetrics.heightPixels
+        val size = ((screenW.coerceAtLeast(screenH) * sizePct) / 100).toInt()
+        val lp = FrameLayout.LayoutParams(size, size)
+        lp.gravity = Gravity.TOP or Gravity.START
+        lp.leftMargin = ((screenW * xPct) / 100).toInt()
+        lp.topMargin = ((screenH * yPct) / 100).toInt()
+        orb.layoutParams = lp
+        root.addView(orb)
     }
 
     override fun onBackPressed() {
         if (fullscreenView != null) exitFullscreen()
-        else if (panelVisible) hidePanel()
-        else if (isWebViewVisible) { if (webView.canGoBack()) webView.goBack() else exitTavern() }
-        else super.onBackPressed()
+        else if (isWebViewVisible) {
+            if (webView.canGoBack()) webView.goBack() else exitTavern()
+        } else super.onBackPressed()
     }
 
     override fun onDestroy() {
         if (serverReady) runner.stop()
-        webView.destroy(); super.onDestroy()
+        webView.destroy()
+        super.onDestroy()
     }
 }
