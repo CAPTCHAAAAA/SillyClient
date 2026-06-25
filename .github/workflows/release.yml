@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tavern_tag:
+        description: 'SillyTavern release tag'
+        required: true
+        default: 'release'
+        type: string
+      tarven_version:
+        description: 'Tarven++ version'
+        required: true
+        default: 'v0.2'
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build server-source.zip
+        run: |
+          bash scripts/build-server-source.sh ${{ inputs.tavern_tag }}
+          mkdir -p artifacts
+          cp .cache/build-server/server-source.zip artifacts/
+
+      - name: Update SERVER_SOURCE_URL
+        run: |
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ inputs.tarven_version }}/server-source.zip"
+          sed -i "s|SERVER_SOURCE_URL =.*|SERVER_SOURCE_URL = \"$RELEASE_URL\"|" app/src/main/java/com/tarven/plus/MainActivity.kt
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tarven_version }}
+          name: Tarven++ ${{ inputs.tarven_version }}
+          files: |
+            app/build/outputs/apk/debug/app-debug.apk
+            artifacts/server-source.zip
+          body: |
+            ## Tarven++ ${{ inputs.tarven_version }}
+
+            Based on SillyTavern `${{ inputs.tavern_tag }}`.
+
+            - **TarvenPlus-${{ inputs.tarven_version }}.apk** — install on Android
+            - **server-source.zip** — auto-downloaded on first launch
+
+            ### Requirements
+            - Android 8.0+ / arm64-v8a
+            - ~250 MB free storage
+            - Internet for first launch
