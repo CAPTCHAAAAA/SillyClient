@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+*.iml
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+local.properties
+/captures
+.externalNativeBuild
+.cxx
+app/build/
+
+# Builder artifacts (generated, not committed)
+builder/artifacts/
+builder/work/
+builder/cache/
+
+# Temp files
+*.log
+*.tmp

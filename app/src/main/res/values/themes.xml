@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.TarvenPlus" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorAccent">#FF4FA3</item>
+    </style>
+</resources>
