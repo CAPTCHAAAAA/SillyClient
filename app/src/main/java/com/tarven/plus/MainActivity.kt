@@ -459,6 +459,8 @@ class MainActivity : Activity() {
         webViewScreen.layoutParams = lp
         enterImmersive()
         switchToWebView(true)
+        // Exclude left + right edges from system back gesture (API 29+)
+        excludeSystemGestures()
         handler.postDelayed({
             floatingControl.attach(root, h)
             floatingControl.setStatus(FloatingControlCenter.LED_OK, "Tavern")
@@ -469,10 +471,32 @@ class MainActivity : Activity() {
         if (!isWebViewVisible) return
         floatingControl.hide()
         showSystemBars()
+        // Restore system gesture handling
+        clearSystemGestureExclusions()
         val lp = webViewScreen.layoutParams as FrameLayout.LayoutParams
         lp.topMargin = 0
         webViewScreen.layoutParams = lp
         switchToHome(true)
+    }
+
+    /** Prevent system back gesture from intercepting edge touches inside the WebView. */
+    private fun excludeSystemGestures() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        webView.post {
+            val w = webView.width; if (w <= 0) return@post
+            val h = webView.height; if (h <= 0) return@post
+            val band = dp(36) // exclude ~36dp from each vertical edge
+            webView.systemGestureExclusionRects = listOf(
+                Rect(0, 0, band, h),            // left edge
+                Rect(w - band, 0, w, h)         // right edge
+            )
+        }
+    }
+
+    private fun clearSystemGestureExclusions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            webView.systemGestureExclusionRects = emptyList()
+        }
     }
 
     private fun switchToWebView(animate: Boolean) {
