@@ -12,11 +12,6 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
-
-        // Tarven++ is arm64-only: Android/Bionic runtime only targets aarch64
-        ndk {
-            abiFilters += listOf("arm64-v8a")
-        }
     }
 
     buildTypes {

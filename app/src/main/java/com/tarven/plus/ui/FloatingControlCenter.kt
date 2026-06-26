@@ -42,6 +42,7 @@ class FloatingControlCenter(private val activity: Activity) {
     private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
     private lateinit var scrim: View            // gradient background
+    private lateinit var gloss: View            // white gloss sweep overlay (top 30%)
     private lateinit var leftCluster: LinearLayout // glow + dot + label
     private lateinit var ledGlow: View          // radial blur glow layer
     private lateinit var ledDot: View           // sharp core dot
@@ -71,26 +72,29 @@ class FloatingControlCenter(private val activity: Activity) {
         this.root = root
         this.barBand = statusBarHeight
         buildScrim()
+        buildGloss()
         buildLeftCluster()
         buildRightHandle()
         buildMenu()
         root.addView(scrim)
+        root.addView(gloss)
         root.addView(leftCluster)
         root.addView(rightHandle)
-        scrim.alpha = 0f; leftCluster.alpha = 0f; rightHandle.alpha = 0f
+        scrim.alpha = 0f; gloss.alpha = 0f; leftCluster.alpha = 0f; rightHandle.alpha = 0f
         scrim.animate().alpha(1f).setDuration(280).start()
+        gloss.animate().alpha(1f).setDuration(280).start()
         leftCluster.animate().alpha(1f).setDuration(280).start()
         rightHandle.animate().alpha(1f).setDuration(280).start()
     }
 
     private fun buildScrim() {
-        // Light gradient — dark band only at the very top, main body solid brand black
+        // Light neutral gray — doesn't clash with any page theme during transition
         val gradient = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(
-                0xFF1C111C.toInt(),   // top: softened dark
-                0xFF070408.toInt(),   // upper: brand black
-                0xFF070408.toInt(),   // body: solid brand black, matches webview
+                0xFF2A2A2A.toInt(),
+                0xFF1E1E1E.toInt(),
+                0xFF181818.toInt(),
             )
         )
         scrim = View(activity).apply {
@@ -101,6 +105,46 @@ class FloatingControlCenter(private val activity: Activity) {
             }
             layoutParams = lp
             isClickable = false
+        }
+    }
+
+    private fun buildGloss() {
+        val h = (barBand * 0.3f).toInt()
+        // Uniform white glow on top 30% — breathes with color changes
+        val gradient = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(
+                0x18FFFFFF.toInt(),  // soft white
+                0x00FFFFFF.toInt()   // fade to transparent at bottom
+            )
+        )
+        gloss = View(activity).apply {
+            background = gradient
+            alpha = 0f
+            val lp = FrameLayout.LayoutParams(MATCH, h).apply {
+                gravity = Gravity.TOP or Gravity.START
+                topMargin = 0
+            }
+            layoutParams = lp
+            isClickable = false
+        }
+    }
+
+    fun sweepGlossOver() {
+        if (!::gloss.isInitialized) return
+        // One-shot breath — 2400ms, pure white, sync with color wave
+        ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 2400
+            interpolator = android.view.animation.DecelerateInterpolator(2f)
+            addUpdateListener { va ->
+                val t = va.animatedFraction
+                gloss.alpha = when {
+                    t < 0.2f -> t / 0.2f * 0.55f
+                    t < 0.7f -> 0.55f
+                    else     -> (1f - t) / 0.3f * 0.55f
+                }
+            }
+            start()
         }
     }
 
@@ -262,20 +306,73 @@ class FloatingControlCenter(private val activity: Activity) {
     // ╚══════════════════════════════════════════════════════════════════╝
     fun setScrimColor(baseColor: Int) {
         activity.runOnUiThread {
-            if (!::scrim.isInitialized) return@runOnUiThread  // not attached yet
-            val r = android.graphics.Color.red(baseColor)
-            val g = android.graphics.Color.green(baseColor)
-            val b = android.graphics.Color.blue(baseColor)
-            // Light, compressed gradient — dark band only at the very top
-            val gradient = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(
-                    android.graphics.Color.rgb((r * 0.45f).toInt(), (g * 0.45f).toInt(), (b * 0.45f).toInt()),
-                    android.graphics.Color.rgb((r * 0.80f).toInt(), (g * 0.80f).toInt(), (b * 0.80f).toInt()),
-                    baseColor,
-                )
-            )
-            scrim.background = gradient
+            if (!::scrim.isInitialized) return@runOnUiThread
+            val currentDrawable = scrim.background as? GradientDrawable
+            val currentBody = currentDrawable?.let { d ->
+                val cs = d.colors; if (cs != null && cs.isNotEmpty()) cs.last() else baseColor
+            } ?: baseColor
+
+            val fromR = android.graphics.Color.red(currentBody)
+            val fromG = android.graphics.Color.green(currentBody)
+            val fromB = android.graphics.Color.blue(currentBody)
+            val toR = android.graphics.Color.red(baseColor)
+            val toG = android.graphics.Color.green(baseColor)
+            val toB = android.graphics.Color.blue(baseColor)
+
+            // Bottom-up wave: new color sweeps from bottom → top, 2400ms
+            ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 2400
+                interpolator = android.view.animation.DecelerateInterpolator(1.8f)
+                addUpdateListener { va ->
+                    val t = va.animatedValue as Float
+                    // Wave position: t=0 at bottom, t=1 at top
+                    // bottom (t < 0.33): bottom=new, mid+top=old
+                    // middle (t < 0.66): bottom+mid=new, top=old  
+                    // top (t < 1.0): all=new
+
+                    fun lerp(a: Int, b: Int, f: Float) = (a + (b - a) * f).toInt()
+
+                    val topMix: Float
+                    val midMix: Float
+                    val botMix: Float
+                    if (t < 0.33f) {
+                        // Wave entering bottom
+                        botMix = t / 0.33f
+                        midMix = 0f
+                        topMix = 0f
+                    } else if (t < 0.66f) {
+                        // Wave at middle
+                        botMix = 1f
+                        midMix = (t - 0.33f) / 0.33f
+                        topMix = 0f
+                    } else {
+                        // Wave at top
+                        botMix = 1f
+                        midMix = 1f
+                        topMix = (t - 0.66f) / 0.34f
+                    }
+
+                    val tr = lerp(fromR, toR, topMix)
+                    val tg = lerp(fromG, toG, topMix)
+                    val tb = lerp(fromB, toB, topMix)
+                    val mr = lerp(fromR, toR, midMix)
+                    val mg = lerp(fromG, toG, midMix)
+                    val mb = lerp(fromB, toB, midMix)
+                    val br = lerp(fromR, toR, botMix)
+                    val bg = lerp(fromG, toG, botMix)
+                    val bb = lerp(fromB, toB, botMix)
+
+                    scrim.background = GradientDrawable(
+                        GradientDrawable.Orientation.TOP_BOTTOM,
+                        intArrayOf(
+                            android.graphics.Color.rgb(tr, tg, tb),
+                            android.graphics.Color.rgb(mr, mg, mb),
+                            android.graphics.Color.rgb(br, bg, bb)
+                        )
+                    )
+                }
+                start()
+            }
         }
     }
 

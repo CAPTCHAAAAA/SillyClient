@@ -674,14 +674,16 @@ class MainActivity : Activity() {
             samplePixelColor { hwColor ->
                 if (hwColor != null) floatingControl.setScrimColor(hwColor)
             }
-        }, 1000)
+            floatingControl.sweepGlossOver()
+        }, 0)
         webView.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 handler.postDelayed({
                     samplePixelColor { hwColor ->
                         if (hwColor != null) floatingControl.setScrimColor(hwColor)
                     }
-                }, 300)
+                    floatingControl.sweepGlossOver()
+                }, 200)
             }
             false
         }
