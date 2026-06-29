@@ -1,6 +1,6 @@
 # 新人上手指南
 
-> 给未来接手 SillyClient 的人。先读 [`ARCHITECTURE.md`](./ARCHITECTURE.md) 理解架构与铁律，再读本指南动手。
+> 给接手 SillyClient 的人。先读 [`ARCHITECTURE.md`](./ARCHITECTURE.md) 了解架构与约定，再读本指南动手。
 
 ## 环境要求
 
@@ -57,12 +57,12 @@ adb shell monkey -p com.sillyclient -c android.intent.category.LAUNCHER 1
 | 改启动页 UI | `web/launch/src/`（React + Vite） |
 | 改桥接 | `ui/HybridUiHost.kt`（自撸桥，待退役为插件） + `web/*/src/bridge.ts` |
 
-## ⚠️ 不要踩的坑（历史血泪）
+## ⚠️ 不要踩的坑
 
 1. **别重写启动器本体。** 见 ARCHITECTURE.md §7。封装成插件，不要另起工程重写。
-2. **别让 Capacitor 渲染酒馆。** 酒馆归插件内原生 WebView（铁律 B2）。
+2. **别让 Capacitor 渲染酒馆。** 酒馆归插件内原生 WebView（约定 B2）。
 3. **别碰顶框代码**（`TopScrimBar`/`TopColor`/`sampleTopColor`），除非要加新平台的取色实现。
-4. **品牌名只用 SillyClient。** 见铁律 B1。
+4. **品牌名只用 SillyClient。** 见约定 B1。
 5. **别用强推 main。** 远程 `main` 是旧 `com.tarven.plus` + ChameleonController 历史；当前基线在 `sillyclient-baseline` 分支。
 
 ## Capacitor 化进行中（当前阶段）
