@@ -1,0 +1,6 @@
+[submodule "modules/android"]
+	path = modules/android
+	url = https://github.com/CAPTCHAAAAA/SillyClient-Android.git
+[submodule "modules/frontend"]
+	path = modules/frontend
+	url = https://github.com/CAPTCHAAAAA/SillyClient-Frontend.git
