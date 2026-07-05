@@ -2,7 +2,7 @@
 
 所有版本变更记录。日期格式为 YYYY-MM-DD。
 
-## [v1.0.0] — 2026-07-05
+## [v1.0.1] — 2026-07-05
 
 SillyClient 首个正式版。在 Android 上本地运行 SillyTavern 的启动器，无需 Termux，开箱即用。
 
