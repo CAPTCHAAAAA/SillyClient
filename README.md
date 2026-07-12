@@ -8,8 +8,8 @@ SillyClient 是一个跨平台的 SillyTavern 启动器与管理工具。它将 
 
 | 平台 | 版本 | 状态 | 仓库 |
 |------|------|------|------|
-| Android | v1.3.0 | 已发布 | [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) |
-| Windows | v1.3.0 | 已发布 | [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) |
+| Android | v1.4.0 | 已发布 | [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) |
+| Windows | v1.4.0 | 已发布 | [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) |
 
 ## 下载
 
@@ -17,7 +17,7 @@ SillyClient 是一个跨平台的 SillyTavern 启动器与管理工具。它将 
 
 ### Android
 
-1. 下载 `SillyClient-1.3.0-android.apk`
+1. 下载 `SillyClient-1.4.0-android.apk`
 2. 允许"安装未知来源应用"
 3. 打开 SillyClient，选择本地 zip 或在线拉取 SillyTavern
 4. 点击启动即可
@@ -27,7 +27,7 @@ SillyClient 是一个跨平台的 SillyTavern 启动器与管理工具。它将 
 
 ### Windows
 
-1. 下载 `SillyClient-Setup-1.3.0.exe`
+1. 下载 `SillyClient-Setup-1.4.0.exe`
 2. 运行安装程序，可选择安装路径
 3. 打开 SillyClient，选择本地 zip 或在线拉取 SillyTavern
 4. 点击启动即可
@@ -114,6 +114,22 @@ npm run pack
 | 运行时 | 嵌入式 Node.js（Termux bootstrap） | 内置 Node.js v22.16.0 |
 | WebView | Android System WebView | WebView2 (BrowserWindow) |
 | 目标服务 | SillyTavern | 相同 |
+
+## v1.4.0 更新内容
+
+### Android
+- 手势退出改为返回启动器（实例继续后台运行）
+- 顶部状态栏反方向滑动可返回酒馆
+- 卡片菜单新增"返回酒馆"和"停止实例"按钮
+- 封面图更换 bug 修复
+
+### Windows
+- PC 端酒馆窗口改为叠加模式（不关闭主窗口）
+- 重写 runtime 层：paths.ts/process.ts 大幅简化
+- npm install 直接用 node.exe npm-cli.js，不走 .cmd
+- 启动服务改用 start-server.bat（Windows 原生方式）
+- cmd.exe 改用 process.env.ComSpec 完整路径
+- 封面图更换 bug 修复
 
 ## v1.3.0 更新内容
 
