@@ -2,106 +2,119 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>SillyClient — SillyTavern 跨平台启动器</title>
-  <meta name="description" content="SillyClient 是 SillyTavern 的跨平台启动器，内置完整运行时，安装即用。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SillyClient</title>
+  <meta name="description" content="SillyTavern cross-platform launcher. Install and run, no terminal required." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #07070d;
-      --bg-soft: #0d0d18;
-      --text: #ffffff;
-      --text-muted: rgba(255, 255, 255, 0.5);
-      --text-dim: rgba(255, 255, 255, 0.3);
-      --accent: #a855f7;
-      --accent-2: #ec4899;
-      --border: rgba(255, 255, 255, 0.08);
-      --glass: rgba(255, 255, 255, 0.04);
+      --bg-primary: #09090b;
+      --bg-secondary: #0c0c0e;
+      --bg-elevated: rgba(255, 255, 255, 0.02);
+      --text-primary: #f4f4f5;
+      --text-secondary: rgba(244, 244, 245, 0.55);
+      --text-tertiary: rgba(244, 244, 245, 0.25);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-glass: rgba(255, 255, 255, 0.08);
+      --accent: #3b82f6;
+      --accent-dim: rgba(59, 130, 246, 0.15);
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       line-height: 1.5;
+      font-weight: 400;
     }
 
-    /* 3D Canvas 背景 */
-    #bg-canvas {
+    /* === Canvas === */
+    #webgl-bg {
       position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
+      inset: 0;
       z-index: 0;
       pointer-events: none;
     }
 
-    /* 渐变遮罩 — 让底部融入黑暗 */
-    .gradient-overlay {
+    /* === Gradient Overlay === */
+    .overlay {
       position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
+      inset: 0;
       z-index: 1;
       pointer-events: none;
       background:
-        radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 100%, rgba(7, 7, 13, 0.8) 0%, transparent 60%);
+        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(59, 130, 246, 0.06) 0%, transparent 100%),
+        radial-gradient(ellipse 80% 50% at 50% 100%, var(--bg-primary) 0%, transparent 100%);
     }
 
-    main {
+    /* === Layout === */
+    .page {
       position: relative;
       z-index: 2;
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
     }
 
-    /* 导航 */
+    /* === Nav === */
     nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 24px 40px;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      background: rgba(7, 7, 13, 0.3);
-      border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(20px) saturate(1.2);
+      -webkit-backdrop-filter: blur(20px) saturate(1.2);
+      background: rgba(9, 9, 11, 0.5);
+      height: 64px;
     }
 
-    .nav-logo {
+    .logo {
+      font-family: 'Inter Tight', sans-serif;
       font-size: 15px;
       font-weight: 600;
-      letter-spacing: -0.01em;
-      color: var(--text);
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
       text-decoration: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
-    .nav-logo-dot {
-      width: 8px; height: 8px;
+    .logo-dot {
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
     }
 
-    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-actions { display: flex; gap: 6px; align-items: center; }
 
-    .nav-links a {
+    .nav-link {
       font-size: 13px;
-      color: var(--text-muted);
+      font-weight: 400;
+      color: var(--text-tertiary);
       text-decoration: none;
-      transition: color 0.2s;
-      letter-spacing: 0.01em;
+      padding: 6px 14px;
+      border-radius: 8px;
+      transition: color 0.25s ease, background 0.25s ease;
     }
-    .nav-links a:hover { color: var(--text); }
+    .nav-link:hover {
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.03);
+    }
 
-    /* Hero */
+    /* === Hero === */
     .hero {
       flex: 1;
       display: flex;
@@ -109,192 +122,196 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 80px 24px 60px;
-      min-height: 80vh;
+      padding: 80px 24px 48px;
+      min-height: 70dvh;
     }
 
-    .hero-tag {
+    .hero-eyebrow {
       font-size: 12px;
       font-weight: 500;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 24px;
-      padding: 6px 14px;
-      border: 1px solid rgba(168, 85, 247, 0.2);
-      border-radius: 999px;
-      background: rgba(168, 85, 247, 0.05);
+      color: var(--text-tertiary);
+      margin-bottom: 20px;
     }
 
     .hero-title {
-      font-size: clamp(48px, 8vw, 84px);
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.05;
-      margin-bottom: 20px;
-      background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: clamp(40px, 7vw, 72px);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      text-wrap: balance;
     }
 
-    .hero-subtitle {
-      font-size: clamp(16px, 2.5vw, 20px);
+    .hero-title em {
+      font-style: normal;
+      color: var(--text-tertiary);
       font-weight: 400;
-      color: var(--text-muted);
-      max-width: 480px;
-      margin-bottom: 48px;
-      letter-spacing: 0.01em;
     }
 
-    .hero-cta {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      justify-content: center;
+    .hero-sub {
+      font-size: clamp(15px, 2vw, 17px);
+      font-weight: 300;
+      color: var(--text-secondary);
+      max-width: 440px;
+      margin-bottom: 40px;
+      line-height: 1.6;
+      text-wrap: pretty;
     }
+
+    .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 14px 28px;
-      border-radius: 12px;
-      font-size: 14px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-family: 'Geist', sans-serif;
+      font-size: 13px;
       font-weight: 500;
       text-decoration: none;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      letter-spacing: 0.01em;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
       cursor: pointer;
       border: none;
+      letter-spacing: -0.005em;
     }
+    .btn:active { transform: scale(0.97); }
+    .btn svg { width: 15px; height: 15px; }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      color: #ffffff;
-      box-shadow: 0 4px 24px rgba(168, 85, 247, 0.3);
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.3);
     }
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(168, 85, 247, 0.45);
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
-    .btn-ghost {
-      background: var(--glass);
-      color: var(--text);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
-    .btn-ghost:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.15);
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
     }
 
-    .btn svg { width: 16px; height: 16px; }
-
-    /* 特性区 */
+    /* === Features === */
     .features {
-      max-width: 720px;
+      max-width: 680px;
       margin: 0 auto;
-      padding: 40px 24px 80px;
+      padding: 32px 24px 64px;
       width: 100%;
     }
 
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: 16px;
+      grid-template-columns: 1fr 1fr;
+      background: var(--border-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
       overflow: hidden;
     }
 
     .feature {
-      background: rgba(7, 7, 13, 0.6);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      padding: 28px 24px;
-      transition: background 0.3s;
+      background: var(--bg-secondary);
+      padding: 24px 20px;
+      transition: background 0.3s ease;
     }
-    .feature:hover { background: rgba(168, 85, 247, 0.04); }
+    .feature:hover { background: rgba(59, 130, 246, 0.02); }
 
     .feature-icon {
-      width: 32px; height: 32px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 14px;
-      background: rgba(168, 85, 247, 0.1);
+      margin-bottom: 12px;
+      background: var(--accent-dim);
       color: var(--accent);
     }
-    .feature-icon svg { width: 16px; height: 16px; }
+    .feature-icon svg { width: 14px; height: 14px; stroke-width: 1.8; }
 
-    .feature-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      letter-spacing: -0.005em;
+    .feature-label {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
     }
 
-    .feature-desc {
+    .feature-text {
       font-size: 12px;
-      color: var(--text-dim);
-      line-height: 1.6;
+      font-weight: 300;
+      color: var(--text-tertiary);
+      line-height: 1.55;
     }
 
-    /* 底部 */
+    /* === Footer === */
     footer {
-      padding: 32px 40px;
-      border-top: 1px solid var(--border);
+      padding: 24px 40px;
+      border-top: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      background: rgba(7, 7, 13, 0.3);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(9, 9, 11, 0.4);
     }
 
     .footer-text {
-      font-size: 12px;
-      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-tertiary);
+      letter-spacing: 0.01em;
     }
 
-    .footer-links { display: flex; gap: 20px; }
+    .footer-links { display: flex; gap: 16px; }
     .footer-links a {
-      font-size: 12px;
-      color: var(--text-dim);
+      font-size: 11px;
+      color: var(--text-tertiary);
       text-decoration: none;
-      transition: color 0.2s;
+      transition: color 0.2s ease;
     }
-    .footer-links a:hover { color: var(--text-muted); }
+    .footer-links a:hover { color: var(--text-secondary); }
 
-    /* 响应式 */
+    /* === Responsive === */
     @media (max-width: 640px) {
       nav { padding: 16px 20px; }
-      .nav-links { gap: 16px; }
-      .nav-links a { font-size: 12px; }
-      .hero { padding: 60px 20px 40px; min-height: 70vh; }
-      .hero-title { font-size: 44px; }
-      .hero-cta { flex-direction: column; width: 100%; max-width: 280px; }
+      .hero { padding: 48px 20px 32px; min-height: 65dvh; }
+      .hero-actions { flex-direction: column; width: 100%; max-width: 280px; }
       .btn { justify-content: center; width: 100%; }
       .features-grid { grid-template-columns: 1fr; }
-      .features { padding: 20px 16px 60px; }
-      footer { padding: 20px; flex-direction: column; gap: 12px; text-align: center; }
+      .features { padding: 16px 16px 48px; }
+      footer {
+        padding: 20px;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+      }
     }
 
-    /* 入场动画 */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
+    /* === Entry Animation === */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .hero-tag { animation: fadeUp 0.8s ease-out 0.1s both; }
-    .hero-title { animation: fadeUp 0.8s ease-out 0.2s both; }
-    .hero-subtitle { animation: fadeUp 0.8s ease-out 0.3s both; }
-    .hero-cta { animation: fadeUp 0.8s ease-out 0.4s both; }
-    .features { animation: fadeUp 0.8s ease-out 0.5s both; }
+    .hero-eyebrow { animation: fadeIn 0.6s ease-out 0.2s both; }
+    .hero-title { animation: fadeIn 0.6s ease-out 0.3s both; }
+    .hero-sub { animation: fadeIn 0.6s ease-out 0.4s both; }
+    .hero-actions { animation: fadeIn 0.6s ease-out 0.5s both; }
+    .features { animation: fadeIn 0.6s ease-out 0.6s both; }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -303,44 +320,43 @@
       }
     }
 
-    /* 加载状态 */
-    .loading-fallback {
+    /* === Loading Fallback === */
+    .fallback {
       position: fixed;
       inset: 0;
       z-index: 0;
-      background: radial-gradient(ellipse at center, #1a0a2e 0%, #07070d 70%);
+      background: var(--bg-primary);
     }
   </style>
 </head>
 <body>
-  <div class="loading-fallback" id="fallback"></div>
-  <canvas id="bg-canvas"></canvas>
-  <div class="gradient-overlay"></div>
+  <div class="fallback" id="fallback"></div>
+  <div class="overlay"></div>
 
-  <main>
+  <div class="page">
     <nav>
-      <a href="/" class="nav-logo">
-        <span class="nav-logo-dot"></span>
+      <a href="/" class="logo">
+        <span class="logo-dot"></span>
         SillyClient
       </a>
-      <div class="nav-links">
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
+      <div class="nav-actions">
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" class="nav-link">Source</a>
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="nav-link">Releases</a>
       </div>
     </nav>
 
     <section class="hero">
-      <span class="hero-tag">SillyTavern Launcher</span>
-      <h1 class="hero-title">把酒馆<br>装进口袋</h1>
-      <p class="hero-subtitle">跨平台 SillyTavern 启动器。内置完整运行时，安装即用，无需命令行。</p>
-      <div class="hero-cta">
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="btn btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下载 Android
+      <p class="hero-eyebrow">SillyTavern Launcher</p>
+      <h1 class="hero-title">SillyTavern,<br><em>anywhere.</em></h1>
+      <p class="hero-sub">Cross-platform launcher with embedded runtime. Install, launch, no terminal needed.</p>
+      <div class="hero-actions">
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0-9 9v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a9 9 0 0 0-9-9Z"/><path d="M12 21v-6"/><path d="M8 21h8"/></svg>
+          Android
         </a>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-ghost">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          下载 Windows
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Windows
         </a>
       </div>
     </section>
@@ -349,137 +365,112 @@
       <div class="features-grid">
         <div class="feature">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
-          <div class="feature-title">一键启动</div>
-          <div class="feature-desc">内置 Node.js 运行时，下载安装后直接运行酒馆，不依赖 Termux 或命令行。</div>
+          <div class="feature-label">Embedded Runtime</div>
+          <div class="feature-text">Node.js bundled. No Termux, no Docker, no CLI.</div>
         </div>
         <div class="feature">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
           </div>
-          <div class="feature-title">多实例管理</div>
-          <div class="feature-desc">创建多个独立实例，各自配置端口、版本和角色卡，卡片式轮播切换。</div>
+          <div class="feature-label">Multi-Instance</div>
+          <div class="feature-text">Isolated SillyTavern installs with independent ports and configs.</div>
         </div>
         <div class="feature">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
           </div>
-          <div class="feature-title">沉浸式界面</div>
-          <div class="feature-desc">状态栏适配、手势导航、液态玻璃界面，原生应用级的交互质感。</div>
+          <div class="feature-label">Cross-Platform</div>
+          <div class="feature-text">Android + Windows. Shared frontend, native shells.</div>
         </div>
         <div class="feature">
           <div class="feature-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
           </div>
-          <div class="feature-title">跨平台</div>
-          <div class="feature-desc">Android 与 Windows 双端同步发布，共享同一套前端代码。</div>
+          <div class="feature-label">Native Feel</div>
+          <div class="feature-text">Status bar adaptation, gesture nav, immersive WebView.</div>
         </div>
       </div>
     </section>
 
     <footer>
-      <span class="footer-text">MIT License · SillyClient</span>
+      <span class="footer-text">MIT</span>
       <div class="footer-links">
         <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
         <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">架构文档</a>
       </div>
     </footer>
-  </main>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js"
-    }
-  }
-  </script>
+  </div>
 
   <script type="module">
-    import * as THREE from 'three';
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
 
-    // 隐藏 fallback
-    document.getElementById('fallback').style.display = 'none';
+    const fallback = document.getElementById('fallback');
+    if (fallback) fallback.style.display = 'none';
 
-    const canvas = document.getElementById('bg-canvas');
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x07070d, 0.015);
-
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-    camera.position.set(0, 0, 30);
-
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    try {
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setClearColor(0x000000, 0);
+    renderer.domElement.id = 'webgl-bg';
+    renderer.domElement.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;';
+    document.body.prepend(renderer.domElement);
 
-    // === 粒子星云 ===
-    const particleCount = 900;
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-    const sizes = new Float32Array(particleCount);
+    const world = new THREE.Scene();
+    world.fog = new THREE.FogExp2(0x09090b, 0.012);
 
-    const purple = new THREE.Color(0xa855f7);
-    const pink = new THREE.Color(0xec4899);
-    const white = new THREE.Color(0xffffff);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 0, 35);
 
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3;
-      // 球形分布 + 随机扩散
-      const radius = 15 + Math.random() * 45;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
-      positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      positions[i3 + 2] = radius * Math.cos(phi);
+    // === Particles ===
+    const N = 600;
+    const pos = new Float32Array(N * 3);
+    const alphas = new Float32Array(N);
+    const sizes = new Float32Array(N);
 
-      // 颜色：紫色、粉色、白色随机混合
-      const r = Math.random();
-      let color;
-      if (r < 0.5) color = purple;
-      else if (r < 0.8) color = pink;
-      else color = white;
-
-      // 亮度变化
-      const brightness = 0.3 + Math.random() * 0.7;
-      colors[i3] = color.r * brightness;
-      colors[i3 + 1] = color.g * brightness;
-      colors[i3 + 2] = color.b * brightness;
-
-      sizes[i] = Math.random() * 2 + 0.5;
+    for (let i = 0; i < N; i++) {
+      const r = 12 + Math.random() * 50;
+      const t = Math.random() * Math.PI * 2;
+      const p = Math.acos(2 * Math.random() - 1);
+      pos[i * 3] = r * Math.sin(p) * Math.cos(t);
+      pos[i * 3 + 1] = r * Math.sin(p) * Math.sin(t);
+      pos[i * 3 + 2] = r * Math.cos(p);
+      alphas[i] = 0.15 + Math.random() * 0.6;
+      sizes[i] = 0.8 + Math.random() * 1.5;
     }
 
-    const particleGeo = new THREE.BufferGeometry();
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aAlpha', new THREE.BufferAttribute(alphas, 1));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
 
-    // 自定义着色器 — 柔和光点
-    const particleMat = new THREE.ShaderMaterial({
+    const mat = new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) }
+        uPR: { value: Math.min(window.devicePixelRatio, 1.5) }
       },
       vertexShader: `
-        attribute vec3 color;
-        varying vec3 vColor;
+        attribute float aAlpha;
+        attribute float aSize;
+        varying float vAlpha;
         uniform float uTime;
-        uniform float uPixelRatio;
+        uniform float uPR;
         void main() {
-          vColor = color;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float twinkle = sin(uTime * 0.5 + position.x * 0.3 + position.y * 0.2) * 0.5 + 0.5;
-          gl_PointSize = (1.5 + twinkle * 1.5) * uPixelRatio * (30.0 / -mvPosition.z);
-          gl_Position = projectionMatrix * mvPosition;
+          vAlpha = aAlpha * (sin(uTime * 0.4 + position.x * 0.2 + position.y * 0.15) * 0.3 + 0.7);
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = aSize * uPR * (25.0 / -mv.z);
+          gl_Position = projectionMatrix * mv;
         }
       `,
       fragmentShader: `
-        varying vec3 vColor;
+        varying float vAlpha;
         void main() {
-          float d = length(gl_PointCoord - vec2(0.5));
+          float d = length(gl_PointCoord - 0.5);
           if (d > 0.5) discard;
-          float alpha = smoothstep(0.5, 0.0, d);
-          gl_FragColor = vec4(vColor, alpha * 0.8);
+          float a = smoothstep(0.5, 0.0, d) * vAlpha;
+          gl_FragColor = vec4(0.85, 0.88, 0.95, a);
         }
       `,
       transparent: true,
@@ -487,65 +478,49 @@
       blending: THREE.AdditiveBlending
     });
 
-    const particles = new THREE.Points(particleGeo, particleMat);
-    scene.add(particles);
+    const particles = new THREE.Points(geo, mat);
+    world.add(particles);
 
-    // === 漂浮几何体 ===
-    const shapes = [];
-    const shapeConfigs = [
-      { pos: [-12, 6, -10], scale: 2.5, rotSpeed: [0.003, 0.005, 0] },
-      { pos: [14, -4, -15], scale: 3.5, rotSpeed: [-0.002, 0.004, 0.001] },
-      { pos: [8, 8, -20], scale: 2.0, rotSpeed: [0.004, -0.003, 0.002] },
-      { pos: [-10, -8, -12], scale: 1.8, rotSpeed: [-0.003, 0.006, -0.001] },
+    // === Floating wireframes ===
+    const shapeCfg = [
+      { pos: [-15, 7, -18], s: 3.0, rx: 0.002, ry: 0.003, rz: 0 },
+      { pos: [16, -5, -22], s: 4.0, rx: -0.001, ry: 0.002, rz: 0.001 },
+      { pos: [10, 10, -25], s: 2.2, rx: 0.003, ry: -0.002, rz: 0.001 },
+      { pos: [-12, -9, -16], s: 2.0, rx: -0.002, ry: 0.004, rz: -0.001 },
     ];
 
-    shapeConfigs.forEach((cfg, i) => {
-      const geo = new THREE.IcosahedronGeometry(cfg.scale, 0);
-
-      // 线框
-      const wireframe = new THREE.LineSegments(
-        new THREE.EdgesGeometry(geo),
-        new THREE.LineBasicMaterial({
-          color: i % 2 === 0 ? 0xa855f7 : 0xec4899,
-          transparent: true,
-          opacity: 0.25
-        })
-      );
-      wireframe.position.set(...cfg.pos);
-      scene.add(wireframe);
-      shapes.push({ obj: wireframe, config: cfg, baseY: cfg.pos[1] });
-
-      // 半透明面
-      const faceMat = new THREE.MeshBasicMaterial({
-        color: i % 2 === 0 ? 0xa855f7 : 0xec4899,
+    const meshGroup = [];
+    shapeCfg.forEach((cfg, i) => {
+      const g = new THREE.IcosahedronGeometry(cfg.s, 0);
+      const edges = new THREE.EdgesGeometry(g);
+      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({
+        color: 0x3b82f6,
         transparent: true,
-        opacity: 0.03,
-        side: THREE.DoubleSide
-      });
-      const mesh = new THREE.Mesh(geo, faceMat);
-      mesh.position.set(...cfg.pos);
-      scene.add(mesh);
-      shapes.push({ obj: mesh, config: cfg, baseY: cfg.pos[1] });
+        opacity: 0.18 + i * 0.04
+      }));
+      line.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
+      world.add(line);
+      meshGroup.push({ obj: line, cfg, baseY: cfg.pos[1] });
     });
 
-    // === 中心光晕 ===
-    const glowGeo = new THREE.SphereGeometry(8, 32, 32);
+    // === Central glow ===
+    const glowGeo = new THREE.SphereGeometry(6, 24, 24);
     const glowMat = new THREE.ShaderMaterial({
       uniforms: { uTime: { value: 0 } },
       vertexShader: `
-        varying vec3 vNormal;
+        varying vec3 vN;
         void main() {
-          vNormal = normalize(normalMatrix * normal);
+          vN = normalize(normalMatrix * normal);
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
         uniform float uTime;
-        varying vec3 vNormal;
+        varying vec3 vN;
         void main() {
-          float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
-          vec3 color = mix(vec3(0.66, 0.33, 0.97), vec3(0.93, 0.28, 0.6), sin(uTime * 0.3) * 0.5 + 0.5);
-          gl_FragColor = vec4(color * intensity, intensity * 0.15);
+          float i = pow(0.55 - dot(vN, vec3(0, 0, 1)), 2.5);
+          vec3 c = mix(vec3(0.23, 0.51, 0.96), vec3(0.35, 0.55, 0.90), sin(uTime * 0.25) * 0.5 + 0.5);
+          gl_FragColor = vec4(c, i * 0.08);
         }
       `,
       transparent: true,
@@ -554,74 +529,70 @@
       depthWrite: false
     });
     const glow = new THREE.Mesh(glowGeo, glowMat);
-    glow.position.set(0, 0, -5);
-    scene.add(glow);
+    glow.position.set(0, 0, -8);
+    world.add(glow);
 
-    // === 鼠标视差 ===
+    // === Mouse parallax ===
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
-    window.addEventListener('mousemove', (e) => {
-      mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2;
-      mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
-    });
-    window.addEventListener('touchmove', (e) => {
-      if (e.touches.length > 0) {
-        mouse.tx = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
-        mouse.ty = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
-      }
+    const onMove = (cx, cy) => {
+      mouse.tx = (cx / window.innerWidth - 0.5) * 2;
+      mouse.ty = (cy / window.innerHeight - 0.5) * 2;
+    };
+    window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    window.addEventListener('touchmove', e => {
+      if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
 
-    // 滚动视差
     let scrollY = 0;
     window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
 
-    // === 动画循环 ===
+    // === Animate ===
     const clock = new THREE.Clock();
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function animate() {
-      requestAnimationFrame(animate);
+    function tick() {
+      requestAnimationFrame(tick);
       const t = clock.getElapsedTime();
 
-      // 平滑鼠标
-      mouse.x += (mouse.tx - mouse.x) * 0.05;
-      mouse.y += (mouse.ty - mouse.y) * 0.05;
+      mouse.x += (mouse.tx - mouse.x) * 0.04;
+      mouse.y += (mouse.ty - mouse.y) * 0.04;
 
-      // 相机视差
-      camera.position.x = mouse.x * 3;
-      camera.position.y = -mouse.y * 2 - scrollY * 0.01;
+      camera.position.x = mouse.x * 2.5;
+      camera.position.y = -mouse.y * 1.5 - scrollY * 0.008;
       camera.lookAt(0, 0, 0);
 
-      // 粒子缓慢旋转
-      particles.rotation.y = t * 0.02;
-      particles.rotation.x = t * 0.01;
-      particleMat.uniforms.uTime.value = t;
+      if (!reduced) {
+        particles.rotation.y = t * 0.015;
+        particles.rotation.x = t * 0.008;
+      }
+      mat.uniforms.uTime.value = t;
 
-      // 几何体动画
-      shapes.forEach((s, i) => {
-        if (!prefersReducedMotion) {
-          s.obj.rotation.x += s.config.rotSpeed[0];
-          s.obj.rotation.y += s.config.rotSpeed[1];
-          s.obj.rotation.z += s.config.rotSpeed[2];
+      meshGroup.forEach((s, i) => {
+        if (!reduced) {
+          s.obj.rotation.x += s.cfg.rx;
+          s.obj.rotation.y += s.cfg.ry;
+          s.obj.rotation.z += s.cfg.rz;
         }
-        s.obj.position.y = s.baseY + Math.sin(t * 0.3 + i) * 1.5;
+        s.obj.position.y = s.baseY + Math.sin(t * 0.25 + i * 1.5) * 1.2;
       });
 
-      // 中心光晕
       glowMat.uniforms.uTime.value = t;
-      glow.scale.setScalar(1 + Math.sin(t * 0.4) * 0.05);
 
-      renderer.render(scene, camera);
+      renderer.render(world, camera);
     }
-    animate();
+    tick();
 
-    // 响应式
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      particleMat.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      mat.uniforms.uPR.value = Math.min(window.devicePixelRatio, 1.5);
     });
+
+    } catch(e) {
+      console.error('Three.js init failed:', e);
+    }
   </script>
 </body>
 </html>
