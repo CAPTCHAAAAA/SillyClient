@@ -1,131 +1,627 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-    <title>SillyClient 酒馆启动器</title>
-    <style>
-      /* Dynamic Display 字体 */
-      @font-face {
-        font-family: 'Dynamic Display';
-        src: url('./fonts/DynamicDisplay.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Syndra 字体 */
-      @font-face {
-        font-family: 'Syndra';
-        src: url('./fonts/Syndra-SemiBold.otf') format('opentype');
-        font-weight: 600;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Daydream 字体 */
-      @font-face {
-        font-family: 'Daydream';
-        src: url('./fonts/Daydream.otf') format('opentype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* 04B_30 像素风字体 */
-      @font-face {
-        font-family: '04B 30';
-        src: url('./fonts/04B_30.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Noisy Walk 字体 */
-      @font-face {
-        font-family: 'Noisy Walk';
-        src: url('./fonts/NoisyWalk.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Stay Pixel 字体 */
-      @font-face {
-        font-family: 'Stay Pixel';
-        src: url('./fonts/StayPixel.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Arcade Raiders 字体 */
-      @font-face {
-        font-family: 'Arcade Raiders';
-        src: url('./fonts/ArcadeRaiders.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Yummy 字体 */
-      @font-face {
-        font-family: 'Yummy';
-        src: url('./fonts/Yummy.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Pixel Chaos 字体 */
-      @font-face {
-        font-family: 'Pixel Chaos';
-        src: url('./fonts/PixelChaos.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Soap 字体 */
-      @font-face {
-        font-family: 'Soap';
-        src: url('./fonts/Soap.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-    </style>
-    <style>
-      /* 内联样式确保主题色立即生效，避免闪烁 */
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-      }
-      html.light, html.light body {
-        background-color: #ffffff !important;
-        color: #000000;
-      }
-      html.dark, html.dark body {
-        background-color: #1a1a1a !important;
-        color: #ffffff;
-      }
-    </style>
-    <script>
-      // 本地运行：直接读取 localStorage 或系统偏好设置主题
-      (function() {
-        function applyThemeToDOM(theme) {
-          document.documentElement.classList.remove('light', 'dark');
-          document.documentElement.classList.add(theme);
-          document.documentElement.setAttribute('data-theme', theme);
-        }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>SillyClient — SillyTavern 跨平台启动器</title>
+  <meta name="description" content="SillyClient 是 SillyTavern 的跨平台启动器，内置完整运行时，安装即用。" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        var stored = localStorage.getItem('theme');
-        if (stored === 'dark' || stored === 'light') {
-          applyThemeToDOM(stored);
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          applyThemeToDOM('dark');
-        } else {
-          applyThemeToDOM('light');
+    :root {
+      --bg: #07070d;
+      --bg-soft: #0d0d18;
+      --text: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.5);
+      --text-dim: rgba(255, 255, 255, 0.3);
+      --accent: #a855f7;
+      --accent-2: #ec4899;
+      --border: rgba(255, 255, 255, 0.08);
+      --glass: rgba(255, 255, 255, 0.04);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    /* 3D Canvas 背景 */
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 渐变遮罩 — 让底部融入黑暗 */
+    .gradient-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(7, 7, 13, 0.8) 0%, transparent 60%);
+    }
+
+    main {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 导航 */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 40px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background: rgba(7, 7, 13, 0.3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-logo-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+    }
+
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+
+    .nav-links a {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      letter-spacing: 0.01em;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* Hero */
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px 60px;
+      min-height: 80vh;
+    }
+
+    .hero-tag {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+      padding: 6px 14px;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 999px;
+      background: rgba(168, 85, 247, 0.05);
+    }
+
+    .hero-title {
+      font-size: clamp(48px, 8vw, 84px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 20px;
+      background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(16px, 2.5vw, 20px);
+      font-weight: 400;
+      color: var(--text-muted);
+      max-width: 480px;
+      margin-bottom: 48px;
+      letter-spacing: 0.01em;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 24px rgba(168, 85, 247, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(168, 85, 247, 0.45);
+    }
+
+    .btn-ghost {
+      background: var(--glass);
+      color: var(--text);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn svg { width: 16px; height: 16px; }
+
+    /* 特性区 */
+    .features {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      width: 100%;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .feature {
+      background: rgba(7, 7, 13, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 28px 24px;
+      transition: background 0.3s;
+    }
+    .feature:hover { background: rgba(168, 85, 247, 0.04); }
+
+    .feature-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      background: rgba(168, 85, 247, 0.1);
+      color: var(--accent);
+    }
+    .feature-icon svg { width: 16px; height: 16px; }
+
+    .feature-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.005em;
+    }
+
+    .feature-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    /* 底部 */
+    footer {
+      padding: 32px 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background: rgba(7, 7, 13, 0.3);
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text-muted); }
+
+    /* 响应式 */
+    @media (max-width: 640px) {
+      nav { padding: 16px 20px; }
+      .nav-links { gap: 16px; }
+      .nav-links a { font-size: 12px; }
+      .hero { padding: 60px 20px 40px; min-height: 70vh; }
+      .hero-title { font-size: 44px; }
+      .hero-cta { flex-direction: column; width: 100%; max-width: 280px; }
+      .btn { justify-content: center; width: 100%; }
+      .features-grid { grid-template-columns: 1fr; }
+      .features { padding: 20px 16px 60px; }
+      footer { padding: 20px; flex-direction: column; gap: 12px; text-align: center; }
+    }
+
+    /* 入场动画 */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .hero-tag { animation: fadeUp 0.8s ease-out 0.1s both; }
+    .hero-title { animation: fadeUp 0.8s ease-out 0.2s both; }
+    .hero-subtitle { animation: fadeUp 0.8s ease-out 0.3s both; }
+    .hero-cta { animation: fadeUp 0.8s ease-out 0.4s both; }
+    .features { animation: fadeUp 0.8s ease-out 0.5s both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* 加载状态 */
+    .loading-fallback {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: radial-gradient(ellipse at center, #1a0a2e 0%, #07070d 70%);
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-fallback" id="fallback"></div>
+  <canvas id="bg-canvas"></canvas>
+  <div class="gradient-overlay"></div>
+
+  <main>
+    <nav>
+      <a href="/" class="nav-logo">
+        <span class="nav-logo-dot"></span>
+        SillyClient
+      </a>
+      <div class="nav-links">
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <span class="hero-tag">SillyTavern Launcher</span>
+      <h1 class="hero-title">把酒馆<br>装进口袋</h1>
+      <p class="hero-subtitle">跨平台 SillyTavern 启动器。内置完整运行时，安装即用，无需命令行。</p>
+      <div class="hero-cta">
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          下载 Android
+        </a>
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          下载 Windows
+        </a>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div class="feature-title">一键启动</div>
+          <div class="feature-desc">内置 Node.js 运行时，下载安装后直接运行酒馆，不依赖 Termux 或命令行。</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div class="feature-title">多实例管理</div>
+          <div class="feature-desc">创建多个独立实例，各自配置端口、版本和角色卡，卡片式轮播切换。</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="feature-title">沉浸式界面</div>
+          <div class="feature-desc">状态栏适配、手势导航、液态玻璃界面，原生应用级的交互质感。</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div class="feature-title">跨平台</div>
+          <div class="feature-desc">Android 与 Windows 双端同步发布，共享同一套前端代码。</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span class="footer-text">MIT License · SillyClient</span>
+      <div class="footer-links">
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">架构文档</a>
+      </div>
+    </footer>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // 隐藏 fallback
+    document.getElementById('fallback').style.display = 'none';
+
+    const canvas = document.getElementById('bg-canvas');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x07070d, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 0, 30);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+
+    // === 粒子星云 ===
+    const particleCount = 900;
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
+
+    const purple = new THREE.Color(0xa855f7);
+    const pink = new THREE.Color(0xec4899);
+    const white = new THREE.Color(0xffffff);
+
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+      // 球形分布 + 随机扩散
+      const radius = 15 + Math.random() * 45;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+      positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      positions[i3 + 2] = radius * Math.cos(phi);
+
+      // 颜色：紫色、粉色、白色随机混合
+      const r = Math.random();
+      let color;
+      if (r < 0.5) color = purple;
+      else if (r < 0.8) color = pink;
+      else color = white;
+
+      // 亮度变化
+      const brightness = 0.3 + Math.random() * 0.7;
+      colors[i3] = color.r * brightness;
+      colors[i3 + 1] = color.g * brightness;
+      colors[i3 + 2] = color.b * brightness;
+
+      sizes[i] = Math.random() * 2 + 0.5;
+    }
+
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    // 自定义着色器 — 柔和光点
+    const particleMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) }
+      },
+      vertexShader: `
+        attribute vec3 color;
+        varying vec3 vColor;
+        uniform float uTime;
+        uniform float uPixelRatio;
+        void main() {
+          vColor = color;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          float twinkle = sin(uTime * 0.5 + position.x * 0.3 + position.y * 0.2) * 0.5 + 0.5;
+          gl_PointSize = (1.5 + twinkle * 1.5) * uPixelRatio * (30.0 / -mvPosition.z);
+          gl_Position = projectionMatrix * mvPosition;
         }
-      })();
-    </script>
-    <script type="module" crossorigin src="./assets/index-Q4Qf_kn1.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BfYj2lHl.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.0, d);
+          gl_FragColor = vec4(vColor, alpha * 0.8);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
+    // === 漂浮几何体 ===
+    const shapes = [];
+    const shapeConfigs = [
+      { pos: [-12, 6, -10], scale: 2.5, rotSpeed: [0.003, 0.005, 0] },
+      { pos: [14, -4, -15], scale: 3.5, rotSpeed: [-0.002, 0.004, 0.001] },
+      { pos: [8, 8, -20], scale: 2.0, rotSpeed: [0.004, -0.003, 0.002] },
+      { pos: [-10, -8, -12], scale: 1.8, rotSpeed: [-0.003, 0.006, -0.001] },
+    ];
+
+    shapeConfigs.forEach((cfg, i) => {
+      const geo = new THREE.IcosahedronGeometry(cfg.scale, 0);
+
+      // 线框
+      const wireframe = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({
+          color: i % 2 === 0 ? 0xa855f7 : 0xec4899,
+          transparent: true,
+          opacity: 0.25
+        })
+      );
+      wireframe.position.set(...cfg.pos);
+      scene.add(wireframe);
+      shapes.push({ obj: wireframe, config: cfg, baseY: cfg.pos[1] });
+
+      // 半透明面
+      const faceMat = new THREE.MeshBasicMaterial({
+        color: i % 2 === 0 ? 0xa855f7 : 0xec4899,
+        transparent: true,
+        opacity: 0.03,
+        side: THREE.DoubleSide
+      });
+      const mesh = new THREE.Mesh(geo, faceMat);
+      mesh.position.set(...cfg.pos);
+      scene.add(mesh);
+      shapes.push({ obj: mesh, config: cfg, baseY: cfg.pos[1] });
+    });
+
+    // === 中心光晕 ===
+    const glowGeo = new THREE.SphereGeometry(8, 32, 32);
+    const glowMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec3 vNormal;
+        void main() {
+          float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+          vec3 color = mix(vec3(0.66, 0.33, 0.97), vec3(0.93, 0.28, 0.6), sin(uTime * 0.3) * 0.5 + 0.5);
+          gl_FragColor = vec4(color * intensity, intensity * 0.15);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      depthWrite: false
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.set(0, 0, -5);
+    scene.add(glow);
+
+    // === 鼠标视差 ===
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+    window.addEventListener('mousemove', (e) => {
+      mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+    });
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        mouse.tx = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
+        mouse.ty = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
+      }
+    }, { passive: true });
+
+    // 滚动视差
+    let scrollY = 0;
+    window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+
+    // === 动画循环 ===
+    const clock = new THREE.Clock();
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      // 平滑鼠标
+      mouse.x += (mouse.tx - mouse.x) * 0.05;
+      mouse.y += (mouse.ty - mouse.y) * 0.05;
+
+      // 相机视差
+      camera.position.x = mouse.x * 3;
+      camera.position.y = -mouse.y * 2 - scrollY * 0.01;
+      camera.lookAt(0, 0, 0);
+
+      // 粒子缓慢旋转
+      particles.rotation.y = t * 0.02;
+      particles.rotation.x = t * 0.01;
+      particleMat.uniforms.uTime.value = t;
+
+      // 几何体动画
+      shapes.forEach((s, i) => {
+        if (!prefersReducedMotion) {
+          s.obj.rotation.x += s.config.rotSpeed[0];
+          s.obj.rotation.y += s.config.rotSpeed[1];
+          s.obj.rotation.z += s.config.rotSpeed[2];
+        }
+        s.obj.position.y = s.baseY + Math.sin(t * 0.3 + i) * 1.5;
+      });
+
+      // 中心光晕
+      glowMat.uniforms.uTime.value = t;
+      glow.scale.setScalar(1 + Math.sin(t * 0.4) * 0.05);
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // 响应式
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      particleMat.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2);
+    });
+  </script>
+</body>
 </html>
