@@ -156,17 +156,55 @@
       text-wrap: pretty;
     }
 
-    .hero-img-wrap {
-      max-width: 520px;
+    /* ====== 3D 透视展示区 ====== */
+    .hero-stage {
+      max-width: 640px;
       margin: 0 auto;
+      perspective: 1200px;
+    }
+    .hero-tilt {
+      transform: rotateX(6deg) rotateY(-3deg);
+      transform-style: preserve-3d;
+      transition: transform 0.4s var(--ease);
       border-radius: var(--radius-lg);
       overflow: hidden;
-      box-shadow: var(--shadow-lg);
-      border: 1px solid var(--rule);
+      box-shadow:
+        var(--shadow-lg),
+        0 20px 60px rgba(26, 22, 37, 0.12),
+        0 0 0 1px var(--rule);
+      position: relative;
     }
-    .hero-img-wrap img {
+    .hero-tilt::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+      z-index: 2;
+    }
+    .hero-tilt iframe {
       width: 100%;
+      height: 420px;
+      border: none;
       display: block;
+      border-radius: inherit;
+    }
+    .stage-reflection {
+      max-width: 640px;
+      margin: -4px auto 0;
+      height: 80px;
+      background: linear-gradient(180deg, rgba(26,22,37,0.04), transparent);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      filter: blur(2px);
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.15), transparent);
+      -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.15), transparent);
+      pointer-events: none;
+    }
+    @media (max-width: 640px) {
+      .hero-tilt { transform: rotateX(4deg) rotateY(0deg); }
+      .hero-tilt iframe { height: 320px; }
+      .stage-reflection { display: none; }
     }
 
     /* ====== CTA 按钮区 ====== */
@@ -358,7 +396,7 @@
     .hero h1      { animation: fade-up 0.6s var(--ease) 0.12s both; }
     .hero-desc    { animation: fade-up 0.6s var(--ease) 0.2s both; }
     .cta-row      { animation: fade-up 0.6s var(--ease) 0.28s both; }
-    .hero-img-wrap{ animation: fade-up 0.6s var(--ease) 0.36s both; }
+    .hero-stage   { animation: fade-up 0.6s var(--ease) 0.36s both; }
 
     /* ====== Responsive ====== */
     @media (max-width: 640px) {
@@ -414,8 +452,11 @@
         <span data-i18n="dl_win">下载 Windows</span>
       </a>
     </div>
-    <div class="hero-img-wrap">
-      <img src="screenshot.png" alt="SillyClient 启动器界面" loading="lazy" />
+    <div class="hero-stage">
+      <div class="hero-tilt" id="heroTilt">
+        <iframe src="app/" title="SillyClient 界面预览" loading="lazy"></iframe>
+      </div>
+      <div class="stage-reflection"></div>
     </div>
   </section>
 
@@ -562,6 +603,21 @@
     }
     function toggleLang() { setLang(lang === 'zh' ? 'en' : 'zh'); }
     setLang(lang);
+
+    // 3D 鼠标跟随
+    const tilt = document.getElementById('heroTilt');
+    if (tilt && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const stage = tilt.closest('.hero-stage');
+      stage.addEventListener('mousemove', e => {
+        const rect = stage.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        tilt.style.transform = `rotateX(${6 - y * 6}deg) rotateY(${-3 + x * 8}deg)`;
+      });
+      stage.addEventListener('mouseleave', () => {
+        tilt.style.transform = 'rotateX(6deg) rotateY(-3deg)';
+      });
+    }
   </script>
 </body>
 </html>
