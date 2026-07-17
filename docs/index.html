@@ -4,620 +4,297 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SillyClient</title>
-  <meta name="description" content="SillyTavern 跨平台启动器。内置 Node.js，安装即用。" />
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232D131E'/%3E%3Cstop offset='60%25' stop-color='%2314060A'/%3E%3Cstop offset='100%25' stop-color='%23080204'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23FF5E85'/%3E%3Cstop offset='40%25' stop-color='%23C7154B'/%3E%3Cstop offset='100%25' stop-color='%236A112E'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='rgba(255%2C240%2C243%2C0.95)'/%3E%3Cstop offset='50%25' stop-color='rgba(255%2C225%2C232%2C0.45)'/%3E%3Cstop offset='100%25' stop-color='rgba(255%2C210%2C220%2C0.05)'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='56' fill='url(%23b)'/%3E%3Cpath d='M208 48L80 48A32 32 0 0 0 48 80L48 176A32 32 0 0 0 80 208L208 208' fill='none' stroke='url(%23g)' stroke-width='32' stroke-linecap='round'/%3E%3Cpath d='M208 88L140 88A20 20 0 0 0 140 128L156 128A20 20 0 0 1 156 168L88 168' fill='none' stroke='url(%23r)' stroke-width='32' stroke-linecap='round'/%3E%3C/svg%3E" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #f0ece8;
-      --bg-2: #e8e2dc;
-      --fg: #1a1625;
-      --fg-2: rgba(26, 22, 37, 0.58);
-      --fg-3: rgba(26, 22, 37, 0.35);
-      --brand: #e8365d;
-      --brand-soft: rgba(232, 54, 93, 0.08);
-      --brand-hover: rgba(232, 54, 93, 0.14);
-      --wine: #6a112e;
-      --wine-light: rgba(106, 17, 46, 0.06);
-      --surface: #ffffff;
-      --surface-2: rgba(255, 255, 255, 0.7);
-      --rule: rgba(26, 22, 37, 0.08);
-      --shadow-sm: 0 1px 3px rgba(26, 22, 37, 0.06);
-      --shadow-md: 0 4px 16px rgba(26, 22, 37, 0.08);
-      --shadow-lg: 0 12px 40px rgba(26, 22, 37, 0.10);
-      --radius: 16px;
-      --radius-lg: 24px;
-      --pill: 999px;
-      --font: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
-      --ease: cubic-bezier(0.22, 1, 0.36, 1);
-      --max-w: 960px;
-    }
-
-    html { scroll-behavior: smooth; }
-
     body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--fg);
-      overflow-x: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #1a1625;
+      color: #fff;
+      overflow: hidden;
       -webkit-font-smoothing: antialiased;
-      line-height: 1.6;
-      letter-spacing: -0.01em;
     }
 
-    /* ====== 液态玻璃导航 ====== */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      isolation: isolate;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.45)),
-        rgba(240, 236, 232, 0.6);
-      backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      border-bottom: 1px solid rgba(26, 22, 37, 0.06);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.6),
-        0 1px 8px rgba(26, 22, 37, 0.04);
-    }
-    nav::after {
-      content: "";
-      position: absolute;
+    #bg { position: fixed; inset: 0; z-index: 0; }
+
+    .scene {
+      position: fixed;
       inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(ellipse 50% 70% at 50% 0%, rgba(255,255,255,0.4), transparent 60%);
-      pointer-events: none;
-    }
-
-    .nav-left, .nav-right { display: flex; align-items: center; gap: 8px; position: relative; z-index: 1; }
-    .nav-right { gap: 4px; }
-
-    .logo {
+      z-index: 1;
       display: flex;
       align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: var(--fg);
-    }
-    .logo img { width: 26px; height: 26px; border-radius: 6px; }
-    .logo-text { font-weight: 600; font-size: 15px; letter-spacing: -0.02em; }
-    .logo-text span { color: var(--brand); }
-
-    .nav-link {
-      font-size: 13px;
-      color: var(--fg-2);
-      text-decoration: none;
-      padding: 6px 14px;
-      border-radius: var(--pill);
-      transition: color 0.2s var(--ease), background 0.2s var(--ease);
-    }
-    .nav-link:hover { color: var(--fg); background: var(--brand-soft); }
-
-    .lang-btn {
-      font-family: var(--font);
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--fg-3);
-      background: transparent;
-      border: 1px solid var(--rule);
-      border-radius: var(--pill);
-      padding: 4px 11px;
-      cursor: pointer;
-      transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
-    }
-    .lang-btn:hover { color: var(--fg-2); border-color: rgba(26, 22, 37, 0.15); }
-
-    /* ====== Hero ====== */
-    .hero {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 80px 24px 64px;
-      text-align: center;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--brand);
-      padding: 5px 14px;
-      border: 1px solid rgba(232, 54, 93, 0.15);
-      border-radius: var(--pill);
-      background: var(--brand-soft);
-      margin-bottom: 28px;
-    }
-    .hero-badge svg { width: 14px; height: 14px; }
-
-    .hero h1 {
-      font-size: clamp(32px, 6vw, 56px);
-      font-weight: 600;
-      letter-spacing: -0.04em;
-      line-height: 1.1;
-      margin-bottom: 16px;
-      text-wrap: balance;
-      color: var(--fg);
-    }
-    .hero h1 .muted { font-weight: 300; color: var(--fg-2); }
-
-    .hero-desc {
-      font-size: clamp(14px, 1.8vw, 17px);
-      color: var(--fg-2);
-      max-width: 460px;
-      margin: 0 auto 36px;
-      line-height: 1.7;
-      text-wrap: pretty;
-    }
-
-    /* ====== 3D 透视展示区 ====== */
-    .hero-stage {
-      max-width: 640px;
-      margin: 0 auto;
+      justify-content: center;
       perspective: 1200px;
     }
-    .hero-tilt {
-      transform: rotateX(6deg) rotateY(-3deg);
-      transform-style: preserve-3d;
-      transition: transform 0.4s var(--ease);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow:
-        var(--shadow-lg),
-        0 20px 60px rgba(26, 22, 37, 0.12),
-        0 0 0 1px var(--rule);
+
+    /* 3D 手机框架 */
+    .phone-wrapper {
       position: relative;
+      width: min(360px, 82vw);
+      aspect-ratio: 9 / 19;
+      transform-style: preserve-3d;
+      transform: rotateY(-8deg) rotateX(2deg);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .hero-tilt::after {
-      content: "";
+    .phone-wrapper:hover {
+      transform: rotateY(-2deg) rotateX(1deg) translateY(-4px);
+    }
+
+    .phone-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 32px;
+      border: 2.5px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      background: #1a1625;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 40px 80px -20px rgba(0, 0, 0, 0.6),
+        0 0 120px rgba(232, 54, 93, 0.04);
+      transform: translateZ(0);
+    }
+
+    /* 刘海 */
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 26px;
+      background: #1a1625;
+      border-radius: 0 0 18px 18px;
+      z-index: 20;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: none;
+    }
+
+    /* 反光 */
+    .phone-frame::after {
+      content: '';
       position: absolute;
       inset: 0;
-      border-radius: inherit;
+      border-radius: 30px;
+      background: linear-gradient(
+        165deg,
+        rgba(255, 255, 255, 0.06) 0%,
+        transparent 40%,
+        transparent 60%,
+        rgba(255, 255, 255, 0.02) 100%
+      );
+      z-index: 21;
       pointer-events: none;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
-      z-index: 2;
     }
-    .hero-tilt iframe {
+
+    .phone-iframe {
       width: 100%;
-      height: 420px;
+      height: 100%;
       border: none;
-      display: block;
-      border-radius: inherit;
+      pointer-events: auto;
     }
-    .stage-reflection {
-      max-width: 640px;
-      margin: -4px auto 0;
-      height: 80px;
-      background: linear-gradient(180deg, rgba(26,22,37,0.04), transparent);
-      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-      filter: blur(2px);
-      mask-image: linear-gradient(180deg, rgba(0,0,0,0.15), transparent);
-      -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.15), transparent);
+
+    /* 桌面反射 */
+    .reflection {
+      position: fixed;
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(340px, 76vw);
+      height: 30vh;
+      background: radial-gradient(ellipse at top, rgba(232, 54, 93, 0.03) 0%, transparent 70%);
       pointer-events: none;
-    }
-    @media (max-width: 640px) {
-      .hero-tilt { transform: rotateX(4deg) rotateY(0deg); }
-      .hero-tilt iframe { height: 320px; }
-      .stage-reflection { display: none; }
+      z-index: 0;
     }
 
-    /* ====== CTA 按钮区 ====== */
-    .cta-row {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 48px;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 26px;
-      border-radius: var(--pill);
-      font-family: var(--font);
-      font-size: 14px;
-      font-weight: 500;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      transition: transform 0.15s var(--ease), box-shadow 0.3s ease, background 0.2s ease;
-    }
-    .btn:active { transform: scale(0.97) translateY(1px); }
-    .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-    .btn-primary {
-      color: #fff;
-      background: var(--brand);
-      box-shadow: 0 2px 12px rgba(232, 54, 93, 0.25);
-    }
-    .btn-primary:hover { box-shadow: 0 4px 20px rgba(232, 54, 93, 0.35); transform: translateY(-1px); }
-
-    .btn-outline {
-      color: var(--fg);
-      background: var(--surface);
-      border: 1px solid var(--rule);
-    }
-    .btn-outline:hover { background: var(--bg-2); transform: translateY(-1px); }
-
-    /* ====== Section 通用 ====== */
-    .section {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-    .section + .section { border-top: 1px solid var(--rule); }
-    .section-pad { padding-top: 64px; padding-bottom: 64px; }
-
-    .section-title {
-      font-size: clamp(22px, 4vw, 32px);
-      font-weight: 600;
-      letter-spacing: -0.03em;
-      margin-bottom: 8px;
-    }
-    .section-sub {
-      font-size: 15px;
-      color: var(--fg-2);
-      max-width: 500px;
-      margin-bottom: 40px;
-      line-height: 1.65;
-    }
-
-    /* ====== 特性网格 (不对称 2 列) ====== */
-    .feat-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    .feat-card {
-      padding: 24px;
-      border-radius: var(--radius);
-      background: var(--surface);
-      border: 1px solid var(--rule);
-      transition: box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
-    }
-    .feat-card:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-2px);
-    }
-    .feat-card.wide { grid-column: span 2; }
-
-    .feat-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
+    /* 底部信息 */
+    .info {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      padding: 20px 24px 28px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 14px;
-      background: var(--brand-soft);
-      color: var(--brand);
-    }
-    .feat-icon svg { width: 18px; height: 18px; stroke-width: 2; }
-
-    .feat-card h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      letter-spacing: -0.01em;
-    }
-    .feat-card p {
-      font-size: 13px;
-      color: var(--fg-2);
-      line-height: 1.6;
-    }
-
-    /* ====== 技术栈 ====== */
-    .tech-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    .tech-table th {
-      text-align: left;
-      font-weight: 500;
-      padding: 10px 16px;
-      border-bottom: 2px solid var(--rule);
-      color: var(--fg-3);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .tech-table td {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--rule);
-      color: var(--fg-2);
-    }
-    .tech-table tr:last-child td { border-bottom: none; }
-    .tech-table td:first-child { color: var(--fg); font-weight: 500; }
-
-    /* ====== 下载区 ====== */
-    .download-section {
-      text-align: center;
-    }
-    .download-cards {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 16px;
-      max-width: 500px;
-      margin: 0 auto;
+      background: linear-gradient(to top, rgba(26, 22, 37, 0.95) 0%, transparent 100%);
+      pointer-events: none;
     }
-    .dl-card {
-      padding: 24px;
-      border-radius: var(--radius);
-      background: var(--surface);
-      border: 1px solid var(--rule);
-      text-decoration: none;
-      color: var(--fg);
-      transition: box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-    .dl-card:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-2px);
-    }
-    .dl-card svg { width: 24px; height: 24px; color: var(--brand); }
-    .dl-card .dl-label { font-size: 15px; font-weight: 600; }
-    .dl-card .dl-info { font-size: 12px; color: var(--fg-3); }
-
-    /* ====== Footer ====== */
-    footer {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .foot-copy { font-size: 12px; color: var(--fg-3); }
-    .foot-links { display: flex; gap: 20px; }
-    .foot-links a {
+    .info a {
+      pointer-events: auto;
       font-size: 12px;
-      color: var(--fg-3);
+      color: rgba(255, 255, 255, 0.3);
       text-decoration: none;
-      transition: color 0.2s var(--ease);
+      transition: color 0.2s;
     }
-    .foot-links a:hover { color: var(--fg-2); }
-
-    /* ====== 入场 ====== */
-    @keyframes fade-up {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .hero-badge   { animation: fade-up 0.6s var(--ease) 0.05s both; }
-    .hero h1      { animation: fade-up 0.6s var(--ease) 0.12s both; }
-    .hero-desc    { animation: fade-up 0.6s var(--ease) 0.2s both; }
-    .cta-row      { animation: fade-up 0.6s var(--ease) 0.28s both; }
-    .hero-stage   { animation: fade-up 0.6s var(--ease) 0.36s both; }
-
-    /* ====== Responsive ====== */
-    @media (max-width: 640px) {
-      nav { padding: 0 16px; height: 50px; }
-      .hero { padding: 56px 16px 40px; }
-      .section-pad { padding-top: 40px; padding-bottom: 40px; }
-      .feat-grid { grid-template-columns: 1fr; }
-      .feat-card.wide { grid-column: span 1; }
-      .download-cards { grid-template-columns: 1fr; max-width: 280px; }
-      footer { padding: 20px 16px; flex-direction: column; gap: 8px; text-align: center; }
+    .info a:hover { color: rgba(255, 255, 255, 0.6); }
+    .info span {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.15);
     }
 
-    /* ====== A11y ====== */
+    @media (max-width: 480px) {
+      .phone-wrapper { transform: none; }
+      .phone-wrapper:hover { transform: translateY(-4px); }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+      .phone-wrapper { transition: none; }
     }
   </style>
 </head>
 <body>
-  <nav>
-    <div class="nav-left">
-      <a href="/" class="logo">
-        <img src="favicon.png" alt="" width="26" height="26" />
-        <div class="logo-text">Silly<span>Client</span></div>
-      </a>
-    </div>
-    <div class="nav-right">
-      <button class="lang-btn" id="langBtn" onclick="toggleLang()">EN</button>
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" class="nav-link" data-i18n="nav_src">源码</a>
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="nav-link">Releases</a>
-    </div>
-  </nav>
+  <canvas id="bg"></canvas>
 
-  <section class="hero">
-    <div class="hero-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-      <span data-i18n="badge">SillyTavern Launcher</span>
-    </div>
-    <h1>
-      <span data-i18n="t1">SillyTavern</span>, <span class="muted" data-i18n="t2">装进口袋</span>
-    </h1>
-    <p class="hero-desc" data-i18n="sub">内置 Node.js 运行时，安装即用。支持 Android 和 Windows，无需 Termux，无需命令行。</p>
-    <div class="cta-row">
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        <span data-i18n="dl_android">下载 Android</span>
-      </a>
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-outline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        <span data-i18n="dl_win">下载 Windows</span>
-      </a>
-    </div>
-    <div class="hero-stage">
-      <div class="hero-tilt" id="heroTilt">
-        <iframe src="app/" title="SillyClient 界面预览" loading="lazy"></iframe>
-      </div>
-      <div class="stage-reflection"></div>
-    </div>
-  </section>
-
-  <div class="section section-pad">
-    <h2 class="section-title" data-i18n="feat_title">功能特性</h2>
-    <p class="section-sub" data-i18n="feat_sub">为 SillyTavern 打造的原生级跨平台启动体验。</p>
-    <div class="feat-grid">
-      <div class="feat-card wide">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
-        <h3 data-i18n="n1">内置运行时</h3>
-        <p data-i18n="d1">Node.js 随应用打包，开箱即用。不需要 Termux，不需要自行安装任何依赖，下载安装后直接启动。</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-        </div>
-        <h3 data-i18n="n2">多实例管理</h3>
-        <p data-i18n="d2">独立端口与配置，卡片式切换。</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        </div>
-        <h3 data-i18n="n3">跨平台</h3>
-        <p data-i18n="d3">Android + Windows，同一 React 前端。</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-        </div>
-        <h3 data-i18n="n5">实时终端</h3>
-        <p data-i18n="d5">内嵌终端面板，支持命令输入。</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.912 5.813a2 2 0 0 1-1.275 1.275L7 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-        </div>
-        <h3 data-i18n="n4">原生体验</h3>
-        <p data-i18n="d4">液态玻璃界面，状态栏适配，手势。</p>
+  <div class="scene">
+    <div class="phone-wrapper" id="phoneWrapper">
+      <div class="phone-frame">
+        <iframe class="phone-iframe" id="appFrame" title="SillyClient"></iframe>
       </div>
     </div>
   </div>
 
-  <div class="section section-pad">
-    <h2 class="section-title" data-i18n="tech_title">技术架构</h2>
-    <p class="section-sub" data-i18n="tech_sub">双平台共享同一套 React 前端。</p>
-    <table class="tech-table">
-      <thead>
-        <tr>
-          <th data-i18n="th_layer">层级</th>
-          <th>Android</th>
-          <th>Windows</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td data-i18n="l_native">原生层</td>
-          <td>Kotlin, Capacitor 7</td>
-          <td>Electron 33, TypeScript</td>
-        </tr>
-        <tr>
-          <td data-i18n="l_ui">UI 层</td>
-          <td colspan="2">React 19, Vite 7, Tailwind CSS v4</td>
-        </tr>
-        <tr>
-          <td data-i18n="l_runtime">运行时</td>
-          <td>Embedded Node.js</td>
-          <td>Bundled node.exe v22</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <div class="reflection"></div>
 
-  <div class="section section-pad download-section">
-    <h2 class="section-title" data-i18n="dl_title">下载</h2>
-    <p class="section-sub" style="text-align:center;margin-left:auto;margin-right:auto;" data-i18n="dl_sub">在 GitHub Releases 页面获取最新版本。</p>
-    <div class="download-cards">
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="dl-card">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        <span class="dl-label">Android</span>
-        <span class="dl-info">v1.4.1 / arm64</span>
-      </a>
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="dl-card">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        <span class="dl-label">Windows</span>
-        <span class="dl-info">v1.4.1 / x64</span>
-      </a>
-    </div>
+  <div class="info">
+    <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
+    <span>·</span>
+    <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
+    <span>·</span>
+    <span style="pointer-events:none">MIT License</span>
   </div>
-
-  <footer>
-    <span class="foot-copy">MIT License</span>
-    <div class="foot-links">
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
-    </div>
-  </footer>
 
   <script>
-    const i18n = {
-      zh: {
-        nav_src: '源码', badge: 'SillyTavern Launcher',
-        t1: 'SillyTavern', t2: '装进口袋',
-        sub: '内置 Node.js 运行时，安装即用。支持 Android 和 Windows，无需 Termux，无需命令行。',
-        dl_android: '下载 Android', dl_win: '下载 Windows',
-        feat_title: '功能特性', feat_sub: '为 SillyTavern 打造的原生级跨平台启动体验。',
-        n1: '内置运行时', d1: 'Node.js 随应用打包，开箱即用。不需要 Termux，不需要自行安装任何依赖，下载安装后直接启动。',
-        n2: '多实例管理', d2: '独立端口与配置，卡片式切换。',
-        n3: '跨平台', d3: 'Android + Windows，同一 React 前端。',
-        n4: '原生体验', d4: '液态玻璃界面，状态栏适配，手势。',
-        n5: '实时终端', d5: '内嵌终端面板，支持命令输入。',
-        tech_title: '技术架构', tech_sub: '双平台共享同一套 React 前端。',
-        th_layer: '层级', l_native: '原生层', l_ui: 'UI 层', l_runtime: '运行时',
-        dl_title: '下载', dl_sub: '在 GitHub Releases 页面获取最新版本。',
-      },
-      en: {
-        nav_src: 'Source', badge: 'SillyTavern Launcher',
-        t1: 'SillyTavern', t2: 'in your pocket.',
-        sub: 'Embedded Node.js runtime. Works on Android and Windows. No Termux, no CLI needed.',
-        dl_android: 'Android', dl_win: 'Windows',
-        feat_title: 'Features', feat_sub: 'A native cross-platform launcher built for SillyTavern.',
-        n1: 'Embedded Runtime', d1: 'Node.js bundled with the app. No Termux, no manual dependency install. Download, install, launch.',
-        n2: 'Multi-Instance', d2: 'Isolated ports and configs. Card-based switching.',
-        n3: 'Cross-Platform', d3: 'Android + Windows. One shared React frontend.',
-        n4: 'Native Feel', d4: 'Liquid glass UI, status bar integration, gestures.',
-        n5: 'Live Terminal', d5: 'Built-in terminal panel with command input.',
-        tech_title: 'Tech Stack', tech_sub: 'Both platforms share a single React frontend.',
-        th_layer: 'Layer', l_native: 'Native', l_ui: 'UI', l_runtime: 'Runtime',
-        dl_title: 'Download', dl_sub: 'Get the latest version from GitHub Releases.',
-      }
-    };
-    let lang = localStorage.getItem('lang') || 'zh';
-    function setLang(l) {
-      lang = l;
-      localStorage.setItem('lang', l);
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const k = el.getAttribute('data-i18n');
-        if (i18n[l][k]) el.textContent = i18n[l][k];
-      });
-      document.getElementById('langBtn').textContent = l === 'zh' ? 'EN' : '中文';
-      document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en';
-    }
-    function toggleLang() { setLang(lang === 'zh' ? 'en' : 'zh'); }
-    setLang(lang);
+    // 嵌入前端 app（使用当前页面同源的 app/ 路径）
+    document.getElementById('appFrame').src = './app/index.html';
+  </script>
 
-    // 3D 鼠标跟随
-    const tilt = document.getElementById('heroTilt');
-    if (tilt && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const stage = tilt.closest('.hero-stage');
-      stage.addEventListener('mousemove', e => {
-        const rect = stage.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width - 0.5;
-        const y = (e.clientY - rect.top) / rect.height - 0.5;
-        tilt.style.transform = `rotateX(${6 - y * 6}deg) rotateY(${-3 + x * 8}deg)`;
-      });
-      stage.addEventListener('mouseleave', () => {
-        tilt.style.transform = 'rotateX(6deg) rotateY(-3deg)';
-      });
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    const canvas = document.getElementById('bg');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x1a1625, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 200);
+    camera.position.set(0, 0, 40);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setClearColor(0x1a1625, 1);
+
+    // 粒子 — 与项目色系一致
+    const N = 400;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    const c1 = new THREE.Color(0x2a2240);  // 深紫灰
+    const c2 = new THREE.Color(0xe8365d);  // 品牌玫瑰
+    const c3 = new THREE.Color(0x3a3050);  // 中紫
+
+    for (let i = 0; i < N; i++) {
+      const i3 = i * 3;
+      const r = 15 + Math.random() * 55;
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      pos[i3] = r * Math.sin(ph) * Math.cos(th);
+      pos[i3 + 1] = r * Math.sin(ph) * Math.sin(th);
+      pos[i3 + 2] = r * Math.cos(ph);
+
+      const p = Math.random();
+      const c = p < 0.6 ? c1 : p < 0.85 ? c3 : c2;
+      const b = 0.3 + Math.random() * 0.5;
+      col[i3] = c.r * b; col[i3 + 1] = c.g * b; col[i3 + 2] = c.b * b;
     }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uPR: { value: Math.min(devicePixelRatio, 2) } },
+      vertexShader: `
+        attribute vec3 color;
+        varying vec3 vC;
+        uniform float uTime, uPR;
+        void main() {
+          vC = color;
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          float tw = sin(uTime * 0.3 + position.x * 0.15 + position.y * 0.1) * 0.5 + 0.5;
+          gl_PointSize = (0.8 + tw * 0.8) * uPR * (25.0 / -mv.z);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `
+        varying vec3 vC;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float a = smoothstep(0.5, 0.0, d);
+          gl_FragColor = vec4(vC, a * 0.5);
+        }`,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+
+    // 鼠标视差
+    const m = { x: 0, y: 0, tx: 0, ty: 0 };
+    const wrapper = document.getElementById('phoneWrapper');
+
+    addEventListener('mousemove', e => {
+      m.tx = (e.clientX / innerWidth - 0.5) * 2;
+      m.ty = (e.clientY / innerHeight - 0.5) * 2;
+    });
+    addEventListener('touchmove', e => {
+      if (e.touches.length) {
+        m.tx = (e.touches[0].clientX / innerWidth - 0.5) * 2;
+        m.ty = (e.touches[0].clientY / innerHeight - 0.5) * 2;
+      }
+    }, { passive: true });
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const clock = new THREE.Clock();
+
+    function loop() {
+      requestAnimationFrame(loop);
+      const t = clock.getElapsedTime();
+
+      m.x += (m.tx - m.x) * 0.05;
+      m.y += (m.ty - m.y) * 0.05;
+
+      camera.position.x = m.x * 2;
+      camera.position.y = -m.y * 1;
+      camera.lookAt(0, 0, 0);
+
+      if (!reduced) {
+        pts.rotation.y = t * 0.01;
+        pts.rotation.x = Math.sin(t * 0.08) * 0.015;
+        mat.uniforms.uTime.value = t;
+
+        // 3D 框架跟随鼠标微动
+        const ry = -8 + m.x * 6;
+        const rx = 2 - m.y * 3;
+        wrapper.style.transform = `rotateY(${ry}deg) rotateX(${rx}deg)`;
+      }
+
+      renderer.render(scene, camera);
+    }
+    loop();
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      mat.uniforms.uPR.value = Math.min(devicePixelRatio, 2);
+    });
   </script>
 </body>
 </html>
