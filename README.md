@@ -5,6 +5,8 @@ Cross-platform SillyTavern launcher. Runs full instances on Android and Windows 
 [![Release](https://img.shields.io/github/v/release/CAPTCHAAAAA/SillyClient?style=flat-square&color=blue)](https://github.com/CAPTCHAAAAA/SillyClient/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
+**[Live Demo](https://captchaaaaa.github.io/SillyClient/)**
+
 ## Platforms
 
 | Platform | Arch | Min Version | Status |
