@@ -7,31 +7,31 @@
   <meta name="description" content="SillyTavern 跨平台启动器。内置 Node.js，安装即用。" />
   <link rel="icon" type="image/png" href="favicon.png" />
   <style>
-    /*
-     * SillyClient Landing
-     * 色彩策略: Drenched (品牌色承载主表面)
-     * 场景句: 开发者在暗光下打开一个工具类 app 的官网
-     * 设计锚点: Apple HIG + Vercel
-     * AI Tell: 全部规避
-     */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #1a1625;
-      --fg: #f0ece8;
-      --fg-2: rgba(240, 236, 232, 0.58);
-      --fg-3: rgba(240, 236, 232, 0.32);
+      --bg: #f0ece8;
+      --bg-2: #e8e2dc;
+      --fg: #1a1625;
+      --fg-2: rgba(26, 22, 37, 0.58);
+      --fg-3: rgba(26, 22, 37, 0.35);
       --brand: #e8365d;
-      --brand-dim: rgba(232, 54, 93, 0.08);
+      --brand-soft: rgba(232, 54, 93, 0.08);
+      --brand-hover: rgba(232, 54, 93, 0.14);
       --wine: #6a112e;
-      --wine-2: #3d0a1a;
-      --surface: rgba(240, 236, 232, 0.04);
-      --surface-2: rgba(240, 236, 232, 0.07);
-      --rule: rgba(240, 236, 232, 0.08);
+      --wine-light: rgba(106, 17, 46, 0.06);
+      --surface: #ffffff;
+      --surface-2: rgba(255, 255, 255, 0.7);
+      --rule: rgba(26, 22, 37, 0.08);
+      --shadow-sm: 0 1px 3px rgba(26, 22, 37, 0.06);
+      --shadow-md: 0 4px 16px rgba(26, 22, 37, 0.08);
+      --shadow-lg: 0 12px 40px rgba(26, 22, 37, 0.10);
+      --radius: 16px;
+      --radius-lg: 24px;
       --pill: 999px;
-      --r: 14px;
       --font: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --max-w: 960px;
     }
 
     html { scroll-behavior: smooth; }
@@ -42,101 +42,42 @@
       color: var(--fg);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
-      line-height: 1.55;
+      line-height: 1.6;
       letter-spacing: -0.01em;
     }
 
-    /* ====== 氛围层 ====== */
-    .atmosphere {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      overflow: hidden;
-    }
-    .atm-blob {
-      position: absolute;
-      filter: blur(100px);
-      will-change: transform;
-    }
-    .atm-blob:nth-child(1) {
-      width: 55vmax; height: 55vmax;
-      top: -25%; left: -18%;
-      background: var(--wine);
-      opacity: 0.45;
-      border-radius: 40% 60% 55% 45% / 55% 40% 60% 45%;
-      animation: drift-a 24s ease-in-out infinite;
-    }
-    .atm-blob:nth-child(2) {
-      width: 40vmax; height: 40vmax;
-      top: 10%; right: -14%;
-      background: var(--brand);
-      opacity: 0.12;
-      border-radius: 55% 45% 60% 40% / 45% 55% 50% 50%;
-      animation: drift-b 30s ease-in-out infinite;
-    }
-    .atm-blob:nth-child(3) {
-      width: 35vmax; height: 35vmax;
-      bottom: -18%; left: 30%;
-      background: var(--wine-2);
-      opacity: 0.5;
-      border-radius: 48% 52% 46% 54% / 52% 48% 56% 44%;
-      animation: drift-c 26s ease-in-out infinite;
-    }
-
-    @keyframes drift-a {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); border-radius: 40% 60% 55% 45% / 55% 40% 60% 45%; }
-      33% { transform: translate(6vw, 3vh) rotate(15deg); border-radius: 52% 48% 42% 58% / 48% 52% 55% 45%; }
-      66% { transform: translate(-3vw, -5vh) rotate(-10deg); border-radius: 45% 55% 58% 42% / 55% 45% 42% 58%; }
-    }
-    @keyframes drift-b {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(-4vw, 5vh) rotate(-12deg); }
-    }
-    @keyframes drift-c {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      40% { transform: translate(4vw, -4vh) scale(1.04); }
-      70% { transform: translate(-2vw, 2vh) scale(0.97); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .atm-blob { animation: none !important; }
-    }
-
-    /* ====== 页面结构 ====== */
-    .page {
-      position: relative;
-      z-index: 1;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* ====== 导航 ====== */
+    /* ====== 液态玻璃导航 ====== */
     nav {
       position: sticky;
       top: 0;
       z-index: 10;
-      padding: 16px 32px;
+      padding: 0 24px;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(26, 22, 37, 0.72);
-      backdrop-filter: blur(20px) saturate(160%);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
-      border-bottom: 1px solid var(--rule);
+      isolation: isolate;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.45)),
+        rgba(240, 236, 232, 0.6);
+      backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
+      -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
+      border-bottom: 1px solid rgba(26, 22, 37, 0.06);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        0 1px 8px rgba(26, 22, 37, 0.04);
+    }
+    nav::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(ellipse 50% 70% at 50% 0%, rgba(255,255,255,0.4), transparent 60%);
+      pointer-events: none;
     }
 
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .nav-left, .nav-right { display: flex; align-items: center; gap: 8px; position: relative; z-index: 1; }
+    .nav-right { gap: 4px; }
 
     .logo {
       display: flex;
@@ -145,26 +86,19 @@
       text-decoration: none;
       color: var(--fg);
     }
-    .logo img {
-      width: 28px; height: 28px;
-      border-radius: 7px;
-    }
-    .logo-text {
-      font-weight: 600;
-      font-size: 15px;
-      letter-spacing: -0.01em;
-    }
+    .logo img { width: 26px; height: 26px; border-radius: 6px; }
+    .logo-text { font-weight: 600; font-size: 15px; letter-spacing: -0.02em; }
     .logo-text span { color: var(--brand); }
 
     .nav-link {
       font-size: 13px;
-      color: var(--fg-3);
+      color: var(--fg-2);
       text-decoration: none;
       padding: 6px 14px;
       border-radius: var(--pill);
       transition: color 0.2s var(--ease), background 0.2s var(--ease);
     }
-    .nav-link:hover { color: var(--fg-2); background: var(--surface); }
+    .nav-link:hover { color: var(--fg); background: var(--brand-soft); }
 
     .lang-btn {
       font-family: var(--font);
@@ -178,62 +112,76 @@
       cursor: pointer;
       transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
     }
-    .lang-btn:hover { color: var(--fg-2); border-color: rgba(240, 236, 232, 0.15); }
+    .lang-btn:hover { color: var(--fg-2); border-color: rgba(26, 22, 37, 0.15); }
 
     /* ====== Hero ====== */
     .hero {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 80px 24px 64px;
       text-align: center;
-      padding: 80px 24px 48px;
-      min-height: 68dvh;
     }
-
-    .hero-icon {
-      width: 72px; height: 72px;
-      border-radius: 18px;
-      margin-bottom: 32px;
-      box-shadow: 0 4px 32px rgba(232, 54, 93, 0.25);
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--brand);
+      padding: 5px 14px;
+      border: 1px solid rgba(232, 54, 93, 0.15);
+      border-radius: var(--pill);
+      background: var(--brand-soft);
+      margin-bottom: 28px;
     }
+    .hero-badge svg { width: 14px; height: 14px; }
 
     .hero h1 {
-      font-size: clamp(38px, 7vw, 62px);
+      font-size: clamp(32px, 6vw, 56px);
       font-weight: 600;
       letter-spacing: -0.04em;
-      line-height: 1.08;
+      line-height: 1.1;
       margin-bottom: 16px;
       text-wrap: balance;
+      color: var(--fg);
     }
-    .hero h1 .light {
-      font-weight: 300;
-      color: var(--fg-2);
-    }
+    .hero h1 .muted { font-weight: 300; color: var(--fg-2); }
 
-    .hero p {
-      font-size: clamp(14px, 1.8vw, 16px);
-      color: var(--fg-3);
-      max-width: 360px;
-      margin-bottom: 40px;
+    .hero-desc {
+      font-size: clamp(14px, 1.8vw, 17px);
+      color: var(--fg-2);
+      max-width: 460px;
+      margin: 0 auto 36px;
       line-height: 1.7;
       text-wrap: pretty;
     }
 
-    .ctas {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center;
+    .hero-img-wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--rule);
+    }
+    .hero-img-wrap img {
+      width: 100%;
+      display: block;
     }
 
-    /* ====== 按钮 ====== */
+    /* ====== CTA 按钮区 ====== */
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 12px 28px;
+      padding: 11px 26px;
       border-radius: var(--pill);
       font-family: var(--font);
       font-size: 14px;
@@ -241,91 +189,160 @@
       text-decoration: none;
       cursor: pointer;
       border: none;
-      letter-spacing: -0.005em;
       transition: transform 0.15s var(--ease), box-shadow 0.3s ease, background 0.2s ease;
     }
     .btn:active { transform: scale(0.97) translateY(1px); }
     .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 
-    .btn-fill {
+    .btn-primary {
       color: #fff;
       background: var(--brand);
-      box-shadow: 0 2px 20px rgba(232, 54, 93, 0.3);
+      box-shadow: 0 2px 12px rgba(232, 54, 93, 0.25);
     }
-    .btn-fill:hover {
-      box-shadow: 0 4px 28px rgba(232, 54, 93, 0.4);
-      transform: translateY(-1px);
-    }
+    .btn-primary:hover { box-shadow: 0 4px 20px rgba(232, 54, 93, 0.35); transform: translateY(-1px); }
 
-    .btn-ghost {
-      color: var(--fg-2);
+    .btn-outline {
+      color: var(--fg);
       background: var(--surface);
       border: 1px solid var(--rule);
     }
-    .btn-ghost:hover {
-      color: var(--fg);
-      background: var(--surface-2);
-      transform: translateY(-1px);
-    }
+    .btn-outline:hover { background: var(--bg-2); transform: translateY(-1px); }
 
-    /* ====== 内容区 ====== */
-    .content {
-      max-width: 520px;
+    /* ====== Section 通用 ====== */
+    .section {
+      max-width: var(--max-w);
       margin: 0 auto;
-      padding: 0 24px 64px;
-      width: 100%;
+      padding: 0 24px;
+    }
+    .section + .section { border-top: 1px solid var(--rule); }
+    .section-pad { padding-top: 64px; padding-bottom: 64px; }
+
+    .section-title {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      font-size: 15px;
+      color: var(--fg-2);
+      max-width: 500px;
+      margin-bottom: 40px;
+      line-height: 1.65;
     }
 
-    .info-list {
+    /* ====== 特性网格 (不对称 2 列) ====== */
+    .feat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .feat-card {
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      transition: box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
+    }
+    .feat-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .feat-card.wide { grid-column: span 2; }
+
+    .feat-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
       display: flex;
-      flex-direction: column;
-      gap: 0;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      background: var(--brand-soft);
+      color: var(--brand);
     }
-    .info-item {
-      padding: 20px 0;
-      border-bottom: 1px solid var(--rule);
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      transition: padding-left 0.3s var(--ease);
-    }
-    .info-item:last-child { border-bottom: none; }
-    .info-item:hover { padding-left: 4px; }
+    .feat-icon svg { width: 18px; height: 18px; stroke-width: 2; }
 
-    .info-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--brand);
-      margin-top: 7px;
-      flex-shrink: 0;
-      opacity: 0.6;
-    }
-    .info-item:hover .info-dot { opacity: 1; }
-
-    .info-text h3 {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 2px;
+    .feat-card h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
       letter-spacing: -0.01em;
     }
-    .info-text p {
+    .feat-card p {
       font-size: 13px;
-      color: var(--fg-3);
-      line-height: 1.5;
+      color: var(--fg-2);
+      line-height: 1.6;
     }
+
+    /* ====== 技术栈 ====== */
+    .tech-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .tech-table th {
+      text-align: left;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-bottom: 2px solid var(--rule);
+      color: var(--fg-3);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .tech-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--rule);
+      color: var(--fg-2);
+    }
+    .tech-table tr:last-child td { border-bottom: none; }
+    .tech-table td:first-child { color: var(--fg); font-weight: 500; }
+
+    /* ====== 下载区 ====== */
+    .download-section {
+      text-align: center;
+    }
+    .download-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .dl-card {
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      text-decoration: none;
+      color: var(--fg);
+      transition: box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .dl-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .dl-card svg { width: 24px; height: 24px; color: var(--brand); }
+    .dl-card .dl-label { font-size: 15px; font-weight: 600; }
+    .dl-card .dl-info { font-size: 12px; color: var(--fg-3); }
 
     /* ====== Footer ====== */
     footer {
-      padding: 20px 32px;
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-top: 1px solid var(--rule);
     }
-    .foot-copy { font-size: 11px; color: var(--fg-3); }
-    .foot-links { display: flex; gap: 16px; }
+    .foot-copy { font-size: 12px; color: var(--fg-3); }
+    .foot-links { display: flex; gap: 20px; }
     .foot-links a {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--fg-3);
       text-decoration: none;
       transition: color 0.2s var(--ease);
@@ -334,25 +351,24 @@
 
     /* ====== 入场 ====== */
     @keyframes fade-up {
-      from { opacity: 0; transform: translateY(18px); }
+      from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .hero-icon  { animation: fade-up 0.7s var(--ease) 0.05s both; }
-    .hero h1    { animation: fade-up 0.7s var(--ease) 0.15s both; }
-    .hero p     { animation: fade-up 0.7s var(--ease) 0.25s both; }
-    .ctas       { animation: fade-up 0.7s var(--ease) 0.35s both; }
-    .content    { animation: fade-up 0.7s var(--ease) 0.45s both; }
-    footer      { animation: fade-up 0.7s var(--ease) 0.52s both; }
+    .hero-badge   { animation: fade-up 0.6s var(--ease) 0.05s both; }
+    .hero h1      { animation: fade-up 0.6s var(--ease) 0.12s both; }
+    .hero-desc    { animation: fade-up 0.6s var(--ease) 0.2s both; }
+    .cta-row      { animation: fade-up 0.6s var(--ease) 0.28s both; }
+    .hero-img-wrap{ animation: fade-up 0.6s var(--ease) 0.36s both; }
 
     /* ====== Responsive ====== */
     @media (max-width: 640px) {
-      nav { padding: 14px 20px; }
-      .hero { padding: 56px 20px 36px; min-height: 60dvh; }
-      .hero-icon { width: 56px; height: 56px; border-radius: 14px; margin-bottom: 24px; }
-      .ctas { flex-direction: column; width: 100%; max-width: 280px; }
-      .btn { justify-content: center; width: 100%; }
-      .content { padding: 0 20px 48px; }
-      footer { padding: 16px 20px; flex-direction: column; gap: 10px; text-align: center; }
+      nav { padding: 0 16px; height: 50px; }
+      .hero { padding: 56px 16px 40px; }
+      .section-pad { padding-top: 40px; padding-bottom: 40px; }
+      .feat-grid { grid-template-columns: 1fr; }
+      .feat-card.wide { grid-column: span 1; }
+      .download-cards { grid-template-columns: 1fr; max-width: 280px; }
+      footer { padding: 20px 16px; flex-direction: column; gap: 8px; text-align: center; }
     }
 
     /* ====== A11y ====== */
@@ -362,114 +378,175 @@
         transition-duration: 0.01ms !important;
       }
     }
-    @media (prefers-reduced-transparency: reduce) {
-      .atm-blob { display: none; }
-      nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg); }
-    }
   </style>
 </head>
 <body>
-  <div class="atmosphere" aria-hidden="true">
-    <div class="atm-blob"></div>
-    <div class="atm-blob"></div>
-    <div class="atm-blob"></div>
+  <nav>
+    <div class="nav-left">
+      <a href="/" class="logo">
+        <img src="favicon.png" alt="" width="26" height="26" />
+        <div class="logo-text">Silly<span>Client</span></div>
+      </a>
+    </div>
+    <div class="nav-right">
+      <button class="lang-btn" id="langBtn" onclick="toggleLang()">EN</button>
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" class="nav-link" data-i18n="nav_src">源码</a>
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="nav-link">Releases</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+      <span data-i18n="badge">SillyTavern Launcher</span>
+    </div>
+    <h1>
+      <span data-i18n="t1">SillyTavern</span>, <span class="muted" data-i18n="t2">装进口袋</span>
+    </h1>
+    <p class="hero-desc" data-i18n="sub">内置 Node.js 运行时，安装即用。支持 Android 和 Windows，无需 Termux，无需命令行。</p>
+    <div class="cta-row">
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span data-i18n="dl_android">下载 Android</span>
+      </a>
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-outline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span data-i18n="dl_win">下载 Windows</span>
+      </a>
+    </div>
+    <div class="hero-img-wrap">
+      <img src="screenshot.png" alt="SillyClient 启动器界面" loading="lazy" />
+    </div>
+  </section>
+
+  <div class="section section-pad">
+    <h2 class="section-title" data-i18n="feat_title">功能特性</h2>
+    <p class="section-sub" data-i18n="feat_sub">为 SillyTavern 打造的原生级跨平台启动体验。</p>
+    <div class="feat-grid">
+      <div class="feat-card wide">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <h3 data-i18n="n1">内置运行时</h3>
+        <p data-i18n="d1">Node.js 随应用打包，开箱即用。不需要 Termux，不需要自行安装任何依赖，下载安装后直接启动。</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <h3 data-i18n="n2">多实例管理</h3>
+        <p data-i18n="d2">独立端口与配置，卡片式切换。</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <h3 data-i18n="n3">跨平台</h3>
+        <p data-i18n="d3">Android + Windows，同一 React 前端。</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </div>
+        <h3 data-i18n="n5">实时终端</h3>
+        <p data-i18n="d5">内嵌终端面板，支持命令输入。</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.912 5.813a2 2 0 0 1-1.275 1.275L7 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        </div>
+        <h3 data-i18n="n4">原生体验</h3>
+        <p data-i18n="d4">液态玻璃界面，状态栏适配，手势。</p>
+      </div>
+    </div>
   </div>
 
-  <div class="page">
-    <nav>
-      <div class="nav-left">
-        <a href="/" class="logo">
-          <img src="favicon.png" alt="" width="28" height="28" />
-          <div class="logo-text">Silly<span>Client</span></div>
-        </a>
-      </div>
-      <div class="nav-right">
-        <button class="lang-btn" id="langBtn" onclick="toggleLang()">EN</button>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" class="nav-link" data-i18n="nav_src">源码</a>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="nav-link">Releases</a>
-      </div>
-    </nav>
-
-    <section class="hero">
-      <img class="hero-icon" src="favicon.png" alt="SillyClient" width="72" height="72" />
-      <h1>
-        <span data-i18n="t1">SillyTavern</span>,
-        <span class="light" data-i18n="t2">装进口袋</span>
-      </h1>
-      <p data-i18n="sub">内置 Node.js 运行时，安装即用。无需 Termux，无需命令行。</p>
-      <div class="ctas">
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="btn btn-fill">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-          Android
-        </a>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-ghost">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          Windows
-        </a>
-      </div>
-    </section>
-
-    <section class="content">
-      <div class="info-list">
-        <div class="info-item">
-          <div class="info-dot"></div>
-          <div class="info-text">
-            <h3 data-i18n="n1">内置运行时</h3>
-            <p data-i18n="d1">Node.js 随应用打包，零外部依赖。</p>
-          </div>
-        </div>
-        <div class="info-item">
-          <div class="info-dot"></div>
-          <div class="info-text">
-            <h3 data-i18n="n2">多实例管理</h3>
-            <p data-i18n="d2">独立端口与配置，卡片切换。</p>
-          </div>
-        </div>
-        <div class="info-item">
-          <div class="info-dot"></div>
-          <div class="info-text">
-            <h3 data-i18n="n3">跨平台</h3>
-            <p data-i18n="d3">Android + Windows，同一套 React 前端。</p>
-          </div>
-        </div>
-        <div class="info-item">
-          <div class="info-dot"></div>
-          <div class="info-text">
-            <h3 data-i18n="n4">原生体验</h3>
-            <p data-i18n="d4">液态玻璃界面，状态栏适配，手势导航。</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <footer>
-      <span class="foot-copy">MIT License</span>
-      <div class="foot-links">
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
-      </div>
-    </footer>
+  <div class="section section-pad">
+    <h2 class="section-title" data-i18n="tech_title">技术架构</h2>
+    <p class="section-sub" data-i18n="tech_sub">双平台共享同一套 React 前端。</p>
+    <table class="tech-table">
+      <thead>
+        <tr>
+          <th data-i18n="th_layer">层级</th>
+          <th>Android</th>
+          <th>Windows</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-i18n="l_native">原生层</td>
+          <td>Kotlin, Capacitor 7</td>
+          <td>Electron 33, TypeScript</td>
+        </tr>
+        <tr>
+          <td data-i18n="l_ui">UI 层</td>
+          <td colspan="2">React 19, Vite 7, Tailwind CSS v4</td>
+        </tr>
+        <tr>
+          <td data-i18n="l_runtime">运行时</td>
+          <td>Embedded Node.js</td>
+          <td>Bundled node.exe v22</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
+
+  <div class="section section-pad download-section">
+    <h2 class="section-title" data-i18n="dl_title">下载</h2>
+    <p class="section-sub" style="text-align:center;margin-left:auto;margin-right:auto;" data-i18n="dl_sub">在 GitHub Releases 页面获取最新版本。</p>
+    <div class="download-cards">
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="dl-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span class="dl-label">Android</span>
+        <span class="dl-info">v1.4.1 / arm64</span>
+      </a>
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="dl-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span class="dl-label">Windows</span>
+        <span class="dl-info">v1.4.1 / x64</span>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <span class="foot-copy">MIT License</span>
+    <div class="foot-links">
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
+    </div>
+  </footer>
 
   <script>
     const i18n = {
       zh: {
-        nav_src: '源码',
+        nav_src: '源码', badge: 'SillyTavern Launcher',
         t1: 'SillyTavern', t2: '装进口袋',
-        sub: '内置 Node.js 运行时，安装即用。无需 Termux，无需命令行。',
-        n1: '内置运行时', d1: 'Node.js 随应用打包，零外部依赖。',
-        n2: '多实例管理', d2: '独立端口与配置，卡片切换。',
-        n3: '跨平台', d3: 'Android + Windows，同一套 React 前端。',
-        n4: '原生体验', d4: '液态玻璃界面，状态栏适配，手势导航。',
+        sub: '内置 Node.js 运行时，安装即用。支持 Android 和 Windows，无需 Termux，无需命令行。',
+        dl_android: '下载 Android', dl_win: '下载 Windows',
+        feat_title: '功能特性', feat_sub: '为 SillyTavern 打造的原生级跨平台启动体验。',
+        n1: '内置运行时', d1: 'Node.js 随应用打包，开箱即用。不需要 Termux，不需要自行安装任何依赖，下载安装后直接启动。',
+        n2: '多实例管理', d2: '独立端口与配置，卡片式切换。',
+        n3: '跨平台', d3: 'Android + Windows，同一 React 前端。',
+        n4: '原生体验', d4: '液态玻璃界面，状态栏适配，手势。',
+        n5: '实时终端', d5: '内嵌终端面板，支持命令输入。',
+        tech_title: '技术架构', tech_sub: '双平台共享同一套 React 前端。',
+        th_layer: '层级', l_native: '原生层', l_ui: 'UI 层', l_runtime: '运行时',
+        dl_title: '下载', dl_sub: '在 GitHub Releases 页面获取最新版本。',
       },
       en: {
-        nav_src: 'Source',
+        nav_src: 'Source', badge: 'SillyTavern Launcher',
         t1: 'SillyTavern', t2: 'in your pocket.',
-        sub: 'Embedded Node.js runtime. Install, launch, done.',
-        n1: 'Embedded Runtime', d1: 'Node.js bundled. Zero external dependencies.',
-        n2: 'Multi-Instance', d2: 'Isolated ports and configs per instance.',
-        n3: 'Cross-Platform', d3: 'Android + Windows. Shared React frontend.',
-        n4: 'Native Feel', d4: 'Liquid glass UI, status bar, gesture nav.',
+        sub: 'Embedded Node.js runtime. Works on Android and Windows. No Termux, no CLI needed.',
+        dl_android: 'Android', dl_win: 'Windows',
+        feat_title: 'Features', feat_sub: 'A native cross-platform launcher built for SillyTavern.',
+        n1: 'Embedded Runtime', d1: 'Node.js bundled with the app. No Termux, no manual dependency install. Download, install, launch.',
+        n2: 'Multi-Instance', d2: 'Isolated ports and configs. Card-based switching.',
+        n3: 'Cross-Platform', d3: 'Android + Windows. One shared React frontend.',
+        n4: 'Native Feel', d4: 'Liquid glass UI, status bar integration, gestures.',
+        n5: 'Live Terminal', d5: 'Built-in terminal panel with command input.',
+        tech_title: 'Tech Stack', tech_sub: 'Both platforms share a single React frontend.',
+        th_layer: 'Layer', l_native: 'Native', l_ui: 'UI', l_runtime: 'Runtime',
+        dl_title: 'Download', dl_sub: 'Get the latest version from GitHub Releases.',
       }
     };
     let lang = localStorage.getItem('lang') || 'zh';
@@ -480,7 +557,7 @@
         const k = el.getAttribute('data-i18n');
         if (i18n[l][k]) el.textContent = i18n[l][k];
       });
-      document.getElementById('langBtn').textContent = l === 'zh' ? 'EN' : '\u4e2d\u6587';
+      document.getElementById('langBtn').textContent = l === 'zh' ? 'EN' : '中文';
       document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en';
     }
     function toggleLang() { setLang(lang === 'zh' ? 'en' : 'zh'); }
