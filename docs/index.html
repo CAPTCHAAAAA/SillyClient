@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SillyClient - SillyTavern 跨平台启动器</title>
-  <meta name="description" content="SillyTavern 跨平台启动器，内置完整 Node.js 运行时，安装即用，无需 Termux，无需命令行。" />
+  <title>SillyClient</title>
+  <meta name="description" content="SillyTavern 跨平台启动器。内置 Node.js，安装即用。" />
+  <link rel="icon" type="image/png" href="favicon.png" />
   <style>
     /*
      * SillyClient Landing
-     * 液态玻璃: taste-skill Appendix C 近似
-     * 丝绸流光: CSS morphing + blur
-     * 品牌: #e8365d #1a1625 #f0ece8
-     * 字体: PingFang SC 系统栈
+     * 色彩策略: Drenched (品牌色承载主表面)
+     * 场景句: 开发者在暗光下打开一个工具类 app 的官网
+     * 设计锚点: Apple HIG + Vercel
      * AI Tell: 全部规避
      */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,24 +19,19 @@
     :root {
       --bg: #1a1625;
       --fg: #f0ece8;
-      --fg-muted: rgba(240, 236, 232, 0.48);
-      --fg-dim: rgba(240, 236, 232, 0.24);
+      --fg-2: rgba(240, 236, 232, 0.58);
+      --fg-3: rgba(240, 236, 232, 0.32);
       --brand: #e8365d;
-      --brand-soft: rgba(232, 54, 93, 0.12);
-      --brand-glow: rgba(232, 54, 93, 0.28);
+      --brand-dim: rgba(232, 54, 93, 0.08);
       --wine: #6a112e;
-      --wine-mid: #8b1a3a;
-      --glass-border: rgba(255, 255, 255, 0.18);
-      --glass-border-inner: rgba(255, 255, 255, 0.10);
-      --glass-highlight: rgba(255, 255, 255, 0.22);
-      --glass-shadow-lo: rgba(255, 255, 255, 0.06);
-      --glass-shadow-out: rgba(0, 0, 0, 0.42);
-      --border: rgba(240, 236, 232, 0.06);
-      --radius: 20px;
-      --radius-pill: 999px;
-      --font: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      --wine-2: #3d0a1a;
+      --surface: rgba(240, 236, 232, 0.04);
+      --surface-2: rgba(240, 236, 232, 0.07);
+      --rule: rgba(240, 236, 232, 0.08);
+      --pill: 999px;
+      --r: 14px;
+      --font: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
-      --ease-fast: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     html { scroll-behavior: smooth; }
@@ -47,108 +42,68 @@
       color: var(--fg);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.5;
+      line-height: 1.55;
       letter-spacing: -0.01em;
     }
 
-    /* ====================== */
-    /* 丝绸流光 (Silk Canvas) */
-    /* ====================== */
-    .silk {
+    /* ====== 氛围层 ====== */
+    .atmosphere {
       position: fixed;
       inset: 0;
       z-index: 0;
-      overflow: hidden;
       pointer-events: none;
+      overflow: hidden;
     }
-
-    .silk-blob {
+    .atm-blob {
       position: absolute;
+      filter: blur(100px);
       will-change: transform;
-      filter: blur(90px);
     }
-
-    .silk-blob:nth-child(1) {
-      width: 50vmax; height: 50vmax;
-      top: -18%; left: -12%;
+    .atm-blob:nth-child(1) {
+      width: 55vmax; height: 55vmax;
+      top: -25%; left: -18%;
       background: var(--wine);
-      opacity: 0.38;
-      border-radius: 42% 58% 53% 47% / 56% 42% 58% 44%;
-      animation: silk-1 22s ease-in-out infinite;
+      opacity: 0.45;
+      border-radius: 40% 60% 55% 45% / 55% 40% 60% 45%;
+      animation: drift-a 24s ease-in-out infinite;
     }
-    .silk-blob:nth-child(2) {
-      width: 38vmax; height: 38vmax;
-      top: 15%; right: -10%;
+    .atm-blob:nth-child(2) {
+      width: 40vmax; height: 40vmax;
+      top: 10%; right: -14%;
       background: var(--brand);
-      opacity: 0.16;
-      border-radius: 56% 44% 62% 38% / 48% 56% 44% 52%;
-      animation: silk-2 28s ease-in-out infinite;
+      opacity: 0.12;
+      border-radius: 55% 45% 60% 40% / 45% 55% 50% 50%;
+      animation: drift-b 30s ease-in-out infinite;
     }
-    .silk-blob:nth-child(3) {
-      width: 32vmax; height: 32vmax;
-      bottom: -12%; left: 35%;
-      background: var(--wine-mid);
-      opacity: 0.24;
+    .atm-blob:nth-child(3) {
+      width: 35vmax; height: 35vmax;
+      bottom: -18%; left: 30%;
+      background: var(--wine-2);
+      opacity: 0.5;
       border-radius: 48% 52% 46% 54% / 52% 48% 56% 44%;
-      animation: silk-3 25s ease-in-out infinite;
-    }
-    .silk-blob:nth-child(4) {
-      width: 20vmax; height: 20vmax;
-      top: 50%; left: 55%;
-      background: var(--brand);
-      opacity: 0.08;
-      border-radius: 55% 45% 60% 40% / 45% 55% 45% 55%;
-      animation: silk-4 18s ease-in-out infinite;
+      animation: drift-c 26s ease-in-out infinite;
     }
 
-    /* 有机 border-radius 变形 + 位移 */
-    @keyframes silk-1 {
-      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); border-radius: 42% 58% 53% 47% / 56% 42% 58% 44%; }
-      33% { transform: translate(7vw, 4vh) rotate(20deg) scale(1.06); border-radius: 55% 45% 60% 40% / 45% 55% 50% 50%; }
-      66% { transform: translate(-4vw, -6vh) rotate(-12deg) scale(0.96); border-radius: 48% 52% 42% 58% / 60% 40% 56% 44%; }
+    @keyframes drift-a {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); border-radius: 40% 60% 55% 45% / 55% 40% 60% 45%; }
+      33% { transform: translate(6vw, 3vh) rotate(15deg); border-radius: 52% 48% 42% 58% / 48% 52% 55% 45%; }
+      66% { transform: translate(-3vw, -5vh) rotate(-10deg); border-radius: 45% 55% 58% 42% / 55% 45% 42% 58%; }
     }
-    @keyframes silk-2 {
-      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); border-radius: 56% 44% 62% 38% / 48% 56% 44% 52%; }
-      40% { transform: translate(-5vw, 6vh) rotate(-18deg) scale(1.04); border-radius: 44% 56% 38% 62% / 52% 48% 58% 42%; }
-      70% { transform: translate(3vw, -3vh) rotate(10deg) scale(0.97); border-radius: 60% 40% 55% 45% / 42% 58% 46% 54%; }
+    @keyframes drift-b {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-4vw, 5vh) rotate(-12deg); }
     }
-    @keyframes silk-3 {
-      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); border-radius: 48% 52% 46% 54% / 52% 48% 56% 44%; }
-      35% { transform: translate(6vw, -5vh) rotate(16deg) scale(1.08); border-radius: 54% 46% 58% 42% / 44% 56% 50% 50%; }
-      65% { transform: translate(-3vw, 4vh) rotate(-8deg) scale(0.94); border-radius: 46% 54% 40% 60% / 56% 44% 52% 48%; }
-    }
-    @keyframes silk-4 {
+    @keyframes drift-c {
       0%, 100% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-4vw, -6vh) scale(1.12); }
-    }
-
-    /* 光泽条纹 (silk 丝线) */
-    .silk-thread {
-      position: absolute;
-      width: 1px;
-      height: 120%;
-      top: -10%;
-      background: linear-gradient(180deg, transparent 0%, rgba(232, 54, 93, 0.04) 30%, rgba(240, 236, 232, 0.03) 50%, rgba(232, 54, 93, 0.04) 70%, transparent 100%);
-      opacity: 0;
-      animation: thread-shimmer 12s ease-in-out infinite;
-    }
-    .silk-thread:nth-child(5) { left: 20%; animation-delay: 0s; }
-    .silk-thread:nth-child(6) { left: 45%; animation-delay: 4s; }
-    .silk-thread:nth-child(7) { left: 72%; animation-delay: 8s; }
-
-    @keyframes thread-shimmer {
-      0%, 100% { opacity: 0; transform: translateY(-10%) scaleY(0.8); }
-      50% { opacity: 1; transform: translateY(5%) scaleY(1); }
+      40% { transform: translate(4vw, -4vh) scale(1.04); }
+      70% { transform: translate(-2vw, 2vh) scale(0.97); }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .silk-blob, .silk-thread { animation: none !important; }
+      .atm-blob { animation: none !important; }
     }
 
-    /* ===== */
-    /* Page */
-    /* ===== */
+    /* ====== 页面结构 ====== */
     .page {
       position: relative;
       z-index: 1;
@@ -157,111 +112,75 @@
       flex-direction: column;
     }
 
-    /* ======================== */
-    /* 液态玻璃导航栏 (Liquid Glass Nav) */
-    /* ======================== */
-    nav.liquid-glass {
+    /* ====== 导航 ====== */
+    nav {
       position: sticky;
       top: 0;
       z-index: 10;
+      padding: 16px 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 32px;
-      isolation: isolate;
-      border-radius: 0;
-      border: 1px solid var(--glass-border);
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
-        rgba(255,255,255,0.04);
-      backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      box-shadow:
-        inset 0 1px 0 var(--glass-highlight),
-        inset 0 -1px 0 var(--glass-shadow-lo),
-        0 18px 60px -16px var(--glass-shadow-out);
-    }
-    nav.liquid-glass::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      border-radius: inherit;
-      background:
-        radial-gradient(circle at 20% 0%, rgba(255,255,255,0.12), transparent 40%),
-        linear-gradient(90deg, rgba(255,255,255,0.06), transparent 50%);
-      pointer-events: none;
-    }
-    nav.liquid-glass::after {
-      content: "";
-      position: absolute;
-      inset: 1px;
-      border-radius: inherit;
-      border: 1px solid var(--glass-border-inner);
-      pointer-events: none;
+      background: rgba(26, 22, 37, 0.72);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border-bottom: 1px solid var(--rule);
     }
 
-    .nav-left, .nav-right {
+    .nav-left {
       display: flex;
       align-items: center;
-      gap: 8px;
-      position: relative;
-      z-index: 1;
+      gap: 12px;
     }
-    .nav-right { gap: 4px; }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
     .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--fg);
+    }
+    .logo img {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+    }
+    .logo-text {
       font-weight: 600;
       font-size: 15px;
       letter-spacing: -0.01em;
-      color: var(--fg);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 9px;
     }
-    .logo-brand { color: var(--brand); }
-
-    .logo-mark {
-      width: 8px; height: 8px;
-      border-radius: 2px;
-      background: var(--brand);
-      transform: rotate(45deg);
-      box-shadow: 0 0 10px var(--brand-glow);
-      transition: box-shadow 0.3s var(--ease);
-    }
-    .logo:hover .logo-mark {
-      box-shadow: 0 0 18px var(--brand-glow);
-    }
-
-    .lang-toggle {
-      font-family: var(--font);
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--fg-dim);
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius-pill);
-      padding: 4px 12px;
-      cursor: pointer;
-      transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
-      letter-spacing: 0.02em;
-    }
-    .lang-toggle:hover { color: var(--fg); border-color: var(--brand-soft); }
+    .logo-text span { color: var(--brand); }
 
     .nav-link {
       font-size: 13px;
-      color: var(--fg-dim);
+      color: var(--fg-3);
       text-decoration: none;
       padding: 6px 14px;
-      border-radius: var(--radius-pill);
+      border-radius: var(--pill);
       transition: color 0.2s var(--ease), background 0.2s var(--ease);
     }
-    .nav-link:hover { color: var(--fg); background: var(--brand-soft); }
+    .nav-link:hover { color: var(--fg-2); background: var(--surface); }
 
-    /* ===== */
-    /* Hero */
-    /* ===== */
+    .lang-btn {
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--fg-3);
+      background: transparent;
+      border: 1px solid var(--rule);
+      border-radius: var(--pill);
+      padding: 4px 11px;
+      cursor: pointer;
+      transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+    }
+    .lang-btn:hover { color: var(--fg-2); border-color: rgba(240, 236, 232, 0.15); }
+
+    /* ====== Hero ====== */
     .hero {
       flex: 1;
       display: flex;
@@ -269,276 +188,174 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 72px 24px 40px;
-      min-height: 62dvh;
+      padding: 80px 24px 48px;
+      min-height: 68dvh;
     }
 
-    .hero-eyebrow {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--brand);
-      padding: 5px 14px;
-      border: 1px solid rgba(232, 54, 93, 0.16);
-      border-radius: var(--radius-pill);
-      background: var(--brand-soft);
-      margin-bottom: 22px;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+    .hero-icon {
+      width: 72px; height: 72px;
+      border-radius: 18px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 32px rgba(232, 54, 93, 0.25);
     }
 
-    .hero-title {
-      font-size: clamp(36px, 7vw, 64px);
+    .hero h1 {
+      font-size: clamp(38px, 7vw, 62px);
       font-weight: 600;
-      letter-spacing: -0.035em;
+      letter-spacing: -0.04em;
       line-height: 1.08;
-      color: var(--fg);
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       text-wrap: balance;
     }
-    .hero-title .thin {
+    .hero h1 .light {
       font-weight: 300;
-      color: var(--fg-muted);
+      color: var(--fg-2);
     }
 
-    .hero-sub {
-      font-size: clamp(14px, 2vw, 16px);
-      font-weight: 400;
-      color: var(--fg-muted);
-      max-width: 380px;
-      margin-bottom: 36px;
-      line-height: 1.65;
+    .hero p {
+      font-size: clamp(14px, 1.8vw, 16px);
+      color: var(--fg-3);
+      max-width: 360px;
+      margin-bottom: 40px;
+      line-height: 1.7;
       text-wrap: pretty;
     }
 
-    .hero-actions {
+    .ctas {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
       justify-content: center;
     }
 
-    /* ======================== */
-    /* 液态玻璃按钮 (Liquid Glass Buttons) */
-    /* ======================== */
+    /* ====== 按钮 ====== */
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       padding: 12px 28px;
-      border-radius: var(--radius-pill);
+      border-radius: var(--pill);
       font-family: var(--font);
       font-size: 14px;
       font-weight: 500;
       text-decoration: none;
-      transition: transform 0.15s var(--ease), box-shadow 0.3s ease;
       cursor: pointer;
       border: none;
       letter-spacing: -0.005em;
-      position: relative;
-      isolation: isolate;
-      overflow: hidden;
+      transition: transform 0.15s var(--ease), box-shadow 0.3s ease, background 0.2s ease;
     }
     .btn:active { transform: scale(0.97) translateY(1px); }
     .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 
-    .btn-primary {
+    .btn-fill {
       color: #fff;
-      border: 1px solid rgba(255,255,255,0.22);
-      background: linear-gradient(135deg, var(--brand), var(--wine-mid));
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      box-shadow:
-        0 4px 24px var(--brand-glow),
-        inset 0 1px 0 rgba(255,255,255,0.22),
-        inset 0 -1px 0 rgba(0,0,0,0.12);
+      background: var(--brand);
+      box-shadow: 0 2px 20px rgba(232, 54, 93, 0.3);
     }
-    .btn-primary::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      border: 1px solid rgba(255,255,255,0.10);
-      pointer-events: none;
-    }
-    .btn-primary:hover {
-      box-shadow: 0 6px 32px var(--brand-glow), inset 0 1px 0 rgba(255,255,255,0.28);
+    .btn-fill:hover {
+      box-shadow: 0 4px 28px rgba(232, 54, 93, 0.4);
       transform: translateY(-1px);
     }
 
-    .btn-glass {
+    .btn-ghost {
+      color: var(--fg-2);
+      background: var(--surface);
+      border: 1px solid var(--rule);
+    }
+    .btn-ghost:hover {
       color: var(--fg);
-      border: 1px solid var(--glass-border);
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03)),
-        rgba(255,255,255,0.06);
-      backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      box-shadow:
-        inset 0 1px 0 var(--glass-highlight),
-        inset 0 -1px 0 var(--glass-shadow-lo),
-        0 8px 32px -8px var(--glass-shadow-out);
-    }
-    .btn-glass::after {
-      content: "";
-      position: absolute;
-      inset: 1px;
-      border-radius: inherit;
-      border: 1px solid var(--glass-border-inner);
-      pointer-events: none;
-    }
-    .btn-glass:hover {
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05)),
-        rgba(232, 54, 93, 0.08);
+      background: var(--surface-2);
       transform: translateY(-1px);
     }
 
-    /* ============================= */
-    /* 液态玻璃面板 (Liquid Glass Panel) */
-    /* ============================= */
-    .features {
-      max-width: 580px;
+    /* ====== 内容区 ====== */
+    .content {
+      max-width: 520px;
       margin: 0 auto;
-      padding: 0 20px 52px;
+      padding: 0 24px 64px;
       width: 100%;
     }
 
-    .glass-panel {
-      position: relative;
-      isolation: isolate;
-      overflow: hidden;
-      border-radius: var(--radius);
-      border: 1px solid var(--glass-border);
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
-        rgba(255,255,255,0.04);
-      backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(1.05);
-      box-shadow:
-        0 20px 60px -12px var(--glass-shadow-out),
-        inset 0 1px 0 var(--glass-highlight),
-        inset 0 -1px 0 var(--glass-shadow-lo);
-    }
-    /* 高光叠层 */
-    .glass-panel::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      border-radius: inherit;
-      background:
-        radial-gradient(ellipse 60% 50% at 25% 0%, rgba(232, 54, 93, 0.07), transparent 55%),
-        radial-gradient(circle at 75% 100%, rgba(240, 236, 232, 0.04), transparent 40%),
-        linear-gradient(100deg, rgba(255,255,255,0.06), transparent 45%);
-      pointer-events: none;
-    }
-    /* 内边框 */
-    .glass-panel::after {
-      content: "";
-      position: absolute;
-      inset: 1px;
-      border-radius: inherit;
-      border: 1px solid var(--glass-border-inner);
-      pointer-events: none;
-    }
-
-    .feat-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      position: relative;
-      z-index: 1;
-    }
-
-    .feat {
-      padding: 22px 20px;
-      transition: background 0.3s var(--ease);
-    }
-    .feat:not(:last-child) { border-bottom: 0.5px solid var(--border); }
-    .feat:nth-child(odd):not(:last-child) { border-right: 0.5px solid var(--border); }
-    .feat:hover { background: var(--brand-soft); }
-
-    .feat-icon {
-      width: 28px; height: 28px;
-      border-radius: 8px;
+    .info-list {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-      background: var(--brand-soft);
-      color: var(--brand);
-      transition: background 0.3s var(--ease);
+      flex-direction: column;
+      gap: 0;
     }
-    .feat:hover .feat-icon { background: rgba(232, 54, 93, 0.18); }
-    .feat-icon svg { width: 14px; height: 14px; stroke-width: 2; }
+    .info-item {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      transition: padding-left 0.3s var(--ease);
+    }
+    .info-item:last-child { border-bottom: none; }
+    .info-item:hover { padding-left: 4px; }
 
-    .feat-name {
-      font-size: 13.5px;
+    .info-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--brand);
+      margin-top: 7px;
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+    .info-item:hover .info-dot { opacity: 1; }
+
+    .info-text h3 {
+      font-size: 14px;
       font-weight: 500;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
       letter-spacing: -0.01em;
-      color: var(--fg);
+    }
+    .info-text p {
+      font-size: 13px;
+      color: var(--fg-3);
+      line-height: 1.5;
     }
 
-    .feat-desc {
-      font-size: 12px;
-      color: var(--fg-dim);
-      line-height: 1.55;
-    }
-
-    /* ====== */
-    /* Footer */
-    /* ====== */
+    /* ====== Footer ====== */
     footer {
-      padding: 18px 32px;
-      border-top: 0.5px solid var(--border);
+      padding: 20px 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: relative;
-      z-index: 1;
+      border-top: 1px solid var(--rule);
     }
-    .foot-text { font-size: 11px; color: var(--fg-dim); }
+    .foot-copy { font-size: 11px; color: var(--fg-3); }
     .foot-links { display: flex; gap: 16px; }
     .foot-links a {
       font-size: 11px;
-      color: var(--fg-dim);
+      color: var(--fg-3);
       text-decoration: none;
       transition: color 0.2s var(--ease);
     }
-    .foot-links a:hover { color: var(--fg-muted); }
+    .foot-links a:hover { color: var(--fg-2); }
 
-    /* ====== */
-    /* 入场  */
-    /* ====== */
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+    /* ====== 入场 ====== */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .hero-eyebrow  { animation: rise 0.65s var(--ease) 0.1s both; }
-    .hero-title    { animation: rise 0.65s var(--ease) 0.2s both; }
-    .hero-sub      { animation: rise 0.65s var(--ease) 0.3s both; }
-    .hero-actions  { animation: rise 0.65s var(--ease) 0.4s both; }
-    .features      { animation: rise 0.65s var(--ease) 0.5s both; }
-    footer         { animation: rise 0.65s var(--ease) 0.58s both; }
+    .hero-icon  { animation: fade-up 0.7s var(--ease) 0.05s both; }
+    .hero h1    { animation: fade-up 0.7s var(--ease) 0.15s both; }
+    .hero p     { animation: fade-up 0.7s var(--ease) 0.25s both; }
+    .ctas       { animation: fade-up 0.7s var(--ease) 0.35s both; }
+    .content    { animation: fade-up 0.7s var(--ease) 0.45s both; }
+    footer      { animation: fade-up 0.7s var(--ease) 0.52s both; }
 
-    /* ======== */
-    /* Responsive */
-    /* ======== */
+    /* ====== Responsive ====== */
     @media (max-width: 640px) {
-      nav.liquid-glass { padding: 12px 18px; }
-      .hero { padding: 48px 18px 32px; min-height: 55dvh; }
-      .hero-actions { flex-direction: column; width: 100%; max-width: 280px; }
+      nav { padding: 14px 20px; }
+      .hero { padding: 56px 20px 36px; min-height: 60dvh; }
+      .hero-icon { width: 56px; height: 56px; border-radius: 14px; margin-bottom: 24px; }
+      .ctas { flex-direction: column; width: 100%; max-width: 280px; }
       .btn { justify-content: center; width: 100%; }
-      .feat-grid { grid-template-columns: 1fr; }
-      .feat:nth-child(odd):not(:last-child) { border-right: none; }
-      footer { padding: 14px 18px; flex-direction: column; gap: 8px; text-align: center; }
+      .content { padding: 0 20px 48px; }
+      footer { padding: 16px 20px; flex-direction: column; gap: 10px; text-align: center; }
     }
 
-    /* ======== */
-    /* A11y     */
-    /* ======== */
+    /* ====== A11y ====== */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -546,103 +363,87 @@
       }
     }
     @media (prefers-reduced-transparency: reduce) {
-      .silk-blob { display: none; }
-      .glass-panel, nav.liquid-glass, .btn-glass, .btn-primary {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-      }
-      nav.liquid-glass {
-        background: rgba(26, 22, 37, 0.95);
-      }
-      .glass-panel {
-        background: rgba(26, 22, 37, 0.92);
-      }
+      .atm-blob { display: none; }
+      nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg); }
     }
   </style>
 </head>
 <body>
-  <!-- 丝绸流光背景 -->
-  <div class="silk" aria-hidden="true">
-    <div class="silk-blob"></div>
-    <div class="silk-blob"></div>
-    <div class="silk-blob"></div>
-    <div class="silk-blob"></div>
-    <div class="silk-thread"></div>
-    <div class="silk-thread"></div>
-    <div class="silk-thread"></div>
+  <div class="atmosphere" aria-hidden="true">
+    <div class="atm-blob"></div>
+    <div class="atm-blob"></div>
+    <div class="atm-blob"></div>
   </div>
 
   <div class="page">
-    <nav class="liquid-glass">
+    <nav>
       <div class="nav-left">
         <a href="/" class="logo">
-          <span class="logo-mark"></span>
-          <span>Silly</span><span class="logo-brand">Client</span>
+          <img src="favicon.png" alt="" width="28" height="28" />
+          <div class="logo-text">Silly<span>Client</span></div>
         </a>
-        <button class="lang-toggle" id="langBtn" onclick="toggleLang()">EN</button>
       </div>
       <div class="nav-right">
+        <button class="lang-btn" id="langBtn" onclick="toggleLang()">EN</button>
         <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" class="nav-link" data-i18n="nav_src">源码</a>
         <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="nav-link">Releases</a>
       </div>
     </nav>
 
     <section class="hero">
-      <span class="hero-eyebrow">SillyTavern Launcher</span>
-      <h1 class="hero-title">
+      <img class="hero-icon" src="favicon.png" alt="SillyClient" width="72" height="72" />
+      <h1>
         <span data-i18n="t1">SillyTavern</span>,
-        <span class="thin" data-i18n="t1d">装进口袋</span>
+        <span class="light" data-i18n="t2">装进口袋</span>
       </h1>
-      <p class="hero-sub" data-i18n="sub">内置 Node.js 运行时，安装即用。无需 Termux，无需命令行。</p>
-      <div class="hero-actions">
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">
+      <p data-i18n="sub">内置 Node.js 运行时，安装即用。无需 Termux，无需命令行。</p>
+      <div class="ctas">
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/latest" target="_blank" rel="noopener" class="btn btn-fill">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
           Android
         </a>
-        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-glass">
+        <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="btn btn-ghost">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           Windows
         </a>
       </div>
     </section>
 
-    <section class="features">
-      <div class="glass-panel">
-        <div class="feat-grid">
-          <div class="feat">
-            <div class="feat-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            </div>
-            <div class="feat-name" data-i18n="n1">内置运行时</div>
-            <div class="feat-desc" data-i18n="d1">Node.js 随应用打包，无依赖。</div>
+    <section class="content">
+      <div class="info-list">
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">
+            <h3 data-i18n="n1">内置运行时</h3>
+            <p data-i18n="d1">Node.js 随应用打包，零外部依赖。</p>
           </div>
-          <div class="feat">
-            <div class="feat-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-            </div>
-            <div class="feat-name" data-i18n="n2">多实例管理</div>
-            <div class="feat-desc" data-i18n="d2">独立端口与配置，卡片切换。</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">
+            <h3 data-i18n="n2">多实例管理</h3>
+            <p data-i18n="d2">独立端口与配置，卡片切换。</p>
           </div>
-          <div class="feat">
-            <div class="feat-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-            </div>
-            <div class="feat-name" data-i18n="n3">跨平台</div>
-            <div class="feat-desc" data-i18n="d3">Android + Windows，同一前端。</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">
+            <h3 data-i18n="n3">跨平台</h3>
+            <p data-i18n="d3">Android + Windows，同一套 React 前端。</p>
           </div>
-          <div class="feat">
-            <div class="feat-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-            </div>
-            <div class="feat-name" data-i18n="n4">原生体验</div>
-            <div class="feat-desc" data-i18n="d4">液态玻璃，状态栏适配，手势。</div>
+        </div>
+        <div class="info-item">
+          <div class="info-dot"></div>
+          <div class="info-text">
+            <h3 data-i18n="n4">原生体验</h3>
+            <p data-i18n="d4">液态玻璃界面，状态栏适配，手势导航。</p>
           </div>
         </div>
       </div>
     </section>
 
     <footer>
-      <span class="foot-text">MIT License</span>
+      <span class="foot-copy">MIT License</span>
       <div class="foot-links">
         <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
         <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
@@ -654,31 +455,21 @@
     const i18n = {
       zh: {
         nav_src: '源码',
-        t1: 'SillyTavern',
-        t1d: '装进口袋',
+        t1: 'SillyTavern', t2: '装进口袋',
         sub: '内置 Node.js 运行时，安装即用。无需 Termux，无需命令行。',
-        n1: '内置运行时',
-        d1: 'Node.js 随应用打包，无依赖。',
-        n2: '多实例管理',
-        d2: '独立端口与配置，卡片切换。',
-        n3: '跨平台',
-        d3: 'Android + Windows，同一前端。',
-        n4: '原生体验',
-        d4: '液态玻璃，状态栏适配，手势。',
+        n1: '内置运行时', d1: 'Node.js 随应用打包，零外部依赖。',
+        n2: '多实例管理', d2: '独立端口与配置，卡片切换。',
+        n3: '跨平台', d3: 'Android + Windows，同一套 React 前端。',
+        n4: '原生体验', d4: '液态玻璃界面，状态栏适配，手势导航。',
       },
       en: {
         nav_src: 'Source',
-        t1: 'SillyTavern',
-        t1d: 'anywhere.',
-        sub: 'Embedded Node.js runtime. Install, launch, done. No terminal.',
-        n1: 'Embedded Runtime',
-        d1: 'Node.js bundled. Zero external deps.',
-        n2: 'Multi-Instance',
-        d2: 'Isolated ports and configs per instance.',
-        n3: 'Cross-Platform',
-        d3: 'Android + Windows. Shared React frontend.',
-        n4: 'Native Feel',
-        d4: 'Liquid glass, status bar, gesture nav.',
+        t1: 'SillyTavern', t2: 'in your pocket.',
+        sub: 'Embedded Node.js runtime. Install, launch, done.',
+        n1: 'Embedded Runtime', d1: 'Node.js bundled. Zero external dependencies.',
+        n2: 'Multi-Instance', d2: 'Isolated ports and configs per instance.',
+        n3: 'Cross-Platform', d3: 'Android + Windows. Shared React frontend.',
+        n4: 'Native Feel', d4: 'Liquid glass UI, status bar, gesture nav.',
       }
     };
     let lang = localStorage.getItem('lang') || 'zh';
@@ -689,7 +480,7 @@
         const k = el.getAttribute('data-i18n');
         if (i18n[l][k]) el.textContent = i18n[l][k];
       });
-      document.getElementById('langBtn').textContent = l === 'zh' ? 'EN' : '中文';
+      document.getElementById('langBtn').textContent = l === 'zh' ? 'EN' : '\u4e2d\u6587';
       document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en';
     }
     function toggleLang() { setLang(lang === 'zh' ? 'en' : 'zh'); }
