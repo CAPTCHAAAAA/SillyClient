@@ -1,8 +1,10 @@
 # SillyClient
 
-Cross-platform SillyTavern launcher. Runs full instances on Android and Windows with an embedded Node.js runtime. No Termux, no CLI.
+跨平台 SillyTavern 启动器。Android / Windows 双端，内置 Node.js 运行时，安装即用，无需 Termux，无需命令行。
 
-[![Release](https://img.shields.io/github/v/release/CAPTCHAAAAA/SillyClient?style=flat-square&color=blue)](https://github.com/CAPTCHAAAAA/SillyClient/releases)
+Cross-platform SillyTavern launcher. Embedded Node.js runtime. No Termux, no CLI.
+
+[![Release](https://img.shields.io/github/v/release/CAPTCHAAAAA/SillyClient?style=flat-square&color=e8365d&labelColor=1a1625)](https://github.com/CAPTCHAAAAA/SillyClient/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 **[Live Demo](https://captchaaaaa.github.io/SillyClient/)**
@@ -18,11 +20,11 @@ Cross-platform SillyTavern launcher. Runs full instances on Android and Windows 
 
 | Layer | Android | Windows | Shared |
 |-------|---------|---------|--------|
-| Native | Kotlin, Capacitor 7 | Electron 33, TypeScript | - |
-| UI | - | - | React 19, Vite 7, Tailwind CSS v4 |
-| Runtime | Embedded Node.js (cross-compiled binary) | Embedded Node.js v22 (bundled `node.exe`) | - |
+| Native | Kotlin, Capacitor 7 | Electron 33, TypeScript | |
+| UI | | | React 19, Vite 7, Tailwind CSS v4 |
+| Runtime | Embedded Node.js (cross-compiled binary) | Embedded Node.js v22 (bundled `node.exe`) | |
 
-Both platforms use the same React frontend via a Capacitor shim bridge. The web layer requires zero modification to run on either platform.
+Both platforms share the same React frontend via a Capacitor shim bridge. The web layer requires zero modification to run on either platform.
 
 ## Features
 
