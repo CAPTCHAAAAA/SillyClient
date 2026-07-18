@@ -38,7 +38,16 @@
     .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(42,34,64,0.6) 0%, #1a1625 70%); z-index: 0; }
     .hero-content { position: relative; z-index: 2; text-align: center; padding: 0 24px; max-width: 520px; }
     .hero-logo { width: 80px; height: 80px; border-radius: 22px; margin: 0 auto 32px; box-shadow: 0 8px 40px rgba(232,54,93,0.2), 0 0 0 1px rgba(255,255,255,0.06); }
-    .hero-title { font-size: clamp(40px, 7vw, 68px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.08; margin-bottom: 16px; text-wrap: balance; }
+    .hero-title {
+      --title-font: "Soap";
+      font-family: var(--title-font), "Arial Rounded MT Bold", "Segoe UI Variable Display", sans-serif;
+      font-size: clamp(40px, 7vw, 68px);
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: 1.08;
+      margin-bottom: 16px;
+      text-wrap: balance;
+    }
     .hero-sub { font-size: clamp(15px, 2.2vw, 17px); color: rgba(255,255,255,0.45); line-height: 1.6; margin-bottom: 40px; }
     .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
     .dl-btn {
@@ -181,7 +190,7 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css" />
+  <link rel="stylesheet" href="./landing-premium.css?v=2a5d640" />
 </head>
 <body>
   <div class="scroll-container site-scroller" id="scroller">
