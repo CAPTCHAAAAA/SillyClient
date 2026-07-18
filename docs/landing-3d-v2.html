@@ -59,6 +59,23 @@
 
     #three-canvas { position: absolute; inset: 0; z-index: 1; }
 
+    /* Screen iframe overlay — positioned by JS to track 3D phone screen */
+    #screen-frame {
+      position: absolute; z-index: 2;
+      overflow: hidden;
+      pointer-events: none;
+      border-radius: 22px;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
+      transform-origin: top left;
+      display: none;
+    }
+    #app-screen {
+      border: none; display: block;
+      width: 390px; height: 844px;
+      transform-origin: top left;
+      background: #1a1a1a;
+    }
+
     .info-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, rgba(42,34,64,0.4) 0%, #1a1625 70%); z-index: 0; }
     .info-content { position: relative; z-index: 2; width: min(600px, 90vw); padding: 0 24px; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.04); border-radius: 20px; overflow: hidden; margin-bottom: 40px; }
@@ -83,7 +100,6 @@
     .section-content { opacity: 0; transform: translateY(30px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
     .section.is-active .section-content { opacity: 1; transform: translateY(0); }
 
-    /* Loading indicator */
     #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 5; color: rgba(255,255,255,0.3); font-size: 13px; letter-spacing: 0.05em; }
 
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
@@ -130,6 +146,9 @@
     <section class="section" id="sec-phone">
       <canvas id="three-canvas"></canvas>
       <div id="loading">Loading 3D Model...</div>
+      <div id="screen-frame">
+        <iframe id="app-screen" src="./app/index.html" title="SillyClient App"></iframe>
+      </div>
     </section>
 
     <section class="section" id="sec-info">
@@ -198,184 +217,11 @@
 
     const canvas = document.getElementById('three-canvas');
     const loadingEl = document.getElementById('loading');
+    const screenFrame = document.getElementById('screen-frame');
+    const section = document.getElementById('sec-phone');
 
     // ========================================
-    // LAYER 1: Screen Content Canvas (HTML → Canvas → CanvasTexture)
-    // ========================================
-    // Draw the app UI on a 2D canvas, then use it as a texture on the phone screen mesh.
-    // The Dynamic Island area is left black (the GLB model's island mesh will cover it).
-
-    const SCREEN_W = 512, SCREEN_H = 1108; // 9:19.5 aspect
-    const screenCanvas = document.createElement('canvas');
-    screenCanvas.width = SCREEN_W;
-    screenCanvas.height = SCREEN_H;
-    const sctx = screenCanvas.getContext('2d');
-
-    function drawScreenContent(time) {
-      // Background gradient (dark theme)
-      const bg = sctx.createLinearGradient(0, 0, 0, SCREEN_H);
-      bg.addColorStop(0, '#1a1625');
-      bg.addColorStop(1, '#0e0a14');
-      sctx.fillStyle = bg;
-      sctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-
-      // Status bar area (top, below Dynamic Island safe zone)
-      const safeTop = 70;
-      sctx.fillStyle = 'rgba(255,255,255,0.5)';
-      sctx.font = '600 22px -apple-system, sans-serif';
-      sctx.textAlign = 'left';
-      sctx.fillText('9:41', 30, safeTop + 8);
-      sctx.textAlign = 'right';
-      sctx.fillText('100%', SCREEN_W - 30, safeTop + 8);
-      // Battery icon
-      sctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      sctx.lineWidth = 2;
-      sctx.strokeRect(SCREEN_W - 80, safeTop - 8, 28, 14);
-      sctx.fillStyle = 'rgba(255,255,255,0.5)';
-      sctx.fillRect(SCREEN_W - 50, safeTop - 4, 3, 6);
-
-      // Logo + Title
-      const cx = SCREEN_W / 2;
-      let y = safeTop + 80;
-      // Logo circle
-      const logoGrad = sctx.createLinearGradient(cx - 30, y - 30, cx + 30, y + 30);
-      logoGrad.addColorStop(0, '#FF5E85');
-      logoGrad.addColorStop(0.4, '#C7154B');
-      logoGrad.addColorStop(1, '#6A112E');
-      sctx.fillStyle = logoGrad;
-      sctx.beginPath();
-      sctx.roundRect(cx - 30, y - 30, 60, 60, 16);
-      sctx.fill();
-      // Logo S
-      sctx.strokeStyle = 'rgba(255,240,243,0.9)';
-      sctx.lineWidth = 7;
-      sctx.lineCap = 'round';
-      sctx.beginPath();
-      sctx.moveTo(cx + 18, y - 18);
-      sctx.lineTo(cx - 8, y - 18);
-      sctx.arc(cx - 8, y, 18, -Math.PI/2, Math.PI/2, false);
-      sctx.lineTo(cx + 8, y + 18);
-      sctx.stroke();
-
-      y += 70;
-      // Title
-      sctx.fillStyle = '#fff';
-      sctx.font = '700 36px -apple-system, sans-serif';
-      sctx.textAlign = 'center';
-      sctx.fillText('SillyClient', cx, y);
-      y += 28;
-      sctx.fillStyle = 'rgba(255,255,255,0.4)';
-      sctx.font = '400 18px -apple-system, sans-serif';
-      sctx.fillText('SillyTavern 跨平台启动器', cx, y);
-
-      y += 50;
-      // Search bar
-      sctx.fillStyle = 'rgba(255,255,255,0.06)';
-      sctx.beginPath();
-      sctx.roundRect(30, y, SCREEN_W - 60, 52, 16);
-      sctx.fill();
-      sctx.strokeStyle = 'rgba(255,255,255,0.08)';
-      sctx.lineWidth = 1;
-      sctx.stroke();
-      // Search icon
-      sctx.strokeStyle = 'rgba(255,255,255,0.3)';
-      sctx.lineWidth = 2;
-      sctx.beginPath();
-      sctx.arc(56, y + 26, 8, 0, Math.PI * 2);
-      sctx.moveTo(62, y + 32);
-      sctx.lineTo(68, y + 38);
-      sctx.stroke();
-      sctx.fillStyle = 'rgba(255,255,255,0.25)';
-      sctx.font = '400 16px -apple-system, sans-serif';
-      sctx.textAlign = 'left';
-      sctx.fillText('搜索实例...', 82, y + 31);
-
-      y += 80;
-      // Instance cards
-      const cards = [
-        { name: '主实例', port: '8000', status: 'running', color: '#e8365d' },
-        { name: '测试实例', port: '8001', status: 'stopped', color: '#6366f1' },
-        { name: '角色卡专用', port: '8002', status: 'stopped', color: '#10b981' },
-      ];
-      cards.forEach((card, i) => {
-        const cy = y + i * 110;
-        // Card background
-        sctx.fillStyle = 'rgba(255,255,255,0.04)';
-        sctx.beginPath();
-        sctx.roundRect(30, cy, SCREEN_W - 60, 96, 20);
-        sctx.fill();
-        sctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        sctx.lineWidth = 1;
-        sctx.stroke();
-
-        // Color accent
-        sctx.fillStyle = card.color;
-        sctx.beginPath();
-        sctx.roundRect(30, cy, 6, 96, 3);
-        sctx.fill();
-
-        // Play button circle
-        sctx.fillStyle = card.status === 'running' ? 'rgba(232,54,93,0.15)' : 'rgba(255,255,255,0.06)';
-        sctx.beginPath();
-        sctx.arc(SCREEN_W - 80, cy + 48, 24, 0, Math.PI * 2);
-        sctx.fill();
-        // Play triangle
-        sctx.fillStyle = card.status === 'running' ? '#e8365d' : 'rgba(255,255,255,0.5)';
-        sctx.beginPath();
-        if (card.status === 'running') {
-          // Pause icon
-          sctx.fillRect(SCREEN_W - 87, cy + 38, 4, 20);
-          sctx.fillRect(SCREEN_W - 79, cy + 38, 4, 20);
-        } else {
-          // Play icon
-          sctx.moveTo(SCREEN_W - 87, cy + 38);
-          sctx.lineTo(SCREEN_W - 87, cy + 58);
-          sctx.lineTo(SCREEN_W - 71, cy + 48);
-          sctx.closePath();
-          sctx.fill();
-        }
-
-        // Text
-        sctx.fillStyle = '#fff';
-        sctx.font = '600 20px -apple-system, sans-serif';
-        sctx.textAlign = 'left';
-        sctx.fillText(card.name, 60, cy + 38);
-        sctx.fillStyle = 'rgba(255,255,255,0.35)';
-        sctx.font = '400 15px -apple-system, sans-serif';
-        sctx.fillText('Port ' + card.port, 60, cy + 62);
-        // Status dot
-        sctx.fillStyle = card.status === 'running' ? '#10b981' : 'rgba(255,255,255,0.2)';
-        sctx.beginPath();
-        sctx.arc(SCREEN_W - 130, cy + 52, 5, 0, Math.PI * 2);
-        sctx.fill();
-      });
-
-      // Bottom nav bar
-      const navY = SCREEN_H - 80;
-      sctx.fillStyle = 'rgba(255,255,255,0.03)';
-      sctx.beginPath();
-      sctx.roundRect(30, navY, SCREEN_W - 60, 56, 20);
-      sctx.fill();
-      // Nav icons (3 circles)
-      for (let i = 0; i < 3; i++) {
-        const nx = cx + (i - 1) * 80;
-        sctx.fillStyle = i === 0 ? '#e8365d' : 'rgba(255,255,255,0.2)';
-        sctx.beginPath();
-        sctx.arc(nx, navY + 28, 8, 0, Math.PI * 2);
-        sctx.fill();
-      }
-    }
-
-    // Initial draw
-    drawScreenContent(0);
-
-    // Create CanvasTexture
-    const screenTexture = new THREE.CanvasTexture(screenCanvas);
-    screenTexture.colorSpace = THREE.SRGBColorSpace;
-    screenTexture.flipY = false; // GLB UV coordinates may need this
-
-    // ========================================
-    // LAYER 2: Three.js Scene + GLB Model
+    // Three.js Scene + GLB Model
     // ========================================
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x1a1625, 0.008);
@@ -448,7 +294,7 @@
     scene.add(pts);
 
     // ========================================
-    // LAYER 3: Load GLB + Replace Screen Material
+    // Load GLB Phone Model
     // ========================================
     const loader = new GLTFLoader();
     let phoneGroup = null;
@@ -468,31 +314,31 @@
         const avgZ = sumZ / nrm.count;
         if (Math.abs(avgZ) > 0.3) { frontZ += avgZ; frontCount++; }
       });
-      // Normals facing +Z means the BACK face is toward camera (back meshes face outward +Z)
-      // So we flip when frontZ > 0
+      // Flip when back face normals point toward camera (+Z)
       needFlip = (frontZ > 0);
       if (needFlip) phoneGroup.rotation.y = Math.PI;
 
-      // Replace screen mesh material with our CanvasTexture
+      // Process meshes: make screen + glass transparent so iframe shows through
       phoneGroup.traverse((child) => {
         if (!child.isMesh) return;
         const mn = child.material?.name || '';
-        // Screen mesh: apply our canvas texture
         if (mn === '17Air_Screen') {
           screenMesh = child;
+          // Make screen transparent — iframe will show through
           child.material = new THREE.MeshBasicMaterial({
-            map: screenTexture,
-            toneMapped: false,
+            color: 0x000000,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
             side: THREE.DoubleSide
           });
         }
-        // Glass mesh: make transparent (Dynamic Island is part of the model and stays opaque)
         if (mn === '17Air_Glass') {
           child.material = new THREE.MeshPhysicalMaterial({
             transparent: true,
-            opacity: 0.1,
+            opacity: 0.08,
             roughness: 0.05,
-            transmission: 0.9,
+            transmission: 0.92,
             clearcoat: 1,
             clearcoatRoughness: 0.02,
             side: THREE.DoubleSide
@@ -503,7 +349,7 @@
       // Scale and center
       const box = new THREE.Box3().setFromObject(phoneGroup);
       const size = box.getSize(new THREE.Vector3());
-      const scale = 3.2 / size.y;
+      const scale = 3.4 / size.y;
       phoneGroup.scale.setScalar(scale);
       const box2 = new THREE.Box3().setFromObject(phoneGroup);
       const center = box2.getCenter(new THREE.Vector3());
@@ -517,7 +363,7 @@
     });
 
     // ========================================
-    // LAYER 4: Camera/Mouse Interaction
+    // Mouse Interaction (with vertical inversion fix)
     // ========================================
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
     addEventListener('mousemove', e => {
@@ -533,12 +379,73 @@
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const clock = new THREE.Clock();
-    let frameCount = 0;
+
+    // Project 3D point to screen pixels
+    const _v = new THREE.Vector3();
+    function toScreen(p) {
+      _v.copy(p).project(camera);
+      return { x: (_v.x * 0.5 + 0.5) * innerWidth, y: (-_v.y * 0.5 + 0.5) * innerHeight };
+    }
+
+    // Update iframe overlay to track 3D phone screen position
+    function updateScreenOverlay() {
+      if (!phoneGroup) return;
+
+      // Use the screen mesh's bounding box for precise positioning
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      if (screenMesh) {
+        const geo = screenMesh.geometry;
+        geo.computeBoundingBox();
+        const bb = geo.boundingBox;
+        // Sample 4 corners of the screen in local space
+        const corners = [
+          new THREE.Vector3(bb.min.x, bb.max.y, 0),
+          new THREE.Vector3(bb.max.x, bb.max.y, 0),
+          new THREE.Vector3(bb.min.x, bb.min.y, 0),
+          new THREE.Vector3(bb.max.x, bb.min.y, 0)
+        ];
+        corners.forEach(c => {
+          screenMesh.localToWorld(c);
+          const s = toScreen(c);
+          minX = Math.min(minX, s.x);
+          maxX = Math.max(maxX, s.x);
+          minY = Math.min(minY, s.y);
+          maxY = Math.max(maxY, s.y);
+        });
+      } else {
+        // Fallback: use phone bounding box (88% width, 82% height)
+        const box = new THREE.Box3().setFromObject(phoneGroup);
+        const sz = box.getSize(new THREE.Vector3());
+        const ct = box.getCenter(new THREE.Vector3());
+        const sw = sz.x * 0.88, sh = sz.y * 0.82;
+        const tl = toScreen(new THREE.Vector3(ct.x - sw/2, ct.y + sh/2, ct.z));
+        const br = toScreen(new THREE.Vector3(ct.x + sw/2, ct.y - sh/2, ct.z));
+        minX = tl.x; maxX = br.x; minY = tl.y; maxY = br.y;
+      }
+
+      const secTop = section.getBoundingClientRect().top;
+      const px = minX;
+      const py = minY - secTop;
+      const pw = maxX - minX;
+      const ph = maxY - minY;
+
+      // Scale iframe (390x844 internal) to fit projected area — high-DPI rendering
+      const scaleX = pw / 390;
+      const scaleY = ph / 844;
+      const scale = Math.min(scaleX, scaleY);
+      // Center the iframe within the projected area
+      const offsetX = (pw - 390 * scale) / 2;
+      const offsetY = (ph - 844 * scale) / 2;
+
+      screenFrame.style.display = 'block';
+      screenFrame.style.width = '390px';
+      screenFrame.style.height = '844px';
+      screenFrame.style.transform = `translate(${px + offsetX}px, ${py + offsetY}px) scale(${scale})`;
+    }
 
     function loop() {
       requestAnimationFrame(loop);
       const t = clock.getElapsedTime();
-      frameCount++;
 
       mouse.x += (mouse.tx - mouse.x) * 0.05;
       mouse.y += (mouse.ty - mouse.y) * 0.05;
@@ -548,21 +455,18 @@
         pMat.uniforms.uTime.value = t;
       }
 
-      // Update screen texture every 30 frames (for any dynamic content)
-      if (frameCount % 30 === 0) {
-        drawScreenContent(t);
-        screenTexture.needsUpdate = true;
-      }
-
       if (phoneGroup) {
         // Clamp rotation: Y ±18°, X ±10° — never show back
         const baseY = needFlip ? Math.PI : 0;
         const targetRY = baseY + mouse.x * 0.3;
-        const targetRX = -mouse.y * 0.1;
+        // Vertical inversion fixed: mouse down → phone tilts down (natural)
+        const targetRX = mouse.y * 0.1;
         phoneGroup.rotation.y += (targetRY - phoneGroup.rotation.y) * 0.06;
         phoneGroup.rotation.x += (targetRX - phoneGroup.rotation.x) * 0.06;
         phoneGroup.rotation.y = Math.max(baseY - 0.31, Math.min(baseY + 0.31, phoneGroup.rotation.y));
         phoneGroup.rotation.x = Math.max(-0.17, Math.min(0.17, phoneGroup.rotation.x));
+
+        updateScreenOverlay();
       }
 
       renderer.render(scene, camera);
