@@ -454,15 +454,25 @@
       phoneGroup.scale.setScalar(scale);
 
       // Center
-      const centeredBox = new THREE.Box3().setFromObject(phoneGroup);
-      const centeredSize = centeredBox.getSize(new THREE.Vector3());
-      const centeredCenter = centeredBox.getCenter(new THREE.Vector3());
-      phoneGroup.position.sub(centeredCenter);
-      phoneGroup.position.y += 0.1;
+      const box2 = new THREE.Box3().setFromObject(phoneGroup);
+      const center = box2.getCenter(new THREE.Vector3());
+      phoneGroup.position.x -= center.x;
+      phoneGroup.position.y -= center.y;
+      phoneGroup.position.z -= center.z;
+      phoneGroup.position.y += 0.05;
 
-      // Slight initial angle to show 3D depth
-      phoneGroup.rotation.y = -0.15;
-      phoneGroup.rotation.x = 0.05;
+      // 6) Store phone bounds
+      phoneBounds = new THREE.Box3().setFromObject(phoneGroup);
+      const pSize = phoneBounds.getSize(new THREE.Vector3());
+      const pCenter = phoneBounds.getCenter(new THREE.Vector3());
+
+      // Screen area: 88% width, 78% height, centered, offset 2% upward from center
+      screenArea = {
+        cx: pCenter.x,
+        cy: pCenter.y + pSize.y * 0.02,
+        w: pSize.x * 0.88,
+        h: pSize.y * 0.78
+      };
 
       scene.add(phoneGroup);
     }, undefined, (err) => {
