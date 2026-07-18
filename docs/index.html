@@ -614,7 +614,7 @@
     renderer.setClearColor(0x000000, 0);
 
     // Particles
-    const N = 300;
+    const N = 500;
     const pos = new Float32Array(N * 3);
     const col = new Float32Array(N * 3);
     const c1 = new THREE.Color(0x2a2240);
@@ -631,8 +631,8 @@
       pos[i3+2] = r * Math.cos(ph);
 
       const p = Math.random();
-      const c = p < 0.6 ? c1 : p < 0.85 ? c3 : c2;
-      const b = 0.25 + Math.random() * 0.45;
+      const c = p < 0.5 ? c1 : p < 0.8 ? c3 : c2;
+      const b = 0.3 + Math.random() * 0.6;
       col[i3] = c.r*b; col[i3+1] = c.g*b; col[i3+2] = c.b*b;
     }
 
@@ -649,7 +649,7 @@
           vC = color;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           float tw = sin(uTime * 0.3 + position.x * 0.15 + position.y * 0.1) * 0.5 + 0.5;
-          gl_PointSize = (0.6 + tw * 0.7) * uPR * (22.0 / -mv.z);
+          gl_PointSize = (0.8 + tw * 1.0) * uPR * (24.0 / -mv.z);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `
@@ -657,7 +657,7 @@
         void main() {
           float d = length(gl_PointCoord - vec2(0.5));
           if (d > 0.5) discard;
-          gl_FragColor = vec4(vC, smoothstep(0.5, 0.0, d) * 0.4);
+          gl_FragColor = vec4(vC, smoothstep(0.5, 0.0, d) * 0.55);
         }`,
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
     });
