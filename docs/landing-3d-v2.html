@@ -39,7 +39,7 @@
     .hero-content { position: relative; z-index: 2; text-align: center; padding: 0 24px; max-width: 520px; }
     .hero-logo { width: 80px; height: 80px; border-radius: 22px; margin: 0 auto 32px; box-shadow: 0 8px 40px rgba(232,54,93,0.2), 0 0 0 1px rgba(255,255,255,0.06); }
     .hero-title {
-      --title-font: "Soap";
+      --title-font: "Syndra";
       font-family: var(--title-font), "Arial Rounded MT Bold", "Segoe UI Variable Display", sans-serif;
       font-size: clamp(40px, 7vw, 68px);
       font-weight: 400;
@@ -190,7 +190,7 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css?v=20260719-ambient" />
+  <link rel="stylesheet" href="./landing-premium.css?v=20260719-taste" />
 </head>
 <body>
   <canvas class="ambient-field" id="ambient-field" aria-hidden="true"></canvas>
@@ -207,17 +207,18 @@
       </nav>
       <div class="topbar-actions">
         <a class="icon-button" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" aria-label="打开 GitHub" data-i18n-aria="openGithub" title="GitHub">
-          <i data-lucide="github"></i>
+          <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-github"></use></svg>
         </a>
         <div class="language-switcher" role="group" aria-label="语言" data-i18n-aria="languageSwitcher">
           <button class="language-option is-active" type="button" data-language="zh" aria-label="中文" aria-pressed="true">中</button>
           <button class="language-option" type="button" data-language="en" aria-label="English" aria-pressed="false">EN</button>
         </div>
         <a class="nav-download" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
-          <i data-lucide="download"></i><span data-i18n="getApp">获取应用</span>
+          <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg><span data-i18n="getApp">获取应用</span>
         </a>
         <button class="menu-button" id="menu-button" type="button" aria-label="打开导航菜单" data-i18n-aria="openMenu" aria-expanded="false">
-          <i data-lucide="menu"></i>
+          <svg class="bi-icon menu-glyph menu-glyph-open" aria-hidden="true"><use href="./landing-icons.svg#icon-menu"></use></svg>
+          <svg class="bi-icon menu-glyph menu-glyph-close" aria-hidden="true"><use href="./landing-icons.svg#icon-close"></use></svg>
         </button>
       </div>
     </header>
@@ -244,18 +245,18 @@
                 <button class="hero-title-button" id="title-font-button" type="button">
                   <span class="title-wordmark">Silly<span class="accent">Client</span></span>
                   <span class="font-name-tooltip" id="font-name-tooltip" role="status">
-                    <i data-lucide="type"></i>
-                    <span id="current-font-name">Soap</span>
+                    <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-type"></use></svg>
+                    <span id="current-font-name">Syndra</span>
                   </span>
                 </button>
               </h1>
               <p class="hero-sub" data-i18n="heroSubtitle">安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。</p>
               <div class="hero-actions">
                 <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
-                  <i data-lucide="download"></i><span data-i18n="latestRelease">获取最新版本</span>
+                  <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg><span data-i18n="latestRelease">获取最新版本</span>
                 </a>
                 <a class="secondary-action" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">
-                  <i data-lucide="github"></i><span data-i18n="viewSource">查看源码</span>
+                  <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-github"></use></svg><span data-i18n="viewSource">查看源码</span>
                 </a>
               </div>
               <div class="hero-specs" aria-label="产品技术概要" data-i18n-aria="techSummary">
@@ -264,7 +265,7 @@
             </div>
             <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="进入产品体验" data-i18n-aria="enterExperience">
               <span data-i18n="enterSillyClient">进入 SillyClient</span>
-              <span class="cue-orbit"><i data-lucide="chevron-down"></i></span>
+              <span class="cue-orbit"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-caret-down"></use></svg></span>
             </button>
           </section>
 
@@ -274,19 +275,19 @@
               <h2 data-i18n="experienceTitle">启动器和酒馆，各做各的事。</h2>
               <p data-i18n="experienceBody">控制台负责实例、端口、进程和日志；SillyTavern 在独立的原生窗口中运行。返回控制台时，实例不会被顺手关掉。</p>
               <ul class="signal-list">
-                <li><i data-lucide="boxes"></i><span data-i18n="localRemoteInstances">本地与远程实例</span><span class="signal-state" data-i18n="unifiedManagement">统一管理</span></li>
-                <li><i data-lucide="terminal"></i><span data-i18n="liveLogsTerminal">实时日志与终端</span><span class="signal-state" data-i18n="availableAnytime">随时查看</span></li>
-                <li><i data-lucide="panel-top"></i><span data-i18n="returnStop">返回酒馆 / 停止实例</span><span class="signal-state" data-i18n="separateControl">分开控制</span></li>
+                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-cube"></use></svg><span data-i18n="localRemoteInstances">本地与远程实例</span><span class="signal-state" data-i18n="unifiedManagement">统一管理</span></li>
+                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-terminal"></use></svg><span data-i18n="liveLogsTerminal">实时日志与终端</span><span class="signal-state" data-i18n="availableAnytime">随时查看</span></li>
+                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-browser"></use></svg><span data-i18n="returnStop">返回酒馆 / 停止实例</span><span class="signal-state" data-i18n="separateControl">分开控制</span></li>
               </ul>
             </div>
-            <div class="device-note"><i data-lucide="mouse-pointer-2"></i><span data-i18n="interactiveScreen">屏幕可直接交互</span></div>
+            <div class="device-note"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-cursor"></use></svg><span data-i18n="interactiveScreen">屏幕可直接交互</span></div>
           </section>
         </div>
       </section>
 
       <section class="platform-section" id="platform" data-section="platform">
         <div class="platform-inner">
-          <div class="platform-intro">
+          <div class="platform-intro" data-reveal>
             <div>
               <div class="section-index">02 / Native runtime</div>
               <h2 data-i18n="platformTitle">不只是给网页套一层外壳。</h2>
@@ -295,7 +296,7 @@
           </div>
 
           <div class="platform-layout">
-            <div class="runtime-map" aria-label="运行路径" data-i18n-aria="runtimeMapLabel">
+            <div class="runtime-map" aria-label="运行路径" data-i18n-aria="runtimeMapLabel" data-reveal>
               <div class="runtime-map-head">
                 <span data-i18n="runtimeMapLabel">运行路径</span>
                 <span class="runtime-map-status"><i></i><span data-i18n="runtimeMapStatus">本地优先</span></span>
@@ -317,42 +318,42 @@
             </div>
 
             <div class="feature-list platform-features">
-              <article class="feature-row">
-                <span class="feature-icon"><i data-lucide="zap"></i></span>
+              <article class="feature-row" data-reveal>
+                <span class="feature-icon"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-lightning"></use></svg></span>
                 <div><h3 data-i18n="runtimeIncludedTitle">运行时随应用提供</h3><p data-i18n="runtimeIncludedBody">Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
               </article>
-              <article class="feature-row">
-                <span class="feature-icon"><i data-lucide="layers-3"></i></span>
+              <article class="feature-row" data-reveal>
+                <span class="feature-icon"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-stack"></use></svg></span>
                 <div><h3 data-i18n="separateWindowsTitle">控制台与酒馆分开</h3><p data-i18n="separateWindowsBody">管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。</p></div>
               </article>
-              <article class="feature-row">
-                <span class="feature-icon"><i data-lucide="monitor-smartphone"></i></span>
+              <article class="feature-row" data-reveal>
+                <span class="feature-icon"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-devices"></use></svg></span>
                 <div><h3 data-i18n="sharedUiTitle">同一套界面，不同平台实现</h3><p data-i18n="sharedUiBody">React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。</p></div>
               </article>
             </div>
           </div>
 
-          <div class="platform-head download-row">
+          <div class="platform-head download-row" data-reveal>
             <div>
               <div class="section-index">Android / Windows</div>
               <h3 data-i18n="installTitle">装好，就可以开始搭建自己的酒馆。</h3>
             </div>
             <div class="platform-actions">
               <a class="platform-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
-                <i data-lucide="smartphone"></i> Android
+                <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-mobile"></use></svg> Android
               </a>
               <a class="platform-action is-secondary" href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener">
-                <i data-lucide="monitor"></i> Windows
+                <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-desktop"></use></svg> Windows
               </a>
             </div>
           </div>
-          <div class="platform-meta">
+          <div class="platform-meta" data-reveal>
             <div><strong>Bionic Node.js</strong><span data-i18n="metaAndroid">Android 运行时</span></div>
             <div><strong>Node.js 22</strong><span data-i18n="metaWindows">Windows 运行时</span></div>
             <div><strong>React 19</strong><span data-i18n="metaShared">共享控制界面</span></div>
             <div><strong>MIT</strong><span data-i18n="metaOpen">开源许可</span></div>
           </div>
-          <footer class="site-footer">
+          <footer class="site-footer" data-reveal>
             <span>© 2026 SillyClient</span>
             <div>
               <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
@@ -370,7 +371,6 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script>
     (() => {
       const pageScroller = document.getElementById('scroller');
@@ -394,15 +394,15 @@
       const descriptionMeta = document.querySelector('meta[name="description"]');
       const ambientCanvas = document.getElementById('ambient-field');
       const titleFonts = [
+        'Syndra',
+        'Dynamic Display',
+        'Soap',
         'Yummy',
         'Arcade Raiders',
         'Noisy Walk',
         'Stay Pixel',
         '04B 30',
-        'Pixel Chaos',
-        'Soap',
-        'Syndra',
-        'Dynamic Display'
+        'Pixel Chaos'
       ];
       const translations = {
         zh: {
@@ -519,10 +519,8 @@
         }
       };
       let currentLanguage = 'zh';
-      let activeTitleFont = 'Soap';
+      let activeTitleFont = 'Syndra';
       let fontTooltipTimer = 0;
-
-      if (window.lucide) window.lucide.createIcons();
 
       function setupAmbientField() {
         const context = ambientCanvas.getContext('2d', { alpha: false });
@@ -602,6 +600,31 @@
 
       setupAmbientField();
 
+      function setupSectionReveals() {
+        const revealItems = [...document.querySelectorAll('[data-reveal]')];
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion || !('IntersectionObserver' in window)) {
+          revealItems.forEach((item) => item.classList.add('is-visible'));
+          return;
+        }
+
+        revealItems.forEach((item) => item.classList.add('will-reveal'));
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        }, {
+          root: pageScroller,
+          threshold: 0.16,
+          rootMargin: '0px 0px -8% 0px'
+        });
+        revealItems.forEach((item) => observer.observe(item));
+      }
+
+      setupSectionReveals();
+
       function syncMenuLabel() {
         const key = navLinks.classList.contains('is-open') ? 'closeMenu' : 'openMenu';
         menuButton.setAttribute('aria-label', translations[currentLanguage][key]);
@@ -657,7 +680,7 @@
       }
 
       function applyTitleFont(font, animate = false) {
-        const selected = titleFonts.includes(font) ? font : 'Soap';
+        const selected = titleFonts.includes(font) ? font : 'Syndra';
         activeTitleFont = selected;
         heroTitle.style.setProperty('--title-font', `"${selected}"`);
         heroTitle.style.fontWeight = selected === 'Syndra' ? '600' : '400';
@@ -682,7 +705,7 @@
         document.fonts.load(`${selected === 'Syndra' ? 600 : 400} 72px "${selected}"`).finally(fitHeroTitle);
       }
 
-      applyTitleFont(localStorage.getItem('landing-title-font') || 'Soap');
+      applyTitleFont(localStorage.getItem('landing-title-font') || 'Syndra');
       titleFontButton.addEventListener('click', () => {
         const nextIndex = (titleFonts.indexOf(activeTitleFont) + 1) % titleFonts.length;
         applyTitleFont(titleFonts[nextIndex], true);

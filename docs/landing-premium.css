@@ -47,6 +47,14 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+.bi-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+}
+
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--rose-bright);
@@ -76,29 +84,52 @@ a:focus-visible {
 
 .topbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 12px;
+  left: 18px;
+  right: 18px;
   z-index: 80;
-  height: 72px;
+  width: auto;
+  max-width: 1320px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
-  border-bottom: 1px solid transparent;
+  margin: 0 auto;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  border-radius: 8px;
+  background: rgba(12, 10, 15, 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 16px 52px rgba(3, 2, 5, 0.18);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  animation: topbar-arrive 720ms var(--ease-out) both;
   transition:
-    height 400ms var(--ease-out),
-    background 400ms var(--ease-out),
-    border-color 400ms var(--ease-out),
-    backdrop-filter 400ms var(--ease-out);
+    height 360ms var(--ease-out),
+    background 260ms ease,
+    border-color 260ms ease,
+    box-shadow 360ms var(--ease-out);
+}
+
+@keyframes topbar-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .topbar.is-compact {
-  height: 58px;
-  background: rgba(14, 13, 19, 0.7);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  height: 50px;
+  background: rgba(12, 10, 15, 0.78);
+  border-color: rgba(255, 255, 255, 0.11);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 18px 58px rgba(3, 2, 5, 0.24);
 }
 
 .brand-lockup {
@@ -124,22 +155,48 @@ a:focus-visible {
 }
 
 .nav-links {
+  position: absolute;
+  left: 50%;
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 32px;
+  transform: translateX(-50%);
 }
 
 .nav-links a {
+  position: relative;
+  padding: 18px 0;
   color: rgba(255, 255, 255, 0.48);
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 550;
+  font-size: 11px;
+  font-weight: 620;
   transition: color 180ms ease;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--rose-bright);
+  opacity: 0;
+  transform: translate(-50%, 4px) scale(0.6);
+  transition:
+    opacity 180ms ease,
+    transform 220ms var(--ease-out);
 }
 
 .nav-links a:hover,
 .nav-links a.is-active {
   color: rgba(255, 255, 255, 0.92);
+}
+
+.nav-links a.is-active::after {
+  opacity: 0.78;
+  transform: translate(-50%, 0) scale(1);
 }
 
 .topbar-actions {
@@ -214,6 +271,28 @@ a:focus-visible {
   height: 16px;
 }
 
+.menu-glyph {
+  grid-area: 1 / 1;
+  transition:
+    opacity 150ms ease,
+    transform 220ms var(--ease-out);
+}
+
+.menu-glyph-close {
+  opacity: 0;
+  transform: rotate(-36deg) scale(0.82);
+}
+
+.menu-button[aria-expanded="true"] .menu-glyph-open {
+  opacity: 0;
+  transform: rotate(36deg) scale(0.82);
+}
+
+.menu-button[aria-expanded="true"] .menu-glyph-close {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
 .menu-button {
   display: none;
 }
@@ -253,9 +332,7 @@ a:focus-visible {
 
 .secondary-action,
 .platform-action.is-secondary {
-  background: rgba(255, 255, 255, 0.055);
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  background: rgba(22, 18, 26, 0.82);
 }
 
 .nav-download:hover,
@@ -265,12 +342,33 @@ a:focus-visible {
   transform: translateY(-2px);
 }
 
+.nav-download:active,
+.primary-action:active,
+.secondary-action:active,
+.platform-action:active,
+.icon-button:active,
+.menu-button:active,
+.language-option:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 120ms;
+}
+
 .nav-download svg,
 .primary-action svg,
 .secondary-action svg,
 .platform-action svg {
   width: 16px;
   height: 16px;
+  transition: transform 220ms var(--ease-out);
+}
+
+.nav-download:hover svg,
+.primary-action:hover svg {
+  transform: translateY(2px);
+}
+
+.secondary-action:hover svg {
+  transform: translate(1px, -1px);
 }
 
 .journey {
@@ -355,9 +453,10 @@ a:focus-visible {
 }
 
 .hero-copy {
-  width: min(780px, 82vw);
+  width: min(780px, 76vw);
   position: relative;
   z-index: 4;
+  margin-left: clamp(-160px, -10vw, -72px);
   transform:
     translateY(calc(var(--journey-progress) * -52px))
     scale(calc(1 - var(--journey-progress) * 0.035));
@@ -392,17 +491,41 @@ a:focus-visible {
 }
 
 .hero-title {
-  --title-font: "Soap";
+  --title-font: "Syndra";
   width: 100%;
   margin: 0;
   color: #f7f5f8;
   font-family: var(--title-font), "Arial Rounded MT Bold", "Segoe UI Variable Display", sans-serif;
-  font-size: 72px;
+  font-size: 84px;
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
   white-space: nowrap;
   text-shadow: 0 8px 34px rgba(0, 0, 0, 0.34);
+}
+
+.eyebrow,
+.hero-title,
+.hero-sub,
+.hero-actions,
+.hero-specs {
+  animation: hero-element-arrive 780ms var(--ease-out) both;
+}
+
+.hero-title { animation-delay: 70ms; }
+.hero-sub { animation-delay: 140ms; }
+.hero-actions { animation-delay: 210ms; }
+.hero-specs { animation-delay: 280ms; }
+
+@keyframes hero-element-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-title-button {
@@ -813,8 +936,6 @@ html[lang="en"] .experience-copy h2 {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 24px 70px rgba(4, 2, 7, 0.18);
-  backdrop-filter: blur(24px) saturate(130%);
-  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .runtime-map-head {
@@ -999,6 +1120,27 @@ html[lang="en"] .experience-copy h2 {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.will-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.will-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 680ms ease,
+    transform 760ms var(--ease-out);
+}
+
+.platform-features .feature-row:nth-child(2).will-reveal.is-visible {
+  transition-delay: 70ms;
+}
+
+.platform-features .feature-row:nth-child(3).will-reveal.is-visible {
+  transition-delay: 140ms;
+}
+
 .section-rail {
   position: fixed;
   top: 50%;
@@ -1038,11 +1180,15 @@ html[lang="en"] .experience-copy h2 {
 
 @media (max-width: 980px) {
   .topbar {
-    padding-inline: 24px;
+    padding-inline: 12px;
+  }
+
+  .hero-copy {
+    margin-left: -6vw;
   }
 
   .hero-title {
-    font-size: 60px;
+    font-size: 68px;
   }
 
   .experience-copy {
@@ -1071,9 +1217,12 @@ html[lang="en"] .experience-copy h2 {
 
 @media (max-width: 720px) {
   .topbar {
-    height: 58px;
-    padding-inline: 16px;
-    background: rgba(14, 13, 19, 0.58);
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    height: 50px;
+    padding-inline: 8px;
+    background: rgba(14, 11, 17, 0.72);
     backdrop-filter: blur(22px);
     -webkit-backdrop-filter: blur(22px);
   }
@@ -1128,6 +1277,10 @@ html[lang="en"] .experience-copy h2 {
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   }
 
+  .nav-links a::after {
+    display: none;
+  }
+
   .nav-links a:last-child {
     border-bottom: 0;
   }
@@ -1153,11 +1306,12 @@ html[lang="en"] .experience-copy h2 {
   .hero-copy {
     width: 100%;
     align-self: flex-start;
+    margin-left: 0;
     margin-top: 10vh;
   }
 
   .hero-title {
-    font-size: 40px;
+    font-size: 44px;
   }
 
   .font-name-tooltip {
@@ -1360,7 +1514,7 @@ html[lang="en"] .experience-copy h2 {
   }
 
   .hero-sub {
-    margin-top: 18px;
+    margin-top: 44px;
     font-size: 15px;
   }
 
@@ -1389,5 +1543,10 @@ html[lang="en"] .experience-copy h2 {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .will-reveal {
+    opacity: 1;
+    transform: none;
   }
 }
