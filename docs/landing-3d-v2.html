@@ -468,11 +468,9 @@
         const avgZ = sumZ / nrm.count;
         if (Math.abs(avgZ) > 0.3) { frontZ += avgZ; frontCount++; }
       });
-      needFlip = (frontZ < 0);
-      console.log('Front detection: frontZ=', frontZ, 'frontCount=', frontCount, 'needFlip=', needFlip);
-      // Force flip — the normal detection seems inverted
-      needFlip = !needFlip;
-      console.log('After force flip: needFlip=', needFlip);
+      // Normals facing +Z means the BACK face is toward camera (back meshes face outward +Z)
+      // So we flip when frontZ > 0
+      needFlip = (frontZ > 0);
       if (needFlip) phoneGroup.rotation.y = Math.PI;
 
       // Replace screen mesh material with our CanvasTexture
