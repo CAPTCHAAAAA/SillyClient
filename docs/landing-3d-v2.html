@@ -7,6 +7,15 @@
   <meta name="description" content="SillyClient 把 SillyTavern 的运行时、实例管理和阅读窗口做成 Android 与 Windows 应用。" />
   <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml" />
   <style>
+    @font-face { font-family: "Yummy"; src: url("./landing-fonts/Yummy.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Arcade Raiders"; src: url("./landing-fonts/ArcadeRaiders.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Noisy Walk"; src: url("./landing-fonts/NoisyWalk.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Stay Pixel"; src: url("./landing-fonts/StayPixel.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "04B 30"; src: url("./landing-fonts/04B_30.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Pixel Chaos"; src: url("./landing-fonts/PixelChaos.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Soap"; src: url("./landing-fonts/Soap.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Syndra"; src: url("./landing-fonts/Syndra-SemiBold.otf") format("opentype"); font-weight: 600; font-display: swap; }
+    @font-face { font-family: "Dynamic Display"; src: url("./landing-fonts/DynamicDisplay.ttf") format("truetype"); font-display: swap; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: auto; }
     body {
@@ -73,7 +82,7 @@
       --reflection-x: 42%;
       --reflection-y: 18%;
       --reflection-angle: 116deg;
-      --reflection-opacity: 0.48;
+      --reflection-opacity: 0.2;
       position: absolute; top: 0; left: 0; z-index: 2;
       width: 390px; height: 844px;
       overflow: hidden;
@@ -99,32 +108,31 @@
       opacity: var(--reflection-opacity);
       mix-blend-mode: screen;
       background:
-        radial-gradient(ellipse 72% 38% at var(--reflection-x) var(--reflection-y),
-          rgba(238,247,255,0.24) 0%,
-          rgba(178,205,235,0.09) 28%,
-          rgba(137,166,205,0.025) 52%,
-          transparent 72%),
+        radial-gradient(ellipse 68% 34% at var(--reflection-x) var(--reflection-y),
+          rgba(225,235,243,0.13) 0%,
+          rgba(151,173,194,0.045) 34%,
+          transparent 70%),
         linear-gradient(var(--reflection-angle),
-          transparent 24%,
-          rgba(255,255,255,0.02) 33%,
-          rgba(226,239,255,0.2) 43%,
-          rgba(255,255,255,0.065) 50%,
-          transparent 60%);
+          transparent 30%,
+          rgba(213,225,235,0.025) 39%,
+          rgba(207,221,233,0.095) 45%,
+          rgba(255,255,255,0.025) 51%,
+          transparent 59%);
       box-shadow:
-        inset 0 0 0 1px rgba(218,232,248,0.1),
-        inset 18px 0 30px -28px rgba(158,196,235,0.28),
-        inset -16px 0 28px -27px rgba(255,170,190,0.16),
-        inset 0 -24px 34px -34px rgba(255,255,255,0.16);
+        inset 0 0 0 1px rgba(207,221,232,0.055),
+        inset 18px 0 30px -28px rgba(139,166,190,0.16),
+        inset -16px 0 28px -27px rgba(182,198,211,0.08),
+        inset 0 -24px 34px -34px rgba(255,255,255,0.08);
       will-change: opacity, background;
     }
     #screen-reflection::after {
       content: '';
       position: absolute; inset: 0;
       background: linear-gradient(108deg,
-        rgba(112,151,203,0.055),
-        transparent 34%,
-        rgba(255,255,255,0.018) 58%,
-        rgba(255,126,160,0.035) 78%,
+        rgba(127,153,177,0.035),
+        transparent 38%,
+        rgba(255,255,255,0.012) 61%,
+        rgba(169,186,201,0.025) 80%,
         transparent);
     }
     #dynamic-island {
@@ -185,7 +193,6 @@
       <nav class="nav-links" id="nav-links" aria-label="主要导航">
         <a href="#journey" data-scroll-target="journey">概览</a>
         <a href="#experience" data-scroll-target="experience">体验</a>
-        <a href="#system" data-scroll-target="system">能力</a>
         <a href="#platform" data-scroll-target="platform">下载</a>
       </nav>
       <div class="topbar-actions">
@@ -220,6 +227,21 @@
             <div class="hero-copy">
               <div class="eyebrow"><span class="status-pulse"></span> SillyTavern · Android / Windows</div>
               <h1 class="hero-title">Silly<span class="accent">Client</span></h1>
+              <div class="title-font-switcher">
+                <i data-lucide="type"></i>
+                <select id="title-font-select" aria-label="选择标题字体" title="选择标题字体">
+                  <option value="Yummy">Yummy</option>
+                  <option value="Arcade Raiders">Arcade Raiders</option>
+                  <option value="Noisy Walk">Noisy Walk</option>
+                  <option value="Stay Pixel">Stay Pixel</option>
+                  <option value="04B 30">04B 30</option>
+                  <option value="Pixel Chaos">Pixel Chaos</option>
+                  <option value="Soap" selected>Soap</option>
+                  <option value="Syndra">Syndra</option>
+                  <option value="Dynamic Display">Dynamic Display</option>
+                </select>
+                <i data-lucide="chevron-down"></i>
+              </div>
               <p class="hero-sub">安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。</p>
               <div class="hero-actions">
                 <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
@@ -255,17 +277,17 @@
         </div>
       </section>
 
-      <section class="system-section" id="system" data-section="system">
-        <div class="section-heading">
-          <div>
-            <div class="section-index">02 / Runtime system</div>
-            <h2>不只是给网页套一层外壳。</h2>
+      <section class="platform-section" id="platform" data-section="platform">
+        <div class="platform-inner">
+          <div class="platform-intro">
+            <div>
+              <div class="section-index">02 / Native runtime</div>
+              <h2>不只是给网页套一层外壳。</h2>
+            </div>
+            <p>共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。</p>
           </div>
-          <p>共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。</p>
-        </div>
 
-        <div class="system-showcase">
-          <div class="feature-list">
+          <div class="feature-list platform-features">
             <article class="feature-row">
               <span class="feature-icon"><i data-lucide="zap"></i></span>
               <div><h3>运行时随应用提供</h3><p>Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
@@ -280,35 +302,10 @@
             </article>
           </div>
 
-          <div class="runtime-panel" aria-label="SillyClient 运行时状态示意">
-            <div class="runtime-toolbar">
-              <div class="runtime-lights"><span></span><span></span><span></span></div>
-              <div class="runtime-title">Local Instance · 01</div>
-              <div class="runtime-live">RUNNING</div>
-            </div>
-            <div class="runtime-body">
-              <div class="log-line"><span class="log-time">23:42:08</span><span class="log-level">INFO</span><span>Loading bundled Node.js runtime</span></div>
-              <div class="log-line"><span class="log-time">23:42:09</span><span class="log-level ok">READY</span><span class="log-command">Instance configuration loaded</span></div>
-              <div class="log-line"><span class="log-time">23:42:09</span><span class="log-level">INFO</span><span>Starting SillyTavern process</span></div>
-              <div class="log-line"><span class="log-time">23:42:10</span><span class="log-level warn">PORT</span><span>Listening on 127.0.0.1:8000</span></div>
-              <div class="log-line"><span class="log-time">23:42:10</span><span class="log-level ok">READY</span><span class="log-command">SillyTavern is available</span></div>
-              <div class="log-line"><span class="log-time">23:42:11</span><span class="log-level">INFO</span><span>Native reading window attached</span></div>
-            </div>
-            <div class="runtime-meter">
-              <div><strong>Node.js</strong><span>Runtime</span></div>
-              <div><strong>127.0.0.1</strong><span>Local host</span></div>
-              <div><strong>WebView</strong><span>Session</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="platform-section" id="platform" data-section="platform">
-        <div class="platform-inner">
-          <div class="platform-head">
+          <div class="platform-head download-row">
             <div>
-              <div class="section-index">03 / Available now</div>
-              <h2>装好，就可以开始搭建自己的酒馆。</h2>
+              <div class="section-index">Android / Windows</div>
+              <h3>装好，就可以开始搭建自己的酒馆。</h3>
             </div>
             <div class="platform-actions">
               <a class="platform-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
@@ -320,9 +317,9 @@
             </div>
           </div>
           <div class="platform-meta">
-            <div><strong>React 19</strong><span>Shared interface</span></div>
-            <div><strong>Capacitor 7</strong><span>Android shell</span></div>
-            <div><strong>Electron 33</strong><span>Windows shell</span></div>
+            <div><strong>Bionic Node.js</strong><span>Android runtime</span></div>
+            <div><strong>Node.js 22</strong><span>Windows runtime</span></div>
+            <div><strong>React 19</strong><span>Shared control UI</span></div>
             <div><strong>MIT</strong><span>Open source</span></div>
           </div>
           <footer class="site-footer">
@@ -339,7 +336,6 @@
     <div class="section-rail" aria-label="页面章节">
       <button class="rail-dot is-active" type="button" data-scroll-target="journey" aria-label="概览"></button>
       <button class="rail-dot" type="button" data-scroll-target="experience" aria-label="产品体验"></button>
-      <button class="rail-dot" type="button" data-scroll-target="system" aria-label="核心能力"></button>
       <button class="rail-dot" type="button" data-scroll-target="platform" aria-label="下载"></button>
     </div>
   </div>
@@ -358,11 +354,48 @@
       const observedSections = [
         document.getElementById('journey'),
         document.getElementById('experience'),
-        document.getElementById('system'),
         document.getElementById('platform')
       ];
+      const titleFontSelect = document.getElementById('title-font-select');
+      const heroTitle = document.querySelector('.hero-title');
+      const titleFonts = new Set([
+        'Yummy',
+        'Arcade Raiders',
+        'Noisy Walk',
+        'Stay Pixel',
+        '04B 30',
+        'Pixel Chaos',
+        'Soap',
+        'Syndra',
+        'Dynamic Display'
+      ]);
 
       if (window.lucide) window.lucide.createIcons();
+
+      function fitHeroTitle() {
+        heroTitle.style.fontSize = '';
+        requestAnimationFrame(() => {
+          const baseSize = parseFloat(getComputedStyle(heroTitle).fontSize);
+          const available = heroTitle.clientWidth;
+          const required = heroTitle.scrollWidth;
+          if (required > available) {
+            heroTitle.style.fontSize = `${Math.max(30, baseSize * available / required)}px`;
+          }
+        });
+      }
+
+      function applyTitleFont(font) {
+        const selected = titleFonts.has(font) ? font : 'Soap';
+        heroTitle.style.setProperty('--title-font', `"${selected}"`);
+        heroTitle.style.fontWeight = selected === 'Syndra' ? '600' : '400';
+        titleFontSelect.value = selected;
+        localStorage.setItem('landing-title-font', selected);
+        document.fonts.load(`${selected === 'Syndra' ? 600 : 400} 72px "${selected}"`).finally(fitHeroTitle);
+      }
+
+      applyTitleFont(localStorage.getItem('landing-title-font') || 'Soap');
+      titleFontSelect.addEventListener('change', () => applyTitleFont(titleFontSelect.value));
+      addEventListener('resize', fitHeroTitle);
 
       function targetTop(target) {
         if (target.id === 'experience') {
@@ -396,8 +429,7 @@
 
         const probe = scrollTop + pageScroller.clientHeight * 0.48;
         let activeIndex = 0;
-        if (probe >= targetTop(observedSections[3])) activeIndex = 3;
-        else if (probe >= targetTop(observedSections[2])) activeIndex = 2;
+        if (probe >= targetTop(observedSections[2])) activeIndex = 2;
         else if (progress > 0.48) activeIndex = 1;
 
         rails.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
@@ -440,7 +472,7 @@
     // Three.js Scene + GLB Model
     // ========================================
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0e0d13, 0.012);
+    scene.fog = new THREE.FogExp2(0x0b0d10, 0.012);
 
     const camera = new THREE.PerspectiveCamera(40, section.clientWidth / section.clientHeight, 0.1, 200);
     camera.position.set(0, 0, 6);
@@ -448,16 +480,16 @@
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setSize(section.clientWidth, section.clientHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x0e0d13, 1);
+    renderer.setClearColor(0x0b0d10, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 0.98;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(section.clientWidth, section.clientHeight),
-      0.22,
+      0.12,
       0.36,
       1.02
     );
@@ -466,81 +498,50 @@
 
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.82;
+    scene.environmentIntensity = 0.7;
     pmremGenerator.dispose();
 
     // Large studio panels create controlled specular bands on the metal body.
-    scene.add(new THREE.HemisphereLight(0xe8edff, 0x1b1423, 0.38));
-    const keyLight = new THREE.RectAreaLight(0xfff8f2, 4.6, 2.4, 5.2);
+    scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x08090c, 0.32));
+    const keyLight = new THREE.RectAreaLight(0xe5edf4, 3.8, 2.4, 5.2);
     keyLight.position.set(-3.8, 3.2, 4.8);
     keyLight.lookAt(0, 0, 0);
     scene.add(keyLight);
-    const fillLight = new THREE.RectAreaLight(0xbfd5ff, 2.15, 1.7, 4.2);
+    const fillLight = new THREE.RectAreaLight(0x9eb5c9, 1.7, 1.7, 4.2);
     fillLight.position.set(4.2, 0.2, 3.4);
     fillLight.lookAt(0, 0, 0);
     scene.add(fillLight);
-    const edgeLight = new THREE.RectAreaLight(0xff7898, 1.65, 1.2, 4.5);
+    const edgeLight = new THREE.RectAreaLight(0xb9c7d2, 1.15, 1.2, 4.5);
     edgeLight.position.set(1.6, -1.2, -4);
     edgeLight.lookAt(0, 0, 0);
     scene.add(edgeLight);
-    const faceLight = new THREE.DirectionalLight(0xe4ecff, 0.42);
+    const faceLight = new THREE.DirectionalLight(0xd9e3ec, 0.34);
     faceLight.position.set(0, 2.5, 5);
     scene.add(faceLight);
 
     // A restrained data field gives the scroll journey depth without competing with the phone.
     const backdrop = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 16),
-      new THREE.MeshBasicMaterial({ color: 0x100e16 })
+      new THREE.MeshBasicMaterial({ color: 0x090b0e })
     );
     backdrop.position.z = -7;
     scene.add(backdrop);
 
     const fieldPositions = [];
-    for (let x = -8; x <= 8; x += 1.25) fieldPositions.push(x, -5, -4.8, x, 5, -4.8);
-    for (let y = -5; y <= 5; y += 1.25) fieldPositions.push(-8, y, -4.8, 8, y, -4.8);
+    for (let x = -8; x <= 8; x += 2.5) fieldPositions.push(x, -5, -4.8, x, 5, -4.8);
+    for (let y = -5; y <= 5; y += 2.5) fieldPositions.push(-8, y, -4.8, 8, y, -4.8);
     const fieldGeometry = new THREE.BufferGeometry();
     fieldGeometry.setAttribute('position', new THREE.Float32BufferAttribute(fieldPositions, 3));
     const field = new THREE.LineSegments(
       fieldGeometry,
       new THREE.LineBasicMaterial({
-        color: 0x6f7182,
+        color: 0x8494a3,
         transparent: true,
-        opacity: 0.045,
+        opacity: 0.018,
         depthWrite: false
       })
     );
     scene.add(field);
-
-    const signalGroup = new THREE.Group();
-    const signalLines = [];
-    const signalColors = [0xe8365d, 0x9eb9d4, 0xff7898, 0x7793b2];
-    for (let index = 0; index < 7; index++) {
-      const y = -2.9 + index * 0.92;
-      const curve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(-7.5, y - 0.35, -3.2),
-        new THREE.Vector3(-3.2, y + (index % 2 ? 0.34 : -0.22), -2.7),
-        new THREE.Vector3(0, y + 0.18, -3),
-        new THREE.Vector3(3.4, y + (index % 2 ? -0.28 : 0.32), -2.6),
-        new THREE.Vector3(7.5, y, -3.4)
-      ]);
-      const material = new THREE.LineDashedMaterial({
-        color: signalColors[index % signalColors.length],
-        transparent: true,
-        opacity: index === 3 ? 0.2 : 0.09,
-        dashSize: index === 3 ? 0.26 : 0.18,
-        gapSize: index === 3 ? 0.5 : 0.72,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
-      });
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(curve.getPoints(120)),
-        material
-      );
-      line.computeLineDistances();
-      signalLines.push(line);
-      signalGroup.add(line);
-    }
-    scene.add(signalGroup);
 
     // ========================================
     // Load GLB + Setup Screen
@@ -567,9 +568,9 @@
           materials.forEach((material) => {
             if (!material) return;
             material.metalness = Math.max(material.metalness ?? 0, 0.88);
-            material.roughness = THREE.MathUtils.clamp(material.roughness ?? 0.24, 0.16, 0.27);
-            material.envMapIntensity = 0.92;
-            if (/17Air_color[123]/.test(material.name || '')) material.color.multiplyScalar(0.7);
+            material.roughness = THREE.MathUtils.clamp(material.roughness ?? 0.24, 0.2, 0.3);
+            material.envMapIntensity = 0.82;
+            if (/17Air_color[123]/.test(material.name || '')) material.color.multiplyScalar(0.74);
             material.needsUpdate = true;
           });
         }
@@ -587,12 +588,12 @@
           child.material = new THREE.MeshPhysicalMaterial({
             color: 0x9eb4c9,
             transparent: true,
-            opacity: 0.12,
-            roughness: 0.12,
+            opacity: 0.07,
+            roughness: 0.22,
             metalness: 0.05,
             transmission: 0,
             clearcoat: 1,
-            clearcoatRoughness: 0.04,
+            clearcoatRoughness: 0.12,
             depthWrite: false,
             side: THREE.DoubleSide
           });
@@ -809,13 +810,7 @@
       const journeyEase = THREE.MathUtils.smoothstep(journeyProgress, 0.08, 0.88);
       const overlayOpacity = THREE.MathUtils.smoothstep(journeyProgress, 0.43, 0.72);
 
-      signalGroup.position.y = THREE.MathUtils.lerp(-0.25, 0.18, journeyEase);
-      signalGroup.rotation.z = THREE.MathUtils.lerp(-0.025, 0.015, journeyEase);
-      signalLines.forEach((line, index) => {
-        line.material.dashOffset -= delta * (0.16 + index * 0.018);
-        line.material.opacity = (index === 3 ? 0.2 : 0.09) * (1 - journeyEase * 0.3);
-      });
-      field.material.opacity = THREE.MathUtils.lerp(0.045, 0.022, journeyEase);
+      field.material.opacity = THREE.MathUtils.lerp(0.018, 0.01, journeyEase);
 
       if (phoneGroup) {
         const motionX = reduced ? 0 : pointer.x;
@@ -859,7 +854,7 @@
         screenFrame.style.setProperty('--reflection-x', `${42 - motionX * 28}%`);
         screenFrame.style.setProperty('--reflection-y', `${18 + motionY * 16}%`);
         screenFrame.style.setProperty('--reflection-angle', `${116 - motionX * 14}deg`);
-        screenFrame.style.setProperty('--reflection-opacity', `${0.5 + Math.abs(motionX) * 0.16}`);
+        screenFrame.style.setProperty('--reflection-opacity', `${0.18 + Math.abs(motionX) * 0.07}`);
         screenFrame.style.opacity = overlayOpacity.toFixed(3);
         screenFrame.style.pointerEvents = overlayOpacity > 0.92 ? 'auto' : 'none';
         updateScreenOverlay();
