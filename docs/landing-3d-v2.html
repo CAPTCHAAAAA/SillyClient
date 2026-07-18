@@ -190,9 +190,10 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css?v=20260719-i18n" />
+  <link rel="stylesheet" href="./landing-premium.css?v=20260719-ambient" />
 </head>
 <body>
+  <canvas class="ambient-field" id="ambient-field" aria-hidden="true"></canvas>
   <div class="scroll-container site-scroller" id="scroller">
     <header class="topbar" id="topbar">
       <a class="brand-lockup" href="#journey" data-scroll-target="journey" aria-label="SillyClient 首页" data-i18n-aria="homeLabel">
@@ -239,22 +240,15 @@
           <section class="story-panel hero-panel" id="hero" data-section="hero">
             <div class="hero-copy">
               <div class="eyebrow"><span class="status-pulse"></span> SillyTavern · Android / Windows</div>
-              <h1 class="hero-title">Silly<span class="accent">Client</span></h1>
-              <div class="title-font-switcher">
-                <i data-lucide="type"></i>
-                <select id="title-font-select" aria-label="选择标题字体" title="选择标题字体" data-i18n-aria="fontLabel" data-i18n-title="fontLabel">
-                  <option value="Yummy">Yummy</option>
-                  <option value="Arcade Raiders">Arcade Raiders</option>
-                  <option value="Noisy Walk">Noisy Walk</option>
-                  <option value="Stay Pixel">Stay Pixel</option>
-                  <option value="04B 30">04B 30</option>
-                  <option value="Pixel Chaos">Pixel Chaos</option>
-                  <option value="Soap" selected>Soap</option>
-                  <option value="Syndra">Syndra</option>
-                  <option value="Dynamic Display">Dynamic Display</option>
-                </select>
-                <i data-lucide="chevron-down"></i>
-              </div>
+              <h1 class="hero-title" aria-label="SillyClient">
+                <button class="hero-title-button" id="title-font-button" type="button">
+                  <span class="title-wordmark">Silly<span class="accent">Client</span></span>
+                  <span class="font-name-tooltip" id="font-name-tooltip" role="status">
+                    <i data-lucide="type"></i>
+                    <span id="current-font-name">Soap</span>
+                  </span>
+                </button>
+              </h1>
               <p class="hero-sub" data-i18n="heroSubtitle">安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。</p>
               <div class="hero-actions">
                 <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
@@ -300,19 +294,42 @@
             <p data-i18n="platformBody">共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。</p>
           </div>
 
-          <div class="feature-list platform-features">
-            <article class="feature-row">
-              <span class="feature-icon"><i data-lucide="zap"></i></span>
-              <div><h3 data-i18n="runtimeIncludedTitle">运行时随应用提供</h3><p data-i18n="runtimeIncludedBody">Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
-            </article>
-            <article class="feature-row">
-              <span class="feature-icon"><i data-lucide="layers-3"></i></span>
-              <div><h3 data-i18n="separateWindowsTitle">控制台与酒馆分开</h3><p data-i18n="separateWindowsBody">管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。</p></div>
-            </article>
-            <article class="feature-row">
-              <span class="feature-icon"><i data-lucide="monitor-smartphone"></i></span>
-              <div><h3 data-i18n="sharedUiTitle">同一套界面，不同平台实现</h3><p data-i18n="sharedUiBody">React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。</p></div>
-            </article>
+          <div class="platform-layout">
+            <div class="runtime-map" aria-label="运行路径" data-i18n-aria="runtimeMapLabel">
+              <div class="runtime-map-head">
+                <span data-i18n="runtimeMapLabel">运行路径</span>
+                <span class="runtime-map-status"><i></i><span data-i18n="runtimeMapStatus">本地优先</span></span>
+              </div>
+              <ol class="runtime-path">
+                <li>
+                  <span class="runtime-step">01</span>
+                  <div><strong data-i18n="runtimeUiTitle">React 控制台</strong><p data-i18n="runtimeUiBody">实例、端口、进程与日志从同一个界面发出指令。</p></div>
+                </li>
+                <li>
+                  <span class="runtime-step">02</span>
+                  <div><strong data-i18n="runtimeBridgeTitle">原生桥接</strong><p data-i18n="runtimeBridgeBody">Kotlin 与 Electron 接管系统权限、窗口和文件操作。</p></div>
+                </li>
+                <li>
+                  <span class="runtime-step">03</span>
+                  <div><strong data-i18n="runtimeEngineTitle">内置运行时</strong><p data-i18n="runtimeEngineBody">Node.js 随应用提供，SillyTavern 独立运行并保持在线。</p></div>
+                </li>
+              </ol>
+            </div>
+
+            <div class="feature-list platform-features">
+              <article class="feature-row">
+                <span class="feature-icon"><i data-lucide="zap"></i></span>
+                <div><h3 data-i18n="runtimeIncludedTitle">运行时随应用提供</h3><p data-i18n="runtimeIncludedBody">Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
+              </article>
+              <article class="feature-row">
+                <span class="feature-icon"><i data-lucide="layers-3"></i></span>
+                <div><h3 data-i18n="separateWindowsTitle">控制台与酒馆分开</h3><p data-i18n="separateWindowsBody">管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。</p></div>
+              </article>
+              <article class="feature-row">
+                <span class="feature-icon"><i data-lucide="monitor-smartphone"></i></span>
+                <div><h3 data-i18n="sharedUiTitle">同一套界面，不同平台实现</h3><p data-i18n="sharedUiBody">React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。</p></div>
+              </article>
+            </div>
           </div>
 
           <div class="platform-head download-row">
@@ -369,11 +386,14 @@
         document.getElementById('experience'),
         document.getElementById('platform')
       ];
-      const titleFontSelect = document.getElementById('title-font-select');
+      const titleFontButton = document.getElementById('title-font-button');
+      const titleWordmark = document.querySelector('.title-wordmark');
+      const currentFontName = document.getElementById('current-font-name');
       const heroTitle = document.querySelector('.hero-title');
       const languageButtons = [...document.querySelectorAll('[data-language]')];
       const descriptionMeta = document.querySelector('meta[name="description"]');
-      const titleFonts = new Set([
+      const ambientCanvas = document.getElementById('ambient-field');
+      const titleFonts = [
         'Yummy',
         'Arcade Raiders',
         'Noisy Walk',
@@ -383,7 +403,7 @@
         'Soap',
         'Syndra',
         'Dynamic Display'
-      ]);
+      ];
       const translations = {
         zh: {
           documentTitle: 'SillyClient | Android 与 Windows 上的 SillyTavern 客户端',
@@ -402,7 +422,7 @@
           loadingScene: '正在装配产品场景',
           appFrameTitle: 'SillyClient 软件界面',
           stageCaption: '交互式产品场景',
-          fontLabel: '选择标题字体',
+          fontLabel: '点击切换标题字体，当前为 {font}',
           heroSubtitle: '安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。',
           latestRelease: '获取最新版本',
           viewSource: '查看源码',
@@ -420,6 +440,14 @@
           interactiveScreen: '屏幕可直接交互',
           platformTitle: '不只是给网页套一层外壳。',
           platformBody: '共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。',
+          runtimeMapLabel: '运行路径',
+          runtimeMapStatus: '本地优先',
+          runtimeUiTitle: 'React 控制台',
+          runtimeUiBody: '实例、端口、进程与日志从同一个界面发出指令。',
+          runtimeBridgeTitle: '原生桥接',
+          runtimeBridgeBody: 'Kotlin 与 Electron 接管系统权限、窗口和文件操作。',
+          runtimeEngineTitle: '内置运行时',
+          runtimeEngineBody: 'Node.js 随应用提供，SillyTavern 独立运行并保持在线。',
           runtimeIncludedTitle: '运行时随应用提供',
           runtimeIncludedBody: 'Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。',
           separateWindowsTitle: '控制台与酒馆分开',
@@ -450,7 +478,7 @@
           loadingScene: 'Assembling the product scene',
           appFrameTitle: 'SillyClient app interface',
           stageCaption: 'Interactive product scene',
-          fontLabel: 'Choose title font',
+          fontLabel: 'Cycle title font, currently {font}',
           heroSubtitle: 'Install, launch, and manage SillyTavern. The runtime ships with the app, while local and remote instances share one control center.',
           latestRelease: 'Get the latest release',
           viewSource: 'View source',
@@ -468,6 +496,14 @@
           interactiveScreen: 'The screen is fully interactive',
           platformTitle: 'More than a web page in a wrapper.',
           platformBody: 'The shared React console issues commands. Installation, processes, runtimes, and reading windows are handled by the native Android or Windows layer.',
+          runtimeMapLabel: 'Execution path',
+          runtimeMapStatus: 'Local first',
+          runtimeUiTitle: 'React control UI',
+          runtimeUiBody: 'Instances, ports, processes, and logs start from one interface.',
+          runtimeBridgeTitle: 'Native bridge',
+          runtimeBridgeBody: 'Kotlin and Electron handle system access, windows, and files.',
+          runtimeEngineTitle: 'Bundled runtime',
+          runtimeEngineBody: 'Node.js ships with the app while SillyTavern runs independently and stays online.',
           runtimeIncludedTitle: 'Runtime included',
           runtimeIncludedBody: 'No Termux on Android and no separate Node.js install on Windows. SillyClient owns setup and launch from end to end.',
           separateWindowsTitle: 'Console and tavern, separated',
@@ -483,8 +519,88 @@
         }
       };
       let currentLanguage = 'zh';
+      let activeTitleFont = 'Soap';
+      let fontTooltipTimer = 0;
 
       if (window.lucide) window.lucide.createIcons();
+
+      function setupAmbientField() {
+        const context = ambientCanvas.getContext('2d', { alpha: false });
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        let image = null;
+        let pointerX = 0.5;
+        let pointerY = 0.5;
+        let smoothX = 0.5;
+        let smoothY = 0.5;
+        let lastFrame = -Infinity;
+
+        function resizeField() {
+          const compact = innerWidth <= 720;
+          ambientCanvas.width = compact ? 64 : 96;
+          ambientCanvas.height = Math.max(40, Math.round(ambientCanvas.width * innerHeight / innerWidth));
+          image = context.createImageData(ambientCanvas.width, ambientCanvas.height);
+        }
+
+        function renderField(now = 0) {
+          if (!image) resizeField();
+          const time = reduceMotion.matches ? 4.8 : now * 0.00008;
+          const width = ambientCanvas.width;
+          const height = ambientCanvas.height;
+          smoothX += (pointerX - smoothX) * 0.018;
+          smoothY += (pointerY - smoothY) * 0.018;
+
+          for (let y = 0; y < height; y += 1) {
+            const ny = y / Math.max(1, height - 1);
+            for (let x = 0; x < width; x += 1) {
+              const nx = x / Math.max(1, width - 1);
+              const sweep = Math.sin(nx * 7.2 + time * 2.3 + Math.sin(ny * 5.4 - time) * 1.25);
+              const cross = Math.cos(ny * 6.1 - time * 1.7 + Math.sin(nx * 4.8 + time * 0.7) * 1.1);
+              const diagonal = Math.sin((nx * 0.72 + ny * 1.18 + time * 0.34) * Math.PI * 2);
+              const pointerDrift = Math.cos(
+                Math.hypot(nx - smoothX, ny - smoothY) * 5.2 - time * 1.5
+              );
+              const field = Math.max(0, Math.min(1,
+                0.32 + sweep * 0.16 + cross * 0.14 + diagonal * 0.09 + pointerDrift * 0.05
+              ));
+              const wine = field * field;
+              const sheen = Math.max(0, diagonal) * 0.08;
+              const index = (y * width + x) * 4;
+              image.data[index] = Math.round(8 + wine * 87 + sheen * 70);
+              image.data[index + 1] = Math.round(7 + wine * 15 + sheen * 8);
+              image.data[index + 2] = Math.round(13 + wine * 31 + sheen * 18);
+              image.data[index + 3] = 255;
+            }
+          }
+          context.putImageData(image, 0, 0);
+        }
+
+        function tick(now) {
+          if (now - lastFrame > 42) {
+            renderField(now);
+            lastFrame = now;
+          }
+          if (!reduceMotion.matches) requestAnimationFrame(tick);
+        }
+
+        addEventListener('pointermove', (event) => {
+          pointerX = event.clientX / Math.max(1, innerWidth);
+          pointerY = event.clientY / Math.max(1, innerHeight);
+        }, { passive: true });
+        addEventListener('resize', () => {
+          resizeField();
+          renderField(performance.now());
+        });
+        reduceMotion.addEventListener('change', () => {
+          renderField(performance.now());
+          if (!reduceMotion.matches) requestAnimationFrame(tick);
+        });
+
+        resizeField();
+        renderField(performance.now());
+        if (!reduceMotion.matches) requestAnimationFrame(tick);
+      }
+
+      setupAmbientField();
 
       function syncMenuLabel() {
         const key = navLinks.classList.contains('is-open') ? 'closeMenu' : 'openMenu';
@@ -518,6 +634,7 @@
         });
         localStorage.setItem('landing-language', currentLanguage);
         syncMenuLabel();
+        syncTitleFontLabel();
         requestAnimationFrame(fitHeroTitle);
       }
 
@@ -526,24 +643,50 @@
         requestAnimationFrame(() => {
           const baseSize = parseFloat(getComputedStyle(heroTitle).fontSize);
           const available = heroTitle.clientWidth;
-          const required = heroTitle.scrollWidth;
+          const required = titleWordmark.scrollWidth;
           if (required > available) {
             heroTitle.style.fontSize = `${Math.max(30, baseSize * available / required)}px`;
           }
         });
       }
 
-      function applyTitleFont(font) {
-        const selected = titleFonts.has(font) ? font : 'Soap';
+      function syncTitleFontLabel() {
+        const label = translations[currentLanguage].fontLabel.replace('{font}', activeTitleFont);
+        titleFontButton.setAttribute('aria-label', label);
+        titleFontButton.setAttribute('title', label);
+      }
+
+      function applyTitleFont(font, animate = false) {
+        const selected = titleFonts.includes(font) ? font : 'Soap';
+        activeTitleFont = selected;
         heroTitle.style.setProperty('--title-font', `"${selected}"`);
         heroTitle.style.fontWeight = selected === 'Syndra' ? '600' : '400';
-        titleFontSelect.value = selected;
+        currentFontName.textContent = selected;
+        syncTitleFontLabel();
         localStorage.setItem('landing-title-font', selected);
+        if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          titleWordmark.getAnimations().forEach((animation) => animation.cancel());
+          titleWordmark.animate(
+            [
+              { opacity: 0.52, transform: 'translateY(3px) scale(0.985)', filter: 'blur(2px)' },
+              { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0)' }
+            ],
+            { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+          );
+        }
+        if (animate) {
+          titleFontButton.classList.add('is-revealed');
+          clearTimeout(fontTooltipTimer);
+          fontTooltipTimer = window.setTimeout(() => titleFontButton.classList.remove('is-revealed'), 1100);
+        }
         document.fonts.load(`${selected === 'Syndra' ? 600 : 400} 72px "${selected}"`).finally(fitHeroTitle);
       }
 
       applyTitleFont(localStorage.getItem('landing-title-font') || 'Soap');
-      titleFontSelect.addEventListener('change', () => applyTitleFont(titleFontSelect.value));
+      titleFontButton.addEventListener('click', () => {
+        const nextIndex = (titleFonts.indexOf(activeTitleFont) + 1) % titleFonts.length;
+        applyTitleFont(titleFonts[nextIndex], true);
+      });
       const savedLanguage = localStorage.getItem('landing-language');
       applyLanguage(savedLanguage || (navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'));
       languageButtons.forEach((button) => {
@@ -633,10 +776,10 @@
     const camera = new THREE.PerspectiveCamera(40, section.clientWidth / section.clientHeight, 0.1, 200);
     camera.position.set(0, 0, 6);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(section.clientWidth, section.clientHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x0b0d10, 1);
+    renderer.setClearColor(0x0b0d10, 0.18);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.98;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -678,7 +821,12 @@
     // A restrained data field gives the scroll journey depth without competing with the phone.
     const backdrop = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 16),
-      new THREE.MeshBasicMaterial({ color: 0x090b0e })
+      new THREE.MeshBasicMaterial({
+        color: 0x090b0e,
+        transparent: true,
+        opacity: 0.56,
+        depthWrite: false
+      })
     );
     backdrop.position.z = -7;
     scene.add(backdrop);
