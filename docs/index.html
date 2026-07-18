@@ -420,40 +420,44 @@
     // Load GLTF phone model
     const loader = new GLTFLoader();
     let phoneGroup = null;
-    let screenMesh = null;
-    let glassMesh = null;
+    let needFlip = false;
 
     loader.load('./models/iphone_17_air.glb', (gltf) => {
       phoneGroup = gltf.scene;
 
-      // Find and process screen + glass meshes
+      // 1) Detect front face from normals
+      let frontZ = 0, frontCount = 0;
+      phoneGroup.traverse((child) => {
+        if (!child.isMesh || !child.geometry.attributes.normal) return;
+        const nrm = child.geometry.attributes.normal;
+        let sumZ = 0;
+        for (let i = 0; i < nrm.count; i++) sumZ += nrm.getZ(i);
+        const avgZ = sumZ / nrm.count;
+        if (Math.abs(avgZ) > 0.3) { frontZ += avgZ; frontCount++; }
+      });
+      needFlip = (frontZ < 0);
+
+      // 2) Flip if needed so front faces camera (+Z)
+      if (needFlip) phoneGroup.rotation.y = Math.PI;
+
+      // 3) Make screen + glass fully transparent so iframe shows through
       phoneGroup.traverse((child) => {
         if (!child.isMesh) return;
-        const matName = child.material?.name || '';
-
-        // Screen mesh — make transparent so iframe shows through
-        if (matName === '17Air_Screen') {
-          screenMesh = child;
+        const mn = child.material?.name || '';
+        if (mn === '17Air_Screen' || mn === '17Air_Glass') {
           child.material = new THREE.MeshBasicMaterial({
-            transparent: true, opacity: 0, depthWrite: false
+            transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide
           });
-        }
-        // Glass — slightly transparent
-        if (matName === '17Air_Glass') {
-          glassMesh = child;
-          child.material = child.material.clone();
-          child.material.transparent = true;
-          child.material.opacity = 0.15;
         }
       });
 
-      // Scale and position the phone
+      // 4) Scale phone to reasonable size
       const box = new THREE.Box3().setFromObject(phoneGroup);
       const size = box.getSize(new THREE.Vector3());
-      const scale = 2.8 / Math.max(size.x, size.y);
+      const scale = 3.0 / size.y;
       phoneGroup.scale.setScalar(scale);
 
-      // Center
+      // 5) Center
       const box2 = new THREE.Box3().setFromObject(phoneGroup);
       const center = box2.getCenter(new THREE.Vector3());
       phoneGroup.position.x -= center.x;
@@ -461,23 +465,8 @@
       phoneGroup.position.z -= center.z;
       phoneGroup.position.y += 0.05;
 
-      // 6) Store phone bounds
-      phoneBounds = new THREE.Box3().setFromObject(phoneGroup);
-      const pSize = phoneBounds.getSize(new THREE.Vector3());
-      const pCenter = phoneBounds.getCenter(new THREE.Vector3());
-
-      // Screen area: 88% width, 78% height, centered, offset 2% upward from center
-      screenArea = {
-        cx: pCenter.x,
-        cy: pCenter.y + pSize.y * 0.02,
-        w: pSize.x * 0.88,
-        h: pSize.y * 0.78
-      };
-
       scene.add(phoneGroup);
-    }, undefined, (err) => {
-      console.error('GLTF load error:', err);
-    });
+    }, undefined, (err) => console.error('GLTF load error:', err));
 
     // Mouse
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -495,71 +484,48 @@
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const clock = new THREE.Clock();
 
-    // Project 3D box to screen coords
-    const _v3 = new THREE.Vector3();
-    function toScreen(pos3d) {
-      _v3.copy(pos3d).project(camera);
-      return {
-        x: (_v3.x * 0.5 + 0.5) * innerWidth,
-        y: (-_v3.y * 0.5 + 0.5) * innerHeight
-      };
+    // Project 3D point to screen pixels
+    const _v = new THREE.Vector3();
+    function toScreen(p) {
+      _v.copy(p).project(camera);
+      return { x: (_v.x * 0.5 + 0.5) * innerWidth, y: (-_v.y * 0.5 + 0.5) * innerHeight };
     }
 
     function updateOverlay() {
-      if (!screenMesh || !phoneGroup) return;
-
-      const geo = screenMesh.geometry;
-      geo.computeBoundingBox();
-      const bb = geo.boundingBox;
-
-      // Get world positions of screen corners
-      const topLeft = new THREE.Vector3(bb.min.x, bb.max.y, bb.min.z);
-      const bottomRight = new THREE.Vector3(bb.max.x, bb.min.y, bb.max.z);
-
-      screenMesh.localToWorld(topLeft);
-      screenMesh.localToWorld(bottomRight);
-
-      const tl = toScreen(topLeft);
-      const br = toScreen(bottomRight);
-
-      const sectionRect = section.getBoundingClientRect();
-      const sx = tl.x;
-      const sy = tl.y - sectionRect.top;
-      const sw = br.x - tl.x;
-      const sh = br.y - tl.y;
-
-      overlay.style.left = sx + 'px';
-      overlay.style.top = sy + 'px';
-      overlay.style.width = Math.abs(sw) + 'px';
-      overlay.style.height = Math.abs(sh) + 'px';
+      if (!phoneGroup) return;
+      const box = new THREE.Box3().setFromObject(phoneGroup);
+      const sz = box.getSize(new THREE.Vector3());
+      const ct = box.getCenter(new THREE.Vector3());
+      // Screen area: 88% width, 80% height of phone, centered
+      const sw = sz.x * 0.88, sh = sz.y * 0.80;
+      const tl = toScreen(new THREE.Vector3(ct.x - sw/2, ct.y + sh/2 + sz.y * 0.02, ct.z));
+      const br = toScreen(new THREE.Vector3(ct.x + sw/2, ct.y - sh/2 + sz.y * 0.02, ct.z));
+      const secTop = section.getBoundingClientRect().top;
+      overlay.style.left = tl.x + 'px';
+      overlay.style.top = (tl.y - secTop) + 'px';
+      overlay.style.width = Math.abs(br.x - tl.x) + 'px';
+      overlay.style.height = Math.abs(br.y - tl.y) + 'px';
     }
 
     function loop() {
       requestAnimationFrame(loop);
       const t = clock.getElapsedTime();
-
-      mouse.x += (mouse.tx - mouse.x) * 0.04;
-      mouse.y += (mouse.ty - mouse.y) * 0.04;
-
-      camera.position.x = mouse.x * 0.3;
-      camera.position.y = -mouse.y * 0.15;
-      camera.lookAt(0, 0, 0);
+      mouse.x += (mouse.tx - mouse.x) * 0.05;
+      mouse.y += (mouse.ty - mouse.y) * 0.05;
 
       if (!reduced) {
         pts.rotation.y = t * 0.008;
         pMat.uniforms.uTime.value = t;
+      }
 
-        if (phoneGroup) {
-          // Clamp rotation: Y ±20°, X ±8° — never show back
-          const targetRY = mouse.x * 0.35;
-          const targetRX = -mouse.y * 0.14;
-          phoneGroup.rotation.y += (targetRY - phoneGroup.rotation.y) * 0.08;
-          phoneGroup.rotation.x += (targetRX - phoneGroup.rotation.x) * 0.08;
-          // Hard clamp
-          phoneGroup.rotation.y = Math.max(-0.35, Math.min(0.35, phoneGroup.rotation.y));
-          phoneGroup.rotation.x = Math.max(-0.14, Math.min(0.14, phoneGroup.rotation.x));
-        }
-
+      if (phoneGroup) {
+        const baseY = needFlip ? Math.PI : 0;
+        const targetRY = baseY + mouse.x * 0.3;
+        const targetRX = -mouse.y * 0.1;
+        phoneGroup.rotation.y += (targetRY - phoneGroup.rotation.y) * 0.06;
+        phoneGroup.rotation.x += (targetRX - phoneGroup.rotation.x) * 0.06;
+        phoneGroup.rotation.y = Math.max(baseY - 0.31, Math.min(baseY + 0.31, phoneGroup.rotation.y));
+        phoneGroup.rotation.x = Math.max(-0.17, Math.min(0.17, phoneGroup.rotation.x));
         updateOverlay();
       }
 
