@@ -1,0 +1,32 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">SillyClient</title>
+  <defs>
+    <linearGradient id="bg-warm" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D131E"/>
+      <stop offset="60%" stop-color="#14060A"/>
+      <stop offset="100%" stop-color="#080204"/>
+    </linearGradient>
+    <linearGradient id="glowing-rose" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5E85"/>
+      <stop offset="40%" stop-color="#C7154B"/>
+      <stop offset="100%" stop-color="#6A112E"/>
+    </linearGradient>
+    <linearGradient id="rose-quartz" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0F3" stop-opacity="0.95"/>
+      <stop offset="50%" stop-color="#FFE1E8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#FFD2DC" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="warm-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#4A051A" flood-opacity="0.4"/>
+      <feDropShadow dx="-2" dy="12" stdDeviation="12" flood-color="#3D0315" flood-opacity="0.3"/>
+    </filter>
+    <filter id="bubble-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg-warm)"/>
+  <rect x="1" y="1" width="254" height="254" rx="55" fill="none" stroke="#FFC8D7" stroke-opacity="0.06" stroke-width="1.5"/>
+  <path d="M192 48H64a24 24 0 0 0-24 24v96a24 24 0 0 0 24 24h24v32l40-32h64a24 24 0 0 0 24-24V72a24 24 0 0 0-24-24Z" fill="url(#glowing-rose)" opacity="0.4" filter="url(#bubble-glow)"/>
+  <path d="M208 48H80a32 32 0 0 0-32 32v96a32 32 0 0 0 32 32h128" fill="none" stroke="url(#glowing-rose)" stroke-width="32" stroke-linecap="round"/>
+  <path d="M208 88h-68a20 20 0 0 0 0 40h16a20 20 0 0 1 0 40H88" fill="none" stroke="url(#rose-quartz)" stroke-width="32" stroke-linecap="round" filter="url(#warm-shadow)"/>
+</svg>

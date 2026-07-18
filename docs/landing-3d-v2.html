@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SillyClient — SillyTavern 跨平台启动器</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232D131E'/%3E%3Cstop offset='60%25' stop-color='%2314060A'/%3E%3Cstop offset='100%25' stop-color='%23080204'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23FF5E85'/%3E%3Cstop offset='40%25' stop-color='%23C7154B'/%3E%3Cstop offset='100%25' stop-color='%236A112E'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='56' fill='url(%23b)'/%3E%3Cpath d='M208 48L80 48A32 32 0 0 0 48 80L48 176A32 32 0 0 0 80 208L208 208' fill='none' stroke='url(%23g)' stroke-width='32' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <title>SillyClient · 在 Android 与 Windows 运行 SillyTavern</title>
+  <meta name="description" content="SillyClient 把 SillyTavern 的运行时、实例管理和阅读窗口做成 Android 与 Windows 应用。" />
+  <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: auto; }
@@ -12,9 +13,16 @@
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
       background: #1a1625; color: #fff; overflow-x: hidden; -webkit-font-smoothing: antialiased;
     }
-    .scroll-container { height: 100vh; overflow-y: auto; overflow-x: hidden; scroll-snap-type: y mandatory; }
+    .scroll-container {
+      height: 100vh; height: 100dvh;
+      overflow-y: auto; overflow-x: hidden; scroll-snap-type: y mandatory;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
+    }
+    .scroll-container::-webkit-scrollbar { width: 6px; }
+    .scroll-container::-webkit-scrollbar-track { background: transparent; }
+    .scroll-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
     .section {
-      height: 100vh; scroll-snap-align: start; scroll-snap-stop: always;
+      height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always;
       position: relative; display: flex; flex-direction: column;
       align-items: center; justify-content: center; overflow: hidden;
     }
@@ -57,16 +65,25 @@
     .hero-scroll-hint svg { width: 16px; height: 16px; }
     @keyframes float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
 
-    #three-canvas { position: absolute; inset: 0; z-index: 1; }
+    #sec-phone { background: #1a1625; }
+    #three-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 
     /* iframe overlay — tracks 3D phone screen position via projection */
     #screen-frame {
-      position: absolute; z-index: 2;
+      --reflection-x: 42%;
+      --reflection-y: 18%;
+      --reflection-angle: 116deg;
+      --reflection-opacity: 0.48;
+      position: absolute; top: 0; left: 0; z-index: 2;
+      width: 390px; height: 844px;
       overflow: hidden;
-      pointer-events: none;
-      border-radius: 22px;
-      box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
+      pointer-events: auto;
+      border-radius: 48px;
+      clip-path: inset(0 round 48px);
+      box-shadow: inset 0 0 24px rgba(0,0,0,0.28);
       transform-origin: top left;
+      will-change: transform;
+      contain: layout paint;
       display: none;
     }
     #app-screen {
@@ -74,6 +91,57 @@
       width: 390px; height: 844px;
       transform-origin: top left;
       background: #1a1a1a;
+    }
+    #screen-reflection {
+      position: absolute; inset: 0; z-index: 2;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: var(--reflection-opacity);
+      mix-blend-mode: screen;
+      background:
+        radial-gradient(ellipse 72% 38% at var(--reflection-x) var(--reflection-y),
+          rgba(238,247,255,0.24) 0%,
+          rgba(178,205,235,0.09) 28%,
+          rgba(137,166,205,0.025) 52%,
+          transparent 72%),
+        linear-gradient(var(--reflection-angle),
+          transparent 24%,
+          rgba(255,255,255,0.02) 33%,
+          rgba(226,239,255,0.2) 43%,
+          rgba(255,255,255,0.065) 50%,
+          transparent 60%);
+      box-shadow:
+        inset 0 0 0 1px rgba(218,232,248,0.1),
+        inset 18px 0 30px -28px rgba(158,196,235,0.28),
+        inset -16px 0 28px -27px rgba(255,170,190,0.16),
+        inset 0 -24px 34px -34px rgba(255,255,255,0.16);
+      will-change: opacity, background;
+    }
+    #screen-reflection::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(108deg,
+        rgba(112,151,203,0.055),
+        transparent 34%,
+        rgba(255,255,255,0.018) 58%,
+        rgba(255,126,160,0.035) 78%,
+        transparent);
+    }
+    #dynamic-island {
+      position: absolute; top: 13px; left: 50%; z-index: 3;
+      width: 108px; height: 30px;
+      transform: translateX(-50%);
+      border-radius: 18px;
+      background: #020204;
+      box-shadow: 0 1px 2px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.35);
+      pointer-events: none;
+    }
+    #dynamic-island::after {
+      content: '';
+      position: absolute; top: 10px; right: 10px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #26334d 0%, #0a0d16 45%, #020204 75%);
+      box-shadow: inset 0 0 2px rgba(98,122,176,0.5);
     }
 
     .info-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, rgba(42,34,64,0.4) 0%, #1a1625 70%); z-index: 0; }
@@ -100,106 +168,246 @@
     .section-content { opacity: 0; transform: translateY(30px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
     .section.is-active .section-content { opacity: 1; transform: translateY(0); }
 
-    #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 5; color: rgba(255,255,255,0.3); font-size: 13px; letter-spacing: 0.05em; }
+    #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 3; color: rgba(255,255,255,0.3); font-size: 13px; letter-spacing: 0.05em; text-align: center; }
 
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
+  <link rel="stylesheet" href="./landing-premium.css" />
 </head>
 <body>
-  <div class="scroll-container" id="scroller">
-    <section class="section" id="sec-hero">
-      <div class="hero-bg"></div>
-      <div class="section-content hero-content">
-        <svg class="hero-logo" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="hlb" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2D131E"/><stop offset="60%" stop-color="#14060A"/><stop offset="100%" stop-color="#080204"/></linearGradient>
-            <linearGradient id="hlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF5E85"/><stop offset="40%" stop-color="#C7154B"/><stop offset="100%" stop-color="#6A112E"/></linearGradient>
-          </defs>
-          <rect width="256" height="256" rx="56" fill="url(#hlb)"/>
-          <path d="M208 48L80 48A32 32 0 0 0 48 80L48 176A32 32 0 0 0 80 208L208 208" fill="none" stroke="url(#hlg)" stroke-width="32" stroke-linecap="round"/>
-        </svg>
-        <h1 class="hero-title">SillyClient</h1>
-        <p class="hero-sub">SillyTavern 跨平台启动器<br>内置 Node.js 运行时，安装即用</p>
-        <div class="hero-actions">
-          <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="dl-btn dl-btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-            下载 Android
-          </a>
-          <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener" class="dl-btn dl-btn-ghost">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            下载 Windows
-          </a>
-        </div>
-        <div class="hero-glass-cards">
-          <div class="glass-card"><div class="glass-card-title">Platform</div><div class="glass-card-value">Android + Windows</div></div>
-          <div class="glass-card"><div class="glass-card-title">Runtime</div><div class="glass-card-value">Node.js Embedded</div></div>
-          <div class="glass-card"><div class="glass-card-title">UI</div><div class="glass-card-value">React 19 + Capacitor</div></div>
-        </div>
+  <div class="scroll-container site-scroller" id="scroller">
+    <header class="topbar" id="topbar">
+      <a class="brand-lockup" href="#journey" data-scroll-target="journey" aria-label="SillyClient 首页">
+        <img class="brand-mark" src="./sillyclient-logo.svg" alt="" width="28" height="28" />
+        <span>SillyClient</span>
+      </a>
+      <nav class="nav-links" id="nav-links" aria-label="主要导航">
+        <a href="#journey" data-scroll-target="journey">概览</a>
+        <a href="#experience" data-scroll-target="experience">体验</a>
+        <a href="#system" data-scroll-target="system">能力</a>
+        <a href="#platform" data-scroll-target="platform">下载</a>
+      </nav>
+      <div class="topbar-actions">
+        <a class="icon-button" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" aria-label="打开 GitHub" title="GitHub">
+          <i data-lucide="github"></i>
+        </a>
+        <a class="nav-download" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
+          <i data-lucide="download"></i><span>获取应用</span>
+        </a>
+        <button class="menu-button" id="menu-button" type="button" aria-label="打开导航菜单" aria-expanded="false">
+          <i data-lucide="menu"></i>
+        </button>
       </div>
-      <div class="hero-scroll-hint">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        scroll
-      </div>
-    </section>
+    </header>
 
-    <section class="section" id="sec-phone">
-      <canvas id="three-canvas"></canvas>
-      <div id="loading">Loading 3D Model...</div>
-      <div id="screen-frame">
-        <iframe id="app-screen" src="./index.html" title="SillyClient App"></iframe>
-      </div>
-    </section>
-
-    <section class="section" id="sec-info">
-      <div class="info-bg"></div>
-      <div class="section-content info-content">
-        <div class="info-grid">
-          <div class="info-cell"><div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><h3>一键启动</h3><p>内置 Node.js 运行时，安装后直接运行酒馆，无需 Termux 或命令行。</p></div>
-          <div class="info-cell"><div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div><h3>多实例管理</h3><p>独立实例各自配置端口、版本和角色卡，卡片式轮播切换。</p></div>
-          <div class="info-cell"><div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg></div><h3>沉浸式界面</h3><p>状态栏适配、手势导航、液态玻璃界面，原生应用级的交互质感。</p></div>
-          <div class="info-cell"><div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><h3>跨平台</h3><p>Android 与 Windows 双端同步发布，共享同一套 React 前端。</p></div>
+    <main>
+      <section class="journey" id="journey" data-section="journey">
+        <div class="visual-stage" id="sec-phone">
+          <canvas id="three-canvas"></canvas>
+          <div class="stage-shade" aria-hidden="true"></div>
+          <div id="loading" role="status" aria-live="polite">正在装配产品场景</div>
+          <div id="screen-frame">
+            <iframe id="app-screen" src="./index.html" title="SillyClient 软件界面"></iframe>
+            <div id="screen-reflection" aria-hidden="true"></div>
+            <div id="dynamic-island" aria-hidden="true"></div>
+          </div>
+          <div class="stage-caption">Interactive product scene</div>
         </div>
-        <div class="info-tech">
-          <h3>Tech Stack</h3>
-          <div class="tech-row">
-            <span class="tech-tag">Kotlin</span><span class="tech-tag">Capacitor 7</span><span class="tech-tag">Electron 33</span><span class="tech-tag">React 19</span><span class="tech-tag">TypeScript</span><span class="tech-tag">Vite</span><span class="tech-tag">Tailwind CSS</span><span class="tech-tag">Node.js Embedded</span>
+
+        <div class="story-layer">
+          <section class="story-panel hero-panel" id="hero" data-section="hero">
+            <div class="hero-copy">
+              <div class="eyebrow"><span class="status-pulse"></span> SillyTavern · Android / Windows</div>
+              <h1 class="hero-title">Silly<span class="accent">Client</span></h1>
+              <p class="hero-sub">安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。</p>
+              <div class="hero-actions">
+                <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
+                  <i data-lucide="download"></i> 获取最新版本
+                </a>
+                <a class="secondary-action" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">
+                  <i data-lucide="github"></i> 查看源码
+                </a>
+              </div>
+              <div class="hero-specs" aria-label="产品技术概要">
+                <span>Android</span><span>Windows</span><span>Embedded Node.js</span>
+              </div>
+            </div>
+            <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="进入产品体验">
+              <span>进入 SillyClient</span>
+              <span class="cue-orbit"><i data-lucide="chevron-down"></i></span>
+            </button>
+          </section>
+
+          <section class="story-panel experience-panel" id="experience" data-section="experience">
+            <div class="experience-copy">
+              <div class="section-index">01 / The app</div>
+              <h2>启动器和酒馆，各做各的事。</h2>
+              <p>控制台负责实例、端口、进程和日志；SillyTavern 在独立的原生窗口中运行。返回控制台时，实例不会被顺手关掉。</p>
+              <ul class="signal-list">
+                <li><i data-lucide="boxes"></i><span>本地与远程实例</span><span class="signal-state">统一管理</span></li>
+                <li><i data-lucide="terminal"></i><span>实时日志与终端</span><span class="signal-state">随时查看</span></li>
+                <li><i data-lucide="panel-top"></i><span>返回酒馆 / 停止实例</span><span class="signal-state">分开控制</span></li>
+              </ul>
+            </div>
+            <div class="device-note"><i data-lucide="mouse-pointer-2"></i> 屏幕可直接交互</div>
+          </section>
+        </div>
+      </section>
+
+      <section class="system-section" id="system" data-section="system">
+        <div class="section-heading">
+          <div>
+            <div class="section-index">02 / Runtime system</div>
+            <h2>不只是给网页套一层外壳。</h2>
+          </div>
+          <p>共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。</p>
+        </div>
+
+        <div class="system-showcase">
+          <div class="feature-list">
+            <article class="feature-row">
+              <span class="feature-icon"><i data-lucide="zap"></i></span>
+              <div><h3>运行时随应用提供</h3><p>Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
+            </article>
+            <article class="feature-row">
+              <span class="feature-icon"><i data-lucide="layers-3"></i></span>
+              <div><h3>控制台与酒馆分开</h3><p>管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。</p></div>
+            </article>
+            <article class="feature-row">
+              <span class="feature-icon"><i data-lucide="monitor-smartphone"></i></span>
+              <div><h3>同一套界面，不同平台实现</h3><p>React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。</p></div>
+            </article>
+          </div>
+
+          <div class="runtime-panel" aria-label="SillyClient 运行时状态示意">
+            <div class="runtime-toolbar">
+              <div class="runtime-lights"><span></span><span></span><span></span></div>
+              <div class="runtime-title">Local Instance · 01</div>
+              <div class="runtime-live">RUNNING</div>
+            </div>
+            <div class="runtime-body">
+              <div class="log-line"><span class="log-time">23:42:08</span><span class="log-level">INFO</span><span>Loading bundled Node.js runtime</span></div>
+              <div class="log-line"><span class="log-time">23:42:09</span><span class="log-level ok">READY</span><span class="log-command">Instance configuration loaded</span></div>
+              <div class="log-line"><span class="log-time">23:42:09</span><span class="log-level">INFO</span><span>Starting SillyTavern process</span></div>
+              <div class="log-line"><span class="log-time">23:42:10</span><span class="log-level warn">PORT</span><span>Listening on 127.0.0.1:8000</span></div>
+              <div class="log-line"><span class="log-time">23:42:10</span><span class="log-level ok">READY</span><span class="log-command">SillyTavern is available</span></div>
+              <div class="log-line"><span class="log-time">23:42:11</span><span class="log-level">INFO</span><span>Native reading window attached</span></div>
+            </div>
+            <div class="runtime-meter">
+              <div><strong>Node.js</strong><span>Runtime</span></div>
+              <div><strong>127.0.0.1</strong><span>Local host</span></div>
+              <div><strong>WebView</strong><span>Session</span></div>
+            </div>
           </div>
         </div>
-        <div class="info-footer">
-          <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
-          <span style="color:rgba(255,255,255,0.1)">·</span>
-          <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
-          <span style="color:rgba(255,255,255,0.1)">·</span>
-          <span>MIT License</span>
+      </section>
+
+      <section class="platform-section" id="platform" data-section="platform">
+        <div class="platform-inner">
+          <div class="platform-head">
+            <div>
+              <div class="section-index">03 / Available now</div>
+              <h2>装好，就可以开始搭建自己的酒馆。</h2>
+            </div>
+            <div class="platform-actions">
+              <a class="platform-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
+                <i data-lucide="smartphone"></i> Android
+              </a>
+              <a class="platform-action is-secondary" href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.4.1/SillyClient-Setup-1.4.1.exe" target="_blank" rel="noopener">
+                <i data-lucide="monitor"></i> Windows
+              </a>
+            </div>
+          </div>
+          <div class="platform-meta">
+            <div><strong>React 19</strong><span>Shared interface</span></div>
+            <div><strong>Capacitor 7</strong><span>Android shell</span></div>
+            <div><strong>Electron 33</strong><span>Windows shell</span></div>
+            <div><strong>MIT</strong><span>Open source</span></div>
+          </div>
+          <footer class="site-footer">
+            <span>© 2026 SillyClient</span>
+            <div>
+              <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
+            </div>
+          </footer>
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
+
+    <div class="section-rail" aria-label="页面章节">
+      <button class="rail-dot is-active" type="button" data-scroll-target="journey" aria-label="概览"></button>
+      <button class="rail-dot" type="button" data-scroll-target="experience" aria-label="产品体验"></button>
+      <button class="rail-dot" type="button" data-scroll-target="system" aria-label="核心能力"></button>
+      <button class="rail-dot" type="button" data-scroll-target="platform" aria-label="下载"></button>
+    </div>
   </div>
 
-  <div class="page-dots">
-    <div class="page-dot active" data-index="0"></div>
-    <div class="page-dot" data-index="1"></div>
-    <div class="page-dot" data-index="2"></div>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script>
-    const scroller = document.getElementById('scroller');
-    const sections = document.querySelectorAll('.section');
-    const dots = document.querySelectorAll('.page-dot');
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) {
-          e.target.classList.add('is-active');
-          const idx = Array.from(sections).indexOf(e.target);
-          dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-        } else { e.target.classList.remove('is-active'); }
+    (() => {
+      const pageScroller = document.getElementById('scroller');
+      const topbar = document.getElementById('topbar');
+      const journey = document.getElementById('journey');
+      const menuButton = document.getElementById('menu-button');
+      const navLinks = document.getElementById('nav-links');
+      const targets = [...document.querySelectorAll('[data-scroll-target]')];
+      const rails = [...document.querySelectorAll('.rail-dot')];
+      const navAnchors = [...document.querySelectorAll('.nav-links a')];
+      const observedSections = [
+        document.getElementById('journey'),
+        document.getElementById('experience'),
+        document.getElementById('system'),
+        document.getElementById('platform')
+      ];
+
+      if (window.lucide) window.lucide.createIcons();
+
+      function targetTop(target) {
+        if (target.id === 'experience') {
+          return journey.offsetTop + document.getElementById('hero').offsetHeight;
+        }
+        return pageScroller.scrollTop + target.getBoundingClientRect().top;
+      }
+
+      targets.forEach((control) => {
+        control.addEventListener('click', (event) => {
+          const target = document.getElementById(control.dataset.scrollTarget);
+          if (!target) return;
+          event.preventDefault();
+          pageScroller.scrollTo({ top: targetTop(target), behavior: 'smooth' });
+          navLinks.classList.remove('is-open');
+          menuButton.setAttribute('aria-expanded', 'false');
+        });
       });
-    }, { root: scroller, threshold: 0.55 });
-    sections.forEach(s => observer.observe(s));
-    dots.forEach(d => d.addEventListener('click', () => {
-      sections[parseInt(d.dataset.index)].scrollIntoView({ behavior: 'smooth' });
-    }));
+
+      menuButton.addEventListener('click', () => {
+        const open = navLinks.classList.toggle('is-open');
+        menuButton.setAttribute('aria-expanded', String(open));
+      });
+
+      function updatePageState() {
+        const scrollTop = pageScroller.scrollTop;
+        const range = Math.max(1, journey.offsetHeight - pageScroller.clientHeight);
+        const progress = Math.max(0, Math.min(1, (scrollTop - journey.offsetTop) / range));
+        document.documentElement.style.setProperty('--journey-progress', progress.toFixed(4));
+        topbar.classList.toggle('is-compact', scrollTop > 30);
+
+        const probe = scrollTop + pageScroller.clientHeight * 0.48;
+        let activeIndex = 0;
+        if (probe >= targetTop(observedSections[3])) activeIndex = 3;
+        else if (probe >= targetTop(observedSections[2])) activeIndex = 2;
+        else if (progress > 0.48) activeIndex = 1;
+
+        rails.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
+        navAnchors.forEach((link, index) => link.classList.toggle('is-active', index === activeIndex));
+      }
+
+      pageScroller.addEventListener('scroll', updatePageState, { passive: true });
+      addEventListener('resize', updatePageState);
+      updatePageState();
+    })();
   </script>
 
   <script type="importmap">
@@ -214,17 +422,25 @@
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
     const canvas = document.getElementById('three-canvas');
     const loadingEl = document.getElementById('loading');
     const section = document.getElementById('sec-phone');
+    const scroller = document.getElementById('scroller');
+    const journey = document.getElementById('journey');
     const screenFrame = document.getElementById('screen-frame');
+    const appScreen = document.getElementById('app-screen');
 
     // ========================================
     // Three.js Scene + GLB Model
     // ========================================
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x1a1625, 0.008);
+    scene.fog = new THREE.FogExp2(0x0e0d13, 0.012);
 
     const camera = new THREE.PerspectiveCamera(40, section.clientWidth / section.clientHeight, 0.1, 200);
     camera.position.set(0, 0, 6);
@@ -232,133 +448,191 @@
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setSize(section.clientWidth, section.clientHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x1a1625, 1);
+    renderer.setClearColor(0x0e0d13, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.08;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const dir1 = new THREE.DirectionalLight(0xffffff, 1.0);
-    dir1.position.set(2, 3, 5);
-    scene.add(dir1);
-    const dir2 = new THREE.DirectionalLight(0x8888cc, 0.3);
-    dir2.position.set(-3, -1, 3);
-    scene.add(dir2);
-    const rim = new THREE.PointLight(0xe8365d, 0.5, 12);
-    rim.position.set(0, 0, 5);
-    scene.add(rim);
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(section.clientWidth, section.clientHeight),
+      0.22,
+      0.36,
+      1.02
+    );
+    composer.addPass(bloomPass);
+    composer.addPass(new OutputPass());
 
-    // Particles
-    const N = 400;
-    const pos = new Float32Array(N * 3);
-    const col = new Float32Array(N * 3);
-    const c1 = new THREE.Color(0x2a2240), c2 = new THREE.Color(0xe8365d), c3 = new THREE.Color(0x3a3050);
-    for (let i = 0; i < N; i++) {
-      const i3 = i * 3;
-      const r = 8 + Math.random() * 30;
-      const th = Math.random() * Math.PI * 2;
-      const ph = Math.acos(2 * Math.random() - 1);
-      pos[i3] = r * Math.sin(ph) * Math.cos(th);
-      pos[i3+1] = r * Math.sin(ph) * Math.sin(th);
-      pos[i3+2] = r * Math.cos(ph);
-      const p = Math.random();
-      const c = p < 0.5 ? c1 : p < 0.8 ? c3 : c2;
-      const b = 0.3 + Math.random() * 0.5;
-      col[i3] = c.r*b; col[i3+1] = c.g*b; col[i3+2] = c.b*b;
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.82;
+    pmremGenerator.dispose();
+
+    // Large studio panels create controlled specular bands on the metal body.
+    scene.add(new THREE.HemisphereLight(0xe8edff, 0x1b1423, 0.38));
+    const keyLight = new THREE.RectAreaLight(0xfff8f2, 4.6, 2.4, 5.2);
+    keyLight.position.set(-3.8, 3.2, 4.8);
+    keyLight.lookAt(0, 0, 0);
+    scene.add(keyLight);
+    const fillLight = new THREE.RectAreaLight(0xbfd5ff, 2.15, 1.7, 4.2);
+    fillLight.position.set(4.2, 0.2, 3.4);
+    fillLight.lookAt(0, 0, 0);
+    scene.add(fillLight);
+    const edgeLight = new THREE.RectAreaLight(0xff7898, 1.65, 1.2, 4.5);
+    edgeLight.position.set(1.6, -1.2, -4);
+    edgeLight.lookAt(0, 0, 0);
+    scene.add(edgeLight);
+    const faceLight = new THREE.DirectionalLight(0xe4ecff, 0.42);
+    faceLight.position.set(0, 2.5, 5);
+    scene.add(faceLight);
+
+    // A restrained data field gives the scroll journey depth without competing with the phone.
+    const backdrop = new THREE.Mesh(
+      new THREE.PlaneGeometry(28, 16),
+      new THREE.MeshBasicMaterial({ color: 0x100e16 })
+    );
+    backdrop.position.z = -7;
+    scene.add(backdrop);
+
+    const fieldPositions = [];
+    for (let x = -8; x <= 8; x += 1.25) fieldPositions.push(x, -5, -4.8, x, 5, -4.8);
+    for (let y = -5; y <= 5; y += 1.25) fieldPositions.push(-8, y, -4.8, 8, y, -4.8);
+    const fieldGeometry = new THREE.BufferGeometry();
+    fieldGeometry.setAttribute('position', new THREE.Float32BufferAttribute(fieldPositions, 3));
+    const field = new THREE.LineSegments(
+      fieldGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x6f7182,
+        transparent: true,
+        opacity: 0.045,
+        depthWrite: false
+      })
+    );
+    scene.add(field);
+
+    const signalGroup = new THREE.Group();
+    const signalLines = [];
+    const signalColors = [0xe8365d, 0x9eb9d4, 0xff7898, 0x7793b2];
+    for (let index = 0; index < 7; index++) {
+      const y = -2.9 + index * 0.92;
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-7.5, y - 0.35, -3.2),
+        new THREE.Vector3(-3.2, y + (index % 2 ? 0.34 : -0.22), -2.7),
+        new THREE.Vector3(0, y + 0.18, -3),
+        new THREE.Vector3(3.4, y + (index % 2 ? -0.28 : 0.32), -2.6),
+        new THREE.Vector3(7.5, y, -3.4)
+      ]);
+      const material = new THREE.LineDashedMaterial({
+        color: signalColors[index % signalColors.length],
+        transparent: true,
+        opacity: index === 3 ? 0.2 : 0.09,
+        dashSize: index === 3 ? 0.26 : 0.18,
+        gapSize: index === 3 ? 0.5 : 0.72,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(curve.getPoints(120)),
+        material
+      );
+      line.computeLineDistances();
+      signalLines.push(line);
+      signalGroup.add(line);
     }
-    const pGeo = new THREE.BufferGeometry();
-    pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    pGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const pMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uPR: { value: Math.min(devicePixelRatio, 2) } },
-      vertexShader: `
-        attribute vec3 color; varying vec3 vC;
-        uniform float uTime, uPR;
-        void main() {
-          vC = color;
-          vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          float tw = sin(uTime * 0.3 + position.x * 0.15 + position.y * 0.1) * 0.5 + 0.5;
-          gl_PointSize = (0.8 + tw * 0.8) * uPR * (20.0 / -mv.z);
-          gl_Position = projectionMatrix * mv;
-        }`,
-      fragmentShader: `
-        varying vec3 vC;
-        void main() {
-          float d = length(gl_PointCoord - vec2(0.5));
-          if (d > 0.5) discard;
-          gl_FragColor = vec4(vC, smoothstep(0.5, 0.0, d) * 0.45);
-        }`,
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
-    });
-    const pts = new THREE.Points(pGeo, pMat);
-    scene.add(pts);
+    scene.add(signalGroup);
 
     // ========================================
     // Load GLB + Setup Screen
     // ========================================
     const loader = new GLTFLoader();
     let phoneGroup = null;
-    let needFlip = false;
+    let baseRotationY = 0;
+    const restingYaw = -0.12;
+    const restingPitch = -0.035;
     let screenMesh = null;
+    let screenPlaneZ = 0;
+    let phoneVisible = false;
 
     loader.load('./models/iphone_17_air.glb', (gltf) => {
-      phoneGroup = gltf.scene;
-
-      // Detect front face from normals — this model's back normals point +Z
-      let frontZ = 0, frontCount = 0;
-      phoneGroup.traverse((child) => {
-        if (!child.isMesh || !child.geometry.attributes.normal) return;
-        const nrm = child.geometry.attributes.normal;
-        let sumZ = 0;
-        for (let i = 0; i < nrm.count; i++) sumZ += nrm.getZ(i);
-        const avgZ = sumZ / nrm.count;
-        if (Math.abs(avgZ) > 0.3) { frontZ += avgZ; frontCount++; }
-      });
-      needFlip = (frontZ > 0);
-      if (needFlip) phoneGroup.rotation.y = Math.PI;
+      const phoneModel = gltf.scene;
 
       // Screen mesh: make transparent (iframe overlay will show the real app)
       // Glass mesh: semi-transparent
-      phoneGroup.traverse((child) => {
+      phoneModel.traverse((child) => {
         if (!child.isMesh) return;
-        const mn = child.material?.name || '';
-        if (mn === '17Air_Screen') {
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        const mn = materials.map(material => material?.name || '').join(' ');
+        if (/17Air_(color[123]|logo|12)/.test(mn)) {
+          materials.forEach((material) => {
+            if (!material) return;
+            material.metalness = Math.max(material.metalness ?? 0, 0.88);
+            material.roughness = THREE.MathUtils.clamp(material.roughness ?? 0.24, 0.16, 0.27);
+            material.envMapIntensity = 0.92;
+            if (/17Air_color[123]/.test(material.name || '')) material.color.multiplyScalar(0.7);
+            material.needsUpdate = true;
+          });
+        }
+        if (mn.includes('17Air_Screen')) {
           screenMesh = child;
           child.material = new THREE.MeshBasicMaterial({
-            color: 0x000000,
+            color: 0x05060a,
+            transparent: false,
+            opacity: 1,
+            depthWrite: true,
+            side: THREE.DoubleSide
+          });
+        }
+        if (mn.includes('17Air_Glass')) {
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: 0x9eb4c9,
             transparent: true,
-            opacity: 0,
+            opacity: 0.12,
+            roughness: 0.12,
+            metalness: 0.05,
+            transmission: 0,
+            clearcoat: 1,
+            clearcoatRoughness: 0.04,
             depthWrite: false,
             side: THREE.DoubleSide
           });
         }
-        if (mn === '17Air_Glass') {
-          child.material = new THREE.MeshPhysicalMaterial({
-            transparent: true,
-            opacity: 0.08,
-            roughness: 0.05,
-            transmission: 0.92,
-            clearcoat: 1,
-            clearcoatRoughness: 0.02,
-            side: THREE.DoubleSide
-          });
-        }
       });
 
-      // Scale and center
-      const box = new THREE.Box3().setFromObject(phoneGroup);
+      // Scale the model, center it inside a pivot, then rotate the pivot.
+      const box = new THREE.Box3().setFromObject(phoneModel);
       const size = box.getSize(new THREE.Vector3());
       const scale = 3.2 / size.y;
-      phoneGroup.scale.setScalar(scale);
-      const box2 = new THREE.Box3().setFromObject(phoneGroup);
+      phoneModel.scale.setScalar(scale);
+      const box2 = new THREE.Box3().setFromObject(phoneModel);
       const center = box2.getCenter(new THREE.Vector3());
-      phoneGroup.position.sub(center);
+      phoneModel.position.sub(center);
 
+      phoneGroup = new THREE.Group();
+      phoneGroup.add(phoneModel);
       scene.add(phoneGroup);
-      if (loadingEl) loadingEl.style.display = 'none';
+      phoneGroup.updateMatrixWorld(true);
+
+      if (screenMesh) {
+        screenMesh.geometry.computeBoundingBox();
+        const screenBox = screenMesh.geometry.boundingBox;
+        screenPlaneZ = (screenBox.min.z + screenBox.max.z) / 2;
+
+        // This Sketchfab asset exports its display on local -Z after nested axis conversion.
+        // A fixed half-turn is the verified front-facing baseline for this exact GLB.
+        baseRotationY = Math.PI;
+        phoneGroup.rotation.y = baseRotationY + restingYaw;
+        phoneGroup.rotation.x = restingPitch;
+        phoneGroup.updateMatrixWorld(true);
+        if (loadingEl) loadingEl.style.display = 'none';
+      } else if (loadingEl) {
+        loadingEl.textContent = '模型中未找到可映射的屏幕';
+      }
     }, undefined, (err) => {
       console.error('GLTF load error:', err);
-      if (loadingEl) loadingEl.textContent = 'Failed to load 3D model';
+      phoneGroup = null;
+      screenFrame.style.display = 'none';
+      if (loadingEl) loadingEl.textContent = '3D 模型加载失败，请刷新页面重试';
     });
 
     // ========================================
@@ -372,119 +646,242 @@
       const v = worldPos.clone().project(camera);
       return {
         x: (v.x + 1) / 2 * canvas.clientWidth,
-        y: (1 - v.y) / 2 * canvas.clientHeight
+        y: (1 - v.y) / 2 * canvas.clientHeight,
+        z: v.z
       };
     }
 
+    function solveLinearSystem(matrix, values) {
+      const size = values.length;
+      const rows = matrix.map((row, index) => [...row, values[index]]);
+
+      for (let column = 0; column < size; column++) {
+        let pivot = column;
+        for (let row = column + 1; row < size; row++) {
+          if (Math.abs(rows[row][column]) > Math.abs(rows[pivot][column])) pivot = row;
+        }
+        if (Math.abs(rows[pivot][column]) < 1e-10) return null;
+        [rows[column], rows[pivot]] = [rows[pivot], rows[column]];
+
+        const divisor = rows[column][column];
+        for (let index = column; index <= size; index++) rows[column][index] /= divisor;
+
+        for (let row = 0; row < size; row++) {
+          if (row === column) continue;
+          const factor = rows[row][column];
+          for (let index = column; index <= size; index++) {
+            rows[row][index] -= factor * rows[column][index];
+          }
+        }
+      }
+      return rows.map(row => row[size]);
+    }
+
+    function quadToMatrix3d(points, width, height) {
+      const source = [
+        [0, 0],
+        [width, 0],
+        [width, height],
+        [0, height]
+      ];
+      const matrix = [];
+      const values = [];
+
+      source.forEach(([x, y], index) => {
+        const { x: targetX, y: targetY } = points[index];
+        matrix.push([x, 0, y, 0, 1, 0, -targetX * x, -targetX * y]);
+        values.push(targetX);
+        matrix.push([0, x, 0, y, 0, 1, -targetY * x, -targetY * y]);
+        values.push(targetY);
+      });
+
+      const result = solveLinearSystem(matrix, values);
+      if (!result) return null;
+      const [a, b, c, d, e, f, g, h] = result;
+      return `matrix3d(${a},${b},0,${g},${c},${d},0,${h},0,0,1,0,${e},${f},0,1)`;
+    }
+
     function updateScreenOverlay() {
-      if (!phoneGroup) return;
-
-      phoneGroup.updateMatrixWorld(true);
-
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-
-      if (screenMesh) {
-        screenMesh.updateMatrixWorld(true);
-        const geo = screenMesh.geometry;
-        geo.computeBoundingBox();
-        const bb = geo.boundingBox;
-        const corners = [
-          new THREE.Vector3(bb.min.x, bb.max.y, 0),
-          new THREE.Vector3(bb.max.x, bb.max.y, 0),
-          new THREE.Vector3(bb.min.x, bb.min.y, 0),
-          new THREE.Vector3(bb.max.x, bb.min.y, 0)
-        ];
-        corners.forEach(c => {
-          screenMesh.localToWorld(c);
-          const s = toScreen(c);
-          minX = Math.min(minX, s.x);
-          maxX = Math.max(maxX, s.x);
-          minY = Math.min(minY, s.y);
-          maxY = Math.max(maxY, s.y);
-        });
-      } else {
-        // Fallback: phone bounding box proportion (90% W, 82% H)
-        const box = new THREE.Box3().setFromObject(phoneGroup);
-        const sz = box.getSize(new THREE.Vector3());
-        const ct = box.getCenter(new THREE.Vector3());
-        const sw = sz.x * 0.90, sh = sz.y * 0.82;
-        const tl = toScreen(new THREE.Vector3(ct.x - sw/2, ct.y + sh/2, ct.z));
-        const br = toScreen(new THREE.Vector3(ct.x + sw/2, ct.y - sh/2, ct.z));
-        minX = tl.x; maxX = br.x; minY = tl.y; maxY = br.y;
+      if (!phoneGroup || !screenMesh || !phoneVisible) {
+        screenFrame.style.display = 'none';
+        return;
       }
 
-      const pw = maxX - minX;
-      const ph = maxY - minY;
+      phoneGroup.updateMatrixWorld(true);
+      screenMesh.updateMatrixWorld(true);
+      const box = screenMesh.geometry.boundingBox;
+      const insetX = (box.max.x - box.min.x) * 0.018;
+      const insetY = (box.max.y - box.min.y) * 0.012;
+      const localCorners = [
+        new THREE.Vector3(box.min.x + insetX, box.max.y - insetY, screenPlaneZ),
+        new THREE.Vector3(box.max.x - insetX, box.max.y - insetY, screenPlaneZ),
+        new THREE.Vector3(box.max.x - insetX, box.min.y + insetY, screenPlaneZ),
+        new THREE.Vector3(box.min.x + insetX, box.min.y + insetY, screenPlaneZ)
+      ];
+      const projected = localCorners.map(corner => {
+        screenMesh.localToWorld(corner);
+        return toScreen(corner);
+      });
 
-      // Scale iframe (390x844 internal resolution) to fit projected area — HD
-      const scaleX = pw / 390;
-      const scaleY = ph / 844;
-      const scale = Math.min(scaleX, scaleY);
-      const offsetX = (pw - 390 * scale) / 2;
-      const offsetY = (ph - 844 * scale) / 2;
+      if (projected.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y) || Math.abs(point.z) > 1)) {
+        screenFrame.style.display = 'none';
+        return;
+      }
+
+      // Reorder the plane corners to visual top-left, top-right, bottom-right, bottom-left.
+      const byY = [...projected].sort((a, b) => a.y - b.y);
+      const top = byY.slice(0, 2).sort((a, b) => a.x - b.x);
+      const bottom = byY.slice(2).sort((a, b) => a.x - b.x);
+      const visualCorners = [top[0], top[1], bottom[1], bottom[0]];
+      const transform = quadToMatrix3d(visualCorners, 390, 844);
+
+      if (!transform) {
+        screenFrame.style.display = 'none';
+        return;
+      }
 
       screenFrame.style.display = 'block';
-      screenFrame.style.width = '390px';
-      screenFrame.style.height = '844px';
-      screenFrame.style.transform = `translate(${minX + offsetX}px, ${minY + offsetY}px) scale(${scale})`;
+      screenFrame.style.transform = transform;
     }
 
     // ========================================
     // Camera/Mouse Interaction
     // ========================================
-    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
-    addEventListener('mousemove', e => {
-      mouse.tx = (e.clientX / innerWidth - 0.5) * 2;
-      mouse.ty = (e.clientY / innerHeight - 0.5) * 2;
-    });
-    addEventListener('touchmove', e => {
-      if (e.touches.length) {
-        mouse.tx = (e.touches[0].clientX / innerWidth - 0.5) * 2;
-        mouse.ty = (e.touches[0].clientY / innerHeight - 0.5) * 2;
-      }
+    const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+    const finePointer = matchMedia('(pointer: fine)').matches;
+    function setPointerFromViewport(clientX, clientY) {
+      if (!finePointer || !phoneVisible) return;
+      const rect = section.getBoundingClientRect();
+      pointer.tx = THREE.MathUtils.clamp(((clientX - rect.left) / rect.width - 0.5) * 2, -1, 1);
+      pointer.ty = THREE.MathUtils.clamp(((clientY - rect.top) / rect.height - 0.5) * 2, -1, 1);
+    }
+    addEventListener('pointermove', e => {
+      setPointerFromViewport(e.clientX, e.clientY);
     }, { passive: true });
 
+    let trackedFrameWindow = null;
+    function attachIframePointerTracking() {
+      try {
+        const frameWindow = appScreen.contentWindow;
+        if (!frameWindow || frameWindow === trackedFrameWindow) return;
+        frameWindow.addEventListener('pointermove', e => {
+          if (!finePointer || !phoneVisible) return;
+          pointer.tx = THREE.MathUtils.clamp((e.clientX / 390 - 0.5) * 2, -1, 1);
+          pointer.ty = THREE.MathUtils.clamp((e.clientY / 844 - 0.5) * 2, -1, 1);
+        }, { passive: true });
+        trackedFrameWindow = frameWindow;
+      } catch {
+        // 跨源屏幕页仍可显示，只关闭 iframe 内部的指针跟随。
+      }
+    }
+    appScreen.addEventListener('load', attachIframePointerTracking);
+    if (appScreen.contentDocument?.readyState !== 'loading') attachIframePointerTracking();
+
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const clock = new THREE.Clock();
+    const motionClock = new THREE.Clock();
+    let journeyProgress = 0;
+
+    function updateJourneyProgress() {
+      const range = Math.max(1, journey.offsetHeight - scroller.clientHeight);
+      journeyProgress = THREE.MathUtils.clamp(
+        (scroller.scrollTop - journey.offsetTop) / range,
+        0,
+        1
+      );
+    }
+
+    scroller.addEventListener('scroll', updateJourneyProgress, { passive: true });
+    updateJourneyProgress();
+
+    const phoneObserver = new IntersectionObserver(([entry]) => {
+      phoneVisible = entry.isIntersecting;
+      if (!phoneVisible) screenFrame.style.display = 'none';
+    }, { root: scroller, threshold: 0.05 });
+    phoneObserver.observe(section);
 
     function loop() {
       requestAnimationFrame(loop);
-      const t = clock.getElapsedTime();
+      if (!phoneVisible) return;
 
-      mouse.x += (mouse.tx - mouse.x) * 0.05;
-      mouse.y += (mouse.ty - mouse.y) * 0.05;
+      const delta = Math.min(motionClock.getDelta(), 0.05);
+      pointer.x = THREE.MathUtils.damp(pointer.x, pointer.tx, 5.5, delta);
+      pointer.y = THREE.MathUtils.damp(pointer.y, pointer.ty, 5.5, delta);
+      const journeyEase = THREE.MathUtils.smoothstep(journeyProgress, 0.08, 0.88);
+      const overlayOpacity = THREE.MathUtils.smoothstep(journeyProgress, 0.43, 0.72);
 
-      if (!reduced) {
-        pts.rotation.y = t * 0.008;
-        pMat.uniforms.uTime.value = t;
-      }
+      signalGroup.position.y = THREE.MathUtils.lerp(-0.25, 0.18, journeyEase);
+      signalGroup.rotation.z = THREE.MathUtils.lerp(-0.025, 0.015, journeyEase);
+      signalLines.forEach((line, index) => {
+        line.material.dashOffset -= delta * (0.16 + index * 0.018);
+        line.material.opacity = (index === 3 ? 0.2 : 0.09) * (1 - journeyEase * 0.3);
+      });
+      field.material.opacity = THREE.MathUtils.lerp(0.045, 0.022, journeyEase);
 
       if (phoneGroup) {
-        // Clamp rotation: Y ±18°, X ±10° — never show back
-        const baseY = needFlip ? Math.PI : 0;
-        const targetRY = baseY + mouse.x * 0.3;
-        // Vertical: mouse down → phone tilts down (natural, non-inverted)
-        const targetRX = mouse.y * 0.1;
-        phoneGroup.rotation.y += (targetRY - phoneGroup.rotation.y) * 0.06;
-        phoneGroup.rotation.x += (targetRX - phoneGroup.rotation.x) * 0.06;
-        phoneGroup.rotation.y = Math.max(baseY - 0.31, Math.min(baseY + 0.31, phoneGroup.rotation.y));
-        phoneGroup.rotation.x = Math.max(-0.17, Math.min(0.17, phoneGroup.rotation.x));
+        const motionX = reduced ? 0 : pointer.x;
+        const motionY = reduced ? 0 : pointer.y;
+        const compact = section.clientWidth <= 720;
+        const introYaw = compact ? 0.58 : 0.82;
+        const endX = compact ? 0 : 0.72;
+        const introX = compact ? 0.92 : 1.94;
+        const targetRY = baseRotationY
+          + THREE.MathUtils.lerp(introYaw, restingYaw, journeyEase)
+          + motionX * 0.45 * journeyEase;
+        const targetRX = THREE.MathUtils.lerp(-0.1, restingPitch, journeyEase)
+          + motionY * 0.14 * journeyEase;
+        const targetX = THREE.MathUtils.lerp(introX, endX, journeyEase) + motionX * 0.06;
+        const targetY = THREE.MathUtils.lerp(compact ? -1.14 : -0.34, compact ? -1.0 : 0, journeyEase) - motionY * 0.035;
+        const targetScale = compact ? THREE.MathUtils.lerp(0.9, 0.78, journeyEase) : 1;
+        const nextScale = THREE.MathUtils.damp(phoneGroup.scale.x, targetScale, 5.5, delta);
+        phoneGroup.rotation.y = THREE.MathUtils.damp(phoneGroup.rotation.y, targetRY, 6.5, delta);
+        phoneGroup.rotation.x = THREE.MathUtils.damp(phoneGroup.rotation.x, targetRX, 6.5, delta);
+        phoneGroup.rotation.y = THREE.MathUtils.clamp(phoneGroup.rotation.y, baseRotationY - 0.58, baseRotationY + 0.88);
+        phoneGroup.rotation.x = THREE.MathUtils.clamp(phoneGroup.rotation.x, -0.22, 0.16);
+        phoneGroup.position.x = THREE.MathUtils.damp(phoneGroup.position.x, targetX, 5, delta);
+        phoneGroup.position.y = THREE.MathUtils.damp(phoneGroup.position.y, targetY, 5, delta);
+        phoneGroup.scale.setScalar(nextScale);
 
+        camera.position.x = THREE.MathUtils.damp(
+          camera.position.x,
+          THREE.MathUtils.lerp(-0.28, 0.14, journeyEase) - motionX * 0.26 * journeyEase,
+          4.5,
+          delta
+        );
+        camera.position.y = THREE.MathUtils.damp(camera.position.y, 0.08 - motionY * 0.12 * journeyEase, 4.5, delta);
+        camera.position.z = THREE.MathUtils.damp(
+          camera.position.z,
+          THREE.MathUtils.lerp(6.55, 6.05, journeyEase) + Math.abs(motionX) * 0.12,
+          4.5,
+          delta
+        );
+        camera.lookAt(0, 0, 0);
+
+        screenFrame.style.setProperty('--reflection-x', `${42 - motionX * 28}%`);
+        screenFrame.style.setProperty('--reflection-y', `${18 + motionY * 16}%`);
+        screenFrame.style.setProperty('--reflection-angle', `${116 - motionX * 14}deg`);
+        screenFrame.style.setProperty('--reflection-opacity', `${0.5 + Math.abs(motionX) * 0.16}`);
+        screenFrame.style.opacity = overlayOpacity.toFixed(3);
+        screenFrame.style.pointerEvents = overlayOpacity > 0.92 ? 'auto' : 'none';
         updateScreenOverlay();
       }
 
-      renderer.render(scene, camera);
+      composer.render(delta);
     }
     loop();
 
-    addEventListener('resize', () => {
+    function resizeScene() {
       const w = section.clientWidth, h = section.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-      pMat.uniforms.uPR.value = Math.min(devicePixelRatio, 2);
-    });
+      composer.setSize(w, h);
+      composer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      updateJourneyProgress();
+      updateScreenOverlay();
+    }
+    addEventListener('resize', resizeScene);
+    new ResizeObserver(resizeScene).observe(section);
   </script>
 </body>
 </html>
