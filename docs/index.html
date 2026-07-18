@@ -16,7 +16,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* === SCROLL CONTAINER === */
     .scroll-container {
       height: 100vh;
       overflow-y: auto;
@@ -24,7 +23,6 @@
       scroll-snap-type: y mandatory;
     }
 
-    /* === SECTIONS === */
     .section {
       height: 100vh;
       scroll-snap-align: start;
@@ -37,139 +35,78 @@
       overflow: hidden;
     }
 
-    /* ============================
-       SECTION 1 — HERO / GLASS
-       ============================ */
+    /* === HERO === */
     .hero-bg {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at 50% 40%, rgba(42, 34, 64, 0.6) 0%, #1a1625 70%);
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(42,34,64,0.6) 0%, #1a1625 70%);
       z-index: 0;
     }
-
     .hero-content {
-      position: relative;
-      z-index: 2;
-      text-align: center;
-      padding: 0 24px;
-      max-width: 520px;
+      position: relative; z-index: 2; text-align: center;
+      padding: 0 24px; max-width: 520px;
     }
-
     .hero-logo {
-      width: 80px; height: 80px;
-      border-radius: 22px;
-      margin: 0 auto 32px;
-      box-shadow: 0 8px 40px rgba(232, 54, 93, 0.2), 0 0 0 1px rgba(255,255,255,0.06);
+      width: 80px; height: 80px; border-radius: 22px; margin: 0 auto 32px;
+      box-shadow: 0 8px 40px rgba(232,54,93,0.2), 0 0 0 1px rgba(255,255,255,0.06);
     }
-
     .hero-title {
-      font-size: clamp(40px, 7vw, 68px);
-      font-weight: 700;
-      letter-spacing: -0.035em;
-      line-height: 1.08;
-      margin-bottom: 16px;
+      font-size: clamp(40px, 7vw, 68px); font-weight: 700;
+      letter-spacing: -0.035em; line-height: 1.08; margin-bottom: 16px;
       text-wrap: balance;
     }
-
     .hero-sub {
-      font-size: clamp(15px, 2.2vw, 17px);
-      color: rgba(255,255,255,0.45);
-      line-height: 1.6;
-      margin-bottom: 40px;
+      font-size: clamp(15px, 2.2vw, 17px); color: rgba(255,255,255,0.45);
+      line-height: 1.6; margin-bottom: 40px;
     }
-
-    .hero-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
     .dl-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 28px;
-      border-radius: 16px;
-      font-size: 14px;
-      font-weight: 600;
-      font-family: inherit;
-      text-decoration: none;
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s;
-      cursor: pointer;
-      border: none;
-      letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 28px; border-radius: 16px; font-size: 14px;
+      font-weight: 600; font-family: inherit; text-decoration: none;
+      transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s;
+      cursor: pointer; border: none; letter-spacing: -0.01em;
     }
     .dl-btn svg { width: 18px; height: 18px; }
-
     .dl-btn-primary {
       background: rgba(255,255,255,0.08);
       backdrop-filter: blur(24px) saturate(180%);
       -webkit-backdrop-filter: blur(24px) saturate(180%);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; border: 1px solid rgba(255,255,255,0.12);
     }
     .dl-btn-primary:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 32px rgba(0,0,0,0.3);
       background: rgba(255,255,255,0.12);
     }
-
     .dl-btn-ghost {
-      background: rgba(232, 54, 93, 0.1);
+      background: rgba(232,54,93,0.1);
       backdrop-filter: blur(24px) saturate(180%);
       -webkit-backdrop-filter: blur(24px) saturate(180%);
-      color: #ff8fa6;
-      border: 1px solid rgba(232, 54, 93, 0.15);
+      color: #ff8fa6; border: 1px solid rgba(232,54,93,0.15);
     }
     .dl-btn-ghost:hover {
-      transform: translateY(-2px);
-      background: rgba(232, 54, 93, 0.18);
+      transform: translateY(-2px); background: rgba(232,54,93,0.18);
     }
-
     .hero-glass-cards {
-      display: flex;
-      gap: 16px;
-      margin-top: 48px;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: flex; gap: 16px; margin-top: 48px; flex-wrap: wrap; justify-content: center;
     }
     .glass-card {
-      padding: 16px 20px;
-      border-radius: 16px;
+      padding: 16px 20px; border-radius: 16px;
       background: rgba(255,255,255,0.04);
       backdrop-filter: blur(20px) saturate(150%);
       -webkit-backdrop-filter: blur(20px) saturate(150%);
       border: 1px solid rgba(255,255,255,0.06);
-      text-align: left;
-      min-width: 140px;
+      text-align: left; min-width: 140px;
     }
     .glass-card-title {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.3);
-      margin-bottom: 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 6px;
     }
-    .glass-card-value {
-      font-size: 15px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.8);
-    }
-
+    .glass-card-value { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.8); }
     .hero-scroll-hint {
-      position: absolute;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      color: rgba(255,255,255,0.2);
-      font-size: 11px;
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      z-index: 2; display: flex; flex-direction: column; align-items: center;
+      gap: 8px; color: rgba(255,255,255,0.2); font-size: 11px;
       animation: float 2s ease-in-out infinite;
     }
     .hero-scroll-hint svg { width: 16px; height: 16px; }
@@ -178,275 +115,94 @@
       50% { transform: translateX(-50%) translateY(6px); }
     }
 
-    /* ============================
-       SECTION 2 — 3D PHONE
-       ============================ */
+    /* === 3D PHONE SECTION === */
     #three-canvas {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
+      position: absolute; inset: 0; z-index: 1;
+    }
+    #app-overlay {
+      position: absolute; z-index: 2;
+      border-radius: 8px; overflow: hidden;
       pointer-events: none;
-    }
-
-    .phone-scene {
-      position: relative;
-      z-index: 1;
-      perspective: 1200px;
-    }
-
-    .phone-model {
-      width: min(300px, 72vw);
-      aspect-ratio: 9 / 19.5;
-      transform-style: preserve-3d;
-      transition: transform 0.1s ease-out;
-      will-change: transform;
-      position: relative;
-    }
-
-    /* 侧面厚度 */
-    .phone-side {
-      position: absolute;
-      inset: -3px -3px -6px -3px;
-      border-radius: 38px;
-      background: linear-gradient(180deg, #1a1a22 0%, #0e0e14 100%);
-      box-shadow:
-        0 60px 120px -30px rgba(0,0,0,0.8),
-        0 0 100px rgba(232, 54, 93, 0.04),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-    }
-
-    .phone-body {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      border-radius: 36px;
-      border: 1.5px solid rgba(255,255,255,0.08);
-      overflow: hidden;
-      background: #080208;
-      z-index: 1;
-    }
-
-    /* Dynamic Island */
-    .phone-body::before {
-      content: '';
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 84px;
-      height: 22px;
-      background: #000;
-      border-radius: 11px;
-      z-index: 20;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.04);
-    }
-
-    /* Screen reflection */
-    .phone-body::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 34px;
-      background: linear-gradient(
-        155deg,
-        rgba(255,255,255,0.035) 0%,
-        transparent 30%,
-        transparent 70%,
-        rgba(255,255,255,0.01) 100%
-      );
-      z-index: 21;
-      pointer-events: none;
-    }
-
-    /* 侧边按钮 — 音量 */
-    .phone-btn-vol {
-      position: absolute;
-      left: -3px;
-      top: 28%;
-      width: 3px;
-      height: 36px;
-      background: linear-gradient(180deg, #2a2a32, #1a1a22);
-      border-radius: 2px 0 0 2px;
-      z-index: 0;
-    }
-    .phone-btn-vol2 {
-      position: absolute;
-      left: -3px;
-      top: 38%;
-      width: 3px;
-      height: 50px;
-      background: linear-gradient(180deg, #2a2a32, #1a1a22);
-      border-radius: 2px 0 0 2px;
-      z-index: 0;
-    }
-    /* 电源键 */
-    .phone-btn-pwr {
-      position: absolute;
-      right: -3px;
-      top: 32%;
-      width: 3px;
-      height: 56px;
-      background: linear-gradient(180deg, #2a2a32, #1a1a22);
-      border-radius: 0 2px 2px 0;
-      z-index: 0;
-    }
-
-    .phone-screen {
-      width: 100%;
-      height: 100%;
       border: none;
-      display: block;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
     }
 
-    /* ============================
-       SECTION 3 — INFO
-       ============================ */
+    /* === INFO === */
     .info-bg {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at 50% 60%, rgba(42, 34, 64, 0.4) 0%, #1a1625 70%);
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 60%, rgba(42,34,64,0.4) 0%, #1a1625 70%);
       z-index: 0;
     }
-
     .info-content {
-      position: relative;
-      z-index: 2;
-      width: min(600px, 90vw);
-      padding: 0 24px;
+      position: relative; z-index: 2;
+      width: min(600px, 90vw); padding: 0 24px;
     }
-
     .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 20px;
-      overflow: hidden;
-      margin-bottom: 40px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 20px; overflow: hidden; margin-bottom: 40px;
     }
-
     .info-cell {
-      background: rgba(26, 22, 37, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 28px 24px;
-      transition: background 0.3s;
+      background: rgba(26,22,37,0.6);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      padding: 28px 24px; transition: background 0.3s;
     }
     .info-cell:hover { background: rgba(255,255,255,0.03); }
-
     .info-cell-icon {
-      width: 32px; height: 32px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      margin-bottom: 14px;
-      background: rgba(232, 54, 93, 0.08);
-      color: #e8365d;
+      width: 32px; height: 32px; border-radius: 10px;
+      display: grid; place-items: center; margin-bottom: 14px;
+      background: rgba(232,54,93,0.08); color: #e8365d;
     }
     .info-cell-icon svg { width: 16px; height: 16px; }
-
-    .info-cell h3 {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      margin-bottom: 6px;
-    }
-    .info-cell p {
-      font-size: 12px;
-      color: rgba(255,255,255,0.3);
-      line-height: 1.6;
-    }
-
-    .info-tech {
-      margin-bottom: 40px;
-    }
+    .info-cell h3 { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+    .info-cell p { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.6; }
+    .info-tech { margin-bottom: 40px; }
     .info-tech h3 {
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.25);
-      margin-bottom: 16px;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 16px;
     }
-
-    .tech-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .tech-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .tech-tag {
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 500;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.06);
+      padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 500;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
       color: rgba(255,255,255,0.5);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
-
     .info-footer {
-      text-align: center;
-      font-size: 12px;
-      color: rgba(255,255,255,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
+      text-align: center; font-size: 12px; color: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; flex-wrap: wrap;
     }
     .info-footer a {
-      color: rgba(255,255,255,0.3);
-      text-decoration: none;
-      transition: color 0.2s;
+      color: rgba(255,255,255,0.3); text-decoration: none; transition: color 0.2s;
     }
     .info-footer a:hover { color: rgba(255,255,255,0.6); }
 
-    /* === PAGE INDICATORS === */
+    /* === PAGE DOTS === */
     .page-dots {
-      position: fixed;
-      right: 24px;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+      z-index: 100; display: flex; flex-direction: column; gap: 10px;
     }
     .page-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
+      width: 6px; height: 6px; border-radius: 50%;
       background: rgba(255,255,255,0.15);
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16,1,0.3,1); cursor: pointer;
     }
     .page-dot.active {
-      background: rgba(255,255,255,0.6);
-      height: 20px;
-      border-radius: 3px;
+      background: rgba(255,255,255,0.6); height: 20px; border-radius: 3px;
     }
 
     /* === TRANSITIONS === */
     .section-content {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
     }
-    .section.is-active .section-content {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    .section.is-active .section-content { opacity: 1; transform: translateY(0); }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
       .section-content { opacity: 1; transform: none; }
     }
-
     @media (max-width: 640px) {
       .info-grid { grid-template-columns: 1fr; }
       .hero-glass-cards { gap: 10px; }
@@ -456,10 +212,9 @@
   </style>
 </head>
 <body>
-
   <div class="scroll-container" id="scroller">
 
-    <!-- ===== SECTION 1: HERO ===== -->
+    <!-- SECTION 1: HERO -->
     <section class="section" id="sec-hero">
       <div class="hero-bg"></div>
       <div class="section-content hero-content">
@@ -473,10 +228,8 @@
           <path d="M208 48L80 48A32 32 0 0 0 48 80L48 176A32 32 0 0 0 80 208L208 208" fill="none" stroke="url(#hlg)" stroke-width="32" stroke-linecap="round"/>
           <path d="M208 88L140 88A20 20 0 0 0 140 128L156 128A20 20 0 0 1 156 168L88 168" fill="none" stroke="url(#hlr)" stroke-width="32" stroke-linecap="round"/>
         </svg>
-
         <h1 class="hero-title">SillyClient</h1>
         <p class="hero-sub">SillyTavern 跨平台启动器<br>内置 Node.js 运行时，安装即用</p>
-
         <div class="hero-actions">
           <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener" class="dl-btn dl-btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
@@ -487,94 +240,55 @@
             下载 Windows
           </a>
         </div>
-
         <div class="hero-glass-cards">
-          <div class="glass-card">
-            <div class="glass-card-title">Platform</div>
-            <div class="glass-card-value">Android + Windows</div>
-          </div>
-          <div class="glass-card">
-            <div class="glass-card-title">Runtime</div>
-            <div class="glass-card-value">Node.js Embedded</div>
-          </div>
-          <div class="glass-card">
-            <div class="glass-card-title">UI</div>
-            <div class="glass-card-value">React 19 + Capacitor</div>
-          </div>
+          <div class="glass-card"><div class="glass-card-title">Platform</div><div class="glass-card-value">Android + Windows</div></div>
+          <div class="glass-card"><div class="glass-card-title">Runtime</div><div class="glass-card-value">Node.js Embedded</div></div>
+          <div class="glass-card"><div class="glass-card-title">UI</div><div class="glass-card-value">React 19 + Capacitor</div></div>
         </div>
       </div>
-
       <div class="hero-scroll-hint">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         scroll
       </div>
     </section>
 
-    <!-- ===== SECTION 2: 3D PHONE ===== -->
+    <!-- SECTION 2: 3D PHONE (GLTF) -->
     <section class="section" id="sec-phone">
       <canvas id="three-canvas"></canvas>
-      <div class="section-content phone-scene">
-        <div class="phone-model" id="phoneModel">
-          <div class="phone-side"></div>
-          <div class="phone-btn-vol"></div>
-          <div class="phone-btn-vol2"></div>
-          <div class="phone-btn-pwr"></div>
-          <div class="phone-body">
-            <iframe class="phone-screen" id="appFrame" title="SillyClient App"></iframe>
-          </div>
-        </div>
-      </div>
+      <iframe id="app-overlay" title="SillyClient App"></iframe>
     </section>
 
-    <!-- ===== SECTION 3: INFO ===== -->
+    <!-- SECTION 3: INFO -->
     <section class="section" id="sec-info">
       <div class="info-bg"></div>
       <div class="section-content info-content">
         <div class="info-grid">
           <div class="info-cell">
-            <div class="info-cell-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            </div>
-            <h3>一键启动</h3>
-            <p>内置 Node.js 运行时，安装后直接运行酒馆，无需 Termux 或命令行。</p>
+            <div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <h3>一键启动</h3><p>内置 Node.js 运行时，安装后直接运行酒馆，无需 Termux 或命令行。</p>
           </div>
           <div class="info-cell">
-            <div class="info-cell-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-            </div>
-            <h3>多实例管理</h3>
-            <p>独立实例各自配置端口、版本和角色卡，卡片式轮播切换。</p>
+            <div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
+            <h3>多实例管理</h3><p>独立实例各自配置端口、版本和角色卡，卡片式轮播切换。</p>
           </div>
           <div class="info-cell">
-            <div class="info-cell-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg>
-            </div>
-            <h3>沉浸式界面</h3>
-            <p>状态栏适配、手势导航、液态玻璃界面，原生应用级的交互质感。</p>
+            <div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg></div>
+            <h3>沉浸式界面</h3><p>状态栏适配、手势导航、液态玻璃界面，原生应用级的交互质感。</p>
           </div>
           <div class="info-cell">
-            <div class="info-cell-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            </div>
-            <h3>跨平台</h3>
-            <p>Android 与 Windows 双端同步发布，共享同一套 React 前端。</p>
+            <div class="info-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+            <h3>跨平台</h3><p>Android 与 Windows 双端同步发布，共享同一套 React 前端。</p>
           </div>
         </div>
-
         <div class="info-tech">
           <h3>Tech Stack</h3>
           <div class="tech-row">
-            <span class="tech-tag">Kotlin</span>
-            <span class="tech-tag">Capacitor 7</span>
-            <span class="tech-tag">Electron 33</span>
-            <span class="tech-tag">React 19</span>
-            <span class="tech-tag">TypeScript</span>
-            <span class="tech-tag">Vite</span>
-            <span class="tech-tag">Tailwind CSS</span>
-            <span class="tech-tag">Node.js Embedded</span>
+            <span class="tech-tag">Kotlin</span><span class="tech-tag">Capacitor 7</span>
+            <span class="tech-tag">Electron 33</span><span class="tech-tag">React 19</span>
+            <span class="tech-tag">TypeScript</span><span class="tech-tag">Vite</span>
+            <span class="tech-tag">Tailwind CSS</span><span class="tech-tag">Node.js Embedded</span>
           </div>
         </div>
-
         <div class="info-footer">
           <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
           <span style="color:rgba(255,255,255,0.1)">·</span>
@@ -586,7 +300,6 @@
     </section>
   </div>
 
-  <!-- Page dots -->
   <div class="page-dots">
     <div class="page-dot active" data-index="0"></div>
     <div class="page-dot" data-index="1"></div>
@@ -594,88 +307,93 @@
   </div>
 
   <script>
-    // Load app preview
-    document.getElementById('appFrame').src = './app/index.html?v=' + Date.now();
+    document.getElementById('app-overlay').src = './app/index.html?v=' + Date.now();
 
-    // Scroll observer for sections
     const scroller = document.getElementById('scroller');
     const sections = document.querySelectorAll('.section');
     const dots = document.querySelectorAll('.page-dot');
-
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) {
           e.target.classList.add('is-active');
           const idx = Array.from(sections).indexOf(e.target);
           dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-        } else {
-          e.target.classList.remove('is-active');
-        }
+        } else { e.target.classList.remove('is-active'); }
       });
     }, { root: scroller, threshold: 0.55 });
-
     sections.forEach(s => observer.observe(s));
-
-    // Click dots to scroll
-    dots.forEach(d => {
-      d.addEventListener('click', () => {
-        const idx = parseInt(d.dataset.index);
-        sections[idx].scrollIntoView({ behavior: 'smooth' });
-      });
-    });
+    dots.forEach(d => d.addEventListener('click', () => {
+      sections[parseInt(d.dataset.index)].scrollIntoView({ behavior: 'smooth' });
+    }));
   </script>
 
-  <!-- Three.js for section 2 -->
   <script type="importmap">
-  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    }
+  }
   </script>
 
   <script type="module">
     import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     const canvas = document.getElementById('three-canvas');
-    const phoneSection = document.getElementById('sec-phone');
-    const phoneModel = document.getElementById('phoneModel');
+    const section = document.getElementById('sec-phone');
+    const overlay = document.getElementById('app-overlay');
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x1a1625, 0.01);
+    scene.fog = new THREE.FogExp2(0x1a1625, 0.008);
 
-    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 200);
-    camera.position.set(0, 0, 40);
+    const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 200);
+    camera.position.set(0, 0, 6);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x1a1625, 1);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+
+    // Lights
+    const amb = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(amb);
+    const dir1 = new THREE.DirectionalLight(0xffffff, 1.2);
+    dir1.position.set(3, 4, 5);
+    scene.add(dir1);
+    const dir2 = new THREE.DirectionalLight(0x8888cc, 0.4);
+    dir2.position.set(-3, -2, 3);
+    scene.add(dir2);
+    const point = new THREE.PointLight(0xe8365d, 0.3, 10);
+    point.position.set(0, 0, 4);
+    scene.add(point);
 
     // Particles
-    const N = 500;
+    const N = 400;
     const pos = new Float32Array(N * 3);
     const col = new Float32Array(N * 3);
     const c1 = new THREE.Color(0x2a2240);
     const c2 = new THREE.Color(0xe8365d);
     const c3 = new THREE.Color(0x3a3050);
-
     for (let i = 0; i < N; i++) {
       const i3 = i * 3;
-      const r = 12 + Math.random() * 50;
+      const r = 8 + Math.random() * 30;
       const th = Math.random() * Math.PI * 2;
       const ph = Math.acos(2 * Math.random() - 1);
       pos[i3] = r * Math.sin(ph) * Math.cos(th);
       pos[i3+1] = r * Math.sin(ph) * Math.sin(th);
       pos[i3+2] = r * Math.cos(ph);
-
       const p = Math.random();
       const c = p < 0.5 ? c1 : p < 0.8 ? c3 : c2;
-      const b = 0.3 + Math.random() * 0.6;
+      const b = 0.3 + Math.random() * 0.5;
       col[i3] = c.r*b; col[i3+1] = c.g*b; col[i3+2] = c.b*b;
     }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-
-    const mat = new THREE.ShaderMaterial({
+    const pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    pGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const pMat = new THREE.ShaderMaterial({
       uniforms: { uTime: { value: 0 }, uPR: { value: Math.min(devicePixelRatio, 2) } },
       vertexShader: `
         attribute vec3 color; varying vec3 vC;
@@ -684,7 +402,7 @@
           vC = color;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           float tw = sin(uTime * 0.3 + position.x * 0.15 + position.y * 0.1) * 0.5 + 0.5;
-          gl_PointSize = (0.8 + tw * 1.0) * uPR * (24.0 / -mv.z);
+          gl_PointSize = (0.8 + tw * 0.8) * uPR * (20.0 / -mv.z);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `
@@ -692,27 +410,63 @@
         void main() {
           float d = length(gl_PointCoord - vec2(0.5));
           if (d > 0.5) discard;
-          gl_FragColor = vec4(vC, smoothstep(0.5, 0.0, d) * 0.55);
+          gl_FragColor = vec4(vC, smoothstep(0.5, 0.0, d) * 0.45);
         }`,
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
     });
-    const pts = new THREE.Points(geo, mat);
+    const pts = new THREE.Points(pGeo, pMat);
     scene.add(pts);
 
-    // Floating torus rings
-    const rings = [];
-    [
-      { pos: [-10, 4, -15], s: 2.5, spd: 0.003, color: 0xe8365d },
-      { pos: [8, -5, -20], s: 3.5, spd: -0.002, color: 0x6a112e },
-      { pos: [3, 8, -25], s: 2.0, spd: 0.004, color: 0x3a3050 },
-    ].forEach(cfg => {
-      const g = new THREE.TorusGeometry(cfg.s, 0.06, 16, 64);
-      const m = new THREE.MeshBasicMaterial({ color: cfg.color, transparent: true, opacity: 0.15 });
-      const mesh = new THREE.Mesh(g, m);
-      mesh.position.set(...cfg.pos);
-      mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-      scene.add(mesh);
-      rings.push({ mesh, cfg, baseY: cfg.pos[1] });
+    // Load GLTF phone model
+    const loader = new GLTFLoader();
+    let phoneGroup = null;
+    let screenMesh = null;
+    let glassMesh = null;
+
+    loader.load('./models/iphone_17_air.glb', (gltf) => {
+      phoneGroup = gltf.scene;
+
+      // Find and process screen + glass meshes
+      phoneGroup.traverse((child) => {
+        if (!child.isMesh) return;
+        const matName = child.material?.name || '';
+
+        // Screen mesh — make transparent so iframe shows through
+        if (matName === '17Air_Screen') {
+          screenMesh = child;
+          child.material = new THREE.MeshBasicMaterial({
+            transparent: true, opacity: 0, depthWrite: false
+          });
+        }
+        // Glass — slightly transparent
+        if (matName === '17Air_Glass') {
+          glassMesh = child;
+          child.material = child.material.clone();
+          child.material.transparent = true;
+          child.material.opacity = 0.15;
+        }
+      });
+
+      // Scale and position the phone
+      const box = new THREE.Box3().setFromObject(phoneGroup);
+      const size = box.getSize(new THREE.Vector3());
+      const scale = 2.8 / Math.max(size.x, size.y);
+      phoneGroup.scale.setScalar(scale);
+
+      // Center
+      const centeredBox = new THREE.Box3().setFromObject(phoneGroup);
+      const centeredSize = centeredBox.getSize(new THREE.Vector3());
+      const centeredCenter = centeredBox.getCenter(new THREE.Vector3());
+      phoneGroup.position.sub(centeredCenter);
+      phoneGroup.position.y += 0.1;
+
+      // Slight initial angle to show 3D depth
+      phoneGroup.rotation.y = -0.15;
+      phoneGroup.rotation.x = 0.05;
+
+      scene.add(phoneGroup);
+    }, undefined, (err) => {
+      console.error('GLTF load error:', err);
     });
 
     // Mouse
@@ -731,6 +485,45 @@
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const clock = new THREE.Clock();
 
+    // Project 3D box to screen coords
+    const _v3 = new THREE.Vector3();
+    function toScreen(pos3d) {
+      _v3.copy(pos3d).project(camera);
+      return {
+        x: (_v3.x * 0.5 + 0.5) * innerWidth,
+        y: (-_v3.y * 0.5 + 0.5) * innerHeight
+      };
+    }
+
+    function updateOverlay() {
+      if (!screenMesh || !phoneGroup) return;
+
+      const geo = screenMesh.geometry;
+      geo.computeBoundingBox();
+      const bb = geo.boundingBox;
+
+      // Get world positions of screen corners
+      const topLeft = new THREE.Vector3(bb.min.x, bb.max.y, bb.min.z);
+      const bottomRight = new THREE.Vector3(bb.max.x, bb.min.y, bb.max.z);
+
+      screenMesh.localToWorld(topLeft);
+      screenMesh.localToWorld(bottomRight);
+
+      const tl = toScreen(topLeft);
+      const br = toScreen(bottomRight);
+
+      const sectionRect = section.getBoundingClientRect();
+      const sx = tl.x;
+      const sy = tl.y - sectionRect.top;
+      const sw = br.x - tl.x;
+      const sh = br.y - tl.y;
+
+      overlay.style.left = sx + 'px';
+      overlay.style.top = sy + 'px';
+      overlay.style.width = Math.abs(sw) + 'px';
+      overlay.style.height = Math.abs(sh) + 'px';
+    }
+
     function loop() {
       requestAnimationFrame(loop);
       const t = clock.getElapsedTime();
@@ -738,24 +531,26 @@
       mouse.x += (mouse.tx - mouse.x) * 0.04;
       mouse.y += (mouse.ty - mouse.y) * 0.04;
 
-      camera.position.x = mouse.x * 2;
-      camera.position.y = -mouse.y * 1;
+      camera.position.x = mouse.x * 0.3;
+      camera.position.y = -mouse.y * 0.15;
       camera.lookAt(0, 0, 0);
 
       if (!reduced) {
         pts.rotation.y = t * 0.008;
-        mat.uniforms.uTime.value = t;
+        pMat.uniforms.uTime.value = t;
 
-        rings.forEach((r, i) => {
-          r.mesh.rotation.x += r.cfg.spd;
-          r.mesh.rotation.y += r.cfg.spd * 0.7;
-          r.mesh.position.y = r.baseY + Math.sin(t * 0.2 + i * 1.5) * 1;
-        });
+        if (phoneGroup) {
+          // Clamp rotation: Y ±20°, X ±8° — never show back
+          const targetRY = mouse.x * 0.35;
+          const targetRX = -mouse.y * 0.14;
+          phoneGroup.rotation.y += (targetRY - phoneGroup.rotation.y) * 0.08;
+          phoneGroup.rotation.x += (targetRX - phoneGroup.rotation.x) * 0.08;
+          // Hard clamp
+          phoneGroup.rotation.y = Math.max(-0.35, Math.min(0.35, phoneGroup.rotation.y));
+          phoneGroup.rotation.x = Math.max(-0.14, Math.min(0.14, phoneGroup.rotation.x));
+        }
 
-        // Phone 3D tilt follows mouse
-        const ry = mouse.x * 12;
-        const rx = -mouse.y * 6;
-        phoneModel.style.transform = `rotateY(${ry}deg) rotateX(${rx}deg)`;
+        updateOverlay();
       }
 
       renderer.render(scene, camera);
@@ -767,7 +562,7 @@
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-      mat.uniforms.uPR.value = Math.min(devicePixelRatio, 2);
+      pMat.uniforms.uPR.value = Math.min(devicePixelRatio, 2);
     });
   </script>
 </body>
