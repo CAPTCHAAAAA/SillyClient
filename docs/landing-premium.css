@@ -133,6 +133,40 @@ a:focus-visible {
   gap: 8px;
 }
 
+.language-switcher {
+  height: 32px;
+  display: inline-grid;
+  grid-template-columns: 28px 32px;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.language-option {
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.38);
+  font: 700 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.language-option:hover {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.language-option.is-active {
+  background: rgba(255, 255, 255, 0.11);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .icon-button,
 .menu-button {
   width: 36px;
@@ -523,6 +557,14 @@ a:focus-visible {
   will-change: transform, opacity;
 }
 
+html[lang="en"] .experience-copy {
+  width: 420px;
+}
+
+html[lang="en"] .experience-copy h2 {
+  font-size: 38px;
+}
+
 .section-index {
   display: flex;
   align-items: center;
@@ -857,8 +899,16 @@ a:focus-visible {
     margin-left: 1vw;
   }
 
+  html[lang="en"] .experience-copy {
+    width: 350px;
+  }
+
   .experience-copy h2 {
     font-size: 36px;
+  }
+
+  html[lang="en"] .experience-copy h2 {
+    font-size: 32px;
   }
 
   .platform-intro,
@@ -875,6 +925,19 @@ a:focus-visible {
     background: rgba(14, 13, 19, 0.58);
     backdrop-filter: blur(22px);
     -webkit-backdrop-filter: blur(22px);
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .language-switcher {
+    grid-template-columns: 25px 29px;
+    height: 34px;
+  }
+
+  .language-option {
+    height: 28px;
   }
 
   .brand-lockup span {
@@ -957,6 +1020,12 @@ a:focus-visible {
     line-height: 1.7;
   }
 
+  html[lang="en"] .hero-sub {
+    max-width: 346px;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
   .hero-actions {
     margin-top: 26px;
   }
@@ -996,6 +1065,16 @@ a:focus-visible {
     font-size: 30px;
   }
 
+  html[lang="en"] .experience-copy {
+    width: 100%;
+  }
+
+  html[lang="en"] .experience-copy h2 {
+    max-width: 320px;
+    font-size: 28px;
+    line-height: 1.12;
+  }
+
   .experience-copy > p {
     display: none;
   }
@@ -1020,6 +1099,11 @@ a:focus-visible {
 
   .platform-intro h2 {
     font-size: 36px;
+  }
+
+  html[lang="en"] .platform-intro h2 {
+    font-size: 32px;
+    line-height: 1.1;
   }
 
   .platform-intro > p {
@@ -1051,6 +1135,10 @@ a:focus-visible {
     font-size: 30px;
   }
 
+  html[lang="en"] .download-row h3 {
+    font-size: 27px;
+  }
+
   .platform-actions {
     display: grid;
     grid-template-columns: 1fr;
@@ -1078,6 +1166,26 @@ a:focus-visible {
   .site-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar {
+    padding-inline: 12px;
+  }
+
+  .topbar-actions > .icon-button {
+    display: none;
+  }
+
+  .hero-actions {
+    gap: 8px;
+  }
+
+  .primary-action,
+  .secondary-action {
+    padding-inline: 11px;
+    font-size: 10px;
   }
 }
 

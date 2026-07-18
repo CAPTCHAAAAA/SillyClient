@@ -190,28 +190,32 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css?v=2a5d640" />
+  <link rel="stylesheet" href="./landing-premium.css?v=20260719-i18n" />
 </head>
 <body>
   <div class="scroll-container site-scroller" id="scroller">
     <header class="topbar" id="topbar">
-      <a class="brand-lockup" href="#journey" data-scroll-target="journey" aria-label="SillyClient 首页">
+      <a class="brand-lockup" href="#journey" data-scroll-target="journey" aria-label="SillyClient 首页" data-i18n-aria="homeLabel">
         <img class="brand-mark" src="./sillyclient-logo.svg" alt="" width="28" height="28" />
         <span>SillyClient</span>
       </a>
-      <nav class="nav-links" id="nav-links" aria-label="主要导航">
-        <a href="#journey" data-scroll-target="journey">概览</a>
-        <a href="#experience" data-scroll-target="experience">体验</a>
-        <a href="#platform" data-scroll-target="platform">下载</a>
+      <nav class="nav-links" id="nav-links" aria-label="主要导航" data-i18n-aria="primaryNav">
+        <a href="#journey" data-scroll-target="journey" data-i18n="overview">概览</a>
+        <a href="#experience" data-scroll-target="experience" data-i18n="experience">体验</a>
+        <a href="#platform" data-scroll-target="platform" data-i18n="download">下载</a>
       </nav>
       <div class="topbar-actions">
-        <a class="icon-button" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" aria-label="打开 GitHub" title="GitHub">
+        <a class="icon-button" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" aria-label="打开 GitHub" data-i18n-aria="openGithub" title="GitHub">
           <i data-lucide="github"></i>
         </a>
+        <div class="language-switcher" role="group" aria-label="语言" data-i18n-aria="languageSwitcher">
+          <button class="language-option is-active" type="button" data-language="zh" aria-label="中文" aria-pressed="true">中</button>
+          <button class="language-option" type="button" data-language="en" aria-label="English" aria-pressed="false">EN</button>
+        </div>
         <a class="nav-download" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
-          <i data-lucide="download"></i><span>获取应用</span>
+          <i data-lucide="download"></i><span data-i18n="getApp">获取应用</span>
         </a>
-        <button class="menu-button" id="menu-button" type="button" aria-label="打开导航菜单" aria-expanded="false">
+        <button class="menu-button" id="menu-button" type="button" aria-label="打开导航菜单" data-i18n-aria="openMenu" aria-expanded="false">
           <i data-lucide="menu"></i>
         </button>
       </div>
@@ -222,13 +226,13 @@
         <div class="visual-stage" id="sec-phone">
           <canvas id="three-canvas"></canvas>
           <div class="stage-shade" aria-hidden="true"></div>
-          <div id="loading" role="status" aria-live="polite">正在装配产品场景</div>
+          <div id="loading" role="status" aria-live="polite" data-i18n="loadingScene">正在装配产品场景</div>
           <div id="screen-frame">
-            <iframe id="app-screen" src="./index.html" title="SillyClient 软件界面"></iframe>
+            <iframe id="app-screen" src="./index.html" title="SillyClient 软件界面" data-i18n-title="appFrameTitle"></iframe>
             <div id="screen-reflection" aria-hidden="true"></div>
             <div id="dynamic-island" aria-hidden="true"></div>
           </div>
-          <div class="stage-caption">Interactive product scene</div>
+          <div class="stage-caption" data-i18n="stageCaption">交互式产品场景</div>
         </div>
 
         <div class="story-layer">
@@ -238,7 +242,7 @@
               <h1 class="hero-title">Silly<span class="accent">Client</span></h1>
               <div class="title-font-switcher">
                 <i data-lucide="type"></i>
-                <select id="title-font-select" aria-label="选择标题字体" title="选择标题字体">
+                <select id="title-font-select" aria-label="选择标题字体" title="选择标题字体" data-i18n-aria="fontLabel" data-i18n-title="fontLabel">
                   <option value="Yummy">Yummy</option>
                   <option value="Arcade Raiders">Arcade Raiders</option>
                   <option value="Noisy Walk">Noisy Walk</option>
@@ -251,21 +255,21 @@
                 </select>
                 <i data-lucide="chevron-down"></i>
               </div>
-              <p class="hero-sub">安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。</p>
+              <p class="hero-sub" data-i18n="heroSubtitle">安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。</p>
               <div class="hero-actions">
                 <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
-                  <i data-lucide="download"></i> 获取最新版本
+                  <i data-lucide="download"></i><span data-i18n="latestRelease">获取最新版本</span>
                 </a>
                 <a class="secondary-action" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">
-                  <i data-lucide="github"></i> 查看源码
+                  <i data-lucide="github"></i><span data-i18n="viewSource">查看源码</span>
                 </a>
               </div>
-              <div class="hero-specs" aria-label="产品技术概要">
+              <div class="hero-specs" aria-label="产品技术概要" data-i18n-aria="techSummary">
                 <span>Android</span><span>Windows</span><span>Embedded Node.js</span>
               </div>
             </div>
-            <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="进入产品体验">
-              <span>进入 SillyClient</span>
+            <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="进入产品体验" data-i18n-aria="enterExperience">
+              <span data-i18n="enterSillyClient">进入 SillyClient</span>
               <span class="cue-orbit"><i data-lucide="chevron-down"></i></span>
             </button>
           </section>
@@ -273,15 +277,15 @@
           <section class="story-panel experience-panel" id="experience" data-section="experience">
             <div class="experience-copy">
               <div class="section-index">01 / The app</div>
-              <h2>启动器和酒馆，各做各的事。</h2>
-              <p>控制台负责实例、端口、进程和日志；SillyTavern 在独立的原生窗口中运行。返回控制台时，实例不会被顺手关掉。</p>
+              <h2 data-i18n="experienceTitle">启动器和酒馆，各做各的事。</h2>
+              <p data-i18n="experienceBody">控制台负责实例、端口、进程和日志；SillyTavern 在独立的原生窗口中运行。返回控制台时，实例不会被顺手关掉。</p>
               <ul class="signal-list">
-                <li><i data-lucide="boxes"></i><span>本地与远程实例</span><span class="signal-state">统一管理</span></li>
-                <li><i data-lucide="terminal"></i><span>实时日志与终端</span><span class="signal-state">随时查看</span></li>
-                <li><i data-lucide="panel-top"></i><span>返回酒馆 / 停止实例</span><span class="signal-state">分开控制</span></li>
+                <li><i data-lucide="boxes"></i><span data-i18n="localRemoteInstances">本地与远程实例</span><span class="signal-state" data-i18n="unifiedManagement">统一管理</span></li>
+                <li><i data-lucide="terminal"></i><span data-i18n="liveLogsTerminal">实时日志与终端</span><span class="signal-state" data-i18n="availableAnytime">随时查看</span></li>
+                <li><i data-lucide="panel-top"></i><span data-i18n="returnStop">返回酒馆 / 停止实例</span><span class="signal-state" data-i18n="separateControl">分开控制</span></li>
               </ul>
             </div>
-            <div class="device-note"><i data-lucide="mouse-pointer-2"></i> 屏幕可直接交互</div>
+            <div class="device-note"><i data-lucide="mouse-pointer-2"></i><span data-i18n="interactiveScreen">屏幕可直接交互</span></div>
           </section>
         </div>
       </section>
@@ -291,30 +295,30 @@
           <div class="platform-intro">
             <div>
               <div class="section-index">02 / Native runtime</div>
-              <h2>不只是给网页套一层外壳。</h2>
+              <h2 data-i18n="platformTitle">不只是给网页套一层外壳。</h2>
             </div>
-            <p>共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。</p>
+            <p data-i18n="platformBody">共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。</p>
           </div>
 
           <div class="feature-list platform-features">
             <article class="feature-row">
               <span class="feature-icon"><i data-lucide="zap"></i></span>
-              <div><h3>运行时随应用提供</h3><p>Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
+              <div><h3 data-i18n="runtimeIncludedTitle">运行时随应用提供</h3><p data-i18n="runtimeIncludedBody">Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
             </article>
             <article class="feature-row">
               <span class="feature-icon"><i data-lucide="layers-3"></i></span>
-              <div><h3>控制台与酒馆分开</h3><p>管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。</p></div>
+              <div><h3 data-i18n="separateWindowsTitle">控制台与酒馆分开</h3><p data-i18n="separateWindowsBody">管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。</p></div>
             </article>
             <article class="feature-row">
               <span class="feature-icon"><i data-lucide="monitor-smartphone"></i></span>
-              <div><h3>同一套界面，不同平台实现</h3><p>React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。</p></div>
+              <div><h3 data-i18n="sharedUiTitle">同一套界面，不同平台实现</h3><p data-i18n="sharedUiBody">React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。</p></div>
             </article>
           </div>
 
           <div class="platform-head download-row">
             <div>
               <div class="section-index">Android / Windows</div>
-              <h3>装好，就可以开始搭建自己的酒馆。</h3>
+              <h3 data-i18n="installTitle">装好，就可以开始搭建自己的酒馆。</h3>
             </div>
             <div class="platform-actions">
               <a class="platform-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
@@ -326,10 +330,10 @@
             </div>
           </div>
           <div class="platform-meta">
-            <div><strong>Bionic Node.js</strong><span>Android runtime</span></div>
-            <div><strong>Node.js 22</strong><span>Windows runtime</span></div>
-            <div><strong>React 19</strong><span>Shared control UI</span></div>
-            <div><strong>MIT</strong><span>Open source</span></div>
+            <div><strong>Bionic Node.js</strong><span data-i18n="metaAndroid">Android 运行时</span></div>
+            <div><strong>Node.js 22</strong><span data-i18n="metaWindows">Windows 运行时</span></div>
+            <div><strong>React 19</strong><span data-i18n="metaShared">共享控制界面</span></div>
+            <div><strong>MIT</strong><span data-i18n="metaOpen">开源许可</span></div>
           </div>
           <footer class="site-footer">
             <span>© 2026 SillyClient</span>
@@ -342,10 +346,10 @@
       </section>
     </main>
 
-    <div class="section-rail" aria-label="页面章节">
-      <button class="rail-dot is-active" type="button" data-scroll-target="journey" aria-label="概览"></button>
-      <button class="rail-dot" type="button" data-scroll-target="experience" aria-label="产品体验"></button>
-      <button class="rail-dot" type="button" data-scroll-target="platform" aria-label="下载"></button>
+    <div class="section-rail" aria-label="页面章节" data-i18n-aria="pageSections">
+      <button class="rail-dot is-active" type="button" data-scroll-target="journey" aria-label="概览" data-i18n-aria="overview"></button>
+      <button class="rail-dot" type="button" data-scroll-target="experience" aria-label="产品体验" data-i18n-aria="productExperience"></button>
+      <button class="rail-dot" type="button" data-scroll-target="platform" aria-label="下载" data-i18n-aria="download"></button>
     </div>
   </div>
 
@@ -367,6 +371,8 @@
       ];
       const titleFontSelect = document.getElementById('title-font-select');
       const heroTitle = document.querySelector('.hero-title');
+      const languageButtons = [...document.querySelectorAll('[data-language]')];
+      const descriptionMeta = document.querySelector('meta[name="description"]');
       const titleFonts = new Set([
         'Yummy',
         'Arcade Raiders',
@@ -378,8 +384,142 @@
         'Syndra',
         'Dynamic Display'
       ]);
+      const translations = {
+        zh: {
+          documentTitle: 'SillyClient | Android 与 Windows 上的 SillyTavern 客户端',
+          metaDescription: 'SillyClient 将 SillyTavern 的运行时、实例管理和阅读窗口带到 Android 与 Windows。',
+          homeLabel: 'SillyClient 首页',
+          primaryNav: '主要导航',
+          overview: '概览',
+          experience: '体验',
+          download: '下载',
+          productExperience: '产品体验',
+          openGithub: '打开 GitHub',
+          languageSwitcher: '语言',
+          getApp: '获取应用',
+          openMenu: '打开导航菜单',
+          closeMenu: '关闭导航菜单',
+          loadingScene: '正在装配产品场景',
+          appFrameTitle: 'SillyClient 软件界面',
+          stageCaption: '交互式产品场景',
+          fontLabel: '选择标题字体',
+          heroSubtitle: '安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。',
+          latestRelease: '获取最新版本',
+          viewSource: '查看源码',
+          techSummary: '产品技术概要',
+          enterExperience: '进入产品体验',
+          enterSillyClient: '进入 SillyClient',
+          experienceTitle: '启动器和酒馆，各做各的事。',
+          experienceBody: '控制台负责实例、端口、进程和日志；SillyTavern 在独立的原生窗口中运行。返回控制台时，实例不会被顺手关掉。',
+          localRemoteInstances: '本地与远程实例',
+          unifiedManagement: '统一管理',
+          liveLogsTerminal: '实时日志与终端',
+          availableAnytime: '随时查看',
+          returnStop: '返回酒馆 / 停止实例',
+          separateControl: '分开控制',
+          interactiveScreen: '屏幕可直接交互',
+          platformTitle: '不只是给网页套一层外壳。',
+          platformBody: '共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。',
+          runtimeIncludedTitle: '运行时随应用提供',
+          runtimeIncludedBody: 'Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。',
+          separateWindowsTitle: '控制台与酒馆分开',
+          separateWindowsBody: '管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。',
+          sharedUiTitle: '同一套界面，不同平台实现',
+          sharedUiBody: 'React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。',
+          installTitle: '装好，就可以开始搭建自己的酒馆。',
+          metaAndroid: 'Android 运行时',
+          metaWindows: 'Windows 运行时',
+          metaShared: '共享控制界面',
+          metaOpen: '开源许可',
+          pageSections: '页面章节'
+        },
+        en: {
+          documentTitle: 'SillyClient | SillyTavern for Android and Windows',
+          metaDescription: 'SillyClient brings the SillyTavern runtime, instance management, and a native reading window to Android and Windows.',
+          homeLabel: 'SillyClient home',
+          primaryNav: 'Primary navigation',
+          overview: 'Overview',
+          experience: 'Experience',
+          download: 'Download',
+          productExperience: 'Product experience',
+          openGithub: 'Open GitHub',
+          languageSwitcher: 'Language',
+          getApp: 'Get the app',
+          openMenu: 'Open navigation menu',
+          closeMenu: 'Close navigation menu',
+          loadingScene: 'Assembling the product scene',
+          appFrameTitle: 'SillyClient app interface',
+          stageCaption: 'Interactive product scene',
+          fontLabel: 'Choose title font',
+          heroSubtitle: 'Install, launch, and manage SillyTavern. The runtime ships with the app, while local and remote instances share one control center.',
+          latestRelease: 'Get the latest release',
+          viewSource: 'View source',
+          techSummary: 'Product technology summary',
+          enterExperience: 'Enter the product experience',
+          enterSillyClient: 'Enter SillyClient',
+          experienceTitle: 'The launcher and the tavern stay independent.',
+          experienceBody: 'The control center handles instances, ports, processes, and logs. SillyTavern runs in its own native window, so returning to the console never stops it by accident.',
+          localRemoteInstances: 'Local and remote instances',
+          unifiedManagement: 'One console',
+          liveLogsTerminal: 'Live logs and terminal',
+          availableAnytime: 'Always ready',
+          returnStop: 'Return to tavern / stop instance',
+          separateControl: 'Separate controls',
+          interactiveScreen: 'The screen is fully interactive',
+          platformTitle: 'More than a web page in a wrapper.',
+          platformBody: 'The shared React console issues commands. Installation, processes, runtimes, and reading windows are handled by the native Android or Windows layer.',
+          runtimeIncludedTitle: 'Runtime included',
+          runtimeIncludedBody: 'No Termux on Android and no separate Node.js install on Windows. SillyClient owns setup and launch from end to end.',
+          separateWindowsTitle: 'Console and tavern, separated',
+          separateWindowsBody: 'Management and SillyTavern use independent windows. Leaving the reading window does not stop the running instance.',
+          sharedUiTitle: 'One interface, native implementations',
+          sharedUiBody: 'The React console stays consistent while Kotlin on Android and Electron on Windows provide platform capabilities.',
+          installTitle: 'Install it, then start building your own tavern.',
+          metaAndroid: 'Android runtime',
+          metaWindows: 'Windows runtime',
+          metaShared: 'Shared control UI',
+          metaOpen: 'Open source',
+          pageSections: 'Page sections'
+        }
+      };
+      let currentLanguage = 'zh';
 
       if (window.lucide) window.lucide.createIcons();
+
+      function syncMenuLabel() {
+        const key = navLinks.classList.contains('is-open') ? 'closeMenu' : 'openMenu';
+        menuButton.setAttribute('aria-label', translations[currentLanguage][key]);
+      }
+
+      function applyLanguage(language) {
+        currentLanguage = translations[language] ? language : 'zh';
+        const copy = translations[currentLanguage];
+        document.documentElement.lang = currentLanguage === 'zh' ? 'zh-CN' : 'en';
+        document.title = copy.documentTitle;
+        if (descriptionMeta) descriptionMeta.setAttribute('content', copy.metaDescription);
+
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+          const value = copy[element.dataset.i18n];
+          if (value) element.textContent = value;
+        });
+        document.querySelectorAll('[data-i18n-aria]').forEach((element) => {
+          const value = copy[element.dataset.i18nAria];
+          if (value) element.setAttribute('aria-label', value);
+        });
+        document.querySelectorAll('[data-i18n-title]').forEach((element) => {
+          const value = copy[element.dataset.i18nTitle];
+          if (value) element.setAttribute('title', value);
+        });
+
+        languageButtons.forEach((button) => {
+          const active = button.dataset.language === currentLanguage;
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-pressed', String(active));
+        });
+        localStorage.setItem('landing-language', currentLanguage);
+        syncMenuLabel();
+        requestAnimationFrame(fitHeroTitle);
+      }
 
       function fitHeroTitle() {
         heroTitle.style.fontSize = '';
@@ -404,6 +544,11 @@
 
       applyTitleFont(localStorage.getItem('landing-title-font') || 'Soap');
       titleFontSelect.addEventListener('change', () => applyTitleFont(titleFontSelect.value));
+      const savedLanguage = localStorage.getItem('landing-language');
+      applyLanguage(savedLanguage || (navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'));
+      languageButtons.forEach((button) => {
+        button.addEventListener('click', () => applyLanguage(button.dataset.language));
+      });
       addEventListener('resize', fitHeroTitle);
 
       function targetTop(target) {
@@ -421,12 +566,14 @@
           pageScroller.scrollTo({ top: targetTop(target), behavior: 'smooth' });
           navLinks.classList.remove('is-open');
           menuButton.setAttribute('aria-expanded', 'false');
+          syncMenuLabel();
         });
       });
 
       menuButton.addEventListener('click', () => {
         const open = navLinks.classList.toggle('is-open');
         menuButton.setAttribute('aria-expanded', String(open));
+        syncMenuLabel();
       });
 
       function updatePageState() {
