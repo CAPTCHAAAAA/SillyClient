@@ -314,9 +314,9 @@
         const avgZ = sumZ / nrm.count;
         if (Math.abs(avgZ) > 0.3) { frontZ += avgZ; frontCount++; }
       });
-      // Flip when back face normals point toward camera (+Z)
-      needFlip = (frontZ > 0);
-      if (needFlip) phoneGroup.rotation.y = Math.PI;
+      // This model's back face normals point toward +Z, so we always flip
+      needFlip = true;
+      phoneGroup.rotation.y = Math.PI;
 
       // Process meshes: make screen + glass transparent so iframe shows through
       phoneGroup.traverse((child) => {
@@ -391,41 +391,36 @@
     function updateScreenOverlay() {
       if (!phoneGroup) return;
 
-      // Use the screen mesh's bounding box for precise positioning
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      if (screenMesh) {
-        const geo = screenMesh.geometry;
-        geo.computeBoundingBox();
-        const bb = geo.boundingBox;
-        // Sample 4 corners of the screen in local space
-        const corners = [
-          new THREE.Vector3(bb.min.x, bb.max.y, 0),
-          new THREE.Vector3(bb.max.x, bb.max.y, 0),
-          new THREE.Vector3(bb.min.x, bb.min.y, 0),
-          new THREE.Vector3(bb.max.x, bb.min.y, 0)
-        ];
-        corners.forEach(c => {
-          screenMesh.localToWorld(c);
-          const s = toScreen(c);
-          minX = Math.min(minX, s.x);
-          maxX = Math.max(maxX, s.x);
-          minY = Math.min(minY, s.y);
-          maxY = Math.max(maxY, s.y);
-        });
-      } else {
-        // Fallback: use phone bounding box (88% width, 82% height)
-        const box = new THREE.Box3().setFromObject(phoneGroup);
-        const sz = box.getSize(new THREE.Vector3());
-        const ct = box.getCenter(new THREE.Vector3());
-        const sw = sz.x * 0.88, sh = sz.y * 0.82;
-        const tl = toScreen(new THREE.Vector3(ct.x - sw/2, ct.y + sh/2, ct.z));
-        const br = toScreen(new THREE.Vector3(ct.x + sw/2, ct.y - sh/2, ct.z));
-        minX = tl.x; maxX = br.x; minY = tl.y; maxY = br.y;
-      }
+      // Force update world matrices
+      phoneGroup.updateMatrixWorld(true);
 
-      const secTop = section.getBoundingClientRect().top;
-      const px = minX;
-      const py = minY - secTop;
+      // Use phone bounding box, calculate screen area as proportion of phone body
+      // iPhone screen occupies ~90% width, ~82% height, centered
+      const box = new THREE.Box3().setFromObject(phoneGroup);
+      const sz = box.getSize(new THREE.Vector3());
+      const ct = box.getCenter(new THREE.Vector3());
+      const screenW = sz.x * 0.90;
+      const screenH = sz.y * 0.82;
+
+      // Project 4 corners of the screen area to screen space
+      const corners = [
+        new THREE.Vector3(ct.x - screenW/2, ct.y + screenH/2, ct.z),
+        new THREE.Vector3(ct.x + screenW/2, ct.y + screenH/2, ct.z),
+        new THREE.Vector3(ct.x - screenW/2, ct.y - screenH/2, ct.z),
+        new THREE.Vector3(ct.x + screenW/2, ct.y - screenH/2, ct.z)
+      ];
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      corners.forEach(c => {
+        const s = toScreen(c);
+        minX = Math.min(minX, s.x);
+        maxX = Math.max(maxX, s.x);
+        minY = Math.min(minY, s.y);
+        maxY = Math.max(maxY, s.y);
+      });
+
+      const secRect = section.getBoundingClientRect();
+      const px = minX - secRect.left;
+      const py = minY - secRect.top;
       const pw = maxX - minX;
       const ph = maxY - minY;
 
