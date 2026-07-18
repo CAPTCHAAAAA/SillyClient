@@ -469,6 +469,10 @@
         if (Math.abs(avgZ) > 0.3) { frontZ += avgZ; frontCount++; }
       });
       needFlip = (frontZ < 0);
+      console.log('Front detection: frontZ=', frontZ, 'frontCount=', frontCount, 'needFlip=', needFlip);
+      // Force flip — the normal detection seems inverted
+      needFlip = !needFlip;
+      console.log('After force flip: needFlip=', needFlip);
       if (needFlip) phoneGroup.rotation.y = Math.PI;
 
       // Replace screen mesh material with our CanvasTexture
