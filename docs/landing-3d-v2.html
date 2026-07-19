@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SillyClient · 在 Android 与 Windows 运行 SillyTavern</title>
-  <meta name="description" content="SillyClient 把 SillyTavern 的运行时、实例管理和阅读窗口做成 Android 与 Windows 应用。" />
+  <title>SillyClient | 在 Android 和 Windows 运行 SillyTavern</title>
+  <meta name="description" content="SillyClient 是 Android 和 Windows 上的 SillyTavern 启动器，内置 Node.js，可管理本地实例并连接远程服务。" />
   <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml" />
   <style>
     @font-face { font-family: "Yummy"; src: url("./landing-fonts/Yummy.ttf") format("truetype"); font-display: swap; }
@@ -228,13 +228,13 @@
         <div class="visual-stage" id="sec-phone">
           <canvas id="three-canvas"></canvas>
           <div class="stage-shade" aria-hidden="true"></div>
-          <div id="loading" role="status" aria-live="polite" data-i18n="loadingScene">正在装配产品场景</div>
+          <div id="loading" role="status" aria-live="polite" data-i18n="loadingScene">正在载入 3D 场景</div>
           <div id="screen-frame">
             <iframe id="app-screen" src="./index.html" title="SillyClient 软件界面" data-i18n-title="appFrameTitle"></iframe>
             <div id="screen-reflection" aria-hidden="true"></div>
             <div id="dynamic-island" aria-hidden="true"></div>
           </div>
-          <div class="stage-caption" data-i18n="stageCaption">交互式产品场景</div>
+          <div class="stage-caption" data-i18n="stageCaption">拖动手机，屏幕也可以操作</div>
         </div>
 
         <div class="story-layer">
@@ -250,13 +250,13 @@
                   </span>
                 </button>
               </h1>
-              <p class="hero-sub" data-i18n="heroSubtitle">安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。</p>
+              <p class="hero-sub" data-i18n="heroSubtitle">在 Android 和 Windows 上安装、启动和管理 SillyTavern。Node.js 已随应用打包，也可以直接接入已有的远程服务。</p>
               <div class="hero-actions">
                 <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
-                  <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg><span data-i18n="latestRelease">获取最新版本</span>
+                  <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg><span data-i18n="latestRelease">下载 SillyClient</span>
                 </a>
                 <a class="secondary-action" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">
-                  <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-github"></use></svg><span data-i18n="viewSource">查看源码</span>
+                  <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-github"></use></svg><span data-i18n="viewSource">GitHub</span>
                 </a>
               </div>
               <div class="hero-specs" aria-label="产品技术概要" data-i18n-aria="techSummary">
@@ -264,7 +264,7 @@
               </div>
             </div>
             <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="进入产品体验" data-i18n-aria="enterExperience">
-              <span data-i18n="enterSillyClient">进入 SillyClient</span>
+              <span data-i18n="enterSillyClient">看看它怎么工作</span>
               <span class="cue-orbit"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-caret-down"></use></svg></span>
             </button>
           </section>
@@ -272,15 +272,15 @@
           <section class="story-panel experience-panel" id="experience" data-section="experience">
             <div class="experience-copy">
               <div class="section-index">01 / The app</div>
-              <h2 data-i18n="experienceTitle">启动器和酒馆，各做各的事。</h2>
-              <p data-i18n="experienceBody">控制台负责实例、端口、进程和日志；SillyTavern 在独立的原生窗口中运行。返回控制台时，实例不会被顺手关掉。</p>
+              <h2 data-i18n="experienceTitle">管理实例和使用酒馆，是两件事。</h2>
+              <p data-i18n="experienceBody">SillyClient 留在控制台里处理安装、端口和日志，SillyTavern 则在单独的窗口中打开。关掉阅读窗口不会停掉服务；要停止实例，回控制台操作。</p>
               <ul class="signal-list">
-                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-cube"></use></svg><span data-i18n="localRemoteInstances">本地与远程实例</span><span class="signal-state" data-i18n="unifiedManagement">统一管理</span></li>
-                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-terminal"></use></svg><span data-i18n="liveLogsTerminal">实时日志与终端</span><span class="signal-state" data-i18n="availableAnytime">随时查看</span></li>
-                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-browser"></use></svg><span data-i18n="returnStop">返回酒馆 / 停止实例</span><span class="signal-state" data-i18n="separateControl">分开控制</span></li>
+                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-cube"></use></svg><span data-i18n="localRemoteInstances">本地实例 / 远程地址</span><span class="signal-state" data-i18n="unifiedManagement">放在一起</span></li>
+                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-terminal"></use></svg><span data-i18n="liveLogsTerminal">安装进度 / 运行日志</span><span class="signal-state" data-i18n="availableAnytime">看得见</span></li>
+                <li><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-browser"></use></svg><span data-i18n="returnStop">返回界面 / 停止服务</span><span class="signal-state" data-i18n="separateControl">两回事</span></li>
               </ul>
             </div>
-            <div class="device-note"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-cursor"></use></svg><span data-i18n="interactiveScreen">屏幕可直接交互</span></div>
+            <div class="device-note"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-cursor"></use></svg><span data-i18n="interactiveScreen">手机屏幕可以直接操作</span></div>
           </section>
         </div>
       </section>
@@ -290,29 +290,29 @@
           <div class="platform-intro" data-reveal>
             <div>
               <div class="section-index">02 / Native runtime</div>
-              <h2 data-i18n="platformTitle">不只是给网页套一层外壳。</h2>
+              <h2 data-i18n="platformTitle">界面共用，底层各自处理。</h2>
             </div>
-            <p data-i18n="platformBody">共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。</p>
+            <p data-i18n="platformBody">React 控制台在两个平台保持一致。文件、进程、窗口和运行时交给 Android 的 Kotlin 或 Windows 的 Electron。</p>
           </div>
 
           <div class="platform-layout">
             <div class="runtime-map" aria-label="运行路径" data-i18n-aria="runtimeMapLabel" data-reveal>
               <div class="runtime-map-head">
                 <span data-i18n="runtimeMapLabel">运行路径</span>
-                <span class="runtime-map-status"><i></i><span data-i18n="runtimeMapStatus">本地优先</span></span>
+                <span class="runtime-map-status"><i></i><span data-i18n="runtimeMapStatus">本机运行</span></span>
               </div>
               <ol class="runtime-path">
                 <li>
                   <span class="runtime-step">01</span>
-                  <div><strong data-i18n="runtimeUiTitle">React 控制台</strong><p data-i18n="runtimeUiBody">实例、端口、进程与日志从同一个界面发出指令。</p></div>
+                  <div><strong data-i18n="runtimeUiTitle">管理界面</strong><p data-i18n="runtimeUiBody">在这里选版本、创建实例、改端口，也能看安装进度和日志。</p></div>
                 </li>
                 <li>
                   <span class="runtime-step">02</span>
-                  <div><strong data-i18n="runtimeBridgeTitle">原生桥接</strong><p data-i18n="runtimeBridgeBody">Kotlin 与 Electron 接管系统权限、窗口和文件操作。</p></div>
+                  <div><strong data-i18n="runtimeBridgeTitle">平台端</strong><p data-i18n="runtimeBridgeBody">Android 用 Kotlin，Windows 用 Electron。两边各自处理文件、进程和窗口。</p></div>
                 </li>
                 <li>
                   <span class="runtime-step">03</span>
-                  <div><strong data-i18n="runtimeEngineTitle">内置运行时</strong><p data-i18n="runtimeEngineBody">Node.js 随应用提供，SillyTavern 独立运行并保持在线。</p></div>
+                  <div><strong data-i18n="runtimeEngineTitle">Node.js</strong><p data-i18n="runtimeEngineBody">运行时跟着安装包走，SillyTavern 作为独立服务启动。</p></div>
                 </li>
               </ol>
             </div>
@@ -320,15 +320,15 @@
             <div class="feature-list platform-features">
               <article class="feature-row" data-reveal>
                 <span class="feature-icon"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-lightning"></use></svg></span>
-                <div><h3 data-i18n="runtimeIncludedTitle">运行时随应用提供</h3><p data-i18n="runtimeIncludedBody">Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。</p></div>
+                <div><h3 data-i18n="runtimeIncludedTitle">Node.js 已经带上</h3><p data-i18n="runtimeIncludedBody">Android 不要求先装 Termux，Windows 也不借用系统 Node.js。</p></div>
               </article>
               <article class="feature-row" data-reveal>
                 <span class="feature-icon"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-stack"></use></svg></span>
-                <div><h3 data-i18n="separateWindowsTitle">控制台与酒馆分开</h3><p data-i18n="separateWindowsBody">管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。</p></div>
+                <div><h3 data-i18n="separateWindowsTitle">关窗口，不关服务</h3><p data-i18n="separateWindowsBody">离开 SillyTavern 窗口后，实例继续运行。停止操作留在控制台。</p></div>
               </article>
               <article class="feature-row" data-reveal>
                 <span class="feature-icon"><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-devices"></use></svg></span>
-                <div><h3 data-i18n="sharedUiTitle">同一套界面，不同平台实现</h3><p data-i18n="sharedUiBody">React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。</p></div>
+                <div><h3 data-i18n="sharedUiTitle">前端只有一份</h3><p data-i18n="sharedUiBody">Android 和 Windows 使用同一份 React 构建，平台差异留给 Kotlin 和 Electron。</p></div>
               </article>
             </div>
           </div>
@@ -336,7 +336,7 @@
           <div class="platform-head download-row" data-reveal>
             <div>
               <div class="section-index">Android / Windows</div>
-              <h3 data-i18n="installTitle">装好，就可以开始搭建自己的酒馆。</h3>
+              <h3 data-i18n="installTitle">选一个版本，创建实例。剩下的过程会写在进度条里。</h3>
             </div>
             <div class="platform-actions">
               <a class="platform-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
@@ -406,8 +406,8 @@
       ];
       const translations = {
         zh: {
-          documentTitle: 'SillyClient | Android 与 Windows 上的 SillyTavern 客户端',
-          metaDescription: 'SillyClient 将 SillyTavern 的运行时、实例管理和阅读窗口带到 Android 与 Windows。',
+          documentTitle: 'SillyClient | 在 Android 和 Windows 运行 SillyTavern',
+          metaDescription: 'SillyClient 是 Android 和 Windows 上的 SillyTavern 启动器，内置 Node.js，可管理本地实例并连接远程服务。',
           homeLabel: 'SillyClient 首页',
           primaryNav: '主要导航',
           overview: '概览',
@@ -419,42 +419,42 @@
           getApp: '获取应用',
           openMenu: '打开导航菜单',
           closeMenu: '关闭导航菜单',
-          loadingScene: '正在装配产品场景',
+          loadingScene: '正在载入 3D 场景',
           appFrameTitle: 'SillyClient 软件界面',
-          stageCaption: '交互式产品场景',
+          stageCaption: '拖动手机，屏幕也可以操作',
           fontLabel: '点击切换标题字体，当前为 {font}',
-          heroSubtitle: '安装、启动和管理 SillyTavern。运行时随应用提供，本地与远程实例都放在同一个控制台里。',
-          latestRelease: '获取最新版本',
-          viewSource: '查看源码',
+          heroSubtitle: '在 Android 和 Windows 上安装、启动和管理 SillyTavern。Node.js 已随应用打包，也可以直接接入已有的远程服务。',
+          latestRelease: '下载 SillyClient',
+          viewSource: 'GitHub',
           techSummary: '产品技术概要',
           enterExperience: '进入产品体验',
-          enterSillyClient: '进入 SillyClient',
-          experienceTitle: '启动器和酒馆，各做各的事。',
-          experienceBody: '控制台负责实例、端口、进程和日志；SillyTavern 在独立的原生窗口中运行。返回控制台时，实例不会被顺手关掉。',
-          localRemoteInstances: '本地与远程实例',
-          unifiedManagement: '统一管理',
-          liveLogsTerminal: '实时日志与终端',
-          availableAnytime: '随时查看',
-          returnStop: '返回酒馆 / 停止实例',
-          separateControl: '分开控制',
-          interactiveScreen: '屏幕可直接交互',
-          platformTitle: '不只是给网页套一层外壳。',
-          platformBody: '共享的 React 控制台只负责发出指令；安装、进程、运行时和阅读窗口，由 Android 或 Windows 的平台端接手。',
+          enterSillyClient: '看看它怎么工作',
+          experienceTitle: '管理实例和使用酒馆，是两件事。',
+          experienceBody: 'SillyClient 留在控制台里处理安装、端口和日志，SillyTavern 则在单独的窗口中打开。关掉阅读窗口不会停掉服务；要停止实例，回控制台操作。',
+          localRemoteInstances: '本地实例 / 远程地址',
+          unifiedManagement: '放在一起',
+          liveLogsTerminal: '安装进度 / 运行日志',
+          availableAnytime: '看得见',
+          returnStop: '返回界面 / 停止服务',
+          separateControl: '两回事',
+          interactiveScreen: '手机屏幕可以直接操作',
+          platformTitle: '界面共用，底层各自处理。',
+          platformBody: 'React 控制台在两个平台保持一致。文件、进程、窗口和运行时交给 Android 的 Kotlin 或 Windows 的 Electron。',
           runtimeMapLabel: '运行路径',
-          runtimeMapStatus: '本地优先',
-          runtimeUiTitle: 'React 控制台',
-          runtimeUiBody: '实例、端口、进程与日志从同一个界面发出指令。',
-          runtimeBridgeTitle: '原生桥接',
-          runtimeBridgeBody: 'Kotlin 与 Electron 接管系统权限、窗口和文件操作。',
-          runtimeEngineTitle: '内置运行时',
-          runtimeEngineBody: 'Node.js 随应用提供，SillyTavern 独立运行并保持在线。',
-          runtimeIncludedTitle: '运行时随应用提供',
-          runtimeIncludedBody: 'Android 无需 Termux，Windows 无需另装 Node.js；安装与启动流程由 SillyClient 接管。',
-          separateWindowsTitle: '控制台与酒馆分开',
-          separateWindowsBody: '管理界面和 SillyTavern 使用各自的窗口，退出阅读界面不等于停止实例。',
-          sharedUiTitle: '同一套界面，不同平台实现',
-          sharedUiBody: 'React 控制台保持一致，Android 的 Kotlin 与 Windows 的 Electron 分别处理原生能力。',
-          installTitle: '装好，就可以开始搭建自己的酒馆。',
+          runtimeMapStatus: '本机运行',
+          runtimeUiTitle: '管理界面',
+          runtimeUiBody: '在这里选版本、创建实例、改端口，也能看安装进度和日志。',
+          runtimeBridgeTitle: '平台端',
+          runtimeBridgeBody: 'Android 用 Kotlin，Windows 用 Electron。两边各自处理文件、进程和窗口。',
+          runtimeEngineTitle: 'Node.js',
+          runtimeEngineBody: '运行时跟着安装包走，SillyTavern 作为独立服务启动。',
+          runtimeIncludedTitle: 'Node.js 已经带上',
+          runtimeIncludedBody: 'Android 不要求先装 Termux，Windows 也不借用系统 Node.js。',
+          separateWindowsTitle: '关窗口，不关服务',
+          separateWindowsBody: '离开 SillyTavern 窗口后，实例继续运行。停止操作留在控制台。',
+          sharedUiTitle: '前端只有一份',
+          sharedUiBody: 'Android 和 Windows 使用同一份 React 构建，平台差异留给 Kotlin 和 Electron。',
+          installTitle: '选一个版本，创建实例。剩下的过程会写在进度条里。',
           metaAndroid: 'Android 运行时',
           metaWindows: 'Windows 运行时',
           metaShared: '共享控制界面',
@@ -463,7 +463,7 @@
         },
         en: {
           documentTitle: 'SillyClient | SillyTavern for Android and Windows',
-          metaDescription: 'SillyClient brings the SillyTavern runtime, instance management, and a native reading window to Android and Windows.',
+          metaDescription: 'SillyClient runs SillyTavern on Android and Windows with a bundled Node.js runtime, local instance management, and remote server connections.',
           homeLabel: 'SillyClient home',
           primaryNav: 'Primary navigation',
           overview: 'Overview',
@@ -475,42 +475,42 @@
           getApp: 'Get the app',
           openMenu: 'Open navigation menu',
           closeMenu: 'Close navigation menu',
-          loadingScene: 'Assembling the product scene',
+          loadingScene: 'Loading the 3D scene',
           appFrameTitle: 'SillyClient app interface',
-          stageCaption: 'Interactive product scene',
+          stageCaption: 'Drag the phone. The screen works too.',
           fontLabel: 'Cycle title font, currently {font}',
-          heroSubtitle: 'Install, launch, and manage SillyTavern. The runtime ships with the app, while local and remote instances share one control center.',
-          latestRelease: 'Get the latest release',
-          viewSource: 'View source',
+          heroSubtitle: 'Install and run SillyTavern on Android or Windows. Node.js is included, and existing remote servers can sit beside local instances.',
+          latestRelease: 'Download SillyClient',
+          viewSource: 'GitHub',
           techSummary: 'Product technology summary',
           enterExperience: 'Enter the product experience',
-          enterSillyClient: 'Enter SillyClient',
-          experienceTitle: 'The launcher and the tavern stay independent.',
-          experienceBody: 'The control center handles instances, ports, processes, and logs. SillyTavern runs in its own native window, so returning to the console never stops it by accident.',
-          localRemoteInstances: 'Local and remote instances',
-          unifiedManagement: 'One console',
-          liveLogsTerminal: 'Live logs and terminal',
-          availableAnytime: 'Always ready',
-          returnStop: 'Return to tavern / stop instance',
-          separateControl: 'Separate controls',
-          interactiveScreen: 'The screen is fully interactive',
-          platformTitle: 'More than a web page in a wrapper.',
-          platformBody: 'The shared React console issues commands. Installation, processes, runtimes, and reading windows are handled by the native Android or Windows layer.',
+          enterSillyClient: 'See how it works',
+          experienceTitle: 'Managing an instance and using it are separate jobs.',
+          experienceBody: 'SillyClient handles setup, ports, and logs in the console. SillyTavern opens in its own window. Closing that window leaves the service running; stop it from the console when you mean to.',
+          localRemoteInstances: 'Local instances / remote URLs',
+          unifiedManagement: 'Side by side',
+          liveLogsTerminal: 'Install progress / runtime logs',
+          availableAnytime: 'Visible',
+          returnStop: 'Leave the window / stop the service',
+          separateControl: 'Different actions',
+          interactiveScreen: 'The phone screen is interactive',
+          platformTitle: 'One interface. Native work stays native.',
+          platformBody: 'The React console is shared across both platforms. Kotlin on Android and Electron on Windows handle files, processes, windows, and the runtime.',
           runtimeMapLabel: 'Execution path',
-          runtimeMapStatus: 'Local first',
-          runtimeUiTitle: 'React control UI',
-          runtimeUiBody: 'Instances, ports, processes, and logs start from one interface.',
-          runtimeBridgeTitle: 'Native bridge',
-          runtimeBridgeBody: 'Kotlin and Electron handle system access, windows, and files.',
-          runtimeEngineTitle: 'Bundled runtime',
-          runtimeEngineBody: 'Node.js ships with the app while SillyTavern runs independently and stays online.',
-          runtimeIncludedTitle: 'Runtime included',
-          runtimeIncludedBody: 'No Termux on Android and no separate Node.js install on Windows. SillyClient owns setup and launch from end to end.',
-          separateWindowsTitle: 'Console and tavern, separated',
-          separateWindowsBody: 'Management and SillyTavern use independent windows. Leaving the reading window does not stop the running instance.',
-          sharedUiTitle: 'One interface, native implementations',
-          sharedUiBody: 'The React console stays consistent while Kotlin on Android and Electron on Windows provide platform capabilities.',
-          installTitle: 'Install it, then start building your own tavern.',
+          runtimeMapStatus: 'Runs locally',
+          runtimeUiTitle: 'Management UI',
+          runtimeUiBody: 'Choose a version, create an instance, change its port, and follow setup or runtime logs here.',
+          runtimeBridgeTitle: 'Platform layer',
+          runtimeBridgeBody: 'Android uses Kotlin and Windows uses Electron. Each side handles its own files, processes, and windows.',
+          runtimeEngineTitle: 'Node.js',
+          runtimeEngineBody: 'The runtime ships in the installer, and SillyTavern starts as a separate service.',
+          runtimeIncludedTitle: 'Node.js is already there',
+          runtimeIncludedBody: 'Android does not require Termux. Windows does not borrow a system Node.js installation.',
+          separateWindowsTitle: 'Close the window, keep the service',
+          separateWindowsBody: 'A SillyTavern instance keeps running after its window closes. Stop it from the console.',
+          sharedUiTitle: 'One frontend source',
+          sharedUiBody: 'Android and Windows use the same React build. Kotlin and Electron cover the platform differences.',
+          installTitle: 'Pick a version and create an instance. The progress view shows what happens next.',
           metaAndroid: 'Android runtime',
           metaWindows: 'Windows runtime',
           metaShared: 'Shared control UI',

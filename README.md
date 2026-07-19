@@ -5,7 +5,7 @@
 <h1 align="center">SillyClient</h1>
 
 <p align="center">
-  把 SillyTavern 的运行环境、实例管理和阅读窗口装进一个真正的应用。
+  Android 和 Windows 上的 SillyTavern 启动器
 </p>
 
 <p align="center">
@@ -18,41 +18,36 @@
   <a href="https://github.com/CAPTCHAAAAA/SillyClient-Windows">Windows</a>
 </p>
 
-SillyClient 不是 SillyTavern 的分支，也不提供模型或 API。它负责另一件更具体的事：在 Android 和 Windows 上准备 Node.js 运行时，安装并启动你的 SillyTavern，再用适合当前平台的窗口把它打开。
+SillyClient 安装并运行你自己的 SillyTavern。Android 版本包含 Bionic Node.js，Windows 版本包含 Node.js 22。本地实例、远程地址、端口和日志都放在同一个控制台里。
 
-换句话说，SillyTavern 仍然是 SillyTavern；SillyClient 负责让它更容易落地、保持运行，并在需要时回到它。
+它不是 SillyTavern 的分支，也不包含模型或 API。安装包在 [GitHub Releases](https://github.com/CAPTCHAAAAA/SillyClient/releases)。
 
-## 它解决什么
+## 能做什么
 
-在 Android 上运行 SillyTavern，通常意味着先准备终端环境，再处理 Node.js、依赖、端口和后台进程。Windows 的步骤少一些，但版本、实例目录和运行状态依旧容易散落。
+- 从 GitHub Release 或本地 zip 创建 SillyTavern 实例
+- 显示下载和安装进度，完成后再检查实例能否启动
+- 管理多个本地实例，也可以添加已有的远程 SillyTavern 地址
+- 修改端口和配置，查看运行日志与终端输出
+- 导入、导出或清理实例数据
 
-SillyClient 把这些事情收进同一个控制台：
+## 为什么分成两个窗口
 
-- 创建和切换本地实例，也可以连接远程 SillyTavern
-- 从 GitHub Release 或本地 zip 安装版本
-- 为每个实例管理端口、配置、数据目录和运行状态
-- 启动、返回、停止实例，查看实时日志与终端输出
-- 导入、导出和清理实例数据
-- 让运行时随应用提供，用户无需另装 Termux 或 Node.js
+控制台用于安装和管理实例。SillyTavern 在另一个窗口中打开。
 
-## 两个界面，各自负责
-
-SillyClient 没有把管理器和 SillyTavern 硬塞进同一个网页容器。
-
-控制台由共享的 React 前端提供，用来管理实例；真正的 SillyTavern 则由平台侧的独立窗口承载。这样，返回控制台不会顺手停止酒馆，沉浸式、刘海区域、窗口叠加和系统手势也可以由原生层处理。
+关掉阅读窗口不会停止服务，返回控制台也不会打断正在运行的会话。需要停止实例时，在控制台操作。Android 的沉浸式显示、刘海区域和系统手势，以及 Windows 的窗口管理，也都留给平台端处理。
 
 ```mermaid
 flowchart LR
-    UI["React 控制台"] --> API["Capacitor 插件契约"]
-    API --> Android["Android · Kotlin"]
-    API --> Windows["Windows · Electron"]
+    UI["React 控制台"] --> API["平台接口"]
+    API --> Android["Android / Kotlin"]
+    API --> Windows["Windows / Electron"]
     Android --> ARuntime["内置 Bionic Node.js"]
     Windows --> WRuntime["内置 Windows Node.js"]
-    Android --> AView["原生 WebView · SillyTavern"]
-    Windows --> WView["独立窗口 · SillyTavern"]
+    Android --> AView["原生 WebView / SillyTavern"]
+    Windows --> WView["独立窗口 / SillyTavern"]
 ```
 
-Android 端还针对移动阅读做了额外处理：酒馆与控制台使用两个 WebView，顶部区域通过 PixelCopy 跟随页面取色，并适配沉浸式、DisplayCutout 以及 MIUI / HyperOS 的窗口行为。
+Android 端使用两个 WebView 分开承载控制台和 SillyTavern。顶部区域通过 PixelCopy 跟随页面取色，并适配沉浸式、DisplayCutout 及 MIUI / HyperOS 的窗口行为。
 
 ## 平台
 
@@ -61,18 +56,18 @@ Android 端还针对移动阅读做了额外处理：酒馆与控制台使用两
 | Android | Kotlin + Capacitor 7，内置 arm64 Bionic Node.js | Android 8.0+（API 26），arm64-v8a |
 | Windows | Electron 33 + TypeScript，内置 Node.js 22 | Windows 10 / 11，x64 |
 
-安装包统一放在 [GitHub Releases](https://github.com/CAPTCHAAAAA/SillyClient/releases)。Android 首次创建本地实例时需要下载 SillyTavern 源码与依赖；使用远程实例则直接连接已有地址。
+创建本地实例时，SillyClient 会下载所选版本和依赖。远程实例只保存已有服务的地址，不会在本机重复安装。
 
 ## 仓库
 
-这个仓库是项目入口、文档、GitHub Pages 与 Release 索引。平台实现分别维护：
+这个仓库保存项目文档、GitHub Pages 和 Release 索引。平台代码分别维护：
 
 | 仓库 | 内容 |
 | --- | --- |
 | [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | Kotlin 宿主、Android 运行时、原生 WebView 与系统适配 |
 | [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Electron 宿主、Windows 运行时与窗口管理 |
 
-Android 与 Windows 共用的 React 控制台源码位于 Android 仓库的 `App/web/capacitor-ui/`。构建产物分别同步到 Android assets、Windows `frontend-dist/` 和本仓库 `docs/app/`。旧 `SillyClient-Frontend` 仓库已归档，不再参与构建。
+共用的 React 控制台源码位于 Android 仓库的 `App/web/capacitor-ui/`。构建产物会同步到 Android assets、Windows `frontend-dist/` 和本仓库 `docs/app/`。旧 `SillyClient-Frontend` 仓库已归档，不再参与构建。
 
 克隆入口仓库及其子模块：
 
@@ -80,15 +75,17 @@ Android 与 Windows 共用的 React 控制台源码位于 Android 仓库的 `App
 git clone --recurse-submodules https://github.com/CAPTCHAAAAA/SillyClient.git
 ```
 
-具体构建环境和命令以各平台仓库中的 README 为准。主仓库本身不复制平台源码，避免发布页和实现仓库出现两套不同步的版本。
+构建环境和命令以各平台仓库的 README 为准。主仓库不再复制平台源码。
 
 ## 与 SillyTavern 的关系
 
-SillyClient 是独立的社区项目。SillyTavern 的名称、源码与上游发布归 [SillyTavern](https://github.com/SillyTavern/SillyTavern) 项目所有；使用前请同时阅读上游项目的许可和说明。
+SillyClient 是独立的社区项目，没有得到 SillyTavern 官方背书。SillyTavern 的名称、源码和发布由 [SillyTavern](https://github.com/SillyTavern/SillyTavern) 项目维护。使用时请同时遵守上游许可。
 
 ## English
 
-SillyClient packages the runtime, instance lifecycle and native reading window needed to run your own SillyTavern on Android and Windows. It is not a SillyTavern fork and does not include models or API access. See [Releases](https://github.com/CAPTCHAAAAA/SillyClient/releases) for installers and the platform repositories above for source and build instructions.
+SillyClient installs and runs your own SillyTavern on Android and Windows. Node.js is included with the app. The console manages local instances, remote server addresses, ports, setup progress, and logs.
+
+SillyClient is an independent community project. It is not a SillyTavern fork, does not include models or API access, and is not endorsed by the SillyTavern project. Download installers from [Releases](https://github.com/CAPTCHAAAAA/SillyClient/releases).
 
 ## License
 
