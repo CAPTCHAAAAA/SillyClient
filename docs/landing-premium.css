@@ -1846,6 +1846,7 @@ html[lang="en"] .platform-intro h2 {
 }
 
 .repo-targets span {
+  overflow-wrap: anywhere;
   color: rgba(246, 247, 249, 0.9);
   font-size: 13px;
   font-weight: 680;
