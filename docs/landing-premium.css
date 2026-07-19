@@ -1805,14 +1805,20 @@ html[lang="en"] .platform-intro h2 {
   font-weight: 680;
 }
 
-.repository-graph code {
+.repository-graph code,
+.repository-graph p {
   overflow-wrap: anywhere;
   color: rgba(232, 237, 241, 0.64);
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 9px;
 }
 
-.repo-source code {
+.repository-graph p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.repo-source code,
+.repo-source p {
   margin-top: 9px;
 }
 
@@ -1845,7 +1851,8 @@ html[lang="en"] .platform-intro h2 {
   font-weight: 680;
 }
 
-.repo-targets code {
+.repo-targets code,
+.repo-targets p {
   margin-top: 10px;
 }
 
@@ -2005,6 +2012,23 @@ html[lang="en"] .platform-intro h2 {
   .download-row {
     grid-template-columns: 1fr;
     gap: 30px;
+  }
+
+  .runtime-topology {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .runtime-topology figcaption {
+    max-width: 620px;
+  }
+
+  .runtime-graph,
+  .graph-source,
+  .graph-contract,
+  .graph-platforms,
+  .graph-platforms article {
+    min-width: 0;
   }
 
   .architecture-flow {

@@ -8,6 +8,7 @@ const docsDir = path.join(root, 'docs');
 const requiredFiles = [
   'index.html',
   'landing-3d-v2.html',
+  'phone-demo.html',
   'landing-icons.svg',
   'landing-premium.css',
   'sillyclient-logo.svg',
@@ -23,7 +24,7 @@ for (const relativePath of requiredFiles) {
   }
 }
 
-for (const htmlName of ['index.html', 'landing-3d-v2.html']) {
+for (const htmlName of ['index.html', 'landing-3d-v2.html', 'phone-demo.html']) {
   const htmlPath = path.join(docsDir, htmlName);
   const html = fs.readFileSync(htmlPath, 'utf8');
   const referencePattern = /\b(?:src|href)=["']([^"']+)["']/g;
@@ -40,12 +41,12 @@ for (const htmlName of ['index.html', 'landing-3d-v2.html']) {
   }
 }
 
-const landingPath = path.join(docsDir, 'landing-3d-v2.html');
+const landingPath = path.join(docsDir, 'index.html');
 const landing = fs.readFileSync(landingPath, 'utf8');
 const translationMatch = landing.match(/const translations = (\{[\s\S]*?\n\s*\});/);
 
 if (!translationMatch) {
-  errors.push('landing-3d-v2.html: translations object not found');
+  errors.push('index.html: translations object not found');
 } else {
   const translations = vm.runInNewContext(`(${translationMatch[1]})`);
   const languages = Object.keys(translations);

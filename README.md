@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://captchaaaaa.github.io/SillyClient/landing-3d-v2.html">项目主页</a>
+  <a href="https://captchaaaaa.github.io/SillyClient/">项目主页</a>
   ·
   <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases">下载安装包</a>
   ·

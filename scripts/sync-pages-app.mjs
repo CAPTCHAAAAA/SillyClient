@@ -25,6 +25,19 @@ const appIndex = fs.readFileSync(path.join(source, 'index.html'), 'utf8');
 const pageIndex = appIndex
   .replaceAll('./assets/', './app/assets/')
   .replaceAll('./fonts/', './app/fonts/');
-fs.writeFileSync(path.join(root, 'docs', 'index.html'), pageIndex);
+
+const showcaseBootstrap = `    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        params.set('showcase', '1');
+        if (!params.has('safeTop')) params.set('safeTop', '52');
+        history.replaceState(null, '', \`${'${location.pathname}'}?\${params}\${location.hash}\`);
+      })();
+    </script>\n`;
+const phoneDemo = pageIndex
+  .replace('<title>SillyClient 酒馆启动器</title>', '<title>SillyClient 展示界面</title>')
+  .replace("var stored = localStorage.getItem('theme');", "var stored = 'dark';")
+  .replace('  </head>', `${showcaseBootstrap}  </head>`);
+fs.writeFileSync(path.join(root, 'docs', 'phone-demo.html'), phoneDemo);
 
 console.log(`Synced ${source} -> ${destination}`);

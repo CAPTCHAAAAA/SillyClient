@@ -1,479 +1,139 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>SillyClient 屏幕演示</title>
-  <style>
-    @font-face {
-      font-family: "Syndra";
-      src: url("./landing-fonts/Syndra-SemiBold.otf") format("opentype");
-      font-weight: 600;
-      font-display: swap;
-    }
-
-    :root {
-      color-scheme: dark;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: #090a0e;
-      color: #f5f6f8;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      width: 100%;
-      min-height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #090a0e;
-    }
-
-    body {
-      position: relative;
-      min-height: 100vh;
-      min-height: 100dvh;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    body::before,
-    body::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-    }
-
-    body::before {
-      background:
-        linear-gradient(142deg, rgba(113, 144, 174, 0.14), transparent 34%),
-        linear-gradient(324deg, rgba(209, 64, 101, 0.22), transparent 48%),
-        linear-gradient(180deg, #0c0e14 0%, #111019 46%, #090a0e 100%);
-    }
-
-    body::after {
-      opacity: 0.54;
-      background: linear-gradient(112deg, transparent 18%, rgba(255, 255, 255, 0.035) 44%, transparent 64%);
-      transform: translateX(-28%);
-      animation: ambient-sheen 9s ease-in-out infinite alternate;
-    }
-
-    .phone-ui {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding: max(16px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
-    }
-
-    .glass {
-      border: 1px solid rgba(236, 242, 248, 0.075);
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.055), transparent 42%),
-        rgba(20, 23, 30, 0.58);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.018),
-        0 20px 54px rgba(0, 0, 0, 0.24);
-      backdrop-filter: blur(28px) saturate(128%);
-      -webkit-backdrop-filter: blur(28px) saturate(128%);
-    }
-
-    .app-bar {
-      height: 58px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 14px;
-      border-radius: 24px;
-      opacity: 0;
-      transform: translateY(-8px) scale(0.985);
-      animation: material-in 620ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
-    }
-
-    .brand-mark {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-    }
-
-    .brand-mark img {
-      width: 31px;
-      height: 31px;
-      border-radius: 10px;
-      box-shadow:
-        0 8px 22px rgba(190, 45, 82, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    }
-
-    .brand-mark span,
-    .release-chip {
-      font-size: 10px;
-      font-weight: 650;
-    }
-
-    .brand-mark span {
-      color: rgba(241, 244, 247, 0.82);
-    }
-
-    .release-chip {
-      min-height: 30px;
-      display: inline-flex;
-      align-items: center;
-      padding: 0 11px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.055);
-      color: rgba(231, 236, 241, 0.52);
-    }
-
-    .intro {
-      padding: 52px 8px 30px;
-      opacity: 0;
-      transform: translateY(13px);
-      animation: fade-up 720ms cubic-bezier(0.22, 1, 0.36, 1) 170ms forwards;
-    }
-
-    .eyebrow {
-      margin: 0 0 12px;
-      color: rgba(239, 121, 148, 0.72);
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    h1,
-    h2,
-    h3,
-    p {
-      margin: 0;
-    }
-
-    h1 {
-      max-width: 310px;
-      font-size: 32px;
-      font-weight: 680;
-      line-height: 1.16;
-    }
-
-    h1 span {
-      display: block;
-      color: #ef7892;
-    }
-
-    .intro > p:last-child {
-      margin-top: 12px;
-      color: rgba(220, 227, 234, 0.48);
-      font-size: 11px;
-      line-height: 1.65;
-    }
-
-    .instances {
-      opacity: 0;
-      transform: translateY(16px) scale(0.99);
-      animation: material-in 760ms cubic-bezier(0.22, 1, 0.36, 1) 260ms forwards;
-    }
-
-    .section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 8px 12px;
-    }
-
-    .section-head h2 {
-      color: rgba(241, 244, 247, 0.78);
-      font-size: 12px;
-      font-weight: 650;
-    }
-
-    .section-head span {
-      color: rgba(214, 222, 230, 0.34);
-      font-size: 9px;
-    }
-
-    .create-card {
-      position: relative;
-      min-height: 330px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 22px;
-      overflow: hidden;
-      border: 1px solid rgba(242, 245, 248, 0.085);
-      border-radius: 30px;
-      background:
-        linear-gradient(142deg, rgba(161, 188, 212, 0.11), transparent 38%),
-        linear-gradient(322deg, rgba(217, 75, 105, 0.2), transparent 52%),
-        rgba(28, 27, 36, 0.72);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.095),
-        inset 0 -28px 48px rgba(0, 0, 0, 0.09),
-        0 28px 72px rgba(0, 0, 0, 0.3),
-        0 8px 28px rgba(171, 42, 76, 0.08);
-      color: inherit;
-      text-decoration: none;
-      backdrop-filter: blur(34px) saturate(136%);
-      -webkit-backdrop-filter: blur(34px) saturate(136%);
-      transition:
-        transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
-        border-color 180ms ease,
-        box-shadow 220ms ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .create-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      opacity: 0.7;
-      background: linear-gradient(116deg, transparent 14%, rgba(255, 255, 255, 0.055) 42%, transparent 67%);
-      transform: translateX(-38%);
-      transition: transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
-      pointer-events: none;
-    }
-
-    .create-card:active {
-      transform: scale(0.975);
-      border-color: rgba(242, 245, 248, 0.13);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        0 16px 44px rgba(0, 0, 0, 0.25);
-    }
-
-    .create-card:active::before {
-      transform: translateX(24%);
-    }
-
-    .create-mark {
-      position: relative;
-      width: 46px;
-      height: 46px;
-      display: grid;
-      place-items: center;
-      border-radius: 17px;
-      background: rgba(255, 255, 255, 0.075);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 12px 30px rgba(0, 0, 0, 0.16);
-    }
-
-    .create-mark::before,
-    .create-mark::after {
-      content: "";
-      position: absolute;
-      width: 15px;
-      height: 2px;
-      border-radius: 2px;
-      background: rgba(247, 248, 250, 0.82);
-    }
-
-    .create-mark::after {
-      transform: rotate(90deg);
-    }
-
-    .card-copy {
-      position: relative;
-      max-width: 270px;
-      margin-top: auto;
-      padding-top: 56px;
-    }
-
-    .card-copy small {
-      color: rgba(239, 121, 148, 0.72);
-      font-size: 9px;
-      font-weight: 700;
-    }
-
-    .card-copy h3 {
-      margin-top: 8px;
-      font-size: 26px;
-      font-weight: 680;
-      line-height: 1.15;
-    }
-
-    .card-copy p {
-      margin-top: 10px;
-      color: rgba(222, 229, 235, 0.48);
-      font-size: 10px;
-      line-height: 1.6;
-    }
-
-    .card-foot {
-      position: relative;
-      min-height: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 22px;
-      padding: 0 12px 0 14px;
-      border-radius: 14px;
-      background: rgba(7, 9, 13, 0.28);
-      color: rgba(242, 244, 247, 0.68);
-      font-size: 9px;
-      font-weight: 650;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-    }
-
-    .card-foot b {
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    .platform-strip {
-      min-height: 54px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      margin-top: 12px;
-      padding: 6px;
-      border-radius: 22px;
-      opacity: 0;
-      transform: translateY(10px);
-      animation: fade-up 620ms cubic-bezier(0.22, 1, 0.36, 1) 380ms forwards;
-    }
-
-    .platform-strip div {
-      display: grid;
-      align-content: center;
-      padding: 0 12px;
-      border-radius: 16px;
-    }
-
-    .platform-strip div:first-child {
-      background: rgba(255, 255, 255, 0.035);
-    }
-
-    .platform-strip strong,
-    .platform-strip span {
-      display: block;
-    }
-
-    .platform-strip strong {
-      color: rgba(238, 242, 246, 0.7);
-      font-size: 9px;
-      font-weight: 650;
-    }
-
-    .platform-strip span {
-      margin-top: 4px;
-      color: rgba(211, 220, 228, 0.34);
-      font-size: 7px;
-    }
-
-    @keyframes material-in {
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>SillyClient 展示界面</title>
+    <style>
+      /* Dynamic Display 字体 */
+      @font-face {
+        font-family: 'Dynamic Display';
+        src: url('./app/fonts/DynamicDisplay.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-    }
-
-    @keyframes fade-up {
-      to {
-        opacity: 1;
-        transform: translateY(0);
+      /* Syndra 字体 */
+      @font-face {
+        font-family: 'Syndra';
+        src: url('./app/fonts/Syndra-SemiBold.otf') format('opentype');
+        font-weight: 600;
+        font-style: normal;
+        font-display: swap;
       }
-    }
-
-    @keyframes ambient-sheen {
-      to {
-        opacity: 0.78;
-        transform: translateX(18%);
+      /* Daydream 字体 */
+      @font-face {
+        font-family: 'Daydream';
+        src: url('./app/fonts/Daydream.otf') format('opentype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-      .create-card:hover {
-        transform: translateY(-3px);
-        border-color: rgba(242, 245, 248, 0.13);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.12),
-          0 34px 82px rgba(0, 0, 0, 0.34),
-          0 10px 34px rgba(178, 46, 80, 0.1);
+      /* 04B_30 像素风字体 */
+      @font-face {
+        font-family: '04B 30';
+        src: url('./app/fonts/04B_30.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-
-      .create-card:hover::before {
-        transform: translateX(24%);
+      /* Noisy Walk 字体 */
+      @font-face {
+        font-family: 'Noisy Walk';
+        src: url('./app/fonts/NoisyWalk.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-    }
-
-    @media (max-height: 720px) {
-      .intro {
-        padding-top: 30px;
-        padding-bottom: 22px;
+      /* Stay Pixel 字体 */
+      @font-face {
+        font-family: 'Stay Pixel';
+        src: url('./app/fonts/StayPixel.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-
-      .create-card {
-        min-height: 286px;
+      /* Arcade Raiders 字体 */
+      @font-face {
+        font-family: 'Arcade Raiders';
+        src: url('./app/fonts/ArcadeRaiders.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-
-      .card-copy {
-        padding-top: 34px;
+      /* Yummy 字体 */
+      @font-face {
+        font-family: 'Yummy';
+        src: url('./app/fonts/Yummy.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+      /* Pixel Chaos 字体 */
+      @font-face {
+        font-family: 'Pixel Chaos';
+        src: url('./app/fonts/PixelChaos.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-    }
-
-    @media (prefers-reduced-transparency: reduce) {
-      .glass,
-      .create-card {
-        background: #171922;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+      /* Soap 字体 */
+      @font-face {
+        font-family: 'Soap';
+        src: url('./app/fonts/Soap.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-    }
-  </style>
-</head>
-<body>
-  <main class="phone-ui">
-    <header class="app-bar glass">
-      <div class="brand-mark">
-        <img src="./sillyclient-logo.svg" alt="" />
-        <span>SillyClient</span>
-      </div>
-      <span class="release-chip">v1.5</span>
-    </header>
+    </style>
+    <style>
+      /* 内联样式确保主题色立即生效，避免闪烁 */
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+      html.light, html.light body {
+        background-color: #ffffff !important;
+        color: #000000;
+      }
+      html.dark, html.dark body {
+        background-color: #1a1a1a !important;
+        color: #ffffff;
+      }
+    </style>
+    <script>
+      // 本地运行：直接读取 localStorage 或系统偏好设置主题
+      (function() {
+        function applyThemeToDOM(theme) {
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(theme);
+          document.documentElement.setAttribute('data-theme', theme);
+        }
 
-    <section class="intro">
-      <p class="eyebrow">SillyTavern · Local / Remote</p>
-      <h1>你的酒馆，<span>就在这里。</span></h1>
-      <p>管理本地实例，也可连接已有服务。</p>
-    </section>
-
-    <section class="instances" aria-labelledby="instances-title">
-      <div class="section-head">
-        <h2 id="instances-title">实例</h2>
-        <span>准备开始</span>
-      </div>
-      <a class="create-card" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
-        <span class="create-mark" aria-hidden="true"></span>
-        <div class="card-copy">
-          <small>新实例</small>
-          <h3>创建实例</h3>
-          <p>下载客户端后安装或导入 SillyTavern。</p>
-        </div>
-        <div class="card-foot">
-          <span>前往 GitHub Releases</span>
-          <b aria-hidden="true">↗</b>
-        </div>
-      </a>
-    </section>
-
-    <section class="platform-strip glass" aria-label="支持平台">
-      <div><strong>Android</strong><span>8.0+ · arm64</span></div>
-      <div><strong>Windows</strong><span>10 / 11 · x64</span></div>
-    </section>
-  </main>
-</body>
+        var stored = 'dark';
+        if (stored === 'dark' || stored === 'light') {
+          applyThemeToDOM(stored);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          applyThemeToDOM('dark');
+        } else {
+          applyThemeToDOM('light');
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="./app/assets/index-B4UkZlUl.js"></script>
+    <link rel="stylesheet" crossorigin href="./app/assets/index-7rXWNdv1.css">
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        params.set('showcase', '1');
+        if (!params.has('safeTop')) params.set('safeTop', '52');
+        history.replaceState(null, '', `${location.pathname}?${params}${location.hash}`);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>

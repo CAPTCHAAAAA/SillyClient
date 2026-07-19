@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://captchaaaaa.github.io/SillyClient/landing-3d-v2.html">Project site</a>
+  <a href="https://captchaaaaa.github.io/SillyClient/">Project site</a>
   ·
   <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases">Downloads</a>
   ·

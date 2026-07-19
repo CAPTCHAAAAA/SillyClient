@@ -1,131 +1,1279 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-    <title>SillyClient 酒馆启动器</title>
-    <style>
-      /* Dynamic Display 字体 */
-      @font-face {
-        font-family: 'Dynamic Display';
-        src: url('./app/fonts/DynamicDisplay.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Syndra 字体 */
-      @font-face {
-        font-family: 'Syndra';
-        src: url('./app/fonts/Syndra-SemiBold.otf') format('opentype');
-        font-weight: 600;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Daydream 字体 */
-      @font-face {
-        font-family: 'Daydream';
-        src: url('./app/fonts/Daydream.otf') format('opentype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* 04B_30 像素风字体 */
-      @font-face {
-        font-family: '04B 30';
-        src: url('./app/fonts/04B_30.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Noisy Walk 字体 */
-      @font-face {
-        font-family: 'Noisy Walk';
-        src: url('./app/fonts/NoisyWalk.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Stay Pixel 字体 */
-      @font-face {
-        font-family: 'Stay Pixel';
-        src: url('./app/fonts/StayPixel.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Arcade Raiders 字体 */
-      @font-face {
-        font-family: 'Arcade Raiders';
-        src: url('./app/fonts/ArcadeRaiders.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Yummy 字体 */
-      @font-face {
-        font-family: 'Yummy';
-        src: url('./app/fonts/Yummy.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Pixel Chaos 字体 */
-      @font-face {
-        font-family: 'Pixel Chaos';
-        src: url('./app/fonts/PixelChaos.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      /* Soap 字体 */
-      @font-face {
-        font-family: 'Soap';
-        src: url('./app/fonts/Soap.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-    </style>
-    <style>
-      /* 内联样式确保主题色立即生效，避免闪烁 */
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-      }
-      html.light, html.light body {
-        background-color: #ffffff !important;
-        color: #000000;
-      }
-      html.dark, html.dark body {
-        background-color: #1a1a1a !important;
-        color: #ffffff;
-      }
-    </style>
-    <script>
-      // 本地运行：直接读取 localStorage 或系统偏好设置主题
-      (function() {
-        function applyThemeToDOM(theme) {
-          document.documentElement.classList.remove('light', 'dark');
-          document.documentElement.classList.add(theme);
-          document.documentElement.setAttribute('data-theme', theme);
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SillyClient | Android 与 Windows 的 SillyTavern 客户端</title>
+  <meta name="description" content="SillyClient 在 Android 与 Windows 上管理 SillyTavern 本地实例和远程连接。" />
+  <link rel="canonical" href="https://captchaaaaa.github.io/SillyClient/" />
+  <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml" />
+  <style>
+    @font-face { font-family: "Yummy"; src: url("./landing-fonts/Yummy.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Arcade Raiders"; src: url("./landing-fonts/ArcadeRaiders.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Noisy Walk"; src: url("./landing-fonts/NoisyWalk.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Stay Pixel"; src: url("./landing-fonts/StayPixel.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "04B 30"; src: url("./landing-fonts/04B_30.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Pixel Chaos"; src: url("./landing-fonts/PixelChaos.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Soap"; src: url("./landing-fonts/Soap.ttf") format("truetype"); font-display: swap; }
+    @font-face { font-family: "Syndra"; src: url("./landing-fonts/Syndra-SemiBold.otf") format("opentype"); font-weight: 600; font-display: swap; }
+    @font-face { font-family: "Dynamic Display"; src: url("./landing-fonts/DynamicDisplay.ttf") format("truetype"); font-display: swap; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: auto; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #1a1625; color: #fff; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    }
+    .scroll-container {
+      height: 100vh; height: 100dvh;
+      overflow-y: auto; overflow-x: hidden; scroll-snap-type: y mandatory;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
+    }
+    .scroll-container::-webkit-scrollbar { width: 6px; }
+    .scroll-container::-webkit-scrollbar-track { background: transparent; }
+    .scroll-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    .section {
+      height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always;
+      position: relative; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; overflow: hidden;
+    }
+    .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(42,34,64,0.6) 0%, #1a1625 70%); z-index: 0; }
+    .hero-content { position: relative; z-index: 2; text-align: center; padding: 0 24px; max-width: 520px; }
+    .hero-logo { width: 80px; height: 80px; border-radius: 22px; margin: 0 auto 32px; box-shadow: 0 8px 40px rgba(232,54,93,0.2), 0 0 0 1px rgba(255,255,255,0.06); }
+    .hero-title {
+      --title-font: "Syndra";
+      font-family: var(--title-font), "Arial Rounded MT Bold", "Segoe UI Variable Display", sans-serif;
+      font-size: clamp(40px, 7vw, 68px);
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: 1.08;
+      margin-bottom: 16px;
+      text-wrap: balance;
+    }
+    .hero-sub { font-size: clamp(15px, 2.2vw, 17px); color: rgba(255,255,255,0.45); line-height: 1.6; margin-bottom: 40px; }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px;
+      border-radius: 16px; font-size: 14px; font-weight: 600; font-family: inherit;
+      text-decoration: none; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s;
+      cursor: pointer; border: none; letter-spacing: -0.01em;
+    }
+    .dl-btn svg { width: 18px; height: 18px; }
+    .dl-btn-primary {
+      background: rgba(255,255,255,0.08); backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%); color: #fff; border: 1px solid rgba(255,255,255,0.12);
+    }
+    .dl-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); background: rgba(255,255,255,0.12); }
+    .dl-btn-ghost {
+      background: rgba(232,54,93,0.1); backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%); color: #ff8fa6; border: 1px solid rgba(232,54,93,0.15);
+    }
+    .dl-btn-ghost:hover { transform: translateY(-2px); background: rgba(232,54,93,0.18); }
+    .hero-glass-cards { display: flex; gap: 16px; margin-top: 48px; flex-wrap: wrap; justify-content: center; }
+    .glass-card {
+      padding: 16px 20px; border-radius: 16px; background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
+      border: 1px solid rgba(255,255,255,0.06); text-align: left; min-width: 140px;
+    }
+    .glass-card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
+    .glass-card-value { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.8); }
+    .hero-scroll-hint {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 2;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: rgba(255,255,255,0.2); font-size: 11px; animation: float 2s ease-in-out infinite;
+    }
+    .hero-scroll-hint svg { width: 16px; height: 16px; }
+    @keyframes float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
+
+    #sec-phone { background: #1a1625; }
+    #three-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+    /* iframe overlay — tracks 3D phone screen position via projection */
+    #screen-frame {
+      --reflection-x: 42%;
+      --reflection-y: 18%;
+      --reflection-angle: 116deg;
+      --reflection-opacity: 0.2;
+      position: absolute; top: 0; left: 0; z-index: 2;
+      width: 390px; height: 844px;
+      overflow: hidden;
+      pointer-events: auto;
+      border-radius: 48px;
+      clip-path: inset(0 round 48px);
+      box-shadow: inset 0 0 24px rgba(0,0,0,0.28);
+      transform-origin: top left;
+      will-change: transform;
+      contain: layout paint;
+      display: none;
+    }
+    #app-screen {
+      border: none; display: block;
+      width: 390px; height: 844px;
+      transform-origin: top left;
+      background: #1a1a1a;
+    }
+    #screen-reflection {
+      position: absolute; inset: 0; z-index: 2;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: var(--reflection-opacity);
+      mix-blend-mode: screen;
+      background:
+        radial-gradient(ellipse 68% 34% at var(--reflection-x) var(--reflection-y),
+          rgba(225,235,243,0.13) 0%,
+          rgba(151,173,194,0.045) 34%,
+          transparent 70%),
+        linear-gradient(var(--reflection-angle),
+          transparent 30%,
+          rgba(213,225,235,0.025) 39%,
+          rgba(207,221,233,0.095) 45%,
+          rgba(255,255,255,0.025) 51%,
+          transparent 59%);
+      box-shadow:
+        inset 0 0 0 1px rgba(207,221,232,0.055),
+        inset 18px 0 30px -28px rgba(139,166,190,0.16),
+        inset -16px 0 28px -27px rgba(182,198,211,0.08),
+        inset 0 -24px 34px -34px rgba(255,255,255,0.08);
+      will-change: opacity, background;
+    }
+    #screen-reflection::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(108deg,
+        rgba(127,153,177,0.035),
+        transparent 38%,
+        rgba(255,255,255,0.012) 61%,
+        rgba(169,186,201,0.025) 80%,
+        transparent);
+    }
+    #dynamic-island {
+      position: absolute; top: 13px; left: 50%; z-index: 3;
+      width: 108px; height: 30px;
+      transform: translateX(-50%);
+      border-radius: 18px;
+      background: #020204;
+      box-shadow: 0 1px 2px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.35);
+      pointer-events: none;
+    }
+    #dynamic-island::after {
+      content: '';
+      position: absolute; top: 10px; right: 10px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #26334d 0%, #0a0d16 45%, #020204 75%);
+      box-shadow: inset 0 0 2px rgba(98,122,176,0.5);
+    }
+
+    .info-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, rgba(42,34,64,0.4) 0%, #1a1625 70%); z-index: 0; }
+    .info-content { position: relative; z-index: 2; width: min(600px, 90vw); padding: 0 24px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.04); border-radius: 20px; overflow: hidden; margin-bottom: 40px; }
+    .info-cell { background: rgba(26,22,37,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 28px 24px; transition: background 0.3s; }
+    .info-cell:hover { background: rgba(255,255,255,0.03); }
+    .info-cell-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 14px; background: rgba(232,54,93,0.08); color: #e8365d; }
+    .info-cell-icon svg { width: 16px; height: 16px; }
+    .info-cell h3 { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+    .info-cell p { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.6; }
+    .info-tech { margin-bottom: 40px; }
+    .info-tech h3 { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 16px; }
+    .tech-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tech-tag { padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 500; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .info-footer { text-align: center; font-size: 12px; color: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .info-footer a { color: rgba(255,255,255,0.3); text-decoration: none; transition: color 0.2s; }
+    .info-footer a:hover { color: rgba(255,255,255,0.6); }
+
+    .page-dots { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+    .page-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: all 0.4s cubic-bezier(0.16,1,0.3,1); cursor: pointer; }
+    .page-dot.active { background: rgba(255,255,255,0.6); height: 20px; border-radius: 3px; }
+
+    .section-content { opacity: 0; transform: translateY(30px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+    .section.is-active .section-content { opacity: 1; transform: translateY(0); }
+
+    #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 3; color: rgba(255,255,255,0.3); font-size: 13px; letter-spacing: 0.05em; text-align: center; }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
+    @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
+  </style>
+  <link rel="stylesheet" href="./landing-premium.css?v=20260719-responsive-graphs" />
+</head>
+<body>
+  <canvas class="ambient-field" id="ambient-field" aria-hidden="true"></canvas>
+  <div class="scroll-container site-scroller" id="scroller">
+    <header class="topbar" id="topbar">
+      <a class="brand-lockup" href="#journey" data-scroll-target="journey" aria-label="SillyClient 首页" data-i18n-aria="homeLabel">
+        <img class="brand-mark" src="./sillyclient-logo.svg" alt="" width="28" height="28" />
+        <span>SillyClient</span>
+      </a>
+      <nav class="nav-links" id="nav-links" aria-label="主要导航" data-i18n-aria="primaryNav">
+        <a href="#journey" data-scroll-target="journey" data-i18n="overview">概览</a>
+        <a href="#experience" data-scroll-target="experience" data-i18n="experience">体验</a>
+        <a href="#platform" data-scroll-target="platform" data-i18n="download">下载</a>
+      </nav>
+      <div class="topbar-actions">
+        <a class="icon-button" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" aria-label="打开 GitHub" data-i18n-aria="openGithub" title="GitHub">
+          <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-github"></use></svg>
+        </a>
+        <div class="language-switcher" role="group" aria-label="语言" data-i18n-aria="languageSwitcher">
+          <button class="language-option is-active" type="button" data-language="zh" aria-label="中文" aria-pressed="true">中</button>
+          <button class="language-option" type="button" data-language="en" aria-label="English" aria-pressed="false">EN</button>
+        </div>
+        <a class="nav-download" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
+          <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg><span data-i18n="getApp">获取应用</span>
+        </a>
+        <button class="menu-button" id="menu-button" type="button" aria-label="打开导航菜单" data-i18n-aria="openMenu" aria-expanded="false">
+          <svg class="bi-icon menu-glyph menu-glyph-open" aria-hidden="true"><use href="./landing-icons.svg#icon-menu"></use></svg>
+          <svg class="bi-icon menu-glyph menu-glyph-close" aria-hidden="true"><use href="./landing-icons.svg#icon-close"></use></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="journey" id="journey" data-section="journey">
+        <div class="visual-stage" id="sec-phone">
+          <canvas id="three-canvas"></canvas>
+          <div class="stage-shade" aria-hidden="true"></div>
+          <div id="loading" role="status" aria-live="polite" data-i18n="loadingScene">正在载入 3D 场景</div>
+          <div id="screen-frame">
+            <iframe id="app-screen" src="./phone-demo.html?showcase=1&amp;safeTop=52" title="SillyClient 软件界面" data-i18n-title="appFrameTitle"></iframe>
+            <div id="screen-reflection" aria-hidden="true"></div>
+            <div id="dynamic-island" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="story-layer">
+          <section class="story-panel hero-panel" id="hero" data-section="hero">
+            <div class="hero-copy">
+              <div class="eyebrow"><span class="status-pulse"></span> SillyTavern · Android / Windows</div>
+              <h1 class="hero-title" aria-label="SillyClient">
+                <button class="hero-title-button" id="title-font-button" type="button">
+                  <span class="title-wordmark">Silly<span class="accent">Client</span></span>
+                  <span class="font-name-tooltip" id="font-name-tooltip" role="status">
+                    <span id="current-font-name">Syndra</span>
+                  </span>
+                </button>
+              </h1>
+              <p class="hero-lede" data-i18n="heroTagline">把 SillyTavern 带到 Android 与 Windows。</p>
+              <p class="hero-sub" data-i18n="heroSubtitle">本地运行，或连接已有服务。实例、状态与日志集中呈现于同一控制台。</p>
+              <div class="hero-actions">
+                <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
+                  <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg><span data-i18n="latestRelease">下载最新版本</span>
+                </a>
+                <a class="secondary-action" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">
+                  <span data-i18n="viewSource">查看源代码</span><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-external"></use></svg>
+                </a>
+              </div>
+              <dl class="hero-specs" aria-label="平台支持" data-i18n-aria="techSummary">
+                <div><dt>Android</dt><dd>8.0+ · arm64</dd></div>
+                <div><dt>Windows</dt><dd>10 / 11 · x64</dd></div>
+                <div><dt>Runtime</dt><dd>Node.js included</dd></div>
+              </dl>
+            </div>
+            <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="进入产品体验" data-i18n-aria="enterExperience">
+              <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-caret-down"></use></svg>
+            </button>
+          </section>
+
+          <section class="story-panel experience-panel" id="experience" data-section="experience">
+            <div class="experience-copy">
+              <div class="section-index" data-i18n="experienceIndex">01 / 实例体验</div>
+              <h2 data-i18n="experienceTitle">窗口可以关闭，酒馆继续运行。</h2>
+              <p data-i18n="experienceBody">SillyTavern 在独立内容窗口中打开；返回控制台后，实例仍会在后台保持运行。</p>
+              <dl class="lifecycle-list">
+                <div><dt><span>01</span><strong data-i18n="lifecycleCreateTitle">本地实例</strong></dt><dd data-i18n="lifecycleCreateBody">在设备上建立完整的 SillyTavern 环境</dd></div>
+                <div><dt><span>02</span><strong data-i18n="lifecycleRunTitle">远程连接</strong></dt><dd data-i18n="lifecycleRunBody">将已有服务纳入同一控制台</dd></div>
+                <div><dt><span>03</span><strong data-i18n="lifecycleExitTitle">独立窗口</strong></dt><dd data-i18n="lifecycleExitBody">内容与管理互不打断</dd></div>
+              </dl>
+            </div>
+            <div class="device-note"><span aria-hidden="true"></span><span data-i18n="interactiveScreen">3D 机身 · 可交互屏幕</span></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="platform-section" id="platform" data-section="platform">
+        <div class="platform-inner">
+          <div class="platform-intro" data-reveal>
+            <div>
+              <div class="section-index" data-i18n="platformIndex">02 / 双平台</div>
+              <h2><span data-i18n="platformTitleLead">手机与桌面，</span><span data-i18n="platformTitleTail">酒馆始终在手边。</span></h2>
+            </div>
+            <p data-i18n="platformBody">Android 适合随身使用，Windows 适合桌面常驻。两端采用一致的实例管理体验。</p>
+          </div>
+
+          <figure class="runtime-topology" data-reveal>
+            <figcaption>
+              <span data-i18n="runtimeGraphIndex">本地运行</span>
+              <strong data-i18n="runtimeGraphTitle">运行环境随客户端一同到达。</strong>
+              <p data-i18n="runtimeGraphBody">Node.js 与 SillyTavern 在设备本地运行，无需依赖远程中转。</p>
+            </figcaption>
+            <div class="runtime-graph" aria-label="运行结构" data-i18n-aria="architectureLabel">
+              <div class="graph-source"><small data-i18n="sharedLayer">实例控制台</small><strong>SillyClient</strong><span data-i18n="graphSourceBody">本地 · 远程 · 日志</span></div>
+              <div class="graph-contract"><small data-i18n="platformContract">内置运行时</small><strong>Node.js</strong></div>
+              <div class="graph-platforms">
+                <article>
+                  <header><strong>Android</strong><span>Kotlin · Capacitor</span></header>
+                  <p data-i18n="androidGraphBody">随身运行 · 双窗口</p>
+                  <footer><span>Bionic Node.js</span><span>SillyTavern</span></footer>
+                </article>
+                <article>
+                  <header><strong>Windows</strong><span>Electron · TypeScript</span></header>
+                  <p data-i18n="windowsGraphBody">桌面常驻 · 独立窗口</p>
+                  <footer><span>Node.js 22</span><span>SillyTavern</span></footer>
+                </article>
+              </div>
+            </div>
+          </figure>
+
+          <div class="platform-ledger" data-reveal>
+            <section class="platform-lane">
+              <header><span>Android</span><strong data-i18n="nativeHost">移动版</strong></header>
+              <dl>
+                <div><dt data-i18n="implementation">适用场景</dt><dd data-i18n="androidExperience">把本地酒馆带在身边</dd></div>
+                <div><dt data-i18n="runtime">窗口方式</dt><dd data-i18n="androidWindow">控制台与内容窗口彼此独立</dd></div>
+                <div><dt data-i18n="requirements">系统支持</dt><dd>Android 8.0+ · arm64</dd></div>
+              </dl>
+            </section>
+            <section class="platform-lane">
+              <header><span>Windows</span><strong data-i18n="desktopHost">桌面版</strong></header>
+              <dl>
+                <div><dt data-i18n="implementation">适用场景</dt><dd data-i18n="windowsExperience">适合桌面常驻与持续使用</dd></div>
+                <div><dt data-i18n="runtime">窗口方式</dt><dd data-i18n="windowsWindow">SillyTavern 在独立窗口中打开</dd></div>
+                <div><dt data-i18n="requirements">系统支持</dt><dd>Windows 10 / 11 · x64</dd></div>
+              </dl>
+            </section>
+          </div>
+
+          <section class="repository-topology" data-reveal>
+            <header>
+              <div>
+                <div class="section-index" data-i18n="repositoryIndex">03 / 连接方式</div>
+                <h3 data-i18n="repositoryTitle">本地与远程，各有自己的位置。</h3>
+              </div>
+              <p data-i18n="repositoryBody">在设备上新建实例，也可以直接连接已经部署的 SillyTavern 服务。</p>
+            </header>
+            <div class="repository-graph" aria-label="可用连接方式" data-i18n-aria="repositoryLabel">
+              <article class="repo-source">
+                <small data-i18n="singleSource">统一入口</small>
+                <strong>SillyClient</strong>
+                <p data-i18n="capabilitySourceBody">所有酒馆，一个控制台</p>
+              </article>
+              <div class="repo-targets">
+                <article><span data-i18n="localInstances">本地实例</span><p data-i18n="localInstancesBody">直接在设备上运行</p><small>Android · Windows</small></article>
+                <article><span data-i18n="remoteServices">远程服务</span><p data-i18n="remoteServicesBody">连接已有部署地址</p><small>HTTP · HTTPS</small></article>
+                <article><span data-i18n="releaseUpdates">版本发布</span><p data-i18n="releaseUpdatesBody">获取最新安装包</p><small>APK · EXE</small></article>
+              </div>
+              <div class="repo-release"><strong>SillyClient</strong><span data-i18n="releaseBoundary">本地运行 · 远程连接</span></div>
+            </div>
+          </section>
+
+          <aside class="project-boundary" data-reveal>
+            <div class="section-index" data-i18n="boundaryIndex">04 / 开源项目</div>
+            <p data-i18n="boundaryBody">SillyClient 是独立客户端，不修改 SillyTavern，也不绑定模型或 API 服务。</p>
+          </aside>
+
+          <div class="download-row" data-reveal>
+            <div>
+              <div class="section-index">Release / v1.5.0</div>
+              <h3 data-i18n="installTitle">选择平台，下载 SillyClient。</h3>
+            </div>
+            <div class="platform-actions">
+              <a class="platform-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
+                <span><strong>Android</strong><small>APK · arm64</small></span><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg>
+              </a>
+              <a class="platform-action is-secondary" href="https://github.com/CAPTCHAAAAA/SillyClient/releases/download/v1.5.0/SillyClient-Windows-v1.5.0.exe" target="_blank" rel="noopener">
+                <span><strong>Windows</strong><small>EXE · x64</small></span><svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg>
+              </a>
+            </div>
+          </div>
+          <footer class="site-footer" data-reveal>
+            <span>© 2026 SillyClient</span>
+            <div>
+              <a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a>
+            </div>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <div class="section-rail" aria-label="页面章节" data-i18n-aria="pageSections">
+      <button class="rail-dot is-active" type="button" data-scroll-target="journey" aria-label="概览" data-i18n-aria="overview"></button>
+      <button class="rail-dot" type="button" data-scroll-target="experience" aria-label="产品体验" data-i18n-aria="productExperience"></button>
+      <button class="rail-dot" type="button" data-scroll-target="platform" aria-label="下载" data-i18n-aria="download"></button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const pageScroller = document.getElementById('scroller');
+      const topbar = document.getElementById('topbar');
+      const journey = document.getElementById('journey');
+      const menuButton = document.getElementById('menu-button');
+      const navLinks = document.getElementById('nav-links');
+      const targets = [...document.querySelectorAll('[data-scroll-target]')];
+      const rails = [...document.querySelectorAll('.rail-dot')];
+      const navAnchors = [...document.querySelectorAll('.nav-links a')];
+      const observedSections = [
+        document.getElementById('journey'),
+        document.getElementById('experience'),
+        document.getElementById('platform')
+      ];
+      const titleFontButton = document.getElementById('title-font-button');
+      const titleWordmark = document.querySelector('.title-wordmark');
+      const currentFontName = document.getElementById('current-font-name');
+      const heroTitle = document.querySelector('.hero-title');
+      const languageButtons = [...document.querySelectorAll('[data-language]')];
+      const descriptionMeta = document.querySelector('meta[name="description"]');
+      const ambientCanvas = document.getElementById('ambient-field');
+      const titleFonts = [
+        'Syndra',
+        'Dynamic Display',
+        'Soap',
+        'Yummy',
+        'Arcade Raiders',
+        'Noisy Walk',
+        'Stay Pixel',
+        '04B 30',
+        'Pixel Chaos'
+      ];
+      const translations = {
+        zh: {
+          documentTitle: 'SillyClient | Android 与 Windows 的 SillyTavern 客户端',
+          metaDescription: 'SillyClient 在 Android 与 Windows 上管理 SillyTavern 本地实例和远程连接。',
+          homeLabel: 'SillyClient 首页',
+          primaryNav: '主要导航',
+          overview: '概览',
+          experience: '产品体验',
+          download: '平台与下载',
+          productExperience: '产品体验',
+          openGithub: '打开 GitHub',
+          languageSwitcher: '语言',
+          getApp: '下载',
+          openMenu: '打开导航菜单',
+          closeMenu: '关闭导航菜单',
+          loadingScene: '正在载入 3D 场景',
+          appFrameTitle: 'SillyClient 软件界面',
+          stageCaption: '3D 机身 · 可交互屏幕',
+          fontLabel: '点击切换标题字体，当前为 {font}',
+          heroTagline: '把 SillyTavern 带到 Android 与 Windows。',
+          heroSubtitle: '本地运行，或连接已有服务。实例、状态与日志集中呈现于同一控制台。',
+          latestRelease: '下载最新版本',
+          viewSource: '查看源代码',
+          techSummary: '平台支持与系统要求',
+          enterExperience: '进入产品体验',
+          experienceIndex: '01 / 实例体验',
+          experienceTitle: '窗口可以关闭，酒馆继续运行。',
+          experienceBody: 'SillyTavern 在独立内容窗口中打开；返回控制台后，实例仍会在后台保持运行。',
+          lifecycleCreateTitle: '本地实例',
+          lifecycleCreateBody: '在设备上建立完整的 SillyTavern 环境',
+          lifecycleRunTitle: '远程连接',
+          lifecycleRunBody: '将已有服务纳入同一控制台',
+          lifecycleExitTitle: '独立窗口',
+          lifecycleExitBody: '内容与管理互不打断',
+          interactiveScreen: '3D 机身 · 可交互屏幕',
+          platformIndex: '02 / 双平台',
+          platformTitleLead: '手机与桌面，',
+          platformTitleTail: '酒馆始终在手边。',
+          platformBody: 'Android 适合随身使用，Windows 适合桌面常驻。两端采用一致的实例管理体验。',
+          runtimeGraphIndex: '本地运行',
+          runtimeGraphTitle: '运行环境随客户端一同到达。',
+          runtimeGraphBody: 'Node.js 与 SillyTavern 在设备本地运行，无需依赖远程中转。',
+          sharedLayer: '实例控制台',
+          graphSourceBody: '本地 · 远程 · 日志',
+          platformContract: '内置运行时',
+          androidGraphBody: '随身运行 · 双窗口',
+          windowsGraphBody: '桌面常驻 · 独立窗口',
+          architectureLabel: '本地运行结构',
+          nativeHost: '移动版',
+          desktopHost: '桌面版',
+          implementation: '适用场景',
+          runtime: '窗口方式',
+          requirements: '系统支持',
+          androidExperience: '把本地酒馆带在身边',
+          androidWindow: '控制台与内容窗口彼此独立',
+          windowsExperience: '适合桌面常驻与持续使用',
+          windowsWindow: 'SillyTavern 在独立窗口中打开',
+          repositoryIndex: '03 / 连接方式',
+          repositoryTitle: '本地与远程，各有自己的位置。',
+          repositoryBody: '在设备上新建实例，也可以直接连接已经部署的 SillyTavern 服务。',
+          repositoryLabel: '可用连接方式',
+          singleSource: '统一入口',
+          capabilitySourceBody: '所有酒馆，一个控制台',
+          localInstances: '本地实例',
+          localInstancesBody: '直接在设备上运行',
+          remoteServices: '远程服务',
+          remoteServicesBody: '连接已有部署地址',
+          releaseUpdates: '版本发布',
+          releaseUpdatesBody: '获取最新安装包',
+          releaseBoundary: '本地运行 · 远程连接',
+          boundaryIndex: '04 / 开源项目',
+          boundaryBody: 'SillyClient 是独立客户端，不修改 SillyTavern，也不绑定模型或 API 服务。',
+          installTitle: '选择平台，下载 SillyClient。',
+          pageSections: '页面章节'
+        },
+        en: {
+          documentTitle: 'SillyClient | SillyTavern for Android and Windows',
+          metaDescription: 'Manage local SillyTavern instances and remote connections on Android and Windows.',
+          homeLabel: 'SillyClient home',
+          primaryNav: 'Primary navigation',
+          overview: 'Overview',
+          experience: 'Experience',
+          download: 'Platforms',
+          productExperience: 'Product experience',
+          openGithub: 'Open GitHub',
+          languageSwitcher: 'Language',
+          getApp: 'Download',
+          openMenu: 'Open navigation menu',
+          closeMenu: 'Close navigation menu',
+          loadingScene: 'Loading the 3D scene',
+          appFrameTitle: 'SillyClient app interface',
+          stageCaption: '3D device · interactive screen',
+          fontLabel: 'Cycle title font, currently {font}',
+          heroTagline: 'Bring SillyTavern to Android and Windows.',
+          heroSubtitle: 'Run locally or connect an existing service. Instances, status, and logs stay together in one console.',
+          latestRelease: 'Download latest release',
+          viewSource: 'View source',
+          techSummary: 'Platform support and system requirements',
+          enterExperience: 'Enter the product experience',
+          experienceIndex: '01 / Instance experience',
+          experienceTitle: 'Close the window. Keep the tavern running.',
+          experienceBody: 'SillyTavern opens in its own content window. Return to the console while the instance stays active in the background.',
+          lifecycleCreateTitle: 'Local instances',
+          lifecycleCreateBody: 'Keep a complete SillyTavern environment on the device',
+          lifecycleRunTitle: 'Remote connections',
+          lifecycleRunBody: 'Bring existing services into the same console',
+          lifecycleExitTitle: 'Separate windows',
+          lifecycleExitBody: 'Keep content and management out of each other’s way',
+          interactiveScreen: '3D device · interactive screen',
+          platformIndex: '02 / Two platforms',
+          platformTitleLead: 'Mobile or desktop.',
+          platformTitleTail: 'Your tavern stays close.',
+          platformBody: 'Android is ready to travel; Windows is at home on the desktop. Both share the same instance experience.',
+          runtimeGraphIndex: 'Local runtime',
+          runtimeGraphTitle: 'The runtime arrives with the client.',
+          runtimeGraphBody: 'Node.js and SillyTavern run on the device, without relying on a remote relay.',
+          sharedLayer: 'Instance console',
+          graphSourceBody: 'Local · remote · logs',
+          platformContract: 'Bundled runtime',
+          androidGraphBody: 'Portable · dual windows',
+          windowsGraphBody: 'Desktop · separate window',
+          architectureLabel: 'Local runtime structure',
+          nativeHost: 'Mobile edition',
+          desktopHost: 'Desktop edition',
+          implementation: 'Best for',
+          runtime: 'Window model',
+          requirements: 'System support',
+          androidExperience: 'Take a local tavern with you',
+          androidWindow: 'Console and content stay in separate windows',
+          windowsExperience: 'Designed to stay available on the desktop',
+          windowsWindow: 'SillyTavern opens in a separate window',
+          repositoryIndex: '03 / Connections',
+          repositoryTitle: 'A place for local and remote taverns.',
+          repositoryBody: 'Create an instance on the device or connect a SillyTavern service that is already running elsewhere.',
+          repositoryLabel: 'Available connection modes',
+          singleSource: 'One entry point',
+          capabilitySourceBody: 'Every tavern, one console',
+          localInstances: 'Local instances',
+          localInstancesBody: 'Run directly on the device',
+          remoteServices: 'Remote services',
+          remoteServicesBody: 'Connect an existing deployment',
+          releaseUpdates: 'Releases',
+          releaseUpdatesBody: 'Get the latest installer',
+          releaseBoundary: 'Local runtime · remote connections',
+          boundaryIndex: '04 / Open source',
+          boundaryBody: 'SillyClient is an independent client. It does not modify SillyTavern or bundle a model or API service.',
+          installTitle: 'Choose a platform and download SillyClient.',
+          pageSections: 'Page sections'
+        }
+      };
+      let currentLanguage = 'zh';
+      let activeTitleFont = 'Syndra';
+      let fontTooltipTimer = 0;
+
+      function setupAmbientField() {
+        const context = ambientCanvas.getContext('2d', { alpha: false });
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        let image = null;
+        let pointerX = 0.5;
+        let pointerY = 0.5;
+        let smoothX = 0.5;
+        let smoothY = 0.5;
+        let lastFrame = -Infinity;
+
+        function resizeField() {
+          const compact = innerWidth <= 720;
+          ambientCanvas.width = compact ? 64 : 96;
+          ambientCanvas.height = Math.max(40, Math.round(ambientCanvas.width * innerHeight / innerWidth));
+          image = context.createImageData(ambientCanvas.width, ambientCanvas.height);
         }
 
-        var stored = localStorage.getItem('theme');
-        if (stored === 'dark' || stored === 'light') {
-          applyThemeToDOM(stored);
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          applyThemeToDOM('dark');
-        } else {
-          applyThemeToDOM('light');
+        function renderField(now = 0) {
+          if (!image) resizeField();
+          const time = reduceMotion.matches ? 4.8 : now * 0.00008;
+          const width = ambientCanvas.width;
+          const height = ambientCanvas.height;
+          smoothX += (pointerX - smoothX) * 0.018;
+          smoothY += (pointerY - smoothY) * 0.018;
+
+          for (let y = 0; y < height; y += 1) {
+            const ny = y / Math.max(1, height - 1);
+            for (let x = 0; x < width; x += 1) {
+              const nx = x / Math.max(1, width - 1);
+              const sweep = Math.sin(nx * 7.2 + time * 2.3 + Math.sin(ny * 5.4 - time) * 1.25);
+              const cross = Math.cos(ny * 6.1 - time * 1.7 + Math.sin(nx * 4.8 + time * 0.7) * 1.1);
+              const diagonal = Math.sin((nx * 0.72 + ny * 1.18 + time * 0.34) * Math.PI * 2);
+              const pointerDrift = Math.cos(
+                Math.hypot(nx - smoothX, ny - smoothY) * 5.2 - time * 1.5
+              );
+              const field = Math.max(0, Math.min(1,
+                0.32 + sweep * 0.16 + cross * 0.14 + diagonal * 0.09 + pointerDrift * 0.05
+              ));
+              const graphite = field * field;
+              const burgundy = Math.max(0, sweep * 0.5 + cross * 0.22) * graphite;
+              const sheen = Math.max(0, diagonal) * 0.08;
+              const index = (y * width + x) * 4;
+              image.data[index] = Math.round(7 + graphite * 28 + burgundy * 46 + sheen * 22);
+              image.data[index + 1] = Math.round(9 + graphite * 24 + burgundy * 7 + sheen * 16);
+              image.data[index + 2] = Math.round(13 + graphite * 33 + burgundy * 15 + sheen * 27);
+              image.data[index + 3] = 255;
+            }
+          }
+          context.putImageData(image, 0, 0);
         }
-      })();
-    </script>
-    <script type="module" crossorigin src="./app/assets/index-xEy9_LfZ.js"></script>
-    <link rel="stylesheet" crossorigin href="./app/assets/index-7rXWNdv1.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+
+        function tick(now) {
+          if (now - lastFrame > 42) {
+            renderField(now);
+            lastFrame = now;
+          }
+          if (!reduceMotion.matches) requestAnimationFrame(tick);
+        }
+
+        addEventListener('pointermove', (event) => {
+          pointerX = event.clientX / Math.max(1, innerWidth);
+          pointerY = event.clientY / Math.max(1, innerHeight);
+        }, { passive: true });
+        addEventListener('resize', () => {
+          resizeField();
+          renderField(performance.now());
+        });
+        reduceMotion.addEventListener('change', () => {
+          renderField(performance.now());
+          if (!reduceMotion.matches) requestAnimationFrame(tick);
+        });
+
+        resizeField();
+        renderField(performance.now());
+        if (!reduceMotion.matches) requestAnimationFrame(tick);
+      }
+
+      setupAmbientField();
+
+      function setupSectionReveals() {
+        const revealItems = [...document.querySelectorAll('[data-reveal]')];
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion || !('IntersectionObserver' in window)) {
+          revealItems.forEach((item) => item.classList.add('is-visible'));
+          return;
+        }
+
+        revealItems.forEach((item) => item.classList.add('will-reveal'));
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        }, {
+          root: pageScroller,
+          threshold: 0.16,
+          rootMargin: '0px 0px -8% 0px'
+        });
+        revealItems.forEach((item) => observer.observe(item));
+      }
+
+      setupSectionReveals();
+
+      function syncMenuLabel() {
+        const key = navLinks.classList.contains('is-open') ? 'closeMenu' : 'openMenu';
+        menuButton.setAttribute('aria-label', translations[currentLanguage][key]);
+      }
+
+      function applyLanguage(language) {
+        currentLanguage = translations[language] ? language : 'zh';
+        const copy = translations[currentLanguage];
+        document.documentElement.lang = currentLanguage === 'zh' ? 'zh-CN' : 'en';
+        document.title = copy.documentTitle;
+        if (descriptionMeta) descriptionMeta.setAttribute('content', copy.metaDescription);
+
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+          const value = copy[element.dataset.i18n];
+          if (value) element.textContent = value;
+        });
+        document.querySelectorAll('[data-i18n-aria]').forEach((element) => {
+          const value = copy[element.dataset.i18nAria];
+          if (value) element.setAttribute('aria-label', value);
+        });
+        document.querySelectorAll('[data-i18n-title]').forEach((element) => {
+          const value = copy[element.dataset.i18nTitle];
+          if (value) element.setAttribute('title', value);
+        });
+
+        languageButtons.forEach((button) => {
+          const active = button.dataset.language === currentLanguage;
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-pressed', String(active));
+        });
+        localStorage.setItem('landing-language', currentLanguage);
+        syncMenuLabel();
+        syncTitleFontLabel();
+        requestAnimationFrame(fitHeroTitle);
+      }
+
+      function fitHeroTitle() {
+        heroTitle.style.fontSize = '';
+        requestAnimationFrame(() => {
+          const baseSize = parseFloat(getComputedStyle(heroTitle).fontSize);
+          const available = heroTitle.clientWidth;
+          const required = titleWordmark.scrollWidth;
+          if (required > available) {
+            heroTitle.style.fontSize = `${Math.max(30, baseSize * available / required)}px`;
+          }
+        });
+      }
+
+      function syncTitleFontLabel() {
+        const label = translations[currentLanguage].fontLabel.replace('{font}', activeTitleFont);
+        titleFontButton.setAttribute('aria-label', label);
+        titleFontButton.setAttribute('title', label);
+      }
+
+      function applyTitleFont(font, animate = false) {
+        const selected = titleFonts.includes(font) ? font : 'Syndra';
+        activeTitleFont = selected;
+        heroTitle.style.setProperty('--title-font', `"${selected}"`);
+        heroTitle.style.fontWeight = selected === 'Syndra' ? '600' : '400';
+        currentFontName.textContent = selected;
+        syncTitleFontLabel();
+        localStorage.setItem('landing-title-font', selected);
+        if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          titleWordmark.getAnimations().forEach((animation) => animation.cancel());
+          titleWordmark.animate(
+            [
+              { opacity: 0.52, transform: 'translateY(3px) scale(0.985)', filter: 'blur(2px)' },
+              { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0)' }
+            ],
+            { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+          );
+        }
+        if (animate) {
+          titleFontButton.classList.add('is-revealed');
+          clearTimeout(fontTooltipTimer);
+          fontTooltipTimer = window.setTimeout(() => titleFontButton.classList.remove('is-revealed'), 1100);
+        }
+        document.fonts.load(`${selected === 'Syndra' ? 600 : 400} 72px "${selected}"`).finally(fitHeroTitle);
+      }
+
+      applyTitleFont(localStorage.getItem('landing-title-font') || 'Syndra');
+      titleFontButton.addEventListener('click', () => {
+        const nextIndex = (titleFonts.indexOf(activeTitleFont) + 1) % titleFonts.length;
+        applyTitleFont(titleFonts[nextIndex], true);
+      });
+      const savedLanguage = localStorage.getItem('landing-language');
+      applyLanguage(savedLanguage || (navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'));
+      languageButtons.forEach((button) => {
+        button.addEventListener('click', () => applyLanguage(button.dataset.language));
+      });
+      addEventListener('resize', fitHeroTitle);
+
+      function targetTop(target) {
+        if (target.id === 'experience') {
+          return journey.offsetTop + document.getElementById('hero').offsetHeight;
+        }
+        return pageScroller.scrollTop + target.getBoundingClientRect().top;
+      }
+
+      targets.forEach((control) => {
+        control.addEventListener('click', (event) => {
+          const target = document.getElementById(control.dataset.scrollTarget);
+          if (!target) return;
+          event.preventDefault();
+          pageScroller.scrollTo({ top: targetTop(target), behavior: 'smooth' });
+          navLinks.classList.remove('is-open');
+          menuButton.setAttribute('aria-expanded', 'false');
+          syncMenuLabel();
+        });
+      });
+
+      menuButton.addEventListener('click', () => {
+        const open = navLinks.classList.toggle('is-open');
+        menuButton.setAttribute('aria-expanded', String(open));
+        syncMenuLabel();
+      });
+
+      function updatePageState() {
+        const scrollTop = pageScroller.scrollTop;
+        const range = Math.max(1, journey.offsetHeight - pageScroller.clientHeight);
+        const progress = Math.max(0, Math.min(1, (scrollTop - journey.offsetTop) / range));
+        document.documentElement.style.setProperty('--journey-progress', progress.toFixed(4));
+        topbar.classList.toggle('is-compact', scrollTop > 30);
+
+        const probe = scrollTop + pageScroller.clientHeight * 0.48;
+        let activeIndex = 0;
+        if (probe >= targetTop(observedSections[2])) activeIndex = 2;
+        else if (progress > 0.48) activeIndex = 1;
+
+        rails.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
+        navAnchors.forEach((link, index) => link.classList.toggle('is-active', index === activeIndex));
+      }
+
+      pageScroller.addEventListener('scroll', updatePageState, { passive: true });
+      addEventListener('resize', updatePageState);
+      updatePageState();
+    })();
+  </script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+    const canvas = document.getElementById('three-canvas');
+    const loadingEl = document.getElementById('loading');
+    const section = document.getElementById('sec-phone');
+    const scroller = document.getElementById('scroller');
+    const journey = document.getElementById('journey');
+    const screenFrame = document.getElementById('screen-frame');
+    const appScreen = document.getElementById('app-screen');
+
+    // ========================================
+    // Three.js Scene + GLB Model
+    // ========================================
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0b0d10, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(40, section.clientWidth / section.clientHeight, 0.1, 200);
+    camera.position.set(0, 0, 6);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(section.clientWidth, section.clientHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setClearColor(0x0b0d10, 0.18);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.98;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(section.clientWidth, section.clientHeight),
+      0.12,
+      0.36,
+      1.02
+    );
+    composer.addPass(bloomPass);
+    composer.addPass(new OutputPass());
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.7;
+    pmremGenerator.dispose();
+
+    // Large studio panels create controlled specular bands on the metal body.
+    scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x08090c, 0.32));
+    const keyLight = new THREE.RectAreaLight(0xe5edf4, 3.8, 2.4, 5.2);
+    keyLight.position.set(-3.8, 3.2, 4.8);
+    keyLight.lookAt(0, 0, 0);
+    scene.add(keyLight);
+    const fillLight = new THREE.RectAreaLight(0x9eb5c9, 1.7, 1.7, 4.2);
+    fillLight.position.set(4.2, 0.2, 3.4);
+    fillLight.lookAt(0, 0, 0);
+    scene.add(fillLight);
+    const edgeLight = new THREE.RectAreaLight(0xb9c7d2, 1.15, 1.2, 4.5);
+    edgeLight.position.set(1.6, -1.2, -4);
+    edgeLight.lookAt(0, 0, 0);
+    scene.add(edgeLight);
+    const faceLight = new THREE.DirectionalLight(0xd9e3ec, 0.34);
+    faceLight.position.set(0, 2.5, 5);
+    scene.add(faceLight);
+
+    // A restrained data field gives the scroll journey depth without competing with the phone.
+    const backdrop = new THREE.Mesh(
+      new THREE.PlaneGeometry(28, 16),
+      new THREE.MeshBasicMaterial({
+        color: 0x090b0e,
+        transparent: true,
+        opacity: 0.56,
+        depthWrite: false
+      })
+    );
+    backdrop.position.z = -7;
+    scene.add(backdrop);
+
+    const fieldPositions = [];
+    for (let x = -8; x <= 8; x += 2.5) fieldPositions.push(x, -5, -4.8, x, 5, -4.8);
+    for (let y = -5; y <= 5; y += 2.5) fieldPositions.push(-8, y, -4.8, 8, y, -4.8);
+    const fieldGeometry = new THREE.BufferGeometry();
+    fieldGeometry.setAttribute('position', new THREE.Float32BufferAttribute(fieldPositions, 3));
+    const field = new THREE.LineSegments(
+      fieldGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x8494a3,
+        transparent: true,
+        opacity: 0.018,
+        depthWrite: false
+      })
+    );
+    scene.add(field);
+
+    // ========================================
+    // Load GLB + Setup Screen
+    // ========================================
+    const loader = new GLTFLoader();
+    let phoneGroup = null;
+    let baseRotationY = 0;
+    const restingYaw = -0.12;
+    const restingPitch = -0.035;
+    let screenMesh = null;
+    let screenPlaneZ = 0;
+    let phoneVisible = false;
+
+    loader.load('./models/iphone_17_air.glb', (gltf) => {
+      const phoneModel = gltf.scene;
+
+      // Screen mesh: make transparent (iframe overlay will show the real app)
+      // Glass mesh: semi-transparent
+      phoneModel.traverse((child) => {
+        if (!child.isMesh) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        const mn = materials.map(material => material?.name || '').join(' ');
+        if (/17Air_(color[123]|logo|12)/.test(mn)) {
+          materials.forEach((material) => {
+            if (!material) return;
+            material.metalness = Math.max(material.metalness ?? 0, 0.88);
+            material.roughness = THREE.MathUtils.clamp(material.roughness ?? 0.24, 0.2, 0.3);
+            material.envMapIntensity = 0.82;
+            if (/17Air_color[123]/.test(material.name || '')) material.color.multiplyScalar(0.74);
+            material.needsUpdate = true;
+          });
+        }
+        if (mn.includes('17Air_Screen')) {
+          screenMesh = child;
+          child.material = new THREE.MeshBasicMaterial({
+            color: 0x05060a,
+            transparent: false,
+            opacity: 1,
+            depthWrite: true,
+            side: THREE.DoubleSide
+          });
+        }
+        if (mn.includes('17Air_Glass')) {
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: 0x9eb4c9,
+            transparent: true,
+            opacity: 0.07,
+            roughness: 0.22,
+            metalness: 0.05,
+            transmission: 0,
+            clearcoat: 1,
+            clearcoatRoughness: 0.12,
+            depthWrite: false,
+            side: THREE.DoubleSide
+          });
+        }
+      });
+
+      // Scale the model, center it inside a pivot, then rotate the pivot.
+      const box = new THREE.Box3().setFromObject(phoneModel);
+      const size = box.getSize(new THREE.Vector3());
+      const scale = 3.2 / size.y;
+      phoneModel.scale.setScalar(scale);
+      const box2 = new THREE.Box3().setFromObject(phoneModel);
+      const center = box2.getCenter(new THREE.Vector3());
+      phoneModel.position.sub(center);
+
+      phoneGroup = new THREE.Group();
+      phoneGroup.add(phoneModel);
+      scene.add(phoneGroup);
+      phoneGroup.updateMatrixWorld(true);
+
+      if (screenMesh) {
+        screenMesh.geometry.computeBoundingBox();
+        const screenBox = screenMesh.geometry.boundingBox;
+        screenPlaneZ = (screenBox.min.z + screenBox.max.z) / 2;
+
+        // This Sketchfab asset exports its display on local -Z after nested axis conversion.
+        // A fixed half-turn is the verified front-facing baseline for this exact GLB.
+        baseRotationY = Math.PI;
+        phoneGroup.rotation.y = baseRotationY + restingYaw;
+        phoneGroup.rotation.x = restingPitch;
+        phoneGroup.updateMatrixWorld(true);
+        if (loadingEl) loadingEl.style.display = 'none';
+      } else if (loadingEl) {
+        loadingEl.textContent = '模型中未找到可映射的屏幕';
+      }
+    }, undefined, (err) => {
+      console.error('GLTF load error:', err);
+      phoneGroup = null;
+      screenFrame.style.display = 'none';
+      if (loadingEl) loadingEl.textContent = '3D 模型加载失败，请刷新页面重试';
+    });
+
+    // ========================================
+    // 3D → 2D Projection (for iframe overlay)
+    // ========================================
+    // Convert world position to canvas-relative pixel coordinates.
+    // IMPORTANT: use canvas.clientWidth/clientHeight, NOT innerWidth/innerHeight.
+    // The canvas has inset:0 within the section, so its CSS size = section size,
+    // which may differ from innerWidth due to scrollbar.
+    function toScreen(worldPos) {
+      const v = worldPos.clone().project(camera);
+      return {
+        x: (v.x + 1) / 2 * canvas.clientWidth,
+        y: (1 - v.y) / 2 * canvas.clientHeight,
+        z: v.z
+      };
+    }
+
+    function solveLinearSystem(matrix, values) {
+      const size = values.length;
+      const rows = matrix.map((row, index) => [...row, values[index]]);
+
+      for (let column = 0; column < size; column++) {
+        let pivot = column;
+        for (let row = column + 1; row < size; row++) {
+          if (Math.abs(rows[row][column]) > Math.abs(rows[pivot][column])) pivot = row;
+        }
+        if (Math.abs(rows[pivot][column]) < 1e-10) return null;
+        [rows[column], rows[pivot]] = [rows[pivot], rows[column]];
+
+        const divisor = rows[column][column];
+        for (let index = column; index <= size; index++) rows[column][index] /= divisor;
+
+        for (let row = 0; row < size; row++) {
+          if (row === column) continue;
+          const factor = rows[row][column];
+          for (let index = column; index <= size; index++) {
+            rows[row][index] -= factor * rows[column][index];
+          }
+        }
+      }
+      return rows.map(row => row[size]);
+    }
+
+    function quadToMatrix3d(points, width, height) {
+      const source = [
+        [0, 0],
+        [width, 0],
+        [width, height],
+        [0, height]
+      ];
+      const matrix = [];
+      const values = [];
+
+      source.forEach(([x, y], index) => {
+        const { x: targetX, y: targetY } = points[index];
+        matrix.push([x, 0, y, 0, 1, 0, -targetX * x, -targetX * y]);
+        values.push(targetX);
+        matrix.push([0, x, 0, y, 0, 1, -targetY * x, -targetY * y]);
+        values.push(targetY);
+      });
+
+      const result = solveLinearSystem(matrix, values);
+      if (!result) return null;
+      const [a, b, c, d, e, f, g, h] = result;
+      return `matrix3d(${a},${b},0,${g},${c},${d},0,${h},0,0,1,0,${e},${f},0,1)`;
+    }
+
+    function updateScreenOverlay() {
+      if (!phoneGroup || !screenMesh || !phoneVisible) {
+        screenFrame.style.display = 'none';
+        return;
+      }
+
+      phoneGroup.updateMatrixWorld(true);
+      screenMesh.updateMatrixWorld(true);
+      const box = screenMesh.geometry.boundingBox;
+      const insetX = (box.max.x - box.min.x) * 0.018;
+      const insetY = (box.max.y - box.min.y) * 0.012;
+      const localCorners = [
+        new THREE.Vector3(box.min.x + insetX, box.max.y - insetY, screenPlaneZ),
+        new THREE.Vector3(box.max.x - insetX, box.max.y - insetY, screenPlaneZ),
+        new THREE.Vector3(box.max.x - insetX, box.min.y + insetY, screenPlaneZ),
+        new THREE.Vector3(box.min.x + insetX, box.min.y + insetY, screenPlaneZ)
+      ];
+      const projected = localCorners.map(corner => {
+        screenMesh.localToWorld(corner);
+        return toScreen(corner);
+      });
+
+      if (projected.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y) || Math.abs(point.z) > 1)) {
+        screenFrame.style.display = 'none';
+        return;
+      }
+
+      // Reorder the plane corners to visual top-left, top-right, bottom-right, bottom-left.
+      const byY = [...projected].sort((a, b) => a.y - b.y);
+      const top = byY.slice(0, 2).sort((a, b) => a.x - b.x);
+      const bottom = byY.slice(2).sort((a, b) => a.x - b.x);
+      const visualCorners = [top[0], top[1], bottom[1], bottom[0]];
+      const transform = quadToMatrix3d(visualCorners, 390, 844);
+
+      if (!transform) {
+        screenFrame.style.display = 'none';
+        return;
+      }
+
+      screenFrame.style.display = 'block';
+      screenFrame.style.transform = transform;
+    }
+
+    // ========================================
+    // Camera/Mouse Interaction
+    // ========================================
+    const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+    const finePointer = matchMedia('(pointer: fine)').matches;
+    function setPointerFromViewport(clientX, clientY) {
+      if (!finePointer || !phoneVisible) return;
+      const rect = section.getBoundingClientRect();
+      pointer.tx = THREE.MathUtils.clamp(((clientX - rect.left) / rect.width - 0.5) * 2, -1, 1);
+      pointer.ty = THREE.MathUtils.clamp(((clientY - rect.top) / rect.height - 0.5) * 2, -1, 1);
+    }
+    addEventListener('pointermove', e => {
+      setPointerFromViewport(e.clientX, e.clientY);
+    }, { passive: true });
+
+    let trackedFrameWindow = null;
+    function attachIframePointerTracking() {
+      try {
+        const frameWindow = appScreen.contentWindow;
+        if (!frameWindow || frameWindow === trackedFrameWindow) return;
+        frameWindow.addEventListener('pointermove', e => {
+          if (!finePointer || !phoneVisible) return;
+          pointer.tx = THREE.MathUtils.clamp((e.clientX / 390 - 0.5) * 2, -1, 1);
+          pointer.ty = THREE.MathUtils.clamp((e.clientY / 844 - 0.5) * 2, -1, 1);
+        }, { passive: true });
+        trackedFrameWindow = frameWindow;
+      } catch {
+        // 跨源屏幕页仍可显示，只关闭 iframe 内部的指针跟随。
+      }
+    }
+    appScreen.addEventListener('load', attachIframePointerTracking);
+    if (appScreen.contentDocument?.readyState !== 'loading') attachIframePointerTracking();
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const motionClock = new THREE.Clock();
+    let journeyProgress = 0;
+
+    function updateJourneyProgress() {
+      const range = Math.max(1, journey.offsetHeight - scroller.clientHeight);
+      journeyProgress = THREE.MathUtils.clamp(
+        (scroller.scrollTop - journey.offsetTop) / range,
+        0,
+        1
+      );
+    }
+
+    scroller.addEventListener('scroll', updateJourneyProgress, { passive: true });
+    updateJourneyProgress();
+
+    const phoneObserver = new IntersectionObserver(([entry]) => {
+      phoneVisible = entry.isIntersecting;
+      if (!phoneVisible) screenFrame.style.display = 'none';
+    }, { root: scroller, threshold: 0.05 });
+    phoneObserver.observe(section);
+
+    function loop() {
+      requestAnimationFrame(loop);
+      if (!phoneVisible) return;
+
+      const delta = Math.min(motionClock.getDelta(), 0.05);
+      pointer.x = THREE.MathUtils.damp(pointer.x, pointer.tx, 5.5, delta);
+      pointer.y = THREE.MathUtils.damp(pointer.y, pointer.ty, 5.5, delta);
+      const journeyEase = THREE.MathUtils.smoothstep(journeyProgress, 0.08, 0.88);
+      const overlayOpacity = THREE.MathUtils.smoothstep(journeyProgress, 0.43, 0.72);
+
+      field.material.opacity = THREE.MathUtils.lerp(0.018, 0.01, journeyEase);
+
+      if (phoneGroup) {
+        const motionX = reduced ? 0 : pointer.x;
+        const motionY = reduced ? 0 : pointer.y;
+        const compact = section.clientWidth <= 720;
+        const shortViewport = compact && section.clientHeight <= 680;
+        const introYaw = compact ? 0.58 : 0.82;
+        const endX = compact ? 0 : 0.72;
+        const introX = compact ? (shortViewport ? 0.78 : 0.7) : 1.94;
+        const targetRY = baseRotationY
+          + THREE.MathUtils.lerp(introYaw, restingYaw, journeyEase)
+          + motionX * 0.45 * journeyEase;
+        const targetRX = THREE.MathUtils.lerp(-0.1, restingPitch, journeyEase)
+          + motionY * 0.14 * journeyEase;
+        const targetX = THREE.MathUtils.lerp(introX, endX, journeyEase) + motionX * 0.06;
+        const introY = shortViewport ? -3.1 : (compact ? -1.85 : -0.34);
+        const endY = shortViewport ? -1.35 : (compact ? -1.0 : 0);
+        const targetY = THREE.MathUtils.lerp(introY, endY, journeyEase) - motionY * 0.035;
+        const targetScale = compact
+          ? THREE.MathUtils.lerp(shortViewport ? 0.68 : 0.82, shortViewport ? 0.72 : 0.78, journeyEase)
+          : 1;
+        const nextScale = THREE.MathUtils.damp(phoneGroup.scale.x, targetScale, 5.5, delta);
+        phoneGroup.rotation.y = THREE.MathUtils.damp(phoneGroup.rotation.y, targetRY, 6.5, delta);
+        phoneGroup.rotation.x = THREE.MathUtils.damp(phoneGroup.rotation.x, targetRX, 6.5, delta);
+        phoneGroup.rotation.y = THREE.MathUtils.clamp(phoneGroup.rotation.y, baseRotationY - 0.58, baseRotationY + 0.88);
+        phoneGroup.rotation.x = THREE.MathUtils.clamp(phoneGroup.rotation.x, -0.22, 0.16);
+        phoneGroup.position.x = THREE.MathUtils.damp(phoneGroup.position.x, targetX, 5, delta);
+        phoneGroup.position.y = THREE.MathUtils.damp(phoneGroup.position.y, targetY, 5, delta);
+        phoneGroup.scale.setScalar(nextScale);
+
+        camera.position.x = THREE.MathUtils.damp(
+          camera.position.x,
+          THREE.MathUtils.lerp(-0.28, 0.14, journeyEase) - motionX * 0.26 * journeyEase,
+          4.5,
+          delta
+        );
+        camera.position.y = THREE.MathUtils.damp(camera.position.y, 0.08 - motionY * 0.12 * journeyEase, 4.5, delta);
+        camera.position.z = THREE.MathUtils.damp(
+          camera.position.z,
+          THREE.MathUtils.lerp(6.55, 6.05, journeyEase) + Math.abs(motionX) * 0.12,
+          4.5,
+          delta
+        );
+        camera.lookAt(0, 0, 0);
+
+        screenFrame.style.setProperty('--reflection-x', `${42 - motionX * 28}%`);
+        screenFrame.style.setProperty('--reflection-y', `${18 + motionY * 16}%`);
+        screenFrame.style.setProperty('--reflection-angle', `${116 - motionX * 14}deg`);
+        screenFrame.style.setProperty('--reflection-opacity', `${0.18 + Math.abs(motionX) * 0.07}`);
+        screenFrame.style.opacity = overlayOpacity.toFixed(3);
+        screenFrame.style.pointerEvents = overlayOpacity > 0.92 ? 'auto' : 'none';
+        updateScreenOverlay();
+      }
+
+      composer.render(delta);
+    }
+    loop();
+
+    function resizeScene() {
+      const w = section.clientWidth, h = section.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      composer.setSize(w, h);
+      composer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      updateJourneyProgress();
+      updateScreenOverlay();
+    }
+    addEventListener('resize', resizeScene);
+    new ResizeObserver(resizeScene).observe(section);
+  </script>
+</body>
 </html>
