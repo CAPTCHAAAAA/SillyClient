@@ -71,7 +71,8 @@ Android 端还针对移动阅读做了额外处理：酒馆与控制台使用两
 | --- | --- |
 | [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | Kotlin 宿主、Android 运行时、原生 WebView 与系统适配 |
 | [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Electron 宿主、Windows 运行时与窗口管理 |
-| [SillyClient-Frontend](https://github.com/CAPTCHAAAAA/SillyClient-Frontend) | 两个平台共享的 React 控制台与插件接口 |
+
+Android 与 Windows 共用的 React 控制台源码位于 Android 仓库的 `App/web/capacitor-ui/`。构建产物分别同步到 Android assets、Windows `frontend-dist/` 和本仓库 `docs/app/`。旧 `SillyClient-Frontend` 仓库已归档，不再参与构建。
 
 克隆入口仓库及其子模块：
 

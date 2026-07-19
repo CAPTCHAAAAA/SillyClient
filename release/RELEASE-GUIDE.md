@@ -9,13 +9,13 @@
 | 仓库 | 职责 | 允许 Release | 允许 Tag |
 |---|---|---|---|
 | `SillyClient` (主仓库) | 文档 + 子模块索引 + Release | 是 | 是 |
-| `SillyClient-Android` | Android 端源码 | **否** | **否** |
-| `SillyClient-Frontend` | 共享前端源码 | **否** | **否** |
+| `SillyClient-Android` | Android 端 + 共享前端源码 | **否** | **否** |
+| `SillyClient-Windows` | Windows 端源码 | **否** | **否** |
 
 ## 核心规则
 
 1. **所有 Release 只在主仓库 `SillyClient` 发布**
-2. **端仓库（Android/Frontend）零 Release、零 Tag，仅作源码存储**
+2. **端仓库（Android/Windows）零 Release、零 Tag，仅作源码存储**
 3. **APK 文件只上传到主仓库的 Release**
 4. **版本号在主仓库打 Tag，端仓库不打 Tag**
 
