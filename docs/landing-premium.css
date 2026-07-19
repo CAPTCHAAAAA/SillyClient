@@ -33,6 +33,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(132deg, rgba(122, 153, 182, 0.055), transparent 34%),
+    linear-gradient(318deg, rgba(210, 62, 98, 0.07), transparent 46%);
+}
+
 .ambient-field {
   position: fixed;
   inset: -8%;
@@ -100,14 +111,17 @@ a:focus-visible {
   justify-content: space-between;
   margin: 0 auto;
   padding: 0 12px;
-  border: 1px solid rgba(220, 228, 236, 0.1);
-  border-radius: 18px;
-  background: rgba(12, 15, 19, 0.62);
+  border: 1px solid rgba(220, 228, 236, 0.075);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.055), transparent 42%),
+    rgba(12, 15, 19, 0.62);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 14px 44px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(28px) saturate(125%);
-  -webkit-backdrop-filter: blur(28px) saturate(125%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.015),
+    0 18px 54px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(30px) saturate(132%);
+  -webkit-backdrop-filter: blur(30px) saturate(132%);
   animation: topbar-arrive 720ms var(--ease-out) both;
   transition:
     height 360ms var(--ease-out),
@@ -215,8 +229,8 @@ a:focus-visible {
   grid-template-columns: 28px 32px;
   align-items: center;
   padding: 2px;
-  border: 1px solid rgba(220, 228, 236, 0.11);
-  border-radius: 11px;
+  border: 1px solid rgba(220, 228, 236, 0.07);
+  border-radius: 15px;
   background: rgba(255, 255, 255, 0.035);
 }
 
@@ -224,7 +238,7 @@ a:focus-visible {
   height: 26px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   background: transparent;
   color: rgba(255, 255, 255, 0.38);
   font: 700 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -311,8 +325,8 @@ a:focus-visible {
   justify-content: center;
   gap: 9px;
   padding: 0 17px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
   color: #fff;
   font: inherit;
   font-size: 12px;
@@ -328,8 +342,8 @@ a:focus-visible {
 
 .nav-download,
 .primary-action {
-  background: var(--rose);
-  border-color: rgba(255, 157, 178, 0.42);
+  background: linear-gradient(135deg, #e15a78, #c83f61);
+  border-color: rgba(255, 175, 192, 0.3);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     0 8px 24px rgba(136, 25, 55, 0.2);
@@ -337,7 +351,9 @@ a:focus-visible {
 
 .secondary-action,
 .platform-action.is-secondary {
-  background: rgba(20, 24, 29, 0.82);
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.075), transparent 58%),
+    rgba(20, 24, 29, 0.82);
 }
 
 .nav-download:hover,
@@ -381,7 +397,10 @@ a:focus-visible {
   height: 210vh;
   height: 210dvh;
   min-height: 1200px;
-  background: rgba(8, 10, 13, 0.34);
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.025), transparent 34%),
+    linear-gradient(318deg, rgba(217, 75, 105, 0.045), transparent 44%),
+    rgba(8, 10, 13, 0.34);
 }
 
 .visual-stage {
@@ -590,8 +609,10 @@ a:focus-visible {
   gap: 8px;
   padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 6px;
-  background: rgba(14, 17, 21, 0.9);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.07), transparent 52%),
+    rgba(14, 17, 21, 0.9);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 10px 28px rgba(0, 0, 0, 0.28);
@@ -653,16 +674,16 @@ a:focus-visible {
 .scroll-cue {
   position: absolute;
   left: 50%;
-  bottom: 24px;
+  bottom: 20px;
   z-index: 6;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
   padding: 0;
   border: 0;
   background: transparent;
-  color: rgba(218, 225, 232, 0.44);
+  color: rgba(218, 225, 232, 0.58);
   font: inherit;
   font-size: 10px;
   font-weight: 650;
@@ -683,43 +704,10 @@ a:focus-visible {
   transform: translateX(-50%) scale(0.97);
 }
 
-.cue-orbit {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 50%;
-  background: rgba(17, 21, 26, 0.46);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  overflow: hidden;
-}
-
-.cue-orbit::before {
-  content: "";
-  position: absolute;
-  top: -40%;
-  left: 50%;
-  width: 1px;
-  height: 180%;
-  background: rgba(255, 255, 255, 0.24);
-  animation: cue-scan 2s var(--ease-out) infinite;
-}
-
-.cue-orbit svg {
-  width: 16px;
-  height: 16px;
-  position: relative;
-  z-index: 2;
+.scroll-cue svg {
+  width: 18px;
+  height: 18px;
   animation: cue-drop 2s var(--ease-out) infinite;
-}
-
-@keyframes cue-scan {
-  0% { transform: translateY(-35%); opacity: 0; }
-  30% { opacity: 1; }
-  100% { transform: translateY(45%); opacity: 0; }
 }
 
 @keyframes cue-drop {
@@ -757,9 +745,9 @@ html[lang="en"] .experience-copy h2 {
   gap: 0;
   margin-bottom: 18px;
   padding: 0 9px;
-  border: 1px solid rgba(241, 119, 145, 0.14);
-  border-radius: 8px;
-  background: rgba(217, 75, 105, 0.08);
+  border: 1px solid rgba(241, 119, 145, 0.1);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(217, 75, 105, 0.12), rgba(217, 75, 105, 0.045));
   color: rgba(241, 119, 145, 0.88);
   font-size: 9px;
   font-weight: 700;
@@ -1141,15 +1129,18 @@ html[lang="en"] .experience-copy h2 {
 
 .will-reveal {
   opacity: 0;
-  transform: translateY(24px);
+  filter: blur(10px);
+  transform: translateY(22px) scale(0.988);
 }
 
 .will-reveal.is-visible {
   opacity: 1;
+  filter: blur(0);
   transform: translateY(0);
   transition:
-    opacity 560ms ease,
-    transform 680ms var(--ease-out);
+    opacity 620ms ease,
+    filter 680ms ease,
+    transform 720ms var(--ease-out);
 }
 
 .platform-features .feature-row:nth-child(2).will-reveal.is-visible {
@@ -1204,8 +1195,8 @@ html[lang="en"] .experience-copy h2 {
 }
 
 .hero-copy {
-  width: min(610px, 54vw);
-  margin-left: 0;
+  width: min(560px, 50vw);
+  margin-left: clamp(24px, 4.2vw, 72px);
 }
 
 .hero-title-button {
@@ -1214,7 +1205,7 @@ html[lang="en"] .experience-copy h2 {
 
 .hero-lede {
   max-width: 510px;
-  margin: 30px 0 0;
+  margin: 22px 0 0;
   color: rgba(242, 244, 247, 0.86);
   font-size: 20px;
   font-weight: 620;
@@ -1224,7 +1215,7 @@ html[lang="en"] .experience-copy h2 {
 
 .hero-sub {
   max-width: 540px;
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   color: rgba(220, 227, 234, 0.58);
   font-size: 14px;
   line-height: 1.75;
@@ -1246,18 +1237,20 @@ html[lang="en"] .experience-copy h2 {
 
 .hero-actions {
   justify-content: flex-start;
-  margin-top: 26px;
+  margin-top: 22px;
 }
 
 .hero-specs {
   width: min(600px, 100%);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 34px 0 0;
+  margin: 24px 0 0;
   padding: 6px;
-  border: 1px solid rgba(220, 228, 236, 0.09);
-  border-radius: 16px;
-  background: rgba(19, 23, 29, 0.48);
+  border: 1px solid rgba(220, 228, 236, 0.065);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.065), transparent 42%, rgba(217, 75, 105, 0.035)),
+    rgba(19, 23, 29, 0.5);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.035),
     0 18px 48px rgba(0, 0, 0, 0.12);
@@ -1271,7 +1264,7 @@ html[lang="en"] .experience-copy h2 {
   min-width: 0;
   padding: 10px 14px;
   border-right: 0;
-  border-radius: 10px;
+  border-radius: 16px;
 }
 
 .hero-specs div:nth-child(2) {
@@ -1297,13 +1290,12 @@ html[lang="en"] .experience-copy h2 {
 }
 
 .scroll-cue {
-  left: 8vw;
-  flex-direction: row;
-  transform: none;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .scroll-cue:active {
-  transform: scale(0.97);
+  transform: translateX(-50%) scale(0.94);
 }
 
 .experience-copy {
@@ -1331,7 +1323,7 @@ html[lang="en"] .experience-copy h2 {
 
 .lifecycle-list {
   display: grid;
-  gap: 0;
+  gap: 8px;
   margin: 26px 0 0;
   padding: 0;
   border: 0;
@@ -1343,10 +1335,14 @@ html[lang="en"] .experience-copy h2 {
   align-items: center;
   min-height: 56px;
   padding: 0 16px;
-  border: 1px solid rgba(220, 228, 236, 0.08);
-  border-radius: 12px;
-  background: rgba(19, 23, 29, 0.46);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(220, 228, 236, 0.06);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.05), transparent 55%),
+    rgba(19, 23, 29, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 12px 32px rgba(0, 0, 0, 0.1);
 }
 
 .lifecycle-list dt,
@@ -1389,6 +1385,9 @@ html[lang="en"] .experience-copy h2 {
   min-height: auto;
   display: block;
   padding: 124px 8vw 54px;
+  background:
+    linear-gradient(180deg, rgba(159, 180, 199, 0.025), transparent 18%),
+    linear-gradient(316deg, rgba(217, 75, 105, 0.055), transparent 42%);
 }
 
 .platform-inner {
@@ -1465,16 +1464,19 @@ html[lang="en"] .platform-intro h2 {
   grid-template-columns: minmax(190px, 0.32fr) minmax(0, 1fr);
   gap: clamp(34px, 5vw, 72px);
   align-items: center;
-  margin: 64px 0 0;
-  padding: 30px;
-  border: 1px solid rgba(220, 228, 236, 0.1);
-  border-radius: 22px;
-  background: rgba(17, 21, 27, 0.58);
+  margin: 54px 0 0;
+  padding: 34px;
+  border: 1px solid rgba(220, 228, 236, 0.065);
+  border-radius: 30px;
+  background:
+    linear-gradient(142deg, rgba(159, 180, 199, 0.07), transparent 38%, rgba(217, 75, 105, 0.045)),
+    rgba(17, 21, 27, 0.62);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 28px 90px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(28px) saturate(118%);
-  -webkit-backdrop-filter: blur(28px) saturate(118%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.012),
+    0 30px 94px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(32px) saturate(128%);
+  -webkit-backdrop-filter: blur(32px) saturate(128%);
 }
 
 .runtime-topology figcaption > span {
@@ -1509,8 +1511,10 @@ html[lang="en"] .platform-intro h2 {
   align-items: center;
   min-height: 238px;
   padding: 18px;
-  border-radius: 16px;
-  background: rgba(6, 8, 11, 0.34);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.035), transparent 50%),
+    rgba(6, 8, 11, 0.32);
 }
 
 .runtime-graph::before,
@@ -1519,7 +1523,7 @@ html[lang="en"] .platform-intro h2 {
   position: absolute;
   top: 50%;
   z-index: 0;
-  height: 2px;
+  height: 1px;
   border-radius: 2px;
   background: linear-gradient(90deg, rgba(241, 119, 145, 0.18), rgba(159, 180, 199, 0.5), rgba(241, 119, 145, 0.18));
 }
@@ -1547,9 +1551,11 @@ html[lang="en"] .platform-intro h2 {
   align-content: center;
   min-height: 112px;
   padding: 16px;
-  border: 1px solid rgba(220, 228, 236, 0.1);
-  border-radius: 14px;
-  background: rgba(26, 31, 38, 0.94);
+  border: 1px solid rgba(220, 228, 236, 0.075);
+  border-radius: 19px;
+  background:
+    linear-gradient(142deg, rgba(159, 180, 199, 0.075), transparent 58%),
+    rgba(26, 31, 38, 0.94);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.045),
     0 14px 36px rgba(0, 0, 0, 0.18);
@@ -1557,7 +1563,7 @@ html[lang="en"] .platform-intro h2 {
 
 .graph-contract {
   min-height: 88px;
-  background: rgba(98, 32, 51, 0.82);
+  background: linear-gradient(142deg, rgba(126, 45, 67, 0.9), rgba(79, 27, 44, 0.82));
   text-align: center;
 }
 
@@ -1589,18 +1595,18 @@ html[lang="en"] .platform-intro h2 {
 
 .graph-platforms article {
   padding: 14px;
-  border: 1px solid rgba(220, 228, 236, 0.09);
-  border-radius: 14px;
+  border: 1px solid rgba(220, 228, 236, 0.065);
+  border-radius: 19px;
   background: rgba(27, 32, 39, 0.9);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 .graph-platforms article:first-child {
-  background: rgba(29, 38, 47, 0.92);
+  background: linear-gradient(135deg, rgba(41, 54, 66, 0.96), rgba(25, 32, 40, 0.92));
 }
 
 .graph-platforms article:last-child {
-  background: rgba(39, 29, 38, 0.92);
+  background: linear-gradient(135deg, rgba(51, 36, 49, 0.96), rgba(34, 27, 35, 0.92));
 }
 
 .graph-platforms header,
@@ -1630,7 +1636,7 @@ html[lang="en"] .platform-intro h2 {
 
 .graph-platforms footer span {
   padding: 5px 8px;
-  border-radius: 7px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.045);
   color: rgba(228, 233, 238, 0.68);
   font-size: 7px;
@@ -1648,15 +1654,19 @@ html[lang="en"] .platform-intro h2 {
 .platform-lane {
   min-width: 0;
   padding: 10px 24px 14px;
-  border: 1px solid rgba(220, 228, 236, 0.09);
-  border-radius: 18px;
-  background: rgba(18, 22, 28, 0.58);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(220, 228, 236, 0.06);
+  border-radius: 24px;
+  background:
+    linear-gradient(138deg, rgba(159, 180, 199, 0.055), transparent 48%),
+    rgba(18, 22, 28, 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 46px rgba(0, 0, 0, 0.11);
 }
 
 .platform-lane + .platform-lane {
   padding: 10px 24px 14px;
-  border-left: 1px solid rgba(220, 228, 236, 0.09);
+  border-left: 1px solid rgba(220, 228, 236, 0.06);
 }
 
 .platform-lane header {
@@ -1694,8 +1704,8 @@ html[lang="en"] .platform-intro h2 {
   margin-top: 7px;
   padding: 0 12px;
   border: 0;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.028);
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.018));
 }
 
 .platform-lane dl > div:last-child { border-bottom: 0; }
@@ -1715,14 +1725,17 @@ html[lang="en"] .platform-intro h2 {
 .repository-topology {
   margin-top: 18px;
   padding: 34px;
-  border: 1px solid rgba(220, 228, 236, 0.1);
-  border-radius: 22px;
-  background: rgba(18, 22, 28, 0.62);
+  border: 1px solid rgba(220, 228, 236, 0.065);
+  border-radius: 30px;
+  background:
+    linear-gradient(142deg, rgba(159, 180, 199, 0.065), transparent 38%, rgba(217, 75, 105, 0.05)),
+    rgba(18, 22, 28, 0.62);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    0 28px 90px rgba(0, 0, 0, 0.16);
-  backdrop-filter: blur(28px) saturate(116%);
-  -webkit-backdrop-filter: blur(28px) saturate(116%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.012),
+    0 30px 90px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(32px) saturate(126%);
+  -webkit-backdrop-filter: blur(32px) saturate(126%);
 }
 
 .repository-topology > header {
@@ -1756,15 +1769,17 @@ html[lang="en"] .platform-intro h2 {
   gap: 12px;
   margin-top: 30px;
   padding: 14px;
-  border-radius: 17px;
-  background: rgba(6, 8, 11, 0.32);
+  border-radius: 24px;
+  background:
+    linear-gradient(136deg, rgba(159, 180, 199, 0.035), transparent 52%),
+    rgba(6, 8, 11, 0.3);
 }
 
 .repo-source,
 .repo-targets article,
 .repo-release {
-  border: 1px solid rgba(220, 228, 236, 0.09);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(220, 228, 236, 0.065);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.065);
 }
 
 .repo-source {
@@ -1772,8 +1787,8 @@ html[lang="en"] .platform-intro h2 {
   align-content: center;
   min-height: 206px;
   padding: 24px;
-  border-radius: 14px;
-  background: rgba(31, 38, 46, 0.92);
+  border-radius: 20px;
+  background: linear-gradient(142deg, rgba(48, 59, 70, 0.96), rgba(26, 32, 39, 0.92));
 }
 
 .repo-source small,
@@ -1812,16 +1827,16 @@ html[lang="en"] .platform-intro h2 {
   align-content: center;
   min-height: 206px;
   padding: 20px;
-  border-radius: 14px;
-  background: rgba(34, 29, 37, 0.92);
+  border-radius: 20px;
+  background: linear-gradient(142deg, rgba(47, 38, 48, 0.96), rgba(31, 26, 34, 0.92));
 }
 
 .repo-targets article:nth-child(2) {
-  background: rgba(28, 34, 41, 0.92);
+  background: linear-gradient(142deg, rgba(40, 49, 58, 0.96), rgba(25, 31, 38, 0.92));
 }
 
 .repo-targets article:nth-child(3) {
-  background: rgba(48, 27, 38, 0.92);
+  background: linear-gradient(142deg, rgba(65, 35, 48, 0.96), rgba(40, 24, 34, 0.92));
 }
 
 .repo-targets span {
@@ -1846,8 +1861,8 @@ html[lang="en"] .platform-intro h2 {
   gap: 24px;
   min-height: 62px;
   padding: 0 20px;
-  border-radius: 13px;
-  background: rgba(112, 36, 56, 0.54);
+  border-radius: 19px;
+  background: linear-gradient(135deg, rgba(126, 43, 65, 0.66), rgba(78, 29, 44, 0.54));
 }
 
 .repo-release strong {
@@ -1869,10 +1884,14 @@ html[lang="en"] .platform-intro h2 {
   align-items: start;
   margin-top: 18px;
   padding: 28px 30px;
-  border: 1px solid rgba(220, 228, 236, 0.09);
-  border-radius: 18px;
-  background: rgba(18, 22, 28, 0.48);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(220, 228, 236, 0.055);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.045), transparent 52%),
+    rgba(18, 22, 28, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 16px 44px rgba(0, 0, 0, 0.1);
 }
 
 .project-boundary .section-index {
@@ -1892,12 +1911,14 @@ html[lang="en"] .platform-intro h2 {
   gap: 80px;
   margin-top: 18px;
   padding: 34px;
-  border: 1px solid rgba(220, 228, 236, 0.1);
-  border-radius: 22px;
-  background: rgba(18, 22, 28, 0.62);
+  border: 1px solid rgba(220, 228, 236, 0.065);
+  border-radius: 30px;
+  background:
+    linear-gradient(142deg, rgba(217, 75, 105, 0.065), transparent 38%, rgba(159, 180, 199, 0.055)),
+    rgba(18, 22, 28, 0.64);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    0 24px 72px rgba(0, 0, 0, 0.14);
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    0 26px 76px rgba(0, 0, 0, 0.16);
 }
 
 .download-row h3 {
@@ -1917,11 +1938,14 @@ html[lang="en"] .platform-intro h2 {
   min-height: 68px;
   justify-content: space-between;
   padding: 0 18px;
-  background: rgba(217, 75, 105, 0.92);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #df5876, #bf395b);
 }
 
 .platform-action.is-secondary {
-  background: rgba(20, 24, 29, 0.82);
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.085), transparent 58%),
+    rgba(20, 24, 29, 0.84);
 }
 
 .platform-action span {
@@ -2007,7 +2031,9 @@ html[lang="en"] .platform-intro h2 {
     right: 12px;
     height: 50px;
     padding-inline: 8px;
-    background: rgba(12, 15, 19, 0.78);
+    background:
+      linear-gradient(135deg, rgba(159, 180, 199, 0.06), transparent 48%),
+      rgba(12, 15, 19, 0.78);
     backdrop-filter: blur(22px);
     -webkit-backdrop-filter: blur(22px);
   }
@@ -2037,9 +2063,11 @@ html[lang="en"] .platform-intro h2 {
     display: grid;
     gap: 0;
     padding: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    background: rgba(14, 17, 22, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 22px;
+    background:
+      linear-gradient(135deg, rgba(159, 180, 199, 0.07), transparent 52%),
+      rgba(14, 17, 22, 0.94);
     backdrop-filter: blur(26px);
     -webkit-backdrop-filter: blur(26px);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -2156,9 +2184,8 @@ html[lang="en"] .platform-intro h2 {
   }
 
   .scroll-cue {
-    left: 34%;
-    bottom: 16px;
-    flex-direction: column;
+    left: 50%;
+    bottom: 12px;
     transform: translateX(-50%);
   }
 
@@ -2213,9 +2240,11 @@ html[lang="en"] .platform-intro h2 {
     display: block;
     min-height: 50px;
     padding: 11px 8px 9px;
-    border: 1px solid rgba(220, 228, 236, 0.08);
-    border-radius: 9px;
-    background: rgba(19, 23, 29, 0.62);
+    border: 1px solid rgba(220, 228, 236, 0.06);
+    border-radius: 14px;
+    background:
+      linear-gradient(135deg, rgba(159, 180, 199, 0.05), transparent 60%),
+      rgba(19, 23, 29, 0.62);
   }
 
   .lifecycle-list > div:first-child { padding-left: 8px; }
@@ -2298,7 +2327,7 @@ html[lang="en"] .platform-intro h2 {
     gap: 22px;
     margin-top: 42px;
     padding: 18px;
-    border-radius: 18px;
+    border-radius: 22px;
   }
 
   .runtime-topology figcaption strong {
@@ -2316,7 +2345,7 @@ html[lang="en"] .platform-intro h2 {
     gap: 9px;
     min-height: 0;
     padding: 11px;
-    border-radius: 14px;
+    border-radius: 18px;
   }
 
   .runtime-graph::before {
@@ -2350,8 +2379,8 @@ html[lang="en"] .platform-intro h2 {
   .platform-lane,
   .platform-lane + .platform-lane {
     padding: 8px 14px 14px;
-    border: 1px solid rgba(220, 228, 236, 0.09);
-    border-radius: 16px;
+    border: 1px solid rgba(220, 228, 236, 0.06);
+    border-radius: 20px;
   }
 
   .platform-lane header {
@@ -2369,7 +2398,7 @@ html[lang="en"] .platform-intro h2 {
   .repository-topology {
     margin-top: 10px;
     padding: 18px;
-    border-radius: 18px;
+    border-radius: 22px;
   }
 
   .repository-topology > header {
@@ -2390,7 +2419,7 @@ html[lang="en"] .platform-intro h2 {
     grid-template-columns: 1fr;
     margin-top: 20px;
     padding: 10px;
-    border-radius: 14px;
+    border-radius: 18px;
   }
 
   .repo-source {
@@ -2431,7 +2460,7 @@ html[lang="en"] .platform-intro h2 {
     gap: 14px;
     margin-top: 10px;
     padding: 20px;
-    border-radius: 16px;
+    border-radius: 20px;
   }
 
   .project-boundary p {
@@ -2443,7 +2472,7 @@ html[lang="en"] .platform-intro h2 {
     display: block;
     margin-top: 10px;
     padding: 22px 20px;
-    border-radius: 18px;
+    border-radius: 22px;
   }
 
   .download-row h3 {
@@ -2489,13 +2518,8 @@ html[lang="en"] .platform-intro h2 {
     font-size: 10px;
   }
 
-  .scroll-cue > span:first-child {
-    display: none;
-  }
-
   .scroll-cue {
     bottom: 12px;
-    gap: 0;
   }
 }
 
@@ -2503,7 +2527,6 @@ html[lang="en"] .platform-intro h2 {
   .topbar,
   .nav-links,
   .runtime-map,
-  .cue-orbit,
   .font-name-tooltip {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -2564,6 +2587,7 @@ html[lang="en"] .platform-intro h2 {
 
   .will-reveal {
     opacity: 1;
+    filter: none;
     transform: none;
   }
 }
