@@ -101,7 +101,7 @@ a:focus-visible {
   margin: 0 auto;
   padding: 0 12px;
   border: 1px solid rgba(220, 228, 236, 0.1);
-  border-radius: 8px;
+  border-radius: 18px;
   background: rgba(12, 15, 19, 0.62);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -216,7 +216,7 @@ a:focus-visible {
   align-items: center;
   padding: 2px;
   border: 1px solid rgba(220, 228, 236, 0.11);
-  border-radius: 6px;
+  border-radius: 11px;
   background: rgba(255, 255, 255, 0.035);
 }
 
@@ -224,7 +224,7 @@ a:focus-visible {
   height: 26px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: 8px;
   background: transparent;
   color: rgba(255, 255, 255, 0.38);
   font: 700 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -607,12 +607,6 @@ a:focus-visible {
     transform 180ms var(--ease-out);
 }
 
-.font-name-tooltip svg {
-  width: 12px;
-  height: 12px;
-  color: rgba(255, 111, 141, 0.66);
-}
-
 .hero-title-button:hover .font-name-tooltip,
 .hero-title-button:focus-visible .font-name-tooltip,
 .hero-title-button.is-revealed .font-name-tooltip {
@@ -756,21 +750,24 @@ html[lang="en"] .experience-copy h2 {
 }
 
 .section-index {
-  display: flex;
+  width: fit-content;
+  min-height: 26px;
+  display: inline-flex;
   align-items: center;
-  gap: 11px;
+  gap: 0;
   margin-bottom: 18px;
+  padding: 0 9px;
+  border: 1px solid rgba(241, 119, 145, 0.14);
+  border-radius: 8px;
+  background: rgba(217, 75, 105, 0.08);
   color: rgba(241, 119, 145, 0.88);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .section-index::after {
-  content: "";
-  width: 44px;
-  height: 1px;
-  background: rgba(232, 54, 93, 0.55);
+  display: none;
 }
 
 .experience-copy h2 {
@@ -949,7 +946,7 @@ html[lang="en"] .experience-copy h2 {
   position: relative;
   padding: 22px 24px 8px;
   border: 1px solid rgba(220, 228, 236, 0.12);
-  border-radius: 8px;
+  border-radius: 12px;
   background: rgba(17, 21, 26, 0.58);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -1257,21 +1254,29 @@ html[lang="en"] .experience-copy h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 34px 0 0;
-  padding: 16px 0;
-  border-top: 1px solid rgba(220, 228, 236, 0.1);
-  border-bottom: 1px solid rgba(220, 228, 236, 0.1);
+  padding: 6px;
+  border: 1px solid rgba(220, 228, 236, 0.09);
+  border-radius: 16px;
+  background: rgba(19, 23, 29, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 18px 48px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(20px) saturate(118%);
+  -webkit-backdrop-filter: blur(20px) saturate(118%);
   color: inherit;
   text-transform: none;
 }
 
 .hero-specs div {
   min-width: 0;
-  padding: 0 18px;
-  border-right: 1px solid rgba(220, 228, 236, 0.09);
+  padding: 10px 14px;
+  border-right: 0;
+  border-radius: 10px;
 }
 
-.hero-specs div:first-child { padding-left: 0; }
-.hero-specs div:last-child { border-right: 0; }
+.hero-specs div:nth-child(2) {
+  background: rgba(255, 255, 255, 0.035);
+}
 
 .hero-specs dt,
 .hero-specs dd {
@@ -1325,17 +1330,23 @@ html[lang="en"] .experience-copy h2 {
 }
 
 .lifecycle-list {
-  margin: 28px 0 0;
+  display: grid;
+  gap: 0;
+  margin: 26px 0 0;
   padding: 0;
-  border-top: 1px solid rgba(220, 228, 236, 0.11);
+  border: 0;
 }
 
 .lifecycle-list > div {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
   align-items: center;
-  min-height: 54px;
-  border-bottom: 1px solid rgba(220, 228, 236, 0.09);
+  min-height: 56px;
+  padding: 0 16px;
+  border: 1px solid rgba(220, 228, 236, 0.08);
+  border-radius: 12px;
+  background: rgba(19, 23, 29, 0.46);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 .lifecycle-list dt,
@@ -1449,23 +1460,203 @@ html[lang="en"] .platform-intro h2 {
   line-height: 1.55;
 }
 
+.runtime-topology {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.32fr) minmax(0, 1fr);
+  gap: clamp(34px, 5vw, 72px);
+  align-items: center;
+  margin: 64px 0 0;
+  padding: 30px;
+  border: 1px solid rgba(220, 228, 236, 0.1);
+  border-radius: 22px;
+  background: rgba(17, 21, 27, 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 28px 90px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(28px) saturate(118%);
+  -webkit-backdrop-filter: blur(28px) saturate(118%);
+}
+
+.runtime-topology figcaption > span {
+  color: rgba(241, 119, 145, 0.76);
+  font-size: 9px;
+  font-weight: 720;
+  text-transform: uppercase;
+}
+
+.runtime-topology figcaption strong {
+  display: block;
+  margin-top: 18px;
+  color: rgba(243, 245, 248, 0.94);
+  font-size: 24px;
+  font-weight: 680;
+  line-height: 1.28;
+  text-wrap: balance;
+}
+
+.runtime-topology figcaption p {
+  margin: 14px 0 0;
+  color: rgba(213, 221, 230, 0.52);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.runtime-graph {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(118px, 0.78fr) minmax(98px, 0.58fr) minmax(0, 1.7fr);
+  gap: 22px;
+  align-items: center;
+  min-height: 238px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(6, 8, 11, 0.34);
+}
+
+.runtime-graph::before,
+.runtime-graph::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  z-index: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(241, 119, 145, 0.18), rgba(159, 180, 199, 0.5), rgba(241, 119, 145, 0.18));
+}
+
+.runtime-graph::before {
+  left: 15%;
+  width: 29%;
+}
+
+.runtime-graph::after {
+  right: 19%;
+  width: 34%;
+}
+
+.graph-source,
+.graph-contract,
+.graph-platforms {
+  position: relative;
+  z-index: 1;
+}
+
+.graph-source,
+.graph-contract {
+  display: grid;
+  align-content: center;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid rgba(220, 228, 236, 0.1);
+  border-radius: 14px;
+  background: rgba(26, 31, 38, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 14px 36px rgba(0, 0, 0, 0.18);
+}
+
+.graph-contract {
+  min-height: 88px;
+  background: rgba(98, 32, 51, 0.82);
+  text-align: center;
+}
+
+.graph-source small,
+.graph-contract small {
+  color: rgba(207, 216, 225, 0.5);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.graph-source strong,
+.graph-contract strong {
+  margin-top: 8px;
+  color: rgba(247, 248, 250, 0.94);
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.graph-source span {
+  margin-top: 7px;
+  color: rgba(207, 216, 225, 0.54);
+  font-size: 8px;
+}
+
+.graph-platforms {
+  display: grid;
+  gap: 10px;
+}
+
+.graph-platforms article {
+  padding: 14px;
+  border: 1px solid rgba(220, 228, 236, 0.09);
+  border-radius: 14px;
+  background: rgba(27, 32, 39, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.graph-platforms article:first-child {
+  background: rgba(29, 38, 47, 0.92);
+}
+
+.graph-platforms article:last-child {
+  background: rgba(39, 29, 38, 0.92);
+}
+
+.graph-platforms header,
+.graph-platforms footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.graph-platforms header strong {
+  color: rgba(244, 246, 248, 0.92);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.graph-platforms header span {
+  color: rgba(203, 213, 222, 0.5);
+  font-size: 8px;
+}
+
+.graph-platforms p {
+  margin: 8px 0 11px;
+  color: rgba(212, 221, 229, 0.54);
+  font-size: 8px;
+}
+
+.graph-platforms footer span {
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(228, 233, 238, 0.68);
+  font-size: 7px;
+  font-weight: 620;
+}
+
 .platform-ledger {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  margin-top: 72px;
-  border-top: 1px solid rgba(220, 228, 236, 0.12);
-  border-bottom: 1px solid rgba(220, 228, 236, 0.12);
+  gap: 14px;
+  margin-top: 18px;
+  border: 0;
 }
 
 .platform-lane {
   min-width: 0;
-  padding: 0 42px 6px 0;
+  padding: 10px 24px 14px;
+  border: 1px solid rgba(220, 228, 236, 0.09);
+  border-radius: 18px;
+  background: rgba(18, 22, 28, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .platform-lane + .platform-lane {
-  padding-right: 0;
-  padding-left: 42px;
-  border-left: 1px solid rgba(220, 228, 236, 0.1);
+  padding: 10px 24px 14px;
+  border-left: 1px solid rgba(220, 228, 236, 0.09);
 }
 
 .platform-lane header {
@@ -1474,7 +1665,7 @@ html[lang="en"] .platform-intro h2 {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  border-bottom: 1px solid rgba(220, 228, 236, 0.1);
+  border-bottom: 0;
 }
 
 .platform-lane header span {
@@ -1500,7 +1691,11 @@ html[lang="en"] .platform-intro h2 {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
   align-items: center;
-  border-bottom: 1px solid rgba(220, 228, 236, 0.08);
+  margin-top: 7px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.028);
 }
 
 .platform-lane dl > div:last-child { border-bottom: 0; }
@@ -1517,19 +1712,171 @@ html[lang="en"] .platform-intro h2 {
   line-height: 1.5;
 }
 
+.repository-topology {
+  margin-top: 18px;
+  padding: 34px;
+  border: 1px solid rgba(220, 228, 236, 0.1);
+  border-radius: 22px;
+  background: rgba(18, 22, 28, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 28px 90px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(28px) saturate(116%);
+  -webkit-backdrop-filter: blur(28px) saturate(116%);
+}
+
+.repository-topology > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.66fr);
+  gap: clamp(40px, 7vw, 96px);
+  align-items: end;
+}
+
+.repository-topology h3 {
+  max-width: 680px;
+  margin: 14px 0 0;
+  color: rgba(245, 247, 249, 0.94);
+  font-size: clamp(28px, 3.4vw, 44px);
+  font-weight: 660;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.repository-topology > header > p {
+  max-width: 470px;
+  margin: 0;
+  color: rgba(213, 221, 230, 0.54);
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.repository-graph {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.72fr) minmax(0, 1.6fr);
+  gap: 12px;
+  margin-top: 30px;
+  padding: 14px;
+  border-radius: 17px;
+  background: rgba(6, 8, 11, 0.32);
+}
+
+.repo-source,
+.repo-targets article,
+.repo-release {
+  border: 1px solid rgba(220, 228, 236, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.repo-source {
+  display: grid;
+  align-content: center;
+  min-height: 206px;
+  padding: 24px;
+  border-radius: 14px;
+  background: rgba(31, 38, 46, 0.92);
+}
+
+.repo-source small,
+.repo-targets small {
+  color: rgba(210, 219, 228, 0.48);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.repo-source strong {
+  margin-top: 12px;
+  color: rgba(247, 248, 250, 0.94);
+  font-size: 16px;
+  font-weight: 680;
+}
+
+.repository-graph code {
+  overflow-wrap: anywhere;
+  color: rgba(232, 237, 241, 0.64);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+}
+
+.repo-source code {
+  margin-top: 9px;
+}
+
+.repo-targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.repo-targets article {
+  display: grid;
+  align-content: center;
+  min-height: 206px;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(34, 29, 37, 0.92);
+}
+
+.repo-targets article:nth-child(2) {
+  background: rgba(28, 34, 41, 0.92);
+}
+
+.repo-targets article:nth-child(3) {
+  background: rgba(48, 27, 38, 0.92);
+}
+
+.repo-targets span {
+  color: rgba(246, 247, 249, 0.9);
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.repo-targets code {
+  margin-top: 10px;
+}
+
+.repo-targets small {
+  margin-top: 24px;
+}
+
+.repo-release {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 62px;
+  padding: 0 20px;
+  border-radius: 13px;
+  background: rgba(112, 36, 56, 0.54);
+}
+
+.repo-release strong {
+  color: rgba(249, 249, 250, 0.92);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.repo-release span {
+  color: rgba(235, 225, 230, 0.62);
+  font-size: 9px;
+  text-align: right;
+}
+
 .project-boundary {
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr);
   gap: 48px;
   align-items: start;
-  margin-top: 72px;
-  padding: 30px 0;
-  border-top: 1px solid rgba(220, 228, 236, 0.12);
-  border-bottom: 1px solid rgba(220, 228, 236, 0.12);
+  margin-top: 18px;
+  padding: 28px 30px;
+  border: 1px solid rgba(220, 228, 236, 0.09);
+  border-radius: 18px;
+  background: rgba(18, 22, 28, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 .project-boundary .section-index {
-  margin: 3px 0 0;
+  margin: 0;
 }
 
 .project-boundary p {
@@ -1543,9 +1890,14 @@ html[lang="en"] .platform-intro h2 {
 .download-row {
   grid-template-columns: minmax(0, 1fr) minmax(430px, auto);
   gap: 80px;
-  margin-top: 72px;
-  padding-top: 0;
-  border-top: 0;
+  margin-top: 18px;
+  padding: 34px;
+  border: 1px solid rgba(220, 228, 236, 0.1);
+  border-radius: 22px;
+  background: rgba(18, 22, 28, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 24px 72px rgba(0, 0, 0, 0.14);
 }
 
 .download-row h3 {
@@ -1852,20 +2204,22 @@ html[lang="en"] .platform-intro h2 {
   .lifecycle-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
     margin-top: 18px;
-    border-bottom: 1px solid rgba(220, 228, 236, 0.09);
+    border-bottom: 0;
   }
 
   .lifecycle-list > div {
     display: block;
     min-height: 50px;
     padding: 11px 8px 9px;
-    border-right: 1px solid rgba(220, 228, 236, 0.08);
-    border-bottom: 0;
+    border: 1px solid rgba(220, 228, 236, 0.08);
+    border-radius: 9px;
+    background: rgba(19, 23, 29, 0.62);
   }
 
-  .lifecycle-list > div:first-child { padding-left: 0; }
-  .lifecycle-list > div:last-child { border-right: 0; }
+  .lifecycle-list > div:first-child { padding-left: 8px; }
+  .lifecycle-list > div:last-child { border-right: 1px solid rgba(220, 228, 236, 0.08); }
 
   .lifecycle-list dt {
     gap: 7px;
@@ -1939,19 +2293,65 @@ html[lang="en"] .platform-intro h2 {
     margin-top: 5px;
   }
 
+  .runtime-topology {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin-top: 42px;
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .runtime-topology figcaption strong {
+    max-width: 320px;
+    margin-top: 12px;
+    font-size: 22px;
+  }
+
+  .runtime-topology figcaption p {
+    margin-top: 10px;
+  }
+
+  .runtime-graph {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    min-height: 0;
+    padding: 11px;
+    border-radius: 14px;
+  }
+
+  .runtime-graph::before {
+    top: 12%;
+    bottom: 12%;
+    left: 50%;
+    width: 2px;
+    height: auto;
+    background: linear-gradient(180deg, rgba(241, 119, 145, 0.16), rgba(159, 180, 199, 0.44), rgba(241, 119, 145, 0.16));
+  }
+
+  .runtime-graph::after {
+    display: none;
+  }
+
+  .graph-source,
+  .graph-contract {
+    min-height: 88px;
+  }
+
+  .graph-contract {
+    min-height: 68px;
+  }
+
   .platform-ledger {
     grid-template-columns: 1fr;
-    margin-top: 48px;
+    gap: 10px;
+    margin-top: 10px;
   }
 
   .platform-lane,
   .platform-lane + .platform-lane {
-    padding: 0 0 6px;
-    border-left: 0;
-  }
-
-  .platform-lane + .platform-lane {
-    border-top: 1px solid rgba(220, 228, 236, 0.12);
+    padding: 8px 14px 14px;
+    border: 1px solid rgba(220, 228, 236, 0.09);
+    border-radius: 16px;
   }
 
   .platform-lane header {
@@ -1966,11 +2366,72 @@ html[lang="en"] .platform-intro h2 {
     grid-template-columns: 84px minmax(0, 1fr);
   }
 
+  .repository-topology {
+    margin-top: 10px;
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .repository-topology > header {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .repository-topology h3 {
+    margin-top: 10px;
+    font-size: 26px;
+  }
+
+  .repository-topology > header > p {
+    font-size: 11px;
+  }
+
+  .repository-graph {
+    grid-template-columns: 1fr;
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .repo-source {
+    min-height: 132px;
+    padding: 18px;
+  }
+
+  .repo-targets {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .repo-targets article {
+    min-height: 104px;
+    padding: 16px;
+  }
+
+  .repo-targets small {
+    margin-top: 14px;
+  }
+
+  .repo-release {
+    grid-column: 1;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 0;
+    padding: 15px 16px;
+  }
+
+  .repo-release span {
+    line-height: 1.5;
+    text-align: left;
+  }
+
   .project-boundary {
     grid-template-columns: 1fr;
     gap: 14px;
-    margin-top: 48px;
-    padding: 24px 0;
+    margin-top: 10px;
+    padding: 20px;
+    border-radius: 16px;
   }
 
   .project-boundary p {
@@ -1980,8 +2441,9 @@ html[lang="en"] .platform-intro h2 {
 
   .download-row {
     display: block;
-    margin-top: 48px;
-    padding-top: 0;
+    margin-top: 10px;
+    padding: 22px 20px;
+    border-radius: 18px;
   }
 
   .download-row h3 {
@@ -2025,6 +2487,15 @@ html[lang="en"] .platform-intro h2 {
   .secondary-action {
     padding-inline: 11px;
     font-size: 10px;
+  }
+
+  .scroll-cue > span:first-child {
+    display: none;
+  }
+
+  .scroll-cue {
+    bottom: 12px;
+    gap: 0;
   }
 }
 

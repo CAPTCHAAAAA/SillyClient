@@ -12,9 +12,6 @@
   <symbol id="icon-caret-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75">
     <path d="m6 9 6 6 6-6" />
   </symbol>
-  <symbol id="icon-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75">
-    <path d="M12 4v16M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2M9 20h6" />
-  </symbol>
   <symbol id="icon-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75">
     <path d="M7 7h10v10M7 17 17 7" />
   </symbol>
