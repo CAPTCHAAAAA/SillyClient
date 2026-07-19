@@ -1330,6 +1330,7 @@ html[lang="en"] .experience-copy h2 {
 }
 
 .lifecycle-list > div {
+  position: relative;
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
   align-items: center;
@@ -1343,6 +1344,17 @@ html[lang="en"] .experience-copy h2 {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.055),
     0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+.lifecycle-list > div:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  bottom: -9px;
+  left: 27px;
+  z-index: 2;
+  width: 1px;
+  height: 10px;
+  background: linear-gradient(180deg, rgba(241, 119, 145, 0.52), rgba(159, 180, 199, 0.24));
 }
 
 .lifecycle-list dt,
@@ -2274,6 +2286,16 @@ html[lang="en"] .platform-intro h2 {
 
   .lifecycle-list > div:first-child { padding-left: 8px; }
   .lifecycle-list > div:last-child { border-right: 1px solid rgba(220, 228, 236, 0.08); }
+
+  .lifecycle-list > div:not(:last-child)::after {
+    top: 50%;
+    right: -7px;
+    bottom: auto;
+    left: auto;
+    width: 8px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(241, 119, 145, 0.52), rgba(159, 180, 199, 0.24));
+  }
 
   .lifecycle-list dt {
     gap: 7px;

@@ -191,7 +191,7 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css?v=20260719-project-structure" />
+  <link rel="stylesheet" href="./landing-premium.css?v=20260719-lifecycle-flow" />
 </head>
 <body>
   <canvas class="ambient-field" id="ambient-field" aria-hidden="true"></canvas>
@@ -276,9 +276,9 @@
               <h2 data-i18n="experienceTitle">一个客户端，运行并管理 SillyTavern。</h2>
               <p data-i18n="experienceBody">实例、状态和日志集中在控制台，SillyTavern 则在独立内容窗口中打开。管理与使用互不打断。</p>
               <dl class="lifecycle-list">
-                <div><dt><span>01</span><strong data-i18n="lifecycleCreateTitle">本地实例</strong></dt><dd data-i18n="lifecycleCreateBody">在手机或电脑上直接运行 SillyTavern</dd></div>
-                <div><dt><span>02</span><strong data-i18n="lifecycleRunTitle">远程连接</strong></dt><dd data-i18n="lifecycleRunBody">通过地址接入已有的 SillyTavern 服务</dd></div>
-                <div><dt><span>03</span><strong data-i18n="lifecycleExitTitle">独立窗口</strong></dt><dd data-i18n="lifecycleExitBody">管理控制台与聊天界面分别打开</dd></div>
+                <div><dt><span>01</span><strong data-i18n="lifecycleCreateTitle">实例准备</strong></dt><dd data-i18n="lifecycleCreateBody">下载、解压并校验所选版本</dd></div>
+                <div><dt><span>02</span><strong data-i18n="lifecycleRunTitle">服务运行</strong></dt><dd data-i18n="lifecycleRunBody">端口、状态与日志集中管理</dd></div>
+                <div><dt><span>03</span><strong data-i18n="lifecycleExitTitle">内容访问</strong></dt><dd data-i18n="lifecycleExitBody">SillyTavern 在独立窗口中打开</dd></div>
               </dl>
             </div>
             <div class="device-note"><span aria-hidden="true"></span><span data-i18n="interactiveScreen">3D 机身 · 可交互屏幕</span></div>
@@ -437,12 +437,12 @@
           experienceIndex: '01 / SillyClient',
           experienceTitle: '一个客户端，运行并管理 SillyTavern。',
           experienceBody: '实例、状态和日志集中在控制台，SillyTavern 则在独立内容窗口中打开。管理与使用互不打断。',
-          lifecycleCreateTitle: '本地实例',
-          lifecycleCreateBody: '在手机或电脑上直接运行 SillyTavern',
-          lifecycleRunTitle: '远程连接',
-          lifecycleRunBody: '通过地址接入已有的 SillyTavern 服务',
-          lifecycleExitTitle: '独立窗口',
-          lifecycleExitBody: '管理控制台与聊天界面分别打开',
+          lifecycleCreateTitle: '实例准备',
+          lifecycleCreateBody: '下载、解压并校验所选版本',
+          lifecycleRunTitle: '服务运行',
+          lifecycleRunBody: '端口、状态与日志集中管理',
+          lifecycleExitTitle: '内容访问',
+          lifecycleExitBody: 'SillyTavern 在独立窗口中打开',
           interactiveScreen: '3D 机身 · 可交互屏幕',
           platformIndex: '02 / 运行架构',
           platformTitleLead: '共享一套控制台，',
@@ -499,12 +499,12 @@
           experienceIndex: '01 / SillyClient',
           experienceTitle: 'Run and manage SillyTavern in one client.',
           experienceBody: 'Instances, status, and logs stay in the console while SillyTavern opens in a separate content window. Management remains out of the way.',
-          lifecycleCreateTitle: 'Local instances',
-          lifecycleCreateBody: 'Run SillyTavern directly on a phone or PC',
-          lifecycleRunTitle: 'Remote connections',
-          lifecycleRunBody: 'Connect an existing SillyTavern service by address',
-          lifecycleExitTitle: 'Separate windows',
-          lifecycleExitBody: 'Open the console and chat interface separately',
+          lifecycleCreateTitle: 'Instance setup',
+          lifecycleCreateBody: 'Download, extract, and verify the selected version',
+          lifecycleRunTitle: 'Service runtime',
+          lifecycleRunBody: 'Manage ports, status, and logs in one console',
+          lifecycleExitTitle: 'Content access',
+          lifecycleExitBody: 'Open SillyTavern in a separate window',
           interactiveScreen: '3D device · interactive screen',
           platformIndex: '02 / Runtime architecture',
           platformTitleLead: 'One shared console.',
