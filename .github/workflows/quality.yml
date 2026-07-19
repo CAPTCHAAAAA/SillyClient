@@ -15,6 +15,6 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 22.16.0
       - name: Validate GitHub Pages files
         run: node scripts/validate-pages.mjs
