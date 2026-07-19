@@ -31,7 +31,7 @@ flowchart LR
 
 ## 前端产物流向
 
-唯一源码：`SillyClient-Android/App/web/capacitor-ui/`
+唯一源码：`SillyClient-Android/web/capacitor-ui/`
 
 | 目标 | 用途 | 是否提交 |
 | --- | --- | --- |
