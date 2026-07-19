@@ -1,35 +1,131 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <title>SillyClient 酒馆启动器</title>
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
-    html.light, html.light body { background-color: #ffffff !important; color: #000000; }
-    html.dark, html.dark body { background-color: #1a1a1a !important; color: #ffffff; }
-  </style>
-  <script>
-    (function() {
-      function applyThemeToDOM(theme) {
-        document.documentElement.classList.remove('light', 'dark');
-        document.documentElement.classList.add(theme);
-        document.documentElement.setAttribute('data-theme', theme);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>SillyClient 酒馆启动器</title>
+    <style>
+      /* Dynamic Display 字体 */
+      @font-face {
+        font-family: 'Dynamic Display';
+        src: url('./app/fonts/DynamicDisplay.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
-      var stored = localStorage.getItem('theme');
-      if (stored === 'dark' || stored === 'light') {
-        applyThemeToDOM(stored);
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        applyThemeToDOM('dark');
-      } else {
-        applyThemeToDOM('light');
+      /* Syndra 字体 */
+      @font-face {
+        font-family: 'Syndra';
+        src: url('./app/fonts/Syndra-SemiBold.otf') format('opentype');
+        font-weight: 600;
+        font-style: normal;
+        font-display: swap;
       }
-    })();
-  </script>
-  <script type="module" crossorigin src="./app/assets/index-DQUc1mSr.js"></script>
-  <link rel="stylesheet" crossorigin href="./app/assets/index-Zk5KTHQt.css">
-</head>
-<body>
-  <div id="root"></div>
-</body>
+      /* Daydream 字体 */
+      @font-face {
+        font-family: 'Daydream';
+        src: url('./app/fonts/Daydream.otf') format('opentype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* 04B_30 像素风字体 */
+      @font-face {
+        font-family: '04B 30';
+        src: url('./app/fonts/04B_30.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Noisy Walk 字体 */
+      @font-face {
+        font-family: 'Noisy Walk';
+        src: url('./app/fonts/NoisyWalk.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Stay Pixel 字体 */
+      @font-face {
+        font-family: 'Stay Pixel';
+        src: url('./app/fonts/StayPixel.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Arcade Raiders 字体 */
+      @font-face {
+        font-family: 'Arcade Raiders';
+        src: url('./app/fonts/ArcadeRaiders.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Yummy 字体 */
+      @font-face {
+        font-family: 'Yummy';
+        src: url('./app/fonts/Yummy.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Pixel Chaos 字体 */
+      @font-face {
+        font-family: 'Pixel Chaos';
+        src: url('./app/fonts/PixelChaos.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Soap 字体 */
+      @font-face {
+        font-family: 'Soap';
+        src: url('./app/fonts/Soap.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+    </style>
+    <style>
+      /* 内联样式确保主题色立即生效，避免闪烁 */
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+      html.light, html.light body {
+        background-color: #ffffff !important;
+        color: #000000;
+      }
+      html.dark, html.dark body {
+        background-color: #1a1a1a !important;
+        color: #ffffff;
+      }
+    </style>
+    <script>
+      // 本地运行：直接读取 localStorage 或系统偏好设置主题
+      (function() {
+        function applyThemeToDOM(theme) {
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(theme);
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        var stored = localStorage.getItem('theme');
+        if (stored === 'dark' || stored === 'light') {
+          applyThemeToDOM(stored);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          applyThemeToDOM('dark');
+        } else {
+          applyThemeToDOM('light');
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="./app/assets/index-xEy9_LfZ.js"></script>
+    <link rel="stylesheet" crossorigin href="./app/assets/index-7rXWNdv1.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>

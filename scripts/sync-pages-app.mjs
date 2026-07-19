@@ -20,4 +20,11 @@ if (!fs.existsSync(path.join(source, 'index.html'))) {
 fs.rmSync(destination, { recursive: true, force: true });
 fs.mkdirSync(destination, { recursive: true });
 fs.cpSync(source, destination, { recursive: true });
+
+const appIndex = fs.readFileSync(path.join(source, 'index.html'), 'utf8');
+const pageIndex = appIndex
+  .replaceAll('./assets/', './app/assets/')
+  .replaceAll('./fonts/', './app/fonts/');
+fs.writeFileSync(path.join(root, 'docs', 'index.html'), pageIndex);
+
 console.log(`Synced ${source} -> ${destination}`);
