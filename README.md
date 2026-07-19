@@ -69,13 +69,15 @@ Android 端使用两个 WebView 分开承载控制台和 SillyTavern。顶部区
 
 共用的 React 控制台源码位于 Android 仓库的 `App/web/capacitor-ui/`。构建产物会同步到 Android assets、Windows `frontend-dist/` 和本仓库 `docs/app/`。旧 `SillyClient-Frontend` 仓库已归档，不再参与构建。
 
-克隆入口仓库及其子模块：
+三个仓库彼此独立。只做网站或发版时克隆主仓库；开发客户端时再克隆对应平台仓库：
 
 ```bash
-git clone --recurse-submodules https://github.com/CAPTCHAAAAA/SillyClient.git
+git clone https://github.com/CAPTCHAAAAA/SillyClient.git
+git clone https://github.com/CAPTCHAAAAA/SillyClient-Android.git
+git clone https://github.com/CAPTCHAAAAA/SillyClient-Windows.git
 ```
 
-构建环境和命令以各平台仓库的 README 为准。主仓库不再复制平台源码。
+构建环境和命令以各平台仓库的 README 为准。仓库边界、前端同步和发版约定见 [架构说明](./docs/ARCHITECTURE.md) 与 [贡献指南](./CONTRIBUTING.md)。
 
 ## 与 SillyTavern 的关系
 
