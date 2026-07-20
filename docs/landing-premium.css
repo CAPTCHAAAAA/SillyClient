@@ -123,10 +123,7 @@ a:focus-visible {
   background:
     linear-gradient(135deg, rgba(159, 180, 199, 0.055), transparent 42%),
     rgba(12, 15, 19, 0.62);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.075),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.015),
-    0 18px 54px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(30px) saturate(132%);
   -webkit-backdrop-filter: blur(30px) saturate(132%);
   animation: topbar-arrive 720ms var(--ease-out) both;
@@ -152,9 +149,7 @@ a:focus-visible {
   height: 50px;
   background: rgba(12, 15, 19, 0.82);
   border-color: rgba(220, 228, 236, 0.13);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),
-    0 18px 58px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2);
 }
 
 .brand-lockup {
@@ -1298,13 +1293,8 @@ html[lang="en"] .experience-copy h2 {
   padding: 3px;
   border: 1px solid rgba(220, 228, 236, 0.1);
   border-radius: 18px;
-  background:
-    linear-gradient(145deg, rgba(159, 180, 199, 0.09), transparent 46%),
-    rgba(13, 16, 21, 0.78);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
-    0 18px 48px rgba(0, 0, 0, 0.28);
+  background: rgba(13, 16, 21, 0.78);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(26px) saturate(132%);
   -webkit-backdrop-filter: blur(26px) saturate(132%);
   transform: translateX(-50%);
@@ -1366,12 +1356,10 @@ html[lang="en"] .experience-copy h2 {
 
 @media (hover: hover) and (pointer: fine) {
   .pager-button:hover:not(:disabled) {
-    transform: translateY(-1px);
+    transform: none;
     background-color: rgba(255, 255, 255, 0.09);
     color: #fff;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 8px 18px rgba(0, 0, 0, 0.18);
+    box-shadow: none;
   }
 }
 
@@ -1439,30 +1427,30 @@ html[lang="en"] .experience-copy h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 24px 0 0;
-  padding: 6px;
+  padding: 0;
   border: 1px solid rgba(220, 228, 236, 0.065);
-  border-radius: 22px;
-  background:
-    linear-gradient(135deg, rgba(159, 180, 199, 0.065), transparent 42%, rgba(217, 75, 105, 0.035)),
-    rgba(19, 23, 29, 0.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    0 18px 48px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(20px) saturate(118%);
-  -webkit-backdrop-filter: blur(20px) saturate(118%);
+  border-radius: 17px;
+  background: rgba(19, 23, 29, 0.46);
+  box-shadow: none;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   color: inherit;
   text-transform: none;
 }
 
 .hero-specs div {
   min-width: 0;
-  padding: 10px 14px;
-  border-right: 0;
-  border-radius: 16px;
+  padding: 12px 14px;
+  border-right: 1px solid rgba(220, 228, 236, 0.055);
+  border-radius: 0;
 }
 
 .hero-specs div:nth-child(2) {
-  background: rgba(255, 255, 255, 0.035);
+  background: transparent;
+}
+
+.hero-specs div:last-child {
+  border-right: 0;
 }
 
 .hero-specs dt,
@@ -2770,14 +2758,10 @@ html[lang="en"] .platform-intro h2 {
   }
 }
 
-/* Tactile surfaces: restrained depth for controls and information nodes. */
-.nav-download,
+/* Tactile surfaces are reserved for primary content and action nodes. */
 .primary-action,
 .secondary-action,
-.platform-action,
-.icon-button,
-.menu-button,
-.language-option {
+.platform-action {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2),
@@ -2789,24 +2773,16 @@ html[lang="en"] .platform-intro h2 {
     filter 180ms ease;
 }
 
-.nav-download:focus-visible,
 .primary-action:focus-visible,
 .secondary-action:focus-visible,
-.platform-action:focus-visible,
-.icon-button:focus-visible,
-.menu-button:focus-visible,
-.language-option:focus-visible {
+.platform-action:focus-visible {
   outline: 2px solid rgba(244, 128, 153, 0.72);
   outline-offset: 3px;
 }
 
-.nav-download:active,
 .primary-action:active,
 .secondary-action:active,
-.platform-action:active,
-.icon-button:active,
-.menu-button:active,
-.language-option:active {
+.platform-action:active {
   transform: translateY(1px) scale(0.985);
   box-shadow:
     inset 0 2px 5px rgba(0, 0, 0, 0.26),
@@ -2815,7 +2791,6 @@ html[lang="en"] .platform-intro h2 {
   transition-duration: 110ms;
 }
 
-.hero-specs,
 .download-row {
   transition:
     box-shadow 260ms ease,
@@ -2827,7 +2802,6 @@ html[lang="en"] .platform-intro h2 {
   pointer-events: auto;
 }
 
-.hero-specs div,
 .lifecycle-list > div,
 .graph-source,
 .graph-contract,
@@ -2853,7 +2827,6 @@ html[lang="en"] .platform-intro h2 {
   overflow: hidden;
 }
 
-.hero-specs div::before,
 .lifecycle-list > div::before,
 .graph-source::before,
 .graph-contract::before,
@@ -2878,7 +2851,6 @@ html[lang="en"] .platform-intro h2 {
   transition: opacity 220ms ease;
 }
 
-.hero-specs div > *,
 .lifecycle-list > div > *,
 .graph-source > *,
 .graph-contract > *,
@@ -2891,7 +2863,6 @@ html[lang="en"] .platform-intro h2 {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .nav-download:hover,
   .primary-action:hover {
     transform: translateY(-2px) scale(1.01);
     box-shadow:
@@ -2902,10 +2873,7 @@ html[lang="en"] .platform-intro h2 {
   }
 
   .secondary-action:hover,
-  .platform-action.is-secondary:hover,
-  .icon-button:hover,
-  .menu-button:hover,
-  .language-option:hover {
+  .platform-action.is-secondary:hover {
     transform: translateY(-2px);
     border-color: rgba(209, 221, 231, 0.17);
     box-shadow:
@@ -2923,20 +2891,12 @@ html[lang="en"] .platform-intro h2 {
     filter: saturate(1.05) brightness(1.025);
   }
 
-  .hero-specs:hover,
   .download-row:hover {
     border-color: rgba(220, 228, 236, 0.1);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.09),
       inset 0 -1px 0 rgba(0, 0, 0, 0.16),
       0 28px 72px rgba(0, 0, 0, 0.18);
-  }
-
-  .hero-specs div:hover {
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 8px 20px rgba(0, 0, 0, 0.1);
   }
 
   .lifecycle-list > div:hover {
@@ -2972,7 +2932,6 @@ html[lang="en"] .platform-intro h2 {
       0 15px 34px rgba(79, 19, 39, 0.2);
   }
 
-  .hero-specs div:hover::before,
   .lifecycle-list > div:hover::before,
   .graph-source:hover::before,
   .graph-contract:hover::before,
@@ -2981,6 +2940,38 @@ html[lang="en"] .platform-intro h2 {
   .repo-targets article:hover::before,
   .repo-release:hover::before {
     opacity: 0.82;
+  }
+}
+
+/* Navigation chrome stays flat; depth is reserved for the main content. */
+.topbar .nav-download {
+  background: rgba(217, 75, 105, 0.92);
+  border-color: rgba(241, 119, 145, 0.24);
+  box-shadow: none;
+}
+
+.topbar .icon-button,
+.topbar .menu-button,
+.topbar .language-option {
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .topbar .nav-download:hover,
+  .topbar .icon-button:hover,
+  .topbar .menu-button:hover,
+  .topbar .language-option:hover {
+    transform: none;
+    box-shadow: none;
+    filter: none;
+  }
+
+  .topbar .nav-download:hover {
+    background: rgba(229, 83, 115, 0.96);
+  }
+
+  .topbar .nav-download:hover svg {
+    transform: none;
   }
 }
 
