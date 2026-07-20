@@ -2570,6 +2570,225 @@ html[lang="en"] .platform-intro h2 {
   }
 }
 
+/* Tactile surfaces: restrained depth for controls and information nodes. */
+.nav-download,
+.primary-action,
+.secondary-action,
+.platform-action,
+.icon-button,
+.menu-button,
+.language-option {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 9px 24px rgba(0, 0, 0, 0.16);
+  transition:
+    transform 180ms var(--ease-out),
+    box-shadow 220ms ease,
+    border-color 180ms ease,
+    filter 180ms ease;
+}
+
+.nav-download:focus-visible,
+.primary-action:focus-visible,
+.secondary-action:focus-visible,
+.platform-action:focus-visible,
+.icon-button:focus-visible,
+.menu-button:focus-visible,
+.language-option:focus-visible {
+  outline: 2px solid rgba(244, 128, 153, 0.72);
+  outline-offset: 3px;
+}
+
+.nav-download:active,
+.primary-action:active,
+.secondary-action:active,
+.platform-action:active,
+.icon-button:active,
+.menu-button:active,
+.language-option:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.14);
+  transition-duration: 110ms;
+}
+
+.hero-specs,
+.runtime-topology,
+.repository-topology,
+.download-row {
+  transition:
+    box-shadow 260ms ease,
+    border-color 220ms ease,
+    filter 220ms ease;
+}
+
+.experience-copy {
+  pointer-events: auto;
+}
+
+.hero-specs div,
+.lifecycle-list > div,
+.graph-source,
+.graph-contract,
+.graph-platforms article,
+.repo-source,
+.repo-targets article,
+.repo-release {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 220ms var(--ease-out),
+    box-shadow 240ms ease,
+    border-color 180ms ease,
+    filter 180ms ease;
+}
+
+.graph-source,
+.graph-contract,
+.graph-platforms article,
+.repo-source,
+.repo-targets article,
+.repo-release {
+  overflow: hidden;
+}
+
+.hero-specs div::before,
+.lifecycle-list > div::before,
+.graph-source::before,
+.graph-contract::before,
+.graph-platforms article::before,
+.repo-source::before,
+.repo-targets article::before,
+.repo-release::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.075),
+    transparent 38%,
+    rgba(217, 75, 105, 0.025) 78%,
+    transparent
+  );
+  opacity: 0.38;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.hero-specs div > *,
+.lifecycle-list > div > *,
+.graph-source > *,
+.graph-contract > *,
+.graph-platforms article > *,
+.repo-source > *,
+.repo-targets article > *,
+.repo-release > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-download:hover,
+  .primary-action:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.24),
+      inset 0 -1px 0 rgba(83, 12, 34, 0.28),
+      0 14px 32px rgba(151, 31, 61, 0.25);
+    filter: saturate(1.06) brightness(1.03);
+  }
+
+  .secondary-action:hover,
+  .platform-action.is-secondary:hover,
+  .icon-button:hover,
+  .menu-button:hover,
+  .language-option:hover {
+    transform: translateY(-2px);
+    border-color: rgba(209, 221, 231, 0.17);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+      0 13px 28px rgba(0, 0, 0, 0.2);
+  }
+
+  .platform-action:not(.is-secondary):hover {
+    transform: translateY(-3px) scale(1.008);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.24),
+      inset 0 -1px 0 rgba(83, 12, 34, 0.3),
+      0 16px 36px rgba(151, 31, 61, 0.26);
+    filter: saturate(1.05) brightness(1.025);
+  }
+
+  .hero-specs:hover,
+  .runtime-topology:hover,
+  .repository-topology:hover,
+  .download-row:hover {
+    border-color: rgba(220, 228, 236, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.16),
+      0 28px 72px rgba(0, 0, 0, 0.18);
+  }
+
+  .hero-specs div:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .lifecycle-list > div:hover {
+    z-index: 3;
+    transform: translateX(3px);
+    border-color: rgba(229, 153, 170, 0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 3px 0 0 rgba(217, 75, 105, 0.24),
+      0 16px 34px rgba(0, 0, 0, 0.16);
+  }
+
+  .graph-source:hover,
+  .graph-contract:hover,
+  .graph-platforms article:hover,
+  .repo-source:hover,
+  .repo-targets article:hover {
+    z-index: 3;
+    transform: translateY(-3px);
+    border-color: rgba(220, 228, 236, 0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 18px 38px rgba(0, 0, 0, 0.24);
+    filter: brightness(1.035);
+  }
+
+  .repo-release:hover {
+    transform: translateY(-2px);
+    border-color: rgba(235, 159, 176, 0.18);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 -1px 0 rgba(68, 18, 34, 0.2),
+      0 15px 34px rgba(79, 19, 39, 0.2);
+  }
+
+  .hero-specs div:hover::before,
+  .lifecycle-list > div:hover::before,
+  .graph-source:hover::before,
+  .graph-contract:hover::before,
+  .graph-platforms article:hover::before,
+  .repo-source:hover::before,
+  .repo-targets article:hover::before,
+  .repo-release:hover::before {
+    opacity: 0.82;
+  }
+}
+
 @media (prefers-reduced-transparency: reduce) {
   .topbar,
   .nav-links,
