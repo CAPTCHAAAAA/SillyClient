@@ -16,10 +16,7 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --page-transition-duration: 560ms;
   --journey-progress: 0;
-  --section-gradient:
-    linear-gradient(142deg, rgba(113, 139, 162, 0.09), transparent 43%),
-    linear-gradient(316deg, rgba(217, 75, 105, 0.12), transparent 50%),
-    linear-gradient(180deg, rgba(8, 10, 13, 0.12), rgba(16, 9, 14, 0.28));
+  --platform-blend: 0;
 }
 
 html {
@@ -57,7 +54,7 @@ body::after {
   height: 116%;
   display: block;
   pointer-events: none;
-  opacity: 0.78;
+  opacity: 0.88;
   filter: blur(52px) saturate(0.92);
   transform: translateZ(0);
 }
@@ -403,7 +400,7 @@ a:focus-visible {
   height: 200vh;
   height: 200dvh;
   min-height: 1200px;
-  background: var(--section-gradient);
+  background: transparent;
 }
 
 .visual-stage {
@@ -415,6 +412,8 @@ a:focus-visible {
   overflow: hidden;
   background: transparent;
   isolation: isolate;
+  opacity: calc(1 - var(--platform-blend));
+  will-change: opacity;
 }
 
 #three-canvas {
@@ -431,10 +430,7 @@ a:focus-visible {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background:
-    linear-gradient(142deg, rgba(113, 139, 162, 0.035), transparent 44%),
-    linear-gradient(316deg, rgba(217, 75, 105, 0.055), transparent 52%),
-    rgba(5, 7, 10, calc(0.26 - var(--journey-progress) * 0.18));
+  background: rgba(5, 7, 10, calc(0.1 - var(--journey-progress) * 0.065));
 }
 
 .stage-caption {
@@ -490,34 +486,6 @@ a:focus-visible {
     filter: blur(0);
     transform: translateY(0) scale(1);
   }
-}
-
-@keyframes section-wash-in {
-  from {
-    opacity: 0.18;
-    transform: translateY(7%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.story-panel::before,
-.platform-section::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(145deg, rgba(123, 150, 174, 0.065), transparent 42%),
-    linear-gradient(320deg, rgba(217, 75, 105, 0.095), transparent 52%);
-  opacity: 0.72;
-}
-
-.story-panel.is-page-active::before,
-.platform-section.is-page-active::before {
-  animation: section-wash-in 720ms var(--ease-out) both;
 }
 
 .hero-panel.is-page-pending .eyebrow,
@@ -1253,12 +1221,53 @@ html[lang="en"] .experience-copy h2 {
 .section-rail {
   position: fixed;
   top: 50%;
-  right: 26px;
+  right: 24px;
   z-index: 70;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  align-items: center;
+  gap: 8px;
   transform: translateY(-50%);
+}
+
+.rail-arrow {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(220, 228, 236, 0.13);
+  border-radius: 50%;
+  background: rgba(14, 17, 22, 0.46);
+  color: rgba(231, 236, 241, 0.66);
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 120ms var(--ease-out);
+}
+
+.rail-arrow svg {
+  width: 12px;
+  height: 12px;
+}
+
+.rail-arrow:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.rail-arrow:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+.rail-arrow:focus-visible {
+  outline: 1px solid rgba(229, 236, 242, 0.42);
+  outline-offset: 3px;
 }
 
 .rail-dot {
@@ -1280,86 +1289,15 @@ html[lang="en"] .experience-copy h2 {
   background: rgba(255, 255, 255, 0.74);
 }
 
-.section-pager {
-  position: fixed;
-  left: 50%;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-  z-index: 75;
-  display: grid;
-  grid-template-columns: 40px 58px 40px;
-  align-items: center;
-  gap: 3px;
-  min-height: 46px;
-  padding: 3px;
-  border: 1px solid rgba(220, 228, 236, 0.1);
-  border-radius: 18px;
-  background: rgba(13, 16, 21, 0.78);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(26px) saturate(132%);
-  -webkit-backdrop-filter: blur(26px) saturate(132%);
-  transform: translateX(-50%);
-}
-
-.pager-button {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.045);
-  color: rgba(239, 243, 247, 0.82);
-  cursor: pointer;
-  transition:
-    transform 160ms var(--ease-out),
-    background-color 180ms ease,
-    box-shadow 200ms ease,
-    color 180ms ease,
-    opacity 180ms ease;
-}
-
-.pager-button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.pager-button:active:not(:disabled) {
-  transform: translateY(1px) scale(0.94);
-  transition-duration: 100ms;
-}
-
-.pager-button:disabled {
-  opacity: 0.22;
-  cursor: default;
-}
-
-.pager-count {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 6px;
-  color: rgba(210, 219, 227, 0.42);
-  font-size: 9px;
-  font-weight: 680;
-  font-variant-numeric: tabular-nums;
-}
-
-.pager-count span:first-child {
-  color: rgba(247, 248, 250, 0.9);
-  font-size: 12px;
-}
-
 .scroll-cue {
   display: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .pager-button:hover:not(:disabled) {
-    transform: none;
-    background-color: rgba(255, 255, 255, 0.09);
+  .rail-arrow:hover:not(:disabled) {
+    border-color: rgba(229, 236, 242, 0.28);
+    background-color: rgba(255, 255, 255, 0.065);
     color: #fff;
-    box-shadow: none;
   }
 }
 
@@ -1579,7 +1517,7 @@ html[lang="en"] .experience-copy h2 {
   min-height: auto;
   display: block;
   padding: 104px 8vw 44px;
-  background: var(--section-gradient);
+  background: transparent;
   scroll-snap-align: start;
   scroll-snap-stop: normal;
 }
@@ -2238,17 +2176,13 @@ html[lang="en"] .platform-intro h2 {
 }
 
 @media (max-width: 720px) {
-  .section-pager {
-    right: 10px;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    left: auto;
-    grid-template-columns: 40px;
-    grid-template-rows: 40px 34px 40px;
-    transform: none;
+  .section-rail {
+    right: 8px;
   }
 
-  .pager-count {
-    gap: 4px;
+  .rail-arrow {
+    width: 22px;
+    height: 22px;
   }
 
   .topbar {
@@ -2498,8 +2432,7 @@ html[lang="en"] .platform-intro h2 {
   }
 
   .device-note,
-  .stage-caption,
-  .section-rail {
+  .stage-caption {
     display: none;
   }
 

@@ -84,7 +84,7 @@
     .hero-scroll-hint svg { width: 16px; height: 16px; }
     @keyframes float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
 
-    #sec-phone { background: #1a1625; }
+    #sec-phone { background: transparent; }
     #three-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 
     /* iframe overlay — tracks 3D phone screen position via projection */
@@ -191,7 +191,7 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css?v=20260720-flat-chrome" />
+  <link rel="stylesheet" href="./landing-premium.css?v=20260720-rendered-background" />
 </head>
 <body>
   <canvas class="ambient-field" id="ambient-field" aria-hidden="true"></canvas>
@@ -370,22 +370,16 @@
     </main>
 
     <div class="section-rail" aria-label="页面章节" data-i18n-aria="pageSections">
+      <button class="rail-arrow" id="page-prev" type="button" aria-label="上一页" data-i18n-aria="previousPage" disabled>
+        <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg?v=20260720-pager#icon-caret-up"></use></svg>
+      </button>
       <button class="rail-dot is-active" type="button" data-scroll-target="journey" aria-label="概览" data-i18n-aria="overview"></button>
       <button class="rail-dot" type="button" data-scroll-target="experience" aria-label="产品体验" data-i18n-aria="productExperience"></button>
       <button class="rail-dot" type="button" data-scroll-target="platform" aria-label="结构与下载" data-i18n-aria="download"></button>
-    </div>
-
-    <nav class="section-pager" aria-label="页面章节" data-i18n-aria="pageSections">
-      <button class="pager-button" id="page-prev" type="button" aria-label="上一页" data-i18n-aria="previousPage" disabled>
-        <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg?v=20260720-pager#icon-caret-up"></use></svg>
-      </button>
-      <div class="pager-count" aria-live="polite" aria-atomic="true">
-        <span id="pager-current">01</span><span aria-hidden="true">/</span><span>03</span>
-      </div>
-      <button class="pager-button" id="page-next" type="button" aria-label="下一页" data-i18n-aria="nextPage">
+      <button class="rail-arrow" id="page-next" type="button" aria-label="下一页" data-i18n-aria="nextPage">
         <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-caret-down"></use></svg>
       </button>
-    </nav>
+    </div>
   </div>
 
   <script>
@@ -398,7 +392,6 @@
       const targets = [...document.querySelectorAll('[data-scroll-target]')];
       const pagerPrevious = document.getElementById('page-prev');
       const pagerNext = document.getElementById('page-next');
-      const pagerCurrent = document.getElementById('pager-current');
       const rails = [...document.querySelectorAll('.rail-dot')];
       const navAnchors = [...document.querySelectorAll('.nav-links a')];
       const observedSections = [
@@ -571,7 +564,14 @@
         let pointerY = 0.5;
         let smoothX = 0.5;
         let smoothY = 0.5;
+        let scrollTarget = 0;
+        let smoothScroll = 0;
         let lastFrame = -Infinity;
+
+        function updateScrollTarget() {
+          const scrollRange = Math.max(1, pageScroller.scrollHeight - pageScroller.clientHeight);
+          scrollTarget = Math.max(0, Math.min(1, pageScroller.scrollTop / scrollRange));
+        }
 
         function resizeField() {
           const compact = innerWidth <= 720;
@@ -587,14 +587,24 @@
           const height = ambientCanvas.height;
           smoothX += (pointerX - smoothX) * 0.018;
           smoothY += (pointerY - smoothY) * 0.018;
+          smoothScroll += (scrollTarget - smoothScroll) * (reduceMotion.matches ? 1 : 0.12);
+          const scrollPhase = smoothScroll * Math.PI * 1.35;
+          const roseEnvelope = 0.78 + Math.sin(smoothScroll * Math.PI) * 0.28;
+          const steelEnvelope = 0.32 + smoothScroll * 0.68;
 
           for (let y = 0; y < height; y += 1) {
             const ny = y / Math.max(1, height - 1);
             for (let x = 0; x < width; x += 1) {
               const nx = x / Math.max(1, width - 1);
-              const sweep = Math.sin(nx * 7.2 + time * 2.3 + Math.sin(ny * 5.4 - time) * 1.25);
-              const cross = Math.cos(ny * 6.1 - time * 1.7 + Math.sin(nx * 4.8 + time * 0.7) * 1.1);
-              const diagonal = Math.sin((nx * 0.72 + ny * 1.18 + time * 0.34) * Math.PI * 2);
+              const sweep = Math.sin(
+                nx * 6.8 + time * 2.1 + scrollPhase + Math.sin(ny * 5.2 - time) * 1.2
+              );
+              const cross = Math.cos(
+                ny * 5.8 - time * 1.5 - scrollPhase * 0.72 + Math.sin(nx * 4.6 + time * 0.7) * 1.05
+              );
+              const diagonal = Math.sin(
+                (nx * 0.64 + ny * 1.12 + time * 0.28 + smoothScroll * 0.18) * Math.PI * 2
+              );
               const pointerDrift = Math.cos(
                 Math.hypot(nx - smoothX, ny - smoothY) * 5.2 - time * 1.5
               );
@@ -602,12 +612,13 @@
                 0.32 + sweep * 0.16 + cross * 0.14 + diagonal * 0.09 + pointerDrift * 0.05
               ));
               const graphite = field * field;
-              const burgundy = Math.max(0, sweep * 0.5 + cross * 0.22) * graphite;
+              const burgundy = Math.max(0, sweep * 0.48 + cross * 0.16) * graphite * roseEnvelope;
+              const steel = Math.max(0, cross * 0.35 + diagonal * 0.25) * graphite * steelEnvelope;
               const sheen = Math.max(0, diagonal) * 0.08;
               const index = (y * width + x) * 4;
-              image.data[index] = Math.round(7 + graphite * 28 + burgundy * 46 + sheen * 22);
-              image.data[index + 1] = Math.round(9 + graphite * 24 + burgundy * 7 + sheen * 16);
-              image.data[index + 2] = Math.round(13 + graphite * 33 + burgundy * 15 + sheen * 27);
+              image.data[index] = Math.round(6 + graphite * 24 + burgundy * 42 + steel * 10 + sheen * 20);
+              image.data[index + 1] = Math.round(8 + graphite * 21 + burgundy * 6 + steel * 18 + sheen * 16);
+              image.data[index + 2] = Math.round(13 + graphite * 31 + burgundy * 14 + steel * 28 + sheen * 26);
               image.data[index + 3] = 255;
             }
           }
@@ -628,14 +639,21 @@
         }, { passive: true });
         addEventListener('resize', () => {
           resizeField();
+          updateScrollTarget();
           renderField(performance.now());
         });
+        pageScroller.addEventListener('scroll', () => {
+          updateScrollTarget();
+          if (reduceMotion.matches) renderField(performance.now());
+        }, { passive: true });
         reduceMotion.addEventListener('change', () => {
           renderField(performance.now());
           if (!reduceMotion.matches) requestAnimationFrame(tick);
         });
 
         resizeField();
+        updateScrollTarget();
+        smoothScroll = scrollTarget;
         renderField(performance.now());
         if (!reduceMotion.matches) requestAnimationFrame(tick);
       }
@@ -906,7 +924,13 @@
         const scrollTop = pageScroller.scrollTop;
         const range = Math.max(1, journey.offsetHeight - pageScroller.clientHeight);
         const progress = Math.max(0, Math.min(1, (scrollTop - journey.offsetTop) / range));
+        const experienceTop = targetTop(observedSections[1]);
+        const platformTop = targetTop(observedSections[2]);
+        const platformBlend = Math.max(0, Math.min(1,
+          (scrollTop - experienceTop) / Math.max(1, platformTop - experienceTop)
+        ));
         document.documentElement.style.setProperty('--journey-progress', progress.toFixed(4));
+        document.documentElement.style.setProperty('--platform-blend', platformBlend.toFixed(4));
         topbar.classList.toggle('is-compact', scrollTop > 30);
 
         const probe = scrollTop + pageScroller.clientHeight * 0.48;
@@ -915,7 +939,6 @@
         else if (progress > 0.48) activeIndex = 1;
 
         currentPageIndex = activeIndex;
-        pagerCurrent.textContent = String(activeIndex + 1).padStart(2, '0');
         pagerPrevious.disabled = activeIndex === 0;
         pagerNext.disabled = activeIndex === pagePanels.length - 1;
         rails.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
@@ -967,7 +990,7 @@
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(section.clientWidth, section.clientHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x0b0d10, 0.18);
+    renderer.setClearColor(0x0b0d10, 0.06);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.98;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1012,7 +1035,7 @@
       new THREE.MeshBasicMaterial({
         color: 0x090b0e,
         transparent: true,
-        opacity: 0.42,
+        opacity: 0.12,
         depthWrite: false
       })
     );
