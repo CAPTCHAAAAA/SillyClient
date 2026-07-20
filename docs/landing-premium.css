@@ -16,8 +16,9 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --journey-progress: 0;
   --section-gradient:
-    linear-gradient(180deg, rgba(159, 180, 199, 0.025), transparent 18%),
-    linear-gradient(316deg, rgba(217, 75, 105, 0.055), transparent 42%);
+    linear-gradient(142deg, rgba(113, 139, 162, 0.09), transparent 43%),
+    linear-gradient(316deg, rgba(217, 75, 105, 0.12), transparent 50%),
+    linear-gradient(180deg, rgba(8, 10, 13, 0.12), rgba(16, 9, 14, 0.28));
 }
 
 html {
@@ -430,7 +431,10 @@ a:focus-visible {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: rgba(5, 7, 10, calc(0.32 - var(--journey-progress) * 0.22));
+  background:
+    linear-gradient(142deg, rgba(113, 139, 162, 0.035), transparent 44%),
+    linear-gradient(316deg, rgba(217, 75, 105, 0.055), transparent 52%),
+    rgba(5, 7, 10, calc(0.26 - var(--journey-progress) * 0.18));
 }
 
 .stage-caption {
@@ -478,14 +482,59 @@ a:focus-visible {
 @keyframes section-content-pop {
   from {
     opacity: 0;
-    filter: blur(7px);
-    transform: translateY(18px) scale(0.982);
+    filter: blur(12px);
+    transform: translateY(30px) scale(0.96);
   }
   to {
     opacity: 1;
     filter: blur(0);
     transform: translateY(0) scale(1);
   }
+}
+
+@keyframes section-wash-in {
+  from {
+    opacity: 0.18;
+    transform: translateY(7%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.story-panel::before,
+.platform-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(145deg, rgba(123, 150, 174, 0.065), transparent 42%),
+    linear-gradient(320deg, rgba(217, 75, 105, 0.095), transparent 52%);
+  opacity: 0.72;
+}
+
+.story-panel.is-page-active::before,
+.platform-section.is-page-active::before {
+  animation: section-wash-in 900ms var(--ease-out) both;
+}
+
+.hero-panel.is-page-pending .eyebrow,
+.hero-panel.is-page-pending .hero-title,
+.hero-panel.is-page-pending .hero-lede,
+.hero-panel.is-page-pending .hero-sub,
+.hero-panel.is-page-pending .hero-actions,
+.hero-panel.is-page-pending .hero-specs,
+.experience-panel.is-page-pending .section-index,
+.experience-panel.is-page-pending .experience-copy > h2,
+.experience-panel.is-page-pending .experience-copy > p,
+.experience-panel.is-page-pending .lifecycle-list,
+.platform-section.is-page-pending [data-reveal] {
+  opacity: 0;
+  filter: blur(12px);
+  transform: translateY(30px) scale(0.96);
+  animation: none;
 }
 
 .hero-panel.is-page-active .eyebrow,
@@ -498,7 +547,7 @@ a:focus-visible {
 .experience-panel.is-page-active .experience-copy > h2,
 .experience-panel.is-page-active .experience-copy > p,
 .experience-panel.is-page-active .lifecycle-list {
-  animation: section-content-pop 620ms var(--ease-out) both;
+  animation: section-content-pop 760ms var(--ease-out) both;
 }
 
 .hero-panel.is-page-active .hero-title,
@@ -1452,8 +1501,12 @@ html[lang="en"] .experience-copy h2 {
   scroll-snap-stop: normal;
 }
 
-.platform-section.is-page-active .platform-intro.will-reveal.is-visible {
-  animation: section-content-pop 660ms var(--ease-out) both;
+.platform-section.is-page-active [data-reveal].will-reveal.is-visible {
+  animation: section-content-pop 780ms var(--ease-out) both;
+}
+
+.platform-section.is-page-active .runtime-topology.will-reveal.is-visible {
+  animation-delay: 90ms;
 }
 
 .platform-inner {

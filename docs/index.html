@@ -191,7 +191,7 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css?v=20260720-seamless-sections" />
+  <link rel="stylesheet" href="./landing-premium.css?v=20260720-visible-transitions" />
 </head>
 <body>
   <canvas class="ambient-field" id="ambient-field" aria-hidden="true"></canvas>
@@ -765,6 +765,33 @@
         syncMenuLabel();
       });
 
+      const reduceSectionMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      let pendingPageIndex = -1;
+      let activePageIndex = -1;
+      let pageActivationTimer = 0;
+
+      function schedulePageActivation(index) {
+        if (activePageIndex === index && pendingPageIndex === index) return;
+
+        if (pendingPageIndex !== index) {
+          pendingPageIndex = index;
+          pagePanels.forEach((panel, panelIndex) => {
+            panel.classList.remove('is-page-active', 'is-page-pending');
+            if (panelIndex === index) panel.classList.add('is-page-pending');
+          });
+        }
+
+        clearTimeout(pageActivationTimer);
+        pageActivationTimer = window.setTimeout(() => {
+          const panel = pagePanels[pendingPageIndex];
+          if (!panel) return;
+          panel.classList.remove('is-page-pending');
+          void panel.offsetWidth;
+          panel.classList.add('is-page-active');
+          activePageIndex = pendingPageIndex;
+        }, reduceSectionMotion.matches ? 0 : 130);
+      }
+
       function updatePageState() {
         const scrollTop = pageScroller.scrollTop;
         const range = Math.max(1, journey.offsetHeight - pageScroller.clientHeight);
@@ -779,7 +806,7 @@
 
         rails.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
         navAnchors.forEach((link, index) => link.classList.toggle('is-active', index === activeIndex));
-        pagePanels.forEach((panel, index) => panel.classList.toggle('is-page-active', index === activeIndex));
+        schedulePageActivation(activeIndex);
       }
 
       pageScroller.addEventListener('scroll', updatePageState, { passive: true });
@@ -871,7 +898,7 @@
       new THREE.MeshBasicMaterial({
         color: 0x090b0e,
         transparent: true,
-        opacity: 0.56,
+        opacity: 0.42,
         depthWrite: false
       })
     );
