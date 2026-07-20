@@ -1299,12 +1299,12 @@ html[lang="en"] .experience-copy h2 {
 }
 
 .experience-copy {
-  width: min(510px, 43vw);
+  width: min(488px, 41vw);
   margin-left: 3vw;
 }
 
 html[lang="en"] .experience-copy {
-  width: min(530px, 44vw);
+  width: min(500px, 42vw);
 }
 
 .experience-copy h2,
@@ -1323,10 +1323,17 @@ html[lang="en"] .experience-copy h2 {
 
 .lifecycle-list {
   display: grid;
-  gap: 8px;
-  margin: 26px 0 0;
-  padding: 0;
-  border: 0;
+  gap: 0;
+  margin: 22px 0 0;
+  padding: 4px;
+  border: 1px solid rgba(220, 228, 236, 0.065);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(159, 180, 199, 0.045), transparent 58%),
+    rgba(19, 23, 29, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 14px 36px rgba(0, 0, 0, 0.1);
 }
 
 .lifecycle-list > div {
@@ -1334,27 +1341,20 @@ html[lang="en"] .experience-copy h2 {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
   align-items: center;
-  min-height: 56px;
-  padding: 0 16px;
-  border: 1px solid rgba(220, 228, 236, 0.06);
-  border-radius: 18px;
-  background:
-    linear-gradient(135deg, rgba(159, 180, 199, 0.05), transparent 55%),
-    rgba(19, 23, 29, 0.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.055),
-    0 12px 32px rgba(0, 0, 0, 0.1);
+  min-height: 50px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 15px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .lifecycle-list > div:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  bottom: -9px;
-  left: 27px;
-  z-index: 2;
-  width: 1px;
-  height: 10px;
-  background: linear-gradient(180deg, rgba(241, 119, 145, 0.52), rgba(159, 180, 199, 0.24));
+  display: none;
+}
+
+.lifecycle-list > div:not(:last-child) {
+  border-bottom: 1px solid rgba(220, 228, 236, 0.055);
 }
 
 .lifecycle-list dt,
@@ -1396,7 +1396,7 @@ html[lang="en"] .experience-copy h2 {
 .platform-section {
   min-height: auto;
   display: block;
-  padding: 124px 8vw 54px;
+  padding: 104px 8vw 44px;
   background:
     linear-gradient(180deg, rgba(159, 180, 199, 0.025), transparent 18%),
     linear-gradient(316deg, rgba(217, 75, 105, 0.055), transparent 42%);
@@ -1408,18 +1408,18 @@ html[lang="en"] .experience-copy h2 {
 
 .platform-intro {
   grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
-  gap: clamp(56px, 8vw, 110px);
+  gap: clamp(42px, 6vw, 82px);
   align-items: end;
 }
 
 .platform-intro h2 {
   max-width: 720px;
-  font-size: 56px;
+  font-size: 52px;
   line-height: 1.06;
 }
 
 html[lang="en"] .platform-intro h2 {
-  font-size: 50px;
+  font-size: 46px;
 }
 
 .platform-intro > p {
@@ -1474,21 +1474,16 @@ html[lang="en"] .platform-intro h2 {
 .runtime-topology {
   display: grid;
   grid-template-columns: minmax(190px, 0.32fr) minmax(0, 1fr);
-  gap: clamp(34px, 5vw, 72px);
+  gap: clamp(30px, 4vw, 56px);
   align-items: center;
-  margin: 54px 0 0;
-  padding: 34px;
-  border: 1px solid rgba(220, 228, 236, 0.065);
-  border-radius: 30px;
-  background:
-    linear-gradient(142deg, rgba(159, 180, 199, 0.07), transparent 38%, rgba(217, 75, 105, 0.045)),
-    rgba(17, 21, 27, 0.62);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.075),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.012),
-    0 30px 94px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(32px) saturate(128%);
-  -webkit-backdrop-filter: blur(32px) saturate(128%);
+  margin: 42px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .runtime-topology figcaption > span {
@@ -1500,16 +1495,16 @@ html[lang="en"] .platform-intro h2 {
 
 .runtime-topology figcaption strong {
   display: block;
-  margin-top: 18px;
+  margin-top: 14px;
   color: rgba(243, 245, 248, 0.94);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 680;
   line-height: 1.28;
   text-wrap: balance;
 }
 
 .runtime-topology figcaption p {
-  margin: 14px 0 0;
+  margin: 11px 0 0;
   color: rgba(213, 221, 230, 0.52);
   font-size: 11px;
   line-height: 1.7;
@@ -1519,14 +1514,12 @@ html[lang="en"] .platform-intro h2 {
   position: relative;
   display: grid;
   grid-template-columns: minmax(118px, 0.78fr) minmax(98px, 0.58fr) minmax(0, 1.7fr);
-  gap: 22px;
+  gap: 16px;
   align-items: center;
-  min-height: 238px;
-  padding: 18px;
-  border-radius: 24px;
-  background:
-    linear-gradient(135deg, rgba(159, 180, 199, 0.035), transparent 50%),
-    rgba(6, 8, 11, 0.32);
+  min-height: 208px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .runtime-graph::before,
@@ -1735,25 +1728,20 @@ html[lang="en"] .platform-intro h2 {
 }
 
 .repository-topology {
-  margin-top: 18px;
-  padding: 34px;
-  border: 1px solid rgba(220, 228, 236, 0.065);
-  border-radius: 30px;
-  background:
-    linear-gradient(142deg, rgba(159, 180, 199, 0.065), transparent 38%, rgba(217, 75, 105, 0.05)),
-    rgba(18, 22, 28, 0.62);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.075),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.012),
-    0 30px 90px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(32px) saturate(126%);
-  -webkit-backdrop-filter: blur(32px) saturate(126%);
+  margin-top: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .repository-topology > header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.66fr);
-  gap: clamp(40px, 7vw, 96px);
+  gap: clamp(36px, 6vw, 76px);
   align-items: end;
 }
 
@@ -1761,7 +1749,7 @@ html[lang="en"] .platform-intro h2 {
   max-width: 680px;
   margin: 14px 0 0;
   color: rgba(245, 247, 249, 0.94);
-  font-size: clamp(28px, 3.4vw, 44px);
+  font-size: clamp(27px, 3.1vw, 40px);
   font-weight: 660;
   line-height: 1.12;
   text-wrap: balance;
@@ -1778,13 +1766,11 @@ html[lang="en"] .platform-intro h2 {
 .repository-graph {
   display: grid;
   grid-template-columns: minmax(190px, 0.72fr) minmax(0, 1.6fr);
-  gap: 12px;
-  margin-top: 30px;
-  padding: 14px;
-  border-radius: 24px;
-  background:
-    linear-gradient(136deg, rgba(159, 180, 199, 0.035), transparent 52%),
-    rgba(6, 8, 11, 0.3);
+  gap: 10px;
+  margin-top: 24px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .repo-source,
@@ -1797,8 +1783,8 @@ html[lang="en"] .platform-intro h2 {
 .repo-source {
   display: grid;
   align-content: center;
-  min-height: 206px;
-  padding: 24px;
+  min-height: 168px;
+  padding: 20px;
   border-radius: 20px;
   background: linear-gradient(142deg, rgba(48, 59, 70, 0.96), rgba(26, 32, 39, 0.92));
 }
@@ -1837,14 +1823,14 @@ html[lang="en"] .platform-intro h2 {
 .repo-targets {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .repo-targets article {
   display: grid;
   align-content: center;
-  min-height: 206px;
-  padding: 20px;
+  min-height: 168px;
+  padding: 17px;
   border-radius: 20px;
   background: linear-gradient(142deg, rgba(47, 38, 48, 0.96), rgba(31, 26, 34, 0.92));
 }
@@ -1870,7 +1856,7 @@ html[lang="en"] .platform-intro h2 {
 }
 
 .repo-targets small {
-  margin-top: 24px;
+  margin-top: 18px;
 }
 
 .repo-release {
@@ -1879,7 +1865,7 @@ html[lang="en"] .platform-intro h2 {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-height: 62px;
+  min-height: 54px;
   padding: 0 20px;
   border-radius: 19px;
   background: linear-gradient(135deg, rgba(126, 43, 65, 0.66), rgba(78, 29, 44, 0.54));
@@ -1928,9 +1914,9 @@ html[lang="en"] .platform-intro h2 {
 
 .download-row {
   grid-template-columns: minmax(0, 1fr) minmax(430px, auto);
-  gap: 80px;
-  margin-top: 18px;
-  padding: 34px;
+  gap: 48px;
+  margin-top: 48px;
+  padding: 26px 28px;
   border: 1px solid rgba(220, 228, 236, 0.065);
   border-radius: 30px;
   background:
@@ -1943,7 +1929,7 @@ html[lang="en"] .platform-intro h2 {
 
 .download-row h3 {
   max-width: 620px;
-  font-size: 34px;
+  font-size: 30px;
   line-height: 1.2;
 }
 
@@ -1955,7 +1941,7 @@ html[lang="en"] .platform-intro h2 {
 
 .platform-action {
   min-width: 0;
-  min-height: 68px;
+  min-height: 60px;
   justify-content: space-between;
   padding: 0 18px;
   border-radius: 18px;
@@ -2268,24 +2254,23 @@ html[lang="en"] .platform-intro h2 {
   .lifecycle-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 0;
     margin-top: 18px;
-    border-bottom: 0;
+    padding: 3px;
   }
 
   .lifecycle-list > div {
     display: block;
     min-height: 50px;
     padding: 11px 8px 9px;
-    border: 1px solid rgba(220, 228, 236, 0.06);
-    border-radius: 14px;
-    background:
-      linear-gradient(135deg, rgba(159, 180, 199, 0.05), transparent 60%),
-      rgba(19, 23, 29, 0.62);
+    border: 0;
+    border-right: 1px solid rgba(220, 228, 236, 0.055);
+    border-radius: 12px;
+    background: transparent;
   }
 
   .lifecycle-list > div:first-child { padding-left: 8px; }
-  .lifecycle-list > div:last-child { border-right: 1px solid rgba(220, 228, 236, 0.08); }
+  .lifecycle-list > div:last-child { border-right: 0; }
 
   .lifecycle-list > div:not(:last-child)::after {
     top: 50%;
@@ -2372,9 +2357,9 @@ html[lang="en"] .platform-intro h2 {
   .runtime-topology {
     grid-template-columns: 1fr;
     gap: 22px;
-    margin-top: 42px;
-    padding: 18px;
-    border-radius: 22px;
+    margin-top: 34px;
+    padding: 0;
+    border-radius: 0;
   }
 
   .runtime-topology figcaption strong {
@@ -2391,8 +2376,8 @@ html[lang="en"] .platform-intro h2 {
     grid-template-columns: 1fr;
     gap: 9px;
     min-height: 0;
-    padding: 11px;
-    border-radius: 18px;
+    padding: 0;
+    border-radius: 0;
   }
 
   .runtime-graph::before {
@@ -2443,9 +2428,9 @@ html[lang="en"] .platform-intro h2 {
   }
 
   .repository-topology {
-    margin-top: 10px;
-    padding: 18px;
-    border-radius: 22px;
+    margin-top: 38px;
+    padding: 0;
+    border-radius: 0;
   }
 
   .repository-topology > header {
@@ -2465,13 +2450,13 @@ html[lang="en"] .platform-intro h2 {
   .repository-graph {
     grid-template-columns: 1fr;
     margin-top: 20px;
-    padding: 10px;
-    border-radius: 18px;
+    padding: 0;
+    border-radius: 0;
   }
 
   .repo-source {
-    min-height: 132px;
-    padding: 18px;
+    min-height: 112px;
+    padding: 15px;
   }
 
   .repo-targets {
@@ -2480,12 +2465,12 @@ html[lang="en"] .platform-intro h2 {
   }
 
   .repo-targets article {
-    min-height: 104px;
-    padding: 16px;
+    min-height: 82px;
+    padding: 14px;
   }
 
   .repo-targets small {
-    margin-top: 14px;
+    margin-top: 10px;
   }
 
   .repo-release {
@@ -2494,7 +2479,7 @@ html[lang="en"] .platform-intro h2 {
     flex-direction: column;
     gap: 7px;
     min-height: 0;
-    padding: 15px 16px;
+    padding: 13px 15px;
   }
 
   .repo-release span {
@@ -2517,7 +2502,7 @@ html[lang="en"] .platform-intro h2 {
 
   .download-row {
     display: block;
-    margin-top: 10px;
+    margin-top: 38px;
     padding: 22px 20px;
     border-radius: 22px;
   }
@@ -2616,8 +2601,6 @@ html[lang="en"] .platform-intro h2 {
 }
 
 .hero-specs,
-.runtime-topology,
-.repository-topology,
 .download-row {
   transition:
     box-shadow 260ms ease,
@@ -2726,8 +2709,6 @@ html[lang="en"] .platform-intro h2 {
   }
 
   .hero-specs:hover,
-  .runtime-topology:hover,
-  .repository-topology:hover,
   .download-row:hover {
     border-color: rgba(220, 228, 236, 0.1);
     box-shadow:
@@ -2746,11 +2727,10 @@ html[lang="en"] .platform-intro h2 {
   .lifecycle-list > div:hover {
     z-index: 3;
     transform: translateX(3px);
-    border-color: rgba(229, 153, 170, 0.14);
+    background: linear-gradient(135deg, rgba(217, 75, 105, 0.075), rgba(159, 180, 199, 0.035));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.09),
-      inset 3px 0 0 rgba(217, 75, 105, 0.24),
-      0 16px 34px rgba(0, 0, 0, 0.16);
+      inset 3px 0 0 rgba(217, 75, 105, 0.24);
   }
 
   .graph-source:hover,
