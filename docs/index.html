@@ -191,7 +191,7 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .section-content { opacity: 1; transform: none; } }
     @media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } .hero-glass-cards { gap: 10px; } .glass-card { min-width: 110px; padding: 12px 14px; } .page-dots { right: 12px; } }
   </style>
-  <link rel="stylesheet" href="./landing-premium.css?v=20260720-compact-hierarchy" />
+  <link rel="stylesheet" href="./landing-premium.css?v=20260720-seamless-sections" />
 </head>
 <body>
   <canvas class="ambient-field" id="ambient-field" aria-hidden="true"></canvas>
@@ -388,6 +388,11 @@
       const navAnchors = [...document.querySelectorAll('.nav-links a')];
       const observedSections = [
         document.getElementById('journey'),
+        document.getElementById('experience'),
+        document.getElementById('platform')
+      ];
+      const pagePanels = [
+        document.getElementById('hero'),
         document.getElementById('experience'),
         document.getElementById('platform')
       ];
@@ -774,6 +779,7 @@
 
         rails.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
         navAnchors.forEach((link, index) => link.classList.toggle('is-active', index === activeIndex));
+        pagePanels.forEach((panel, index) => panel.classList.toggle('is-page-active', index === activeIndex));
       }
 
       pageScroller.addEventListener('scroll', updatePageState, { passive: true });
