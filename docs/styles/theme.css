@@ -1,0 +1,58 @@
+/*
+ * SillyClient product theme.
+ *
+ * This is the single source of truth for landing-page color and material
+ * tokens. The palette comes from the app's dynamic wallpaper and product icon.
+ */
+:root {
+  --product-canvas: #080204;
+  --product-canvas-soft: #14060a;
+  --product-ink: #1a1625;
+  --product-surface: #2d131e;
+  --product-surface-soft: #221321;
+
+  --product-wine: #6a112e;
+  --product-wine-mid: #8b1a3a;
+  --product-rose: #a32848;
+  --product-rose-bright: #e8365d;
+  --product-highlight: #ff5e85;
+
+  --product-text: #fffafd;
+  --product-pearl: #fff5f7;
+  --product-text-muted: rgba(255, 247, 250, 0.74);
+  --product-text-faint: rgba(255, 240, 246, 0.52);
+
+  --product-line: rgba(255, 225, 232, 0.055);
+  --product-line-hover: rgba(255, 225, 232, 0.10);
+  --product-line-strong: rgba(255, 225, 232, 0.085);
+  --product-chrome: rgba(20, 6, 10, 0.70);
+  --product-chrome-strong: rgba(20, 6, 10, 0.84);
+
+  --product-dot-from: rgba(255, 225, 232, 0.26);
+  --product-dot-to: rgba(232, 54, 93, 0.30);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: auto;
+  background: var(--product-canvas);
+  color-scheme: dark;
+}
+
+body {
+  overflow-x: hidden;
+  background: var(--product-canvas);
+  color: var(--product-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

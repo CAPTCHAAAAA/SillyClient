@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap');
+
+/* React Bits VariableProximity. The product enables it only for English text,
+   where word and glyph segmentation are reliable across supported browsers. */
+html[lang^="en"] [data-variable-proximity] {
+  font-family: "Roboto Flex", "Segoe UI Variable Display", sans-serif;
+  font-variation-settings: "wght" 560, "opsz" 12;
+}
+
+.variable-proximity-letter {
+  display: inline-block;
+  font-variation-settings: "wght" 560, "opsz" 12;
+  will-change: font-variation-settings;
+}
+
+.platform-intro h2 .variable-proximity-letter {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .variable-proximity-letter {
+    font-variation-settings: "wght" 560, "opsz" 12 !important;
+    will-change: auto;
+  }
+}

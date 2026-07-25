@@ -10,9 +10,37 @@ const requiredFiles = [
   'landing-3d-v2.html',
   'phone-demo.html',
   'landing-icons.svg',
-  'landing-premium.css',
   'sillyclient-logo.svg',
+  'styles/theme.css',
+  'styles/fonts.css',
+  'styles/phone.css',
+  'styles/laptop.css',
+  'styles/page.css',
+  'styles/showcase.css',
+  'styles/hero.css',
+  'styles/navigation.css',
+  'styles/optics.css',
+  'styles/scroll-reveal.css',
+  'styles/variable-proximity.css',
+  'styles/text-type.css',
+  'scripts/fonts.js',
+  'scripts/background.js',
+  'scripts/effects-runtime.js',
+  'scripts/page.js',
+  'scripts/desktop-model-loader.js',
+  'scripts/device-scene-config.js',
+  'scripts/phone-model.js',
+  'scripts/laptop-model.js',
+  'scripts/device-showcase.js',
+  'scripts/platform-carousel.js',
+  'scripts/spotlight-card.js',
+  'scripts/scroll-reveal.js',
+  'scripts/variable-proximity.js',
+  'scripts/text-type.js',
+  'scripts/component-hover.js',
+  'scripts/component-motion.js',
   'models/iphone_17_air.glb',
+  'models/macbook_pro_m3_16_inch_2024.glb',
   'app/index.html',
 ];
 
@@ -43,10 +71,12 @@ for (const htmlName of ['index.html', 'landing-3d-v2.html', 'phone-demo.html']) 
 
 const landingPath = path.join(docsDir, 'index.html');
 const landing = fs.readFileSync(landingPath, 'utf8');
-const translationMatch = landing.match(/const translations = (\{[\s\S]*?\n\s*\});/);
+const landingRuntimePath = path.join(docsDir, 'scripts', 'page.js');
+const landingRuntime = fs.readFileSync(landingRuntimePath, 'utf8');
+const translationMatch = landingRuntime.match(/const translations = (\{[\s\S]*?\n\s*\});/);
 
 if (!translationMatch) {
-  errors.push('index.html: translations object not found');
+  errors.push('scripts/page.js: translations object not found');
 } else {
   const translations = vm.runInNewContext(`(${translationMatch[1]})`);
   const languages = Object.keys(translations);

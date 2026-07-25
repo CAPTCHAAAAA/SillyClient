@@ -1,0 +1,159 @@
+/*
+ * Opening composition and persistent glass navigation.
+ * Kept separate from model, showcase, and typography modules so the first
+ * viewport can evolve without moving the device-stage geometry.
+ */
+
+@media (min-aspect-ratio: 1 / 1) {
+  .hero-panel {
+    align-items: center;
+    justify-content: flex-start;
+    padding: 88rem max(var(--space-inline), 7.5vw) 72rem;
+    text-align: left;
+  }
+
+  .hero-copy {
+    width: min(500rem, 39vw);
+    margin: 0;
+    transform: translateY(calc(var(--journey-progress) * -48rem));
+  }
+
+  .eyebrow {
+    justify-content: flex-start;
+    margin-bottom: 18rem;
+    color: rgba(255, 240, 246, 0.62);
+    font-size: 10.5rem;
+    letter-spacing: 0;
+  }
+
+  .hero-title {
+    font-size: clamp(58rem, 5.3vw, 76rem);
+    line-height: 0.96;
+    text-align: left;
+  }
+
+  .hero-title-button {
+    justify-content: flex-start;
+  }
+
+  .hero-lede {
+    max-width: 490rem;
+    margin: 22rem 0 0;
+    color: rgba(255, 251, 252, 0.96);
+    font-size: clamp(16rem, 1.45vw, 19rem);
+    font-weight: 620;
+    line-height: 1.36;
+  }
+
+  .hero-sub {
+    max-width: 480rem;
+    margin: 12rem 0 0;
+    color: rgba(255, 242, 247, 0.74);
+    font-size: 12.75rem;
+    line-height: 1.62;
+    text-wrap: balance;
+  }
+
+  html[lang="en"] .hero-sub {
+    max-width: 500rem;
+    font-size: 12.5rem;
+  }
+
+  .hero-actions {
+    justify-content: flex-start;
+    margin-top: 20rem;
+  }
+
+  .hero-specs {
+    justify-content: flex-start;
+    margin-top: 22rem;
+  }
+
+  .hero-specs div:first-child {
+    padding-left: 0;
+  }
+
+  #three-canvas {
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((1 - var(--journey-progress)) * 20vw))
+      scale(calc(0.73 + var(--journey-progress) * 0.27));
+    transform-origin: center;
+  }
+
+  .scroll-cue {
+    position: absolute;
+    left: 50%;
+    bottom: 22rem;
+    z-index: 14;
+    width: 34rem;
+    height: 34rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1rem solid rgba(255, 240, 246, 0.16);
+    border-radius: 50%;
+    background: rgba(20, 6, 10, 0.2);
+    color: rgba(255, 248, 251, 0.82);
+    backdrop-filter: blur(14rem) saturate(125%);
+    -webkit-backdrop-filter: blur(14rem) saturate(125%);
+    transform: translateX(-50%);
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background-color 180ms ease, transform 120ms ease;
+  }
+
+  .scroll-cue:hover {
+    background: rgba(255, 255, 255, 0.075);
+  }
+
+  .scroll-cue:active {
+    transform: translateX(-50%) scale(0.94);
+  }
+
+  .scroll-cue svg {
+    width: 15rem;
+    height: 15rem;
+    animation: hero-cue-breathe 1.8s var(--ease-apple-soft) infinite;
+  }
+
+  @keyframes hero-cue-breathe {
+    0%, 100% { transform: translateY(-1rem); opacity: 0.62; }
+    50% { transform: translateY(2rem); opacity: 1; }
+  }
+
+  .site-footer {
+    justify-content: flex-end;
+  }
+}
+
+@media (min-aspect-ratio: 1 / 1) and (max-height: 760px) {
+  .hero-panel {
+    padding-top: 72rem;
+  }
+
+  .hero-title {
+    font-size: clamp(54rem, 5vw, 70rem);
+  }
+
+  .hero-lede {
+    margin-top: 16rem;
+  }
+
+  .hero-sub {
+    max-width: 720rem;
+    margin-top: 8rem;
+    font-size: 12rem;
+  }
+
+  .hero-actions,
+  .hero-specs {
+    margin-top: 14rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue svg {
+    animation: none;
+  }
+}

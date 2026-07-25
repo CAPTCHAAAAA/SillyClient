@@ -1,0 +1,25 @@
+/* React Bits ScrollReveal, adapted to SillyClient's snap-page navigation. */
+[data-scroll-reveal] {
+  transform-origin: 0% 50%;
+}
+
+.scroll-reveal-word {
+  display: inline-block;
+  will-change: opacity, filter;
+}
+
+/* Page 3 intentionally uses block-level line wrappers. Its legacy descendant
+   selector also catches generated word spans unless this rule distinguishes
+   the two levels. */
+.platform-intro h2 .scroll-reveal-word {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-scroll-reveal],
+  .scroll-reveal-word {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

@@ -1,0 +1,24 @@
+/* React Bits TextType adapted for the static Pages runtime. */
+.text-type {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  white-space: pre-wrap;
+}
+
+.text-type__content {
+  min-width: 0;
+}
+
+.text-type__cursor {
+  display: inline-block;
+  margin-left: 0.22em;
+  color: var(--product-highlight);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-type__cursor {
+    display: none;
+  }
+}

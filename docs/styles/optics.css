@@ -1,0 +1,82 @@
+/*
+ * Stage optics. The chromatic rim stays thin enough to read as lens dispersion;
+ * device meshes and screen projections deliberately avoid depth blur.
+ */
+
+@media (min-aspect-ratio: 1 / 1) {
+  .device-stage-panel {
+    border-color: rgba(255, 255, 255, 0.08);
+    background:
+      radial-gradient(circle at 74% 4%, rgba(255, 94, 133, 0.075), transparent 44%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.026), transparent 48%),
+      rgba(18, 15, 23, 0.45);
+    box-shadow:
+      0 4rem 32rem rgba(0, 0, 0, 0.25),
+      inset 0 1rem 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .stage-optics {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 6;
+    width: min(calc(100vw - 150rem), 1130rem);
+    height: min(660rem, 77vh);
+    overflow: hidden;
+    border-radius: 30rem;
+    opacity: clamp(0, calc((var(--journey-progress) - 0.4) * 2.25), 0.92);
+    transform: translate(-50%, -50%) translateY(calc((1 - var(--journey-progress)) * 26rem));
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .stage-chromatic-edge {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    padding: 1rem;
+    border-radius: inherit;
+    background:
+      conic-gradient(
+        from 206deg at 50% 50%,
+        rgba(90, 222, 233, 0.02),
+        rgba(90, 222, 233, 0.28) 8%,
+        rgba(255, 255, 255, 0.2) 18%,
+        rgba(241, 69, 124, 0.28) 32%,
+        rgba(255, 255, 255, 0.04) 49%,
+        rgba(90, 222, 233, 0.24) 67%,
+        rgba(241, 69, 124, 0.2) 84%,
+        rgba(90, 222, 233, 0.02)
+      );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    filter: none;
+    opacity: 0.36;
+  }
+
+  .stage-chromatic-edge::after {
+    content: "";
+    position: absolute;
+    inset: -5rem;
+    border: 5rem solid transparent;
+    border-radius: inherit;
+    box-shadow:
+      inset 3rem 0 8rem -7rem rgba(64, 218, 232, 0.22),
+      inset -3rem 0 8rem -7rem rgba(245, 57, 111, 0.24);
+    filter: none;
+  }
+}
+
+@media (min-aspect-ratio: 1 / 1) and (max-height: 760px) {
+  .stage-optics {
+    width: min(calc(100vw - 120rem), 1080rem);
+    height: min(560rem, 76vh);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .stage-chromatic-edge {
+    opacity: 0.25;
+  }
+}

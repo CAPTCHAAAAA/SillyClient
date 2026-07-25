@@ -1,0 +1,112 @@
+/*
+ * Persistent desktop navigation. The top bar stays quiet and framed while the
+ * page rail exposes the three full-screen sections without adding another
+ * surface to the composition.
+ */
+
+@media (min-aspect-ratio: 1 / 1) {
+  .topbar {
+    border-color: rgba(255, 241, 246, 0.085);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+      rgba(20, 5, 10, 0.22);
+    box-shadow:
+      inset 0 1rem 0 rgba(255, 255, 255, 0.075),
+      0 10rem 34rem rgba(5, 0, 2, 0.12);
+    backdrop-filter: blur(18rem) saturate(124%);
+    -webkit-backdrop-filter: blur(18rem) saturate(124%);
+  }
+
+  .topbar.is-compact {
+    border-color: rgba(255, 241, 246, 0.105);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.014)),
+      rgba(20, 5, 10, 0.4);
+  }
+
+  .page-rail {
+    position: fixed;
+    top: 50%;
+    right: clamp(10rem, 1.4vw, 20rem);
+    z-index: 92;
+    display: grid;
+    justify-items: center;
+    gap: 0;
+    padding: 7rem 4rem;
+    border: 1rem solid rgba(255, 244, 248, 0.11);
+    border-radius: 999rem;
+    background: rgba(20, 5, 10, 0.24);
+    box-shadow: inset 0 1rem 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(14rem) saturate(120%);
+    -webkit-backdrop-filter: blur(14rem) saturate(120%);
+    transform: translateY(-50%);
+  }
+
+  .page-rail-dot {
+    width: 30rem;
+    height: 34rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 244, 248, 0.34);
+    cursor: pointer;
+  }
+
+  .page-rail-dot > span {
+    width: 6rem;
+    height: 6rem;
+    display: block;
+    border-radius: 999rem;
+    background: currentColor;
+    box-shadow: 0 0 0 1rem rgba(255, 255, 255, 0.025);
+    transition:
+      width 360ms var(--ease-apple),
+      height 360ms var(--ease-apple),
+      color 240ms ease,
+      box-shadow 360ms ease;
+  }
+
+  .page-rail-dot:hover {
+    color: rgba(255, 247, 250, 0.72);
+  }
+
+  .page-rail-dot:focus-visible {
+    outline: none;
+  }
+
+  .page-rail-dot:focus-visible > span {
+    box-shadow:
+      0 0 0 4rem rgba(255, 239, 245, 0.08),
+      0 0 18rem rgba(232, 54, 93, 0.16);
+  }
+
+  .page-rail-dot.is-active {
+    color: rgba(255, 247, 250, 0.9);
+  }
+
+  .page-rail-dot.is-active > span {
+    width: 7rem;
+    height: 24rem;
+    box-shadow:
+      0 0 18rem rgba(232, 54, 93, 0.18),
+      inset 0 1rem 0 rgba(255, 255, 255, 0.28);
+  }
+
+  .page-rail-dot:active > span {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-aspect-ratio: 999 / 1000) {
+  .page-rail {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-rail-dot > span {
+    transition: none;
+  }
+}

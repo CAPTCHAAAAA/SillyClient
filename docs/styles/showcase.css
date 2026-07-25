@@ -1,0 +1,528 @@
+/* Device narrative and source-code carousel. */
+
+@media (min-aspect-ratio: 1 / 1) {
+  /* Page 2: compact technical copy, lifted to the optical center. */
+  .device-showcase-copy {
+    width: min(332rem, 27vw);
+    transform: translateY(-24rem);
+  }
+
+  .device-showcase-copy h2 {
+    font-size: clamp(34rem, 2.65vw, 42rem);
+    font-weight: 620;
+    line-height: 1.08;
+  }
+
+  .device-showcase-intro {
+    max-width: 332rem;
+    margin-top: 15rem;
+    color: rgba(255, 247, 250, 0.78);
+    font-size: 13.25rem;
+    line-height: 1.56;
+  }
+
+  .device-accordion {
+    width: min(344rem, 100%);
+    margin-top: 23rem;
+  }
+
+  .device-accordion-item button {
+    min-height: 49rem;
+    padding: 12rem 2rem;
+  }
+
+  .device-accordion-item.is-active button {
+    padding-top: 14rem;
+  }
+
+  .device-accordion-item button > span:first-child {
+    font-size: 17.5rem;
+  }
+
+  .device-accordion-tray p {
+    max-width: 336rem;
+    padding: 0 14rem 16rem 2rem;
+    color: rgba(255, 241, 247, 0.72);
+    font-size: 12.5rem;
+    line-height: 1.56;
+  }
+
+  /* Page 3: three source chapters on one horizontal rail. */
+  .platform-section {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    padding: 68rem var(--space-inline) 28rem;
+    overflow: hidden;
+  }
+
+  .platform-inner {
+    width: min(1160rem, calc(100vw - 88rem));
+    margin: 0 auto;
+  }
+
+  .platform-marcom {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    height: min(648rem, 82vh);
+    min-height: 540rem;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 15rem;
+    overflow: visible;
+  }
+
+  .platform-heading {
+    position: relative;
+    z-index: 2;
+    padding-inline: 12rem;
+  }
+
+  .platform-heading-kicker {
+    min-height: 18rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24rem;
+    margin-bottom: 10rem;
+  }
+
+  .platform-heading .section-index {
+    margin: 0;
+  }
+
+  .platform-type-line {
+    min-width: 250rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 7rem;
+    color: rgba(255, 232, 239, 0.5);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 10rem;
+    font-weight: 560;
+    line-height: 1.2;
+    text-align: right;
+  }
+
+  .platform-type-line > span:first-child {
+    color: rgba(255, 232, 239, 0.28);
+  }
+
+  .platform-heading-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280rem, 350rem);
+    align-items: end;
+    gap: 44rem;
+  }
+
+  .platform-heading h2 {
+    max-width: 700rem;
+    margin: 0;
+    font-size: clamp(32rem, 2.75vw, 40rem);
+    font-weight: 660;
+    line-height: 1.04;
+  }
+
+  .platform-heading h2 > span {
+    display: inline;
+  }
+
+  html[lang="en"] .platform-heading h2 > span:first-child {
+    margin-right: 0.18em;
+  }
+
+  .platform-heading h2 .variable-proximity-letter {
+    display: inline-block;
+  }
+
+  .platform-heading-row > p {
+    max-width: 350rem;
+    margin: 0 0 2rem;
+    color: rgba(255, 247, 250, 0.76);
+    font-size: 12.5rem;
+    line-height: 1.58;
+  }
+
+  .platform-carousel,
+  .platform-viewport,
+  .platform-track {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .platform-carousel {
+    height: min(430rem, 54vh);
+    align-self: center;
+  }
+
+  .platform-viewport {
+    overflow: hidden;
+    border-radius: 24rem;
+    mask-image: linear-gradient(90deg, transparent, #000 3.5%, #000 96.5%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 3.5%, #000 96.5%, transparent);
+  }
+
+  .platform-track {
+    width: max-content;
+    display: flex;
+    align-items: center;
+    gap: 18rem;
+    padding-inline: var(--platform-track-padding, 380px);
+    transform: translate3d(var(--platform-track-x, 0px), 0, 0);
+    transition: transform 620ms cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+
+  .platform-slide {
+    position: relative;
+    isolation: isolate;
+    flex: 0 0 var(--platform-slide-width, 352px);
+    width: var(--platform-slide-width, 352px);
+    height: min(414rem, 53vh);
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: 20rem;
+    padding: 26rem 26rem 0;
+    overflow: hidden;
+    border: 1rem solid rgba(255, 255, 255, 0.075);
+    border-radius: 24rem;
+    background:
+      radial-gradient(circle at 84% 2%, rgba(255, 225, 235, 0.11), transparent 40%),
+      linear-gradient(154deg, rgba(255, 255, 255, 0.062), rgba(83, 21, 43, 0.16) 58%, rgba(11, 4, 8, 0.27)),
+      rgba(24, 8, 15, 0.58);
+    box-shadow:
+      0 4rem 32rem rgba(0, 0, 0, 0.2),
+      inset 0 1rem 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24rem) saturate(125%);
+    -webkit-backdrop-filter: blur(24rem) saturate(125%);
+    opacity: 0.52;
+    transform: scale(0.955);
+    transform-origin: center;
+    transition:
+      opacity 360ms var(--ease-apple-soft),
+      transform 620ms cubic-bezier(0.32, 0.72, 0, 1),
+      border-color 240ms ease;
+  }
+
+  .platform-slide.is-active {
+    border-color: rgba(255, 245, 248, 0.11);
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .platform-slide--android {
+    background:
+      radial-gradient(circle at 84% 2%, rgba(255, 224, 236, 0.095), transparent 40%),
+      linear-gradient(154deg, rgba(255, 255, 255, 0.058), rgba(69, 25, 53, 0.16) 58%, rgba(10, 4, 9, 0.28)),
+      rgba(22, 8, 17, 0.58);
+  }
+
+  .platform-slide--windows {
+    background:
+      radial-gradient(circle at 84% 2%, rgba(237, 223, 255, 0.085), transparent 40%),
+      linear-gradient(154deg, rgba(255, 255, 255, 0.056), rgba(65, 24, 54, 0.16) 58%, rgba(10, 4, 10, 0.29)),
+      rgba(21, 8, 18, 0.58);
+  }
+
+  .platform-slide-copy {
+    align-self: start;
+  }
+
+  .platform-slide-index {
+    margin-bottom: 12rem;
+    color: rgba(255, 235, 242, 0.72);
+    font-size: 10.5rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .platform-slide-index span {
+    color: rgba(255, 235, 242, 0.32);
+  }
+
+  .platform-slide h3 {
+    max-width: 290rem;
+    margin: 0;
+    color: var(--product-text);
+    font-size: clamp(22rem, 1.85vw, 27rem);
+    font-weight: 660;
+    line-height: 1.1;
+  }
+
+  .platform-slide-copy > p {
+    max-width: 302rem;
+    margin: 11rem 0 0;
+    color: rgba(255, 247, 250, 0.7);
+    font-size: 11.5rem;
+    line-height: 1.54;
+  }
+
+  .source-code-window {
+    min-width: 0;
+    align-self: end;
+    margin-inline: -26rem;
+    padding: 13rem 26rem 17rem;
+    border-top: 1rem solid rgba(255, 239, 244, 0.075);
+    background: rgba(5, 3, 7, 0.2);
+  }
+
+  .source-code-window > header {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rem;
+    margin-bottom: 12rem;
+    color: rgba(255, 233, 240, 0.48);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 9.5rem;
+    line-height: 1;
+  }
+
+  .source-code-window > header > span {
+    flex: 0 0 auto;
+  }
+
+  .source-code-window > header a {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5rem;
+    overflow: hidden;
+    color: rgba(255, 240, 245, 0.68);
+    text-decoration: none;
+    transition: color 180ms ease;
+  }
+
+  .source-code-window > header a code {
+    overflow: hidden;
+    font: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .source-code-window > header a svg {
+    width: 10rem;
+    height: 10rem;
+    flex: 0 0 auto;
+  }
+
+  .source-code-window pre {
+    max-width: 100%;
+    min-height: 112rem;
+    margin: 0;
+    overflow: hidden;
+    color: rgba(255, 247, 250, 0.84);
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 10.25rem;
+    line-height: 1.52;
+    tab-size: 2;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .code-keyword {
+    color: rgba(255, 127, 164, 0.9);
+  }
+
+  .code-type {
+    color: rgba(147, 210, 221, 0.84);
+  }
+
+  .code-string {
+    color: rgba(205, 178, 229, 0.88);
+  }
+
+  .code-literal {
+    color: rgba(129, 207, 172, 0.86);
+  }
+
+  .source-code-window > footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-top: 11rem;
+    color: rgba(255, 235, 242, 0.48);
+    font-size: 9.25rem;
+    font-weight: 560;
+  }
+
+  .source-code-window > footer span + span::before {
+    content: "·";
+    margin-inline: 7rem;
+    color: rgba(255, 235, 242, 0.2);
+  }
+
+  .platform-carousel-footer {
+    position: relative;
+    z-index: 2;
+    min-height: 40rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16rem;
+    padding-inline: 12rem;
+  }
+
+  .platform-carousel-status {
+    min-width: 46rem;
+    color: rgba(255, 238, 244, 0.46);
+    font-size: 10rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .platform-carousel-status > span:first-child {
+    color: rgba(255, 249, 251, 0.88);
+    font-weight: 650;
+  }
+
+  .platform-carousel-controls {
+    display: flex;
+    gap: 8rem;
+  }
+
+  .platform-carousel-controls button {
+    width: 38rem;
+    height: 38rem;
+    display: grid;
+    place-items: center;
+    border: 1rem solid rgba(255, 238, 244, 0.11);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.055);
+    color: rgba(255, 249, 251, 0.9);
+    cursor: pointer;
+    transition: background-color 180ms ease, color 180ms ease, transform 120ms ease, opacity 180ms ease;
+  }
+
+  .platform-carousel-controls button:active:not(:disabled) {
+    transform: scale(0.93);
+  }
+
+  .platform-carousel-controls button:disabled {
+    opacity: 0.28;
+    cursor: default;
+  }
+
+  .platform-carousel-controls svg {
+    width: 17rem;
+    height: 17rem;
+  }
+
+  .site-footer {
+    padding: 8rem 18rem 0;
+    border-top: 0;
+    font-size: 10.5rem;
+  }
+}
+
+/* React Bits SpotlightCard, adapted to static DOM with one shared rAF loop. */
+@media (min-aspect-ratio: 1 / 1) and (hover: hover) and (pointer: fine) {
+  .card-spotlight {
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --spotlight-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .card-spotlight::before {
+    content: "";
+    position: absolute;
+    inset: 1rem;
+    z-index: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      440rem circle at var(--mouse-x) var(--mouse-y),
+      var(--spotlight-color),
+      rgba(255, 247, 250, 0.014) 42%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 420ms var(--ease-apple-soft);
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  .card-spotlight.is-spotlight-active::before,
+  .card-spotlight:focus-within::before {
+    opacity: 0.72;
+  }
+
+  .platform-slide.card-spotlight > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .platform-slide.card-spotlight:not(.is-active)::before {
+    opacity: 0;
+  }
+
+  .source-code-window > header a:hover,
+  .source-code-window > header a:focus-visible {
+    color: rgba(255, 249, 251, 0.92);
+  }
+
+  .platform-carousel-controls button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.095);
+  }
+}
+
+@media (min-aspect-ratio: 1 / 1) and (max-height: 760px) {
+  .device-showcase-copy {
+    transform: translateY(-18rem);
+  }
+
+  .platform-marcom {
+    min-height: 500rem;
+    gap: 12rem;
+  }
+
+  .platform-heading h2 {
+    font-size: clamp(30rem, 2.7vw, 38rem);
+  }
+
+  .platform-heading-row > p {
+    font-size: 11.75rem;
+  }
+
+  .platform-carousel {
+    height: min(414rem, 54vh);
+  }
+
+  .platform-slide {
+    height: min(398rem, 53vh);
+    gap: 15rem;
+    padding: 22rem 24rem 0;
+  }
+
+  .platform-slide h3 {
+    font-size: clamp(21rem, 1.8vw, 25rem);
+  }
+
+  .platform-slide-copy > p {
+    margin-top: 9rem;
+    font-size: 10.75rem;
+  }
+
+  .source-code-window {
+    margin-inline: -24rem;
+    padding: 11rem 24rem 14rem;
+  }
+
+  .source-code-window pre {
+    min-height: 101rem;
+    font-size: 9.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-spotlight::before,
+  .platform-track,
+  .platform-slide {
+    transition: none;
+  }
+}

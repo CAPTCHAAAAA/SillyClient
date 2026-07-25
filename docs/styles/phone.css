@@ -1,0 +1,136 @@
+#sec-phone { background: transparent; }
+#three-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  filter: none;
+}
+
+/* iframe overlay — tracks 3D phone screen position via projection */
+#screen-frame {
+  --reflection-x: 42%;
+  --reflection-y: 18%;
+  --reflection-angle: 116deg;
+  --reflection-opacity: 0.2;
+  position: absolute; top: 0; left: 0; z-index: 2;
+  width: 390px; height: 844px;
+  overflow: hidden;
+  pointer-events: auto;
+  border-radius: 48px;
+  clip-path: inset(0 round 48px);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.28);
+  transform-origin: top left;
+  filter: none;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: layout paint;
+  display: none;
+}
+#app-screen {
+  border: none; display: block;
+  width: 390px; height: 844px;
+  transform-origin: top left;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: #1a1a1a;
+}
+#screen-reflection {
+  position: absolute; inset: 0; z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--reflection-opacity);
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse 68% 34% at var(--reflection-x) var(--reflection-y),
+      rgba(225,235,243,0.10) 0%,
+      rgba(151,173,194,0.03) 34%,
+      transparent 70%),
+    linear-gradient(var(--reflection-angle),
+      transparent 30%,
+      rgba(213,225,235,0.02) 39%,
+      rgba(207,221,233,0.07) 45%,
+      rgba(255,255,255,0.02) 51%,
+      transparent 59%);
+  box-shadow: inset 0 0 0 1px rgba(207,221,232,0.04);
+  will-change: opacity, background;
+}
+#screen-reflection::after { content: none; }
+#dynamic-island {
+  position: absolute; top: 13px; left: 50%; z-index: 3;
+  width: 108px; height: 30px;
+  transform: translateX(-50%);
+  border-radius: 18px;
+  background: #020204;
+  box-shadow: 0 1px 2px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+#dynamic-island::after {
+  content: '';
+  position: absolute; top: 10px; right: 10px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #26334d 0%, #0a0d16 45%, #020204 75%);
+  box-shadow: inset 0 0 2px rgba(98,122,176,0.5);
+}
+
+#loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 3; color: rgba(255,255,255,0.3); font-size: 12rem; letter-spacing: 0.06em; text-align: center; }
+
+/* ===== Floating labels (kommakomma.is Merla inspired) ===== */
+.phone-float-label {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: opacity 0.4s ease;
+}
+.phone-float-label.is-visible {
+  opacity: 1;
+}
+.phone-float-label--title {
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 6rem 14rem;
+  border-radius: 8rem;
+  background: var(--rose, #d94b69);
+  color: #fff;
+  font-size: 13rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  box-shadow: 0 6rem 20rem rgba(0,0,0,0.35);
+}
+.phone-float-label--cta {
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6rem;
+  padding: 6rem 14rem;
+  border-radius: 8rem;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12rem) saturate(160%);
+  -webkit-backdrop-filter: blur(12rem) saturate(160%);
+  border: 1rem solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.85);
+  font-size: 12rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: nowrap;
+  box-shadow: 0 6rem 20rem rgba(0,0,0,0.25);
+}
+.phone-float-label__arrow {
+  display: block;
+  flex-shrink: 0;
+  transform: rotate(-45deg);
+}
+@media (max-aspect-ratio: 999 / 1000) {
+  .phone-float-label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
