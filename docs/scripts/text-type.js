@@ -158,9 +158,9 @@
     });
   });
 
-  new MutationObserver(function () {
+  window.addEventListener('sillyclient-language-change', function () {
     states.forEach(reset);
-  }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  });
 
   document.addEventListener('visibilitychange', function () {
     states.forEach(function (state) {

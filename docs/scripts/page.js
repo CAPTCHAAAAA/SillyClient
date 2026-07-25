@@ -593,6 +593,9 @@
     syncInspectorLabels();
     if (currentInspectorTrigger) renderInspector(currentInspectorTrigger);
     if (window.SillyScrollReveal) window.SillyScrollReveal.refresh();
+    window.dispatchEvent(new CustomEvent('sillyclient-language-change', {
+      detail: { language: currentLanguage }
+    }));
     requestAnimationFrame(fitHeroTitle);
   }
 
