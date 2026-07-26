@@ -2,3 +2,17 @@
 Thumbs.db
 *.log
 .env
+.env.*
+!.env.example
+
+node_modules/
+coverage/
+playwright-report/
+test-results/
+.cache/
+.tmp/
+tmp/
+
+docs/product-render/output/
+docs/product-render/screens/*.tmp.*
+docs/mobile-frames/*.tmp.*

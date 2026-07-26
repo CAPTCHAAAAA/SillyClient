@@ -9,7 +9,7 @@
 
 ## 决定
 
-React 控制台只在 `SillyClient-Android/App/web/capacitor-ui/` 开发。Android assets、Windows `frontend-dist/` 和 Pages `docs/app/` 都由该目录构建并同步。
+React 控制台只在 `SillyClient-Android/web/capacitor-ui/` 开发。Android assets、Windows `frontend-dist/` 和 Pages `docs/app/` 都由该目录构建并同步。
 
 ## 结果
 

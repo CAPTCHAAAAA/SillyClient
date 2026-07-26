@@ -1,0 +1,336 @@
+/* ---------- COMPONENT INSPECTOR ---------- */
+.component-inspector {
+  position: fixed;
+  top: 72rem;
+  left: 20rem;
+  z-index: 90;
+  width: min(280rem, calc(100vw - 36rem));
+  padding: 16rem 16rem 14rem;
+  overflow: hidden;
+  border: 1rem solid var(--line);
+  border-radius: 14rem;
+  background: rgba(15, 18, 23, 0.92);
+  backdrop-filter: blur(24rem);
+  -webkit-backdrop-filter: blur(24rem);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8rem);
+  transition: opacity 0.3s var(--ease-apple), transform 0.3s var(--ease-apple),
+    visibility 0s linear 0.3s;
+}
+
+.component-inspector.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: opacity 0.3s var(--ease-apple), transform 0.3s var(--ease-apple),
+    visibility 0s linear 0s;
+}
+
+.component-inspector::before {
+  display: none;
+}
+
+.inspector-close {
+  position: absolute;
+  top: 10rem;
+  right: 10rem;
+  display: grid;
+  width: 20rem;
+  height: 20rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--text-faint);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.25s var(--ease-apple-soft), background 0.25s var(--ease-apple-soft);
+}
+
+.inspector-close .bi-icon {
+  width: 10rem;
+  height: 10rem;
+}
+
+.inspector-close:hover,
+.inspector-close:focus-visible {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inspector-close:active {
+  transform: scale(0.985);
+  transition-duration: 0.1s;
+}
+
+.inspector-close:focus-visible {
+  outline: 2rem solid var(--rose-bright);
+  outline-offset: 2rem;
+}
+
+.inspector-scope {
+  display: block;
+  max-width: calc(100% - 28rem);
+  color: var(--text-faint);
+  font-size: 10rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.component-inspector h3 {
+  margin: 6rem 24rem 0 0;
+  color: var(--text);
+  font-size: 15rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.inspector-body {
+  display: -webkit-box;
+  margin: 6rem 0 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 13rem;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.inspector-relation {
+  margin-top: 8rem;
+  padding: 0;
+  border: 0;
+}
+
+.inspector-relation strong {
+  color: var(--text-muted);
+  font-size: 11rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.inspector-stack {
+  display: none;
+}
+
+.inspector-stack li {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--text-muted);
+  background: transparent;
+  font-size: 11rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.inspector-stack li:not(:last-child)::after {
+  content: "·";
+  margin: 0 5rem;
+  color: var(--rose);
+}
+
+.inspector-source {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8rem;
+  align-items: center;
+  margin-top: 10rem;
+  padding-top: 10rem;
+  border-top: 1rem solid var(--line);
+}
+
+.inspector-source code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-faint);
+  font: 500 12rem/1.35 ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-source a {
+  display: inline-flex;
+  gap: 5rem;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 11rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.25s var(--ease-apple-soft);
+}
+
+.inspector-source a:hover,
+.inspector-source a:focus-visible {
+  color: var(--text);
+}
+
+.inspector-source a:active {
+  transform: scale(0.985);
+  transition-duration: 0.1s;
+}
+
+.inspector-source a .bi-icon {
+  width: 10rem;
+  height: 10rem;
+}
+
+/* ---------- PAGE ACTIVATION ANIMATIONS ---------- */
+@keyframes section-content-pop {
+  from { opacity: 0; transform: translateY(12rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-panel.is-page-pending .eyebrow,
+.hero-panel.is-page-pending .hero-title,
+.hero-panel.is-page-pending .hero-lede,
+.hero-panel.is-page-pending .hero-sub,
+.hero-panel.is-page-pending .hero-actions,
+.hero-panel.is-page-pending .hero-specs,
+.experience-panel.is-page-pending .section-index,
+.experience-panel.is-page-pending .experience-copy > h2,
+.experience-panel.is-page-pending .experience-copy > p,
+.experience-panel.is-page-pending .lifecycle-list {
+  opacity: 0;
+  transform: translateY(12rem);
+  animation: none;
+}
+
+.hero-panel.is-page-active .eyebrow,
+.hero-panel.is-page-active .hero-title,
+.hero-panel.is-page-active .hero-lede,
+.hero-panel.is-page-active .hero-sub,
+.hero-panel.is-page-active .hero-actions,
+.hero-panel.is-page-active .hero-specs,
+.experience-panel.is-page-active .section-index,
+.experience-panel.is-page-active .experience-copy > h2,
+.experience-panel.is-page-active .experience-copy > p,
+.experience-panel.is-page-active .lifecycle-list {
+  animation: section-content-pop 0.8s var(--ease-apple) both;
+}
+
+.hero-panel.is-page-active .hero-title,
+.experience-panel.is-page-active .experience-copy > h2 {
+  animation-delay: 60ms;
+}
+
+.hero-panel.is-page-active .hero-lede,
+.experience-panel.is-page-active .experience-copy > p {
+  animation-delay: 120ms;
+}
+
+.hero-panel.is-page-active .hero-sub,
+.hero-panel.is-page-active .hero-actions,
+.experience-panel.is-page-active .lifecycle-list {
+  animation-delay: 180ms;
+}
+
+.hero-panel.is-page-active .hero-specs {
+  animation-delay: 240ms;
+}
+
+.experience-panel.is-page-active .section-index {
+  animation: section-content-pop 0.8s var(--ease-apple) both;
+}
+
+/* Platform-section page-active rules REMOVED — GSAP ScrollTrigger handles
+   all reveal animations for the platform section. The CSS rules below
+   required .will-reveal.is-visible classes that are never added when
+   GSAP is active (setupSectionReveals returns early), so they were
+   dead code that could confuse debugging. */
+
+/* ---------- REVEAL (IntersectionObserver / GSAP ScrollTrigger) ---------- */
+.will-reveal {
+  opacity: 0;
+  transform: translateY(12rem);
+}
+
+.will-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.8s var(--ease-apple), transform 0.8s var(--ease-apple);
+}
+
+/* When GSAP is active, let it control the animation */
+html.gsap-ready .will-reveal {
+  opacity: revert;
+  transform: revert;
+  transition: none;
+  animation: none !important;
+}
+
+/* ---------- INSPECT INTERACTIONS ---------- */
+[data-inspect-key] {
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[data-inspect-key]:focus-visible {
+  outline: 2rem solid var(--rose-bright);
+  outline-offset: 2rem;
+}
+
+[data-inspect-group].is-inspecting [data-inspect-key] {
+  opacity: 0.4;
+}
+
+[data-inspect-group].is-inspecting [data-inspect-key].is-context-related {
+  opacity: 0.9;
+}
+
+[data-inspect-group].is-inspecting [data-inspect-key].is-context-active {
+  z-index: 4;
+  opacity: 1;
+  background: rgba(217, 75, 105, 0.06);
+  border-left: 2rem solid var(--rose);
+}
+
+.hero-specs [data-inspect-key] {
+  transition: opacity 0.3s var(--ease-apple);
+}
+
+.hero-specs.is-inspecting [data-inspect-key].is-context-active {
+  background: rgba(217, 75, 105, 0.06);
+}
+
+.lifecycle-list > div,
+.graph-source,
+.graph-contract,
+.graph-platforms article,
+.repo-source,
+.repo-targets article,
+.repo-release {
+  position: relative;
+  isolation: isolate;
+  transition: background-color 0.25s var(--ease-apple-soft),
+    border-color 0.4s var(--ease-apple-soft), opacity 0.3s var(--ease-apple);
+}
+
+.graph-source,
+.graph-contract,
+.graph-platforms article,
+.repo-source,
+.repo-targets article,
+.repo-release {
+  overflow: hidden;
+}
+
+.lifecycle-list > div > *,
+.graph-source > *,
+.graph-contract > *,
+.graph-platforms article > *,
+.repo-source > *,
+.repo-targets article > *,
+.repo-release > * {
+  position: relative;
+  z-index: 1;
+}

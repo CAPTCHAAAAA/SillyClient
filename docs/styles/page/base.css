@@ -1,0 +1,508 @@
+/* ============================================
+   SillyClient — page layout and components
+   Massive whitespace. Huge headlines. Text-driven hierarchy.
+   Almost-invisible borders. Calm. Premium.
+   ============================================ */
+
+/* ---------- PAGE TOKENS ----------
+   Product colors are defined in theme.css. This file only aliases them for
+   component styles and owns layout, spacing and motion. */
+:root {
+  /* One rem is one design unit on the reference canvas. The 0.9 density
+     leaves a centered safe margin while every component scales together. */
+  --layout-unit: min(0.0703125vw, 0.125dvh);
+  --layout-canvas-width: 1160rem;
+  --fluid-vw: 12.8rem;
+  --fluid-vh: 7.2rem;
+
+  --ink: var(--product-canvas);
+  --ink-soft: var(--product-ink);
+  --text: var(--product-text);
+  --text-muted: var(--product-text-muted);
+  --text-faint: var(--product-text-faint);
+  --rose: var(--product-wine-mid);
+  --rose-bright: var(--product-rose-bright);
+  --rose-deep: var(--product-rose);
+  --steel: #8d7180;
+  --green: #72c5a1;
+
+  /* Hairlines */
+  --line: var(--product-line);
+  --line-hover: var(--product-line-hover);
+  --line-strong: var(--product-line-strong);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-apple: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-apple-soft: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Scroll-driven page state (set by JS on :root) */
+  --journey-progress: 0;
+  --platform-blend: 0;
+
+  /* Typography scale */
+  --font-display: clamp(38rem, calc(3.8 * var(--fluid-vw)), 50rem);
+  --font-h2: clamp(22rem, calc(2.2 * var(--fluid-vw)), 28rem);
+  --font-h3: clamp(16rem, calc(1.4 * var(--fluid-vw)), 18rem);
+  --font-lede: clamp(14rem, calc(1.2 * var(--fluid-vw)), 16rem);
+  --font-body: 15rem;
+  --font-caption: 12rem;
+
+  /* Spacing scale */
+  --space-section: clamp(120rem, calc(14 * var(--fluid-vw)), 160rem);
+  --space-block: clamp(48rem, calc(6 * var(--fluid-vw)), 64rem);
+  --space-element: clamp(24rem, calc(3 * var(--fluid-vw)), 32rem);
+  --space-inline: clamp(24rem, calc(6 * var(--fluid-vw)), 80rem);
+}
+
+/* ---------- BASE ---------- */
+html {
+  font-size: var(--layout-unit);
+  background: var(--ink);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-size: var(--font-body);
+  background: var(--ink);
+  color: var(--text);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable",
+    "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.desktop-access-gate {
+  display: none;
+}
+
+@media (max-aspect-ratio: 999 / 1000) {
+  :root {
+    --layout-unit: min(0.256410256vw, 0.118483412dvh);
+    --layout-canvas-width: 390rem;
+    --fluid-vw: 3.9rem;
+    --fluid-vh: 8.44rem;
+  }
+
+  .site-scroller {
+    display: none;
+  }
+
+  .desktop-access-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 28px;
+    text-align: center;
+    background: rgba(8, 2, 4, 0.34);
+  }
+
+  .desktop-gate-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 650;
+  }
+
+  .desktop-gate-brand img {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+  }
+
+  .desktop-access-gate h1 {
+    max-width: 420px;
+    margin: 34px 0 0;
+    color: var(--text);
+    font-size: clamp(28px, 7vw, 38px);
+    font-weight: 700;
+    line-height: 1.14;
+    letter-spacing: 0;
+  }
+
+  .desktop-access-gate p {
+    max-width: 420px;
+    margin: 16px 0 0;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .gate-en {
+    display: none;
+  }
+
+  html[lang="en"] .gate-zh {
+    display: none;
+  }
+
+  html[lang="en"] .gate-en {
+    display: inline;
+  }
+}
+
+.ambient-field {
+  display: none;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bi-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2rem solid var(--rose-bright);
+  outline-offset: 2rem;
+}
+
+/* ---------- SCROLLER ---------- */
+.site-scroller {
+  position: relative;
+  z-index: 3;
+  height: 100vh;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-padding-top: 0;
+  overscroll-behavior-y: contain;
+  background: transparent;
+  /* Hide scrollbar completely — Firefox */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Hide scrollbar completely — Chrome/Safari/Edge */
+.site-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* Lenis handles smooth scroll; disable CSS scroll-snap when GSAP is ready */
+html.gsap-ready .site-scroller {
+  scroll-snap-type: none;
+}
+
+.site-scroller.is-page-turning {
+  scroll-snap-type: none;
+}
+
+/* ---------- TOPBAR ---------- */
+.topbar {
+  position: fixed;
+  top: 12rem;
+  left: 0;
+  right: 0;
+  width: min(calc(100% - 32rem), var(--layout-canvas-width));
+  max-width: var(--layout-canvas-width);
+  margin-inline: auto;
+  z-index: 80;
+  height: 52rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12rem 0 18rem;
+  border: 1rem solid transparent;
+  border-radius: 16rem;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: topbar-arrive 0.8s var(--ease-apple) both;
+  box-shadow: none;
+  transition:
+    max-width 0.5s var(--ease-apple),
+    padding 0.5s var(--ease-apple),
+    background 0.5s var(--ease-apple),
+    border-color 0.5s var(--ease-apple),
+    box-shadow 0.5s var(--ease-apple),
+    backdrop-filter 0.5s var(--ease-apple);
+}
+
+@keyframes topbar-arrive {
+  from { opacity: 0; transform: translateY(-8rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topbar.is-compact {
+  max-width: min(1060rem, calc(100% - 48rem));
+  padding-inline: 14rem 8rem;
+  border-color: rgba(255, 245, 248, 0.055);
+  background: rgba(20, 6, 10, 0.46);
+  box-shadow:
+    0 4rem 32rem rgba(0, 0, 0, 0.22),
+    inset 0 1rem 0 rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(24rem) saturate(140%);
+  -webkit-backdrop-filter: blur(24rem) saturate(140%);
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  transition: opacity 0.25s var(--ease-apple-soft);
+}
+
+.brand-lockup:active {
+  opacity: 0.7;
+  transition-duration: 0.1s;
+}
+
+.brand-mark {
+  width: 26rem;
+  height: 26rem;
+  display: block;
+  object-fit: cover;
+  border-radius: 6rem;
+  border: 1rem solid rgba(255, 245, 248, 0.07);
+  box-shadow: inset 0 1rem 0 rgba(255, 255, 255, 0.08);
+}
+
+.nav-links {
+  position: relative;
+  left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 3rem;
+  margin-left: 24rem;
+  margin-right: auto;
+  border: 1rem solid rgba(255, 255, 255, 0.08);
+  border-radius: 20rem;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20rem);
+  -webkit-backdrop-filter: blur(20rem);
+  transform: none;
+}
+
+.nav-links a {
+  position: relative;
+  padding: 7rem 20rem;
+  color: var(--text-faint);
+  text-decoration: none;
+  font-size: 12rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  border-radius: 16rem;
+  transition: background 0.3s var(--ease-apple-soft), color 0.3s var(--ease-apple-soft);
+}
+
+.nav-links a::after {
+  display: none;
+}
+
+.nav-links a:hover,
+.nav-links a.is-active {
+  color: var(--text);
+}
+
+.nav-links a.is-active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8rem;
+}
+
+.language-switcher {
+  height: 30rem;
+  display: inline-grid;
+  grid-template-columns: 28rem 32rem;
+  align-items: center;
+  padding: 2rem;
+  border: 1rem solid var(--line);
+  border-radius: 999rem;
+  background: transparent;
+}
+
+.language-option {
+  height: 24rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999rem;
+  background: transparent;
+  color: var(--text-faint);
+  font: 600 10rem/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  transition: background 0.25s var(--ease-apple-soft), color 0.25s var(--ease-apple-soft);
+}
+
+.language-option:hover {
+  color: var(--text-muted);
+}
+
+.language-option.is-active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.icon-button,
+.menu-button {
+  width: 34rem;
+  height: 34rem;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1rem solid rgba(255, 245, 248, 0.06);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.25s var(--ease-apple-soft), color 0.25s var(--ease-apple-soft),
+    border-color 0.25s var(--ease-apple-soft);
+}
+
+.icon-button:hover,
+.menu-button:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-color: var(--line-hover);
+}
+
+.icon-button:active,
+.menu-button:active {
+  transform: scale(0.985);
+  transition-duration: 0.1s;
+}
+
+.icon-button svg,
+.menu-button svg {
+  width: 15rem;
+  height: 15rem;
+}
+
+.menu-glyph {
+  grid-area: 1 / 1;
+  transition: opacity 0.25s var(--ease-apple-soft), transform 0.3s var(--ease-apple);
+}
+
+.menu-glyph-close {
+  opacity: 0;
+  transform: rotate(-36deg) scale(0.82);
+}
+
+.menu-button[aria-expanded="true"] .menu-glyph-open {
+  opacity: 0;
+  transform: rotate(36deg) scale(0.82);
+}
+
+.menu-button[aria-expanded="true"] .menu-glyph-close {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+.menu-button {
+  display: none;
+}
+
+/* Nav download — quiet rose pill */
+.nav-download {
+  min-height: 34rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7rem;
+  padding: 0 16rem;
+  border-radius: 999rem;
+  border: none;
+  background: var(--rose);
+  color: #fff;
+  font: inherit;
+  font-size: 13rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transform: none;
+  transition: background 0.3s var(--ease-apple-soft), transform 0.3s var(--ease-apple);
+}
+
+.nav-download:active {
+  transform: scale(0.985);
+  transition-duration: 0.1s;
+}
+
+.nav-download svg {
+  width: 14rem;
+  height: 14rem;
+}
+
+/* Hero action pills */
+.primary-action,
+.secondary-action {
+  min-height: 48rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rem;
+  padding: 0 26rem;
+  border-radius: 999rem;
+  font: inherit;
+  font-size: 15rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: background 0.3s var(--ease-apple-soft), color 0.25s var(--ease-apple-soft),
+    border-color 0.4s var(--ease-apple-soft);
+}
+
+.primary-action {
+  background: var(--rose);
+  border: none;
+  color: #fff;
+  transform: none;
+  transition: background 0.3s var(--ease-apple-soft), color 0.25s var(--ease-apple-soft),
+    border-color 0.4s var(--ease-apple-soft), transform 0.3s var(--ease-apple);
+}
+
+.secondary-action {
+  background: transparent;
+  border: 1rem solid var(--line-strong);
+  color: var(--text);
+  transform: none;
+  transition: background 0.3s var(--ease-apple-soft), color 0.25s var(--ease-apple-soft),
+    border-color 0.4s var(--ease-apple-soft), transform 0.3s var(--ease-apple);
+}
+
+.primary-action:active,
+.secondary-action:active {
+  transform: scale(0.985);
+  transition-duration: 0.1s;
+}
+
+.primary-action svg,
+.secondary-action svg {
+  width: 16rem;
+  height: 16rem;
+}

@@ -1,0 +1,827 @@
+/* ---------- PREMIUM HOVER MICRO-INTERACTIONS ----------
+   Cursor-following radial light (a flashlight on brushed metal),
+   one-shot sheen sweeps on rose CTAs, inner-content micro-parallax,
+   and quiet name-brighten. Every effect is faint (<=0.06 white on
+   dark) and eases in over >=0.3s. No box-shadow glows, no transforms
+   on card bodies -- the light is a radial-gradient BACKGROUND layer. */
+
+/* Cursor-following light spot -- cards (::before at z-index:-1) */
+.lifecycle-list > div::before,
+.graph-source::before,
+.graph-contract::before,
+.graph-platforms article::before,
+.repo-source::before,
+.repo-targets article::before,
+.repo-release::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    280rem circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.035),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-apple-soft);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Glass buttons -- even fainter pool (0.04) */
+.secondary-action::before,
+.platform-action.is-secondary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    280rem circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.04),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-apple-soft);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Sheen sweep -- rose-filled CTAs (one-shot diagonal gloss) */
+.primary-action::before,
+.platform-action:not(.is-secondary)::before,
+.nav-download::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0s var(--ease-apple);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Name-brighten -- platform/repo names quietly approach pure white */
+.graph-platforms article strong,
+.repo-targets article strong,
+.repo-targets article span,
+.repo-source strong {
+  transition: color 0.3s var(--ease-apple-soft);
+}
+
+/* ---------- HOVER STATES ---------- */
+@media (hover: hover) and (pointer: fine) {
+  /* Rose CTAs: subtle brighten under the one-shot sheen sweep */
+  .nav-download:hover,
+  .primary-action:hover,
+  .platform-action:not(.is-secondary):hover {
+    background: var(--rose-bright);
+  }
+
+  /* Sheen sweep -- 0.6s on entry, instant reset on leave */
+  .primary-action:hover::before,
+  .platform-action:not(.is-secondary):hover::before,
+  .nav-download:hover::before {
+    transform: translateX(100%);
+    transition: transform 0.6s var(--ease-apple);
+  }
+
+  /* Glass buttons: cursor light fades in, border brightens, no fill */
+  .secondary-action:hover,
+  .platform-action.is-secondary:hover {
+    border-color: rgba(255, 255, 255, 0.10);
+  }
+
+  .secondary-action:hover::before,
+  .platform-action.is-secondary:hover::before {
+    opacity: 1;
+  }
+
+  /* Lifecycle: keep the rose color shift + add inner-content micro-parallax.
+     The card body itself does NOT move -- only the inner text leans in. */
+  .lifecycle-list > div:hover dt span {
+    color: var(--rose);
+    transform: translateX(2rem);
+  }
+
+  .lifecycle-list > div:hover dt strong,
+  .lifecycle-list > div:hover dd {
+    transform: translateX(1rem);
+  }
+
+  .lifecycle-list > div:hover::before {
+    opacity: 1;
+  }
+
+  /* Graph/repo nodes: border gently fades brighter + cursor light eases in + name quietly brightens, no transform */
+  .graph-platforms article:hover,
+  .repo-targets article:hover,
+  .repo-source:hover,
+  .repo-release:hover,
+  .graph-source:hover,
+  .graph-contract:hover {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .graph-source:hover::before,
+  .graph-contract:hover::before,
+  .graph-platforms article:hover::before,
+  .repo-source:hover::before,
+  .repo-targets article:hover::before,
+  .repo-release:hover::before {
+    opacity: 0.7;
+  }
+
+  .graph-platforms article:hover strong,
+  .repo-targets article:hover strong,
+  .repo-targets article:hover span,
+  .repo-source:hover strong {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  /* Nav segmented controller: subtle hover fill for inactive segments */
+  .nav-links a:not(.is-active):hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+  }
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-aspect-ratio: 999 / 1000) {
+  .topbar {
+    padding-inline: 24rem;
+  }
+
+  .hero-copy {
+    width: min(560rem, calc(56 * var(--fluid-vw)));
+  }
+
+  .experience-copy {
+    width: min(440rem, calc(42 * var(--fluid-vw)));
+  }
+
+  html[lang="en"] .experience-copy {
+    width: min(460rem, calc(44 * var(--fluid-vw)));
+  }
+
+  .platform-intro,
+  .download-row {
+    grid-template-columns: 1fr;
+    gap: 32rem;
+  }
+
+  .runtime-topology {
+    grid-template-columns: 1fr;
+    gap: 32rem;
+  }
+
+  .runtime-topology figcaption strong,
+  .runtime-topology figcaption p {
+    max-width: 620rem;
+  }
+
+  .download-row {
+    gap: 36rem;
+  }
+}
+
+@media (max-aspect-ratio: 999 / 1000) {
+  .topbar {
+    height: 48rem;
+    padding-inline: 16rem;
+  }
+
+  .topbar-actions {
+    gap: 6rem;
+  }
+
+  .language-switcher {
+    grid-template-columns: 25rem 29rem;
+    height: 30rem;
+  }
+
+  .language-option {
+    height: 24rem;
+  }
+
+  .brand-lockup span {
+    display: none;
+  }
+
+  .nav-links {
+    position: fixed;
+    top: 58rem;
+    left: 0;
+    right: 0;
+    width: min(366rem, calc(100vw - 24rem));
+    margin-inline: auto;
+    display: grid;
+    gap: 0;
+    padding: 8rem;
+    border: 1rem solid var(--line);
+    border-radius: 16rem;
+    background: rgba(14, 17, 22, 0.94);
+    backdrop-filter: blur(20rem);
+    -webkit-backdrop-filter: blur(20rem);
+    opacity: 0;
+    transform: translateY(-8rem);
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease-apple), transform 0.3s var(--ease-apple);
+  }
+
+  .nav-links.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .nav-links a {
+    padding: 14rem 12rem;
+    border-bottom: 1rem solid var(--line);
+  }
+
+  .nav-links a::after {
+    display: none;
+  }
+
+  .nav-links a:last-child {
+    border-bottom: 0;
+  }
+
+  .menu-button {
+    display: inline-grid;
+  }
+
+  .nav-download {
+    min-height: 32rem;
+    padding-inline: 12rem;
+    font-size: 12rem;
+  }
+
+  .nav-download span {
+    display: none;
+  }
+
+  .story-panel {
+    min-height: 560rem;
+    padding: 90rem 24rem 60rem;
+  }
+
+  .hero-copy {
+    width: 100%;
+    align-self: flex-start;
+    margin-top: calc(6 * var(--fluid-vh));
+  }
+
+  .hero-lede {
+    max-width: 340rem;
+    margin-top: 28rem;
+    font-size: clamp(20rem, calc(5.5 * var(--fluid-vw)), 26rem);
+    line-height: 1.35;
+  }
+
+  .hero-sub {
+    max-width: 340rem;
+    margin-top: 16rem;
+    font-size: 15rem;
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    flex-wrap: wrap;
+    margin-top: 28rem;
+  }
+
+  .primary-action,
+  .secondary-action {
+    min-height: 44rem;
+    padding-inline: 20rem;
+    font-size: 14rem;
+  }
+
+  .hero-specs {
+    flex-wrap: wrap;
+    gap: 12rem 0;
+    margin-top: 36rem;
+  }
+
+  .hero-specs div {
+    padding: 0 14rem;
+  }
+
+  .hero-specs div:first-child {
+    padding-left: 0;
+  }
+
+  .scroll-cue {
+    display: none;
+  }
+
+  .experience-panel {
+    align-items: flex-start;
+  }
+
+  .experience-copy {
+    width: 100%;
+    margin: 0;
+    padding-top: calc(2 * var(--fluid-vh));
+  }
+
+  html[lang="en"] .experience-copy {
+    width: 100%;
+  }
+
+  .experience-copy h2 {
+    max-width: 320rem;
+  }
+
+  html[lang="en"] .experience-copy h2 {
+    max-width: 340rem;
+  }
+
+  .experience-copy > p {
+    max-width: 340rem;
+    margin-top: 18rem;
+    font-size: 15rem;
+  }
+
+  .lifecycle-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12rem;
+    margin-top: 28rem;
+  }
+
+  .lifecycle-list dt {
+    gap: 6rem;
+  }
+
+  .lifecycle-list dt span {
+    font-size: 10rem;
+  }
+
+  .lifecycle-list dt strong {
+    font-size: 15rem;
+    line-height: 1.25;
+  }
+
+  .lifecycle-list dd {
+    margin-top: 2rem;
+    font-size: 12rem;
+    line-height: 1.45;
+  }
+
+  .device-note {
+    display: none;
+  }
+
+  .platform-section {
+    padding: 100rem 0 80rem;
+  }
+
+  .platform-inner {
+    width: min(342rem, calc(100% - 48rem));
+  }
+
+  .platform-intro {
+    display: block;
+  }
+
+  .platform-intro h2 {
+    font-size: clamp(32rem, calc(7 * var(--fluid-vw)), 40rem);
+  }
+
+  html[lang="en"] .platform-intro h2 {
+    font-size: clamp(28rem, calc(6 * var(--fluid-vw)), 36rem);
+  }
+
+  .platform-intro > p {
+    margin-top: 16rem;
+    font-size: 15rem;
+  }
+
+  .runtime-topology {
+    grid-template-columns: 1fr;
+    gap: 24rem;
+    margin-top: 60rem;
+  }
+
+  .runtime-topology figcaption strong {
+    margin-top: 14rem;
+    font-size: 22rem;
+  }
+
+  .runtime-topology figcaption p {
+    margin-top: 14rem;
+    font-size: 14rem;
+  }
+
+  .runtime-graph {
+    grid-template-columns: 1fr;
+    gap: 24rem;
+  }
+
+  .graph-contract {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .graph-platforms {
+    gap: 14rem;
+  }
+
+  .graph-platforms article {
+    padding: 20rem;
+  }
+
+  .graph-platforms header strong {
+    font-size: 20rem;
+  }
+
+  .repository-topology {
+    margin-top: 60rem;
+  }
+
+  .repository-topology h3 {
+    font-size: 24rem;
+  }
+
+  .repository-topology > header > p {
+    font-size: 15rem;
+  }
+
+  .repository-graph {
+    grid-template-columns: 1fr;
+    gap: 20rem;
+    margin-top: 32rem;
+  }
+
+  .repo-source {
+    padding: 20rem;
+  }
+
+  .repo-source strong {
+    font-size: 20rem;
+  }
+
+  .repo-targets {
+    grid-template-columns: 1fr;
+    gap: 14rem;
+  }
+
+  .repo-targets article {
+    padding: 20rem;
+  }
+
+  .repo-targets span {
+    font-size: 18rem;
+  }
+
+  .repo-release {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8rem;
+    padding: 16rem 20rem;
+  }
+
+  .repo-release span {
+    text-align: left;
+  }
+
+  .download-row {
+    display: block;
+    margin-top: 60rem;
+    padding-top: 60rem;
+  }
+
+  .download-row h3 {
+    font-size: 26rem;
+  }
+
+  .platform-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12rem;
+    margin-top: 28rem;
+  }
+
+  .platform-action {
+    min-height: 52rem;
+    padding: 0 24rem;
+  }
+
+  .platform-action span {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8rem;
+  }
+
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16rem;
+    padding-top: 60rem;
+  }
+
+  .component-inspector {
+    top: auto !important;
+    right: 0;
+    bottom: calc(12rem + env(safe-area-inset-bottom));
+    left: 0 !important;
+    width: min(342rem, calc(100vw - 48rem));
+    margin-inline: auto;
+    max-height: calc(100dvh - 102rem);
+    overflow-y: auto;
+    transform: translateY(8rem);
+    transform-origin: 50% 100% !important;
+  }
+
+  .component-inspector.is-open {
+    transform: translateY(0);
+  }
+
+  [data-inspect-group].is-inspecting [data-inspect-key] {
+    opacity: 0.4;
+  }
+}
+
+@media (max-aspect-ratio: 999 / 1000) and (max-width: 360px) {
+  .topbar {
+    padding-inline: 12rem;
+  }
+
+  .topbar-actions > .icon-button {
+    display: none;
+  }
+
+  .hero-specs div {
+    padding: 0 10rem;
+  }
+
+  .platform-action {
+    padding: 0 18rem;
+  }
+}
+
+/* ---------- TOUCH STATES ---------- */
+@media (hover: none), (pointer: coarse) {
+  [data-inspect-key] {
+    cursor: default;
+  }
+
+  .hero-specs div:active,
+  .lifecycle-list > div:active,
+  .graph-source:active,
+  .graph-contract:active,
+  .graph-platforms article:active,
+  .repo-source:active,
+  .repo-targets article:active,
+  .repo-release:active {
+    opacity: 0.85;
+    transition-duration: 0.1s;
+  }
+}
+
+/* ---------- SHARED SIZING ---------- */
+.hero-specs,
+.lifecycle-list,
+.runtime-graph,
+.repository-graph,
+.download-row,
+.platform-actions,
+.component-inspector {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hero-specs *,
+.lifecycle-list *,
+.runtime-graph *,
+.repository-graph *,
+.download-row * {
+  min-width: 0;
+}
+
+.hero-specs dd,
+.lifecycle-list dd,
+.graph-source span,
+.graph-platforms header > *,
+.graph-platforms footer > *,
+.repo-source *,
+.repo-targets article *,
+.repo-release *,
+.download-row h3,
+.platform-action span {
+  overflow-wrap: anywhere;
+}
+
+.hero-specs div,
+.lifecycle-list > div {
+  touch-action: manipulation;
+}
+
+.hero-specs div:focus-visible,
+.lifecycle-list > div:focus-visible,
+.graph-source:focus-visible,
+.graph-contract:focus-visible,
+.graph-platforms article:focus-visible,
+.repo-source:focus-visible,
+.repo-targets article:focus-visible,
+.repo-release:focus-visible {
+  outline: 2rem solid var(--rose-bright);
+  outline-offset: 2rem;
+}
+
+/* ---------- MAX-HEIGHT ---------- */
+@media (max-aspect-ratio: 999 / 1000) and (max-height: 680px) and (min-width: 721px) {
+  .hero-specs {
+    margin-top: 28rem;
+  }
+
+  .hero-actions {
+    margin-top: 24rem;
+  }
+
+  .lifecycle-list {
+    gap: 18rem;
+  }
+
+  .lifecycle-list dt span {
+    font-size: 11rem;
+  }
+
+  .lifecycle-list dt strong {
+    font-size: 18rem;
+  }
+}
+
+/* ---------- MID-RANGE ---------- */
+@media (max-aspect-ratio: 999 / 1000) and (min-width: 721px) and (max-width: 860px) {
+  .platform-section {
+    padding-inline: calc(5 * var(--fluid-vw));
+  }
+
+  .runtime-graph {
+    grid-template-columns: 1fr;
+    gap: 28rem;
+  }
+
+  .graph-contract {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .repository-graph {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- ANIMATION LIBRARY INTEGRATION ----------
+   react-bits patterns (vanilla JS ports) + Vanta/GSAP/Lenis inspirations
+   ───────────────────────────────────────────────────── */
+
+/* Platform inner above silk background */
+.platform-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== TiltedCard (react-bits pattern) — subtle 3D tilt on runtime graph ===== */
+.runtime-topology {
+  perspective: 1400rem;
+  perspective-origin: center;
+}
+
+.runtime-graph {
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--ease-apple);
+  will-change: transform;
+}
+
+.runtime-graph > * {
+  transform: translateZ(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .runtime-graph {
+    transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runtime-graph {
+    transform: none !important;
+  }
+}
+
+/* ===== GradientText (react-bits pattern) — subtle monochrome flow on labels ===== */
+.section-index {
+  background: linear-gradient(
+    90deg,
+    var(--text-faint) 0%,
+    var(--text-muted) 30%,
+    var(--text-faint) 60%,
+    var(--text-faint) 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-text-flow 8s ease-in-out infinite;
+}
+
+@keyframes gradient-text-flow {
+  0%, 100% { background-position: 0% center; }
+  50%      { background-position: 100% center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-index {
+    animation: none;
+    -webkit-text-fill-color: var(--text-faint);
+    background: none;
+  }
+}
+
+/* ===== Enhanced scroll reveal for titles (GSAP-driven, no CSS pre-hide) ===== */
+/* GSAP handles initial state and animation — CSS only provides reduced-motion fallback */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] h2,
+  [data-reveal] h3 {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+/* ===== Stagger child reveal (GSAP-driven, no CSS pre-hide) ===== */
+/* GSAP sets initial state via gsap.set() — no CSS opacity:0 to avoid stuck content */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ---------- ACCESSIBILITY ---------- */
+@supports not ((backdrop-filter: blur(1rem)) or (-webkit-backdrop-filter: blur(1rem))) {
+  .topbar,
+  .nav-links,
+  .component-inspector {
+    background-color: var(--product-canvas-soft);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .topbar,
+  .nav-links,
+  .component-inspector {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--product-canvas-soft);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --text-muted: rgba(245, 247, 249, 0.82);
+    --text-faint: rgba(235, 239, 243, 0.62);
+    --line: rgba(255, 255, 255, 0.18);
+    --line-hover: rgba(255, 255, 255, 0.28);
+    --line-strong: rgba(255, 255, 255, 0.22);
+  }
+}
+
+@media (forced-colors: active) {
+  .graph-platforms article,
+  .repo-source,
+  .repo-targets article,
+  .repo-release,
+  .component-inspector {
+    border: 1rem solid CanvasText;
+    background: Canvas;
+    forced-color-adjust: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .will-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -89,6 +89,8 @@ The former `SillyClient-Frontend` repository is archived and is no longer part o
 ## Development documentation
 
 - [Project architecture](./docs/ARCHITECTURE.md)
+- [Pages directory](./docs/README.md)
+- [Pages maintenance guide](./docs/PAGES-MAINTENANCE.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Release process](./release/RELEASE-GUIDE.md)
 - [Android build instructions](https://github.com/CAPTCHAAAAA/SillyClient-Android#构建)

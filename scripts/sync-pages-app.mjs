@@ -41,3 +41,4 @@ const phoneDemo = pageIndex
 fs.writeFileSync(path.join(root, 'docs', 'phone-demo.html'), phoneDemo);
 
 console.log(`Synced ${source} -> ${destination}`);
+console.log('Next: regenerate screen textures and mobile product frames using docs/product-render/README.md');

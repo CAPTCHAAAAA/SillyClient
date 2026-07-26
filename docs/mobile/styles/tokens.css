@@ -1,0 +1,74 @@
+:root {
+  color-scheme: dark;
+  --mobile-bg: var(--product-canvas);
+  --mobile-surface: rgba(18, 15, 23, 0.45);
+  --mobile-surface-strong: rgba(20, 13, 20, 0.72);
+  --mobile-text: var(--product-text);
+  --mobile-muted: var(--product-text-muted);
+  --mobile-soft: var(--product-text-faint);
+  --mobile-accent: var(--product-highlight);
+  --mobile-accent-soft: rgba(232, 54, 93, 0.16);
+  --mobile-cyan: #72c8d2;
+  --mobile-edge: var(--product-line-strong);
+  --mobile-radius-sm: 14px;
+  --mobile-radius-md: 22px;
+  --mobile-radius-lg: 30px;
+  --mobile-page-width: 620px;
+  --mobile-page-gutter: max(22px, env(safe-area-inset-left));
+  --mobile-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+}
+
+html {
+  min-width: 280px;
+  min-height: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+  background: var(--product-canvas);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100%;
+  overflow-x: hidden;
+  background: var(--product-canvas);
+  color: var(--mobile-text);
+  font-family: inherit;
+}
+
+button,
+a {
+  color: inherit;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+img,
+svg {
+  display: block;
+}
+
+svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid rgba(255, 94, 133, 0.9);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(232, 54, 93, 0.32);
+  color: #fff;
+}

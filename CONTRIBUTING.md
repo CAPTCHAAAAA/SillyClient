@@ -16,12 +16,18 @@ Pages 副本从主仓库同步：
 node scripts/sync-pages-app.mjs ../SillyClient_Android/web/capacitor-ui/dist
 ```
 
+宣传页本身由主仓库 `docs/` 维护。目录职责、入口路由、产品帧生成和发布验收见
+[`docs/PAGES-MAINTENANCE.md`](./docs/PAGES-MAINTENANCE.md)。`docs/app/` 与
+`docs/phone-demo.html` 是共享前端生成物；其余宣传页模块不是 Android 前端构建产物，
+不要用同步脚本覆盖。
+
 ## 提交前
 
 1. 只提交当前改动需要的文件，不带入缓存、截图或安装包。
 2. 在对应仓库运行 README 中列出的检查。
-3. 运行 `git diff --check`，确认没有意外换行和空白字符。
-4. 涉及跨仓库契约时，同一批提交中更新架构文档和同步脚本。
+3. 修改 Pages 时运行 `node scripts/validate-pages.mjs`。
+4. 运行 `git diff --check`，确认没有意外换行和空白字符。
+5. 涉及跨仓库契约时，同一批提交中更新架构文档和同步脚本。
 
 提交信息使用简短的祈使句，说明实际改动，例如 `fix: keep instance state after closing the reader`。正文用于解释为什么，不复述 diff。
 

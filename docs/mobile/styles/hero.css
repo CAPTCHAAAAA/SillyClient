@@ -1,0 +1,215 @@
+.mobile-hero {
+  display: grid;
+  grid-template-rows: auto minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: clamp(14px, 2.5svh, 24px);
+}
+
+.mobile-hero__copy {
+  align-self: end;
+  text-align: left;
+}
+
+.mobile-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 11px;
+  color: var(--product-text-faint);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mobile-eyebrow > span:first-child {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--product-highlight);
+  box-shadow: 0 0 12px rgba(232, 54, 93, 0.62);
+}
+
+.mobile-hero .hero-title,
+.mobile-hero .hero-title-button {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.mobile-hero .hero-title {
+  --title-font: "Syndra";
+  font-family: var(--title-font), "Arial Rounded MT Bold", "Segoe UI Variable Display", sans-serif;
+}
+
+.mobile-hero .hero-title-button {
+  display: block;
+  max-width: 100%;
+  color: var(--product-text);
+  text-align: left;
+}
+
+.mobile-hero .title-wordmark {
+  display: block;
+  color: var(--product-pearl);
+  font-size: clamp(52px, 14vw, 72px);
+  line-height: 0.94;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.mobile-hero .title-wordmark .accent {
+  color: var(--product-rose-bright);
+}
+
+.mobile-hero__lede {
+  max-width: 500px;
+  margin: 17px 0 0;
+  color: var(--product-text);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.48;
+}
+
+.mobile-hero__body {
+  max-width: 520px;
+  margin: 9px 0 0;
+  color: var(--product-text-muted);
+  font-size: 13px;
+  line-height: 1.62;
+}
+
+.mobile-product-stage {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.mobile-product-stage--hero {
+  min-height: 220px;
+  height: min(30svh, 280px);
+  overflow: visible;
+}
+
+.mobile-product-stage--hero img,
+.mobile-product-stage--experience img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 126%;
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  transform: translate3d(-50%, -50%, 0);
+}
+
+.mobile-hero__footer {
+  align-self: start;
+}
+
+.mobile-primary-action {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--product-rose-bright), var(--product-wine-mid));
+  box-shadow: 0 11px 28px rgba(106, 17, 46, 0.25), inset 0 1px rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 730;
+  text-decoration: none;
+  transition: transform 120ms ease, filter 180ms ease;
+}
+
+.mobile-primary-action:active {
+  transform: scale(0.98);
+  filter: brightness(0.94);
+}
+
+.mobile-primary-action svg {
+  width: 17px;
+  height: 17px;
+}
+
+.mobile-specs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 17px 0 0;
+  padding: 0;
+}
+
+.mobile-specs div {
+  min-width: 0;
+  padding: 0 8px;
+  text-align: left;
+}
+
+.mobile-specs div:first-child {
+  padding-left: 0;
+}
+
+.mobile-specs div + div {
+  border-left: 1px solid var(--product-line-strong);
+}
+
+.mobile-specs dt,
+.mobile-specs dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mobile-specs dt {
+  color: var(--product-text);
+  font-size: 10px;
+  font-weight: 720;
+}
+
+.mobile-specs dd {
+  margin-top: 4px;
+  color: var(--product-text-faint);
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.mobile-scroll-cue {
+  position: absolute;
+  right: var(--mobile-page-gutter);
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--product-line-strong);
+  border-radius: 50%;
+  background: rgba(20, 6, 10, 0.42);
+  color: var(--product-text-muted);
+  backdrop-filter: blur(12px);
+}
+
+.mobile-scroll-cue svg {
+  width: 15px;
+  height: 15px;
+}
+
+@media (max-height: 720px) {
+  .mobile-hero {
+    gap: 10px;
+  }
+
+  .mobile-hero .title-wordmark {
+    font-size: 48px;
+  }
+
+  .mobile-hero__body {
+    font-size: 12px;
+    line-height: 1.48;
+  }
+
+  .mobile-product-stage--hero {
+    min-height: 170px;
+    height: 24svh;
+  }
+}

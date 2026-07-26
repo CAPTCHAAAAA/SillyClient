@@ -1,0 +1,628 @@
+/* ---------- JOURNEY (sticky 3D stage + story panels) ---------- */
+.journey {
+  position: relative;
+  height: 200vh;
+  height: 200dvh;
+  min-height: 1200rem;
+  background: transparent;
+}
+
+.visual-stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  margin-inline: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: transparent;
+  isolation: isolate;
+  opacity: calc(1 - var(--platform-blend));
+  will-change: opacity;
+}
+
+#three-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: min(100vw, calc(100dvh * 16 / 9));
+  height: min(100dvh, calc(100vw * 9 / 16));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.stage-shade {
+  display: none;
+}
+
+.device-stage-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: min(calc(100vw - 150rem), 1130rem);
+  height: min(660rem, 77vh);
+  overflow: hidden;
+  isolation: isolate;
+  border: 1rem solid rgba(255, 255, 255, 0.08);
+  border-radius: 30rem;
+  opacity: clamp(0, calc((var(--journey-progress) - 0.38) * 2.35), 0.96);
+  transform: translate(-50%, -50%) translateY(calc((1 - var(--journey-progress)) * 26rem));
+  background:
+    radial-gradient(circle at 74% 4%, rgba(255, 94, 133, 0.075), transparent 44%),
+    rgba(18, 15, 23, 0.45);
+  box-shadow:
+    0 4rem 32rem rgba(0, 0, 0, 0.25),
+    inset 0 1rem 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(32rem) saturate(130%);
+  -webkit-backdrop-filter: blur(32rem) saturate(130%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.device-stage-panel::before,
+.device-stage-panel::after {
+  content: "";
+  position: absolute;
+  inset: 1rem;
+  border-radius: 29rem;
+  pointer-events: none;
+}
+
+.device-stage-panel::before {
+  background: linear-gradient(158deg, rgba(255, 255, 255, 0.035), transparent 36%, rgba(255, 224, 235, 0.014) 76%);
+}
+
+.device-stage-panel::after {
+  box-shadow: inset 0 0 42rem rgba(0, 0, 0, 0.1);
+}
+
+.component-inspector[hidden] {
+  display: none !important;
+}
+
+#loading {
+  z-index: 7;
+  color: var(--text-faint);
+  font-size: 12rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.story-layer {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: min(100%, var(--layout-canvas-width));
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.story-panel {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 620rem;
+  display: flex;
+  align-items: center;
+  padding: clamp(110rem, calc(15 * var(--fluid-vh)), 180rem) var(--space-inline) clamp(80rem, calc(10 * var(--fluid-vh)), 120rem);
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  transition: opacity 0.32s var(--ease-apple);
+}
+
+/* ---------- HERO PANEL (Page 1) ---------- */
+.hero-panel {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.hero-copy {
+  width: min(680rem, calc(60 * var(--fluid-vw)));
+  position: relative;
+  z-index: 4;
+  margin-left: 0;
+  transform: translateY(calc(var(--journey-progress) * -52rem));
+  opacity: calc(1 - var(--journey-progress) * 1.8);
+  will-change: transform, opacity;
+  pointer-events: auto;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rem;
+  margin-bottom: 36rem;
+  color: var(--text-faint);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.status-pulse {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.hero-title {
+  --title-font: "Syndra";
+  width: 100%;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--title-font), "Arial Rounded MT Bold", "Segoe UI Variable Display", sans-serif;
+  font-size: var(--font-display);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-shadow: 0 10rem 38rem rgba(0, 0, 0, 0.32);
+}
+
+/* Hero entrance is driven by the shared page transition. */
+.eyebrow,
+.hero-title,
+.hero-lede,
+.hero-sub,
+.hero-actions,
+.hero-specs {
+  /* CSS animation disabled — GSAP handles entry */
+}
+
+@keyframes hero-element-arrive {
+  from { opacity: 0; transform: translateY(12rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-title-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hero-title-button:focus-visible {
+  outline: none;
+}
+
+.title-wordmark {
+  display: inline-block;
+  color: var(--text);
+  transform-origin: 50% 60%;
+  transition:
+    transform 140ms var(--ease-out),
+    text-shadow 180ms ease;
+}
+
+.hero-title-button:hover .title-wordmark,
+.hero-title-button:focus-visible .title-wordmark {
+  text-shadow:
+    0 8rem 34rem rgba(0, 0, 0, 0.34),
+    0 0 28rem rgba(232, 54, 93, 0.12);
+}
+
+.hero-title-button:active .title-wordmark {
+  transform: scale(0.985);
+}
+
+.hero-title .accent {
+  color: var(--rose-bright);
+  font-style: normal;
+  font-weight: inherit;
+}
+
+.hero-lede {
+  max-width: 520rem;
+  margin: 32rem 0 0;
+  color: var(--text);
+  font-size: var(--font-lede);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.hero-sub {
+  max-width: 520rem;
+  margin: 20rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-body);
+  line-height: 1.6;
+}
+
+html[lang="en"] .hero-sub {
+  font-size: var(--font-body);
+}
+
+.hero-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12rem;
+  margin-top: 40rem;
+  pointer-events: auto;
+}
+
+/* Hero specs — quiet horizontal text row, NOT cards */
+.hero-specs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 48rem;
+  color: var(--text-faint);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.hero-specs div {
+  display: flex;
+  align-items: baseline;
+  gap: 7rem;
+  padding: 0 20rem;
+}
+
+.hero-specs div:first-child {
+  padding-left: 0;
+}
+
+.hero-specs div + div {
+  border-left: 1rem solid var(--line-strong);
+}
+
+.hero-specs dt,
+.hero-specs dd {
+  margin: 0;
+}
+
+.hero-specs dt {
+  color: var(--text);
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+
+.hero-specs dd {
+  color: var(--text-muted);
+  font-size: var(--font-caption);
+  font-weight: 400;
+}
+
+.scroll-cue {
+  display: none;
+}
+
+/* ---------- EXPERIENCE PANEL (Page 2) ---------- */
+.experience-panel {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.experience-copy {
+  width: min(520rem, calc(44 * var(--fluid-vw)));
+  margin-left: 0;
+  opacity: calc((var(--journey-progress) - 0.4) * 2.4);
+  transform: translateY(calc((1 - var(--journey-progress)) * 54rem));
+  will-change: transform, opacity;
+  pointer-events: auto;
+}
+
+html[lang="en"] .experience-copy {
+  width: min(540rem, calc(46 * var(--fluid-vw)));
+}
+
+.section-index {
+  display: block;
+  width: fit-content;
+  min-height: auto;
+  margin-bottom: 28rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.section-index::after {
+  display: none;
+}
+
+.experience-copy h2 {
+  max-width: 480rem;
+  margin: 0;
+  font-size: var(--font-h2);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+html[lang="en"] .experience-copy h2 {
+  max-width: 520rem;
+}
+
+.experience-copy > p {
+  max-width: 480rem;
+  margin: 24rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-body);
+  line-height: 1.6;
+}
+
+html[lang="en"] .experience-copy > p {
+  max-width: 500rem;
+}
+
+/* Lifecycle list — typography-driven, NO cards, NO borders */
+.lifecycle-list {
+  display: grid;
+  gap: clamp(28rem, calc(3.5 * var(--fluid-vw)), 36rem);
+  margin: 56rem 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.lifecycle-list > div {
+  position: relative;
+  display: grid;
+  gap: 6rem;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  transition: opacity 0.3s var(--ease-apple);
+}
+
+.lifecycle-list > div:not(:last-child)::after {
+  display: none;
+}
+
+.lifecycle-list dt,
+.lifecycle-list dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.lifecycle-list dt {
+  display: grid;
+  gap: 8rem;
+}
+
+.lifecycle-list dt span {
+  display: inline;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  transition: color 0.25s var(--ease-apple-soft), transform 0.4s var(--ease-apple);
+}
+
+.lifecycle-list dt strong {
+  color: var(--text);
+  font-size: clamp(18rem, calc(1.6 * var(--fluid-vw)), 20rem);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  transition: transform 0.4s var(--ease-apple);
+}
+
+.lifecycle-list dd {
+  color: var(--text-muted);
+  font-size: 14rem;
+  line-height: 1.6;
+  margin-top: 4rem;
+  transition: transform 0.4s var(--ease-apple);
+}
+
+.device-note {
+  position: absolute;
+  right: var(--space-inline);
+  bottom: 48rem;
+  display: flex;
+  align-items: center;
+  gap: 10rem;
+  color: var(--text-faint);
+  font-size: 11rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  opacity: calc((var(--journey-progress) - 0.65) * 3);
+}
+
+.device-note svg {
+  width: 14rem;
+  height: 14rem;
+}
+
+.device-note > span:first-child {
+  width: 28rem;
+  height: 1rem;
+  background: var(--line-strong);
+}
+
+.device-showcase {
+  width: 100%;
+  opacity: clamp(0, calc((var(--journey-progress) - 0.4) * 2.4), 1);
+  transform: translateY(calc((1 - var(--journey-progress)) * 42rem));
+  will-change: transform, opacity;
+}
+
+.device-showcase-copy {
+  width: min(300rem, 25vw);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  pointer-events: auto;
+}
+
+.device-showcase-copy h2 {
+  max-width: 100%;
+  margin: 0;
+  font-size: clamp(38rem, 3vw, 46rem);
+  font-weight: 620;
+  line-height: 1.06;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.device-showcase-intro {
+  max-width: 370rem;
+  margin: 18rem 0 0;
+  color: rgba(241, 233, 238, 0.69);
+  font-size: 14rem;
+  font-weight: 450;
+  line-height: 1.62;
+}
+
+.device-accordion {
+  width: min(370rem, 100%);
+  margin-top: 32rem;
+}
+
+.device-accordion-item {
+  border-top: 1rem solid rgba(255, 255, 255, 0.12);
+  overflow: clip;
+}
+
+.device-accordion-item:last-child {
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.09);
+}
+
+.device-accordion-item h3 {
+  margin: 0;
+}
+
+.device-accordion-item button {
+  width: 100%;
+  min-height: 54rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rem;
+  padding: 15rem 2rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(240, 235, 239, 0.6);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color 260ms var(--ease-apple-soft), padding 420ms var(--ease-apple);
+}
+
+.device-accordion-item button > span:first-child {
+  font-size: 19rem;
+  font-weight: 640;
+  line-height: 1.25;
+}
+
+.device-accordion-item button > span:last-child {
+  color: rgba(225, 205, 214, 0.38);
+  font-size: 11rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.device-accordion-item.is-active button {
+  padding-top: 18rem;
+  color: rgba(255, 250, 252, 0.96);
+}
+
+.device-accordion-item.is-active button > span:last-child {
+  color: rgba(235, 132, 159, 0.86);
+}
+
+.device-accordion-tray {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 460ms var(--ease-apple),
+    opacity 260ms var(--ease-apple-soft);
+}
+
+.device-accordion-tray > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.device-accordion-tray p {
+  max-width: 340rem;
+  margin: 0;
+  padding: 0 24rem 20rem 2rem;
+  color: rgba(239, 229, 235, 0.66);
+  font-size: 13rem;
+  font-weight: 450;
+  line-height: 1.6;
+}
+
+.device-accordion-item.is-active .device-accordion-tray {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .device-accordion-item:not(.is-active) button:hover {
+    color: rgba(247, 241, 245, 0.84);
+  }
+}
+
+@media (min-aspect-ratio: 1 / 1) and (max-height: 760px) {
+  .device-stage-panel {
+    width: min(calc(100vw - 120rem), 1080rem);
+    height: min(560rem, 76vh);
+  }
+
+  .device-showcase-copy h2 {
+    font-size: clamp(32rem, 2.7vw, 42rem);
+  }
+
+  .device-showcase-intro {
+    margin-top: 14rem;
+  }
+
+  .device-accordion {
+    margin-top: 24rem;
+  }
+
+  .device-accordion-item button {
+    min-height: 50rem;
+    padding-block: 13rem;
+  }
+
+  .device-accordion-item.is-active button {
+    padding-top: 15rem;
+  }
+
+  .device-accordion-tray p {
+    padding-bottom: 15rem;
+  }
+}

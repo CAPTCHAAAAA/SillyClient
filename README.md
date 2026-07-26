@@ -89,6 +89,8 @@ SillyClient 由三个独立仓库组成，不使用 Git submodule：
 ## 开发文档
 
 - [项目架构](./docs/ARCHITECTURE.md)
+- [Pages 目录说明](./docs/README.md)
+- [Pages 维护手册](./docs/PAGES-MAINTENANCE.md)
 - [参与开发](./CONTRIBUTING.md)
 - [发布流程](./release/RELEASE-GUIDE.md)
 - [Android 构建说明](https://github.com/CAPTCHAAAAA/SillyClient-Android#构建)

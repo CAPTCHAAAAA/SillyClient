@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SillyClient screen texture source</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #171321;
+    }
+
+    #capture {
+      position: fixed;
+      inset: 0 auto auto 0;
+      overflow: hidden;
+      background: #171321;
+    }
+
+    #screen-source {
+      display: block;
+      border: 0;
+      transform: scale(var(--capture-scale));
+      transform-origin: top left;
+    }
+  </style>
+</head>
+<body>
+  <div id="capture">
+    <iframe id="screen-source" title="SillyClient screen texture source"></iframe>
+  </div>
+
+  <script type="module">
+    import { PRODUCT_SCREEN_PRESETS as presets } from '../scripts/product-render/config.js?v=20260726-product-config-v1';
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('screen') === 'laptop'
+      ? 'laptop'
+      : 'phone';
+    const preset = presets[mode];
+    const mobileReview = params.get('page') === 'mobile';
+    const captureScale = mobileReview ? 1 : preset.scale;
+    const clamp = (value, minimum, maximum, fallback) => {
+      const numeric = Number(value);
+      return Math.min(maximum, Math.max(minimum, Number.isFinite(numeric) ? numeric : fallback));
+    };
+    const sourceWidth = mobileReview
+      ? Math.round(clamp(params.get('width'), 280, 540, preset.width))
+      : preset.width;
+    const sourceHeight = mobileReview
+      ? Math.round(clamp(params.get('height'), 560, 1000, preset.height))
+      : preset.height;
+    const capture = document.getElementById('capture');
+    const frame = document.getElementById('screen-source');
+
+    document.documentElement.style.setProperty('--capture-scale', String(captureScale));
+    capture.style.width = `${Math.round(sourceWidth * captureScale)}px`;
+    capture.style.height = `${Math.round(sourceHeight * captureScale)}px`;
+    frame.style.width = `${sourceWidth}px`;
+    frame.style.height = `${sourceHeight}px`;
+    frame.src = mobileReview
+      ? '../mobile.html?mobile=1&embeddedReview=1'
+      : `../phone-demo.html?showcase=1&safeTop=${preset.safeTop}&texture=1`;
+
+    document.documentElement.dataset.captureMode = mode;
+    document.documentElement.dataset.captureWidth = String(Math.round(sourceWidth * captureScale));
+    document.documentElement.dataset.captureHeight = String(Math.round(sourceHeight * captureScale));
+    document.documentElement.dataset.captureReady = 'false';
+
+    frame.addEventListener('load', () => {
+      setTimeout(() => {
+        document.documentElement.dataset.captureReady = 'true';
+      }, 900);
+    }, { once: true });
+  </script>
+</body>
+</html>

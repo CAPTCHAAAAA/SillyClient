@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script src="./scripts/viewport-router.js?v=20260726-aspect-route-v3"></script>
+  <title>SillyClient | Android 与 Windows 的 SillyTavern 客户端</title>
+  <meta name="description" content="SillyClient 在 Android 与 Windows 上管理 SillyTavern 本地实例和远程连接。">
+  <meta name="theme-color" content="#160d16">
+  <link rel="canonical" href="https://captchaaaaa.github.io/SillyClient/">
+  <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles/theme.css?v=20260725-guided-focus-v1">
+  <link rel="stylesheet" href="./styles/fonts.css?v=20260725-title-picker-v1">
+  <link rel="stylesheet" href="./mobile/styles/tokens.css?v=20260726-mobile-desktop-parity-v1">
+  <link rel="stylesheet" href="./mobile/styles/shell.css?v=20260726-mobile-desktop-parity-v1">
+  <link rel="stylesheet" href="./mobile/styles/hero.css?v=20260726-mobile-desktop-parity-v1">
+  <link rel="stylesheet" href="./mobile/styles/experience.css?v=20260726-mobile-desktop-parity-v1">
+  <link rel="stylesheet" href="./mobile/styles/source.css?v=20260726-mobile-desktop-parity-v1">
+  <script src="./scripts/fonts.js?v=20260725-title-picker-v1"></script>
+  <script src="./scripts/background.js?v=20260726-vivid-silk-v3"></script>
+</head>
+<body class="mobile-entry-locked">
+  <section class="mobile-entry-gate" data-mobile-entry-gate role="dialog" aria-modal="true" data-mobile-i18n-aria="entryGateLabel" aria-label="电脑端完整体验提示">
+    <div class="mobile-entry-gate__inner">
+      <div class="mobile-entry-gate__brand">
+        <img src="./sillyclient-logo.svg" width="44" height="44" alt="">
+        <span>SillyClient</span>
+      </div>
+      <p class="mobile-entry-gate__kicker" data-mobile-i18n="entryGateKicker">电脑端完整体验</p>
+      <h1 data-mobile-i18n="entryGateTitle">在电脑上，看到完整的 SillyClient。</h1>
+      <p class="mobile-entry-gate__body" data-mobile-i18n="entryGateBody">实时 3D、镜头交互与完整转场将在电脑浏览器中启用。移动端继续提供轻量预览。</p>
+      <p class="mobile-entry-gate__hint">
+        <span data-mobile-i18n="entryGateContinue">轻触屏幕继续</span>
+        <svg aria-hidden="true"><use href="./landing-icons.svg#icon-caret-right"></use></svg>
+      </p>
+    </div>
+  </section>
+
+  <header class="mobile-topbar" id="mobile-topbar">
+    <a class="mobile-brand" href="#overview" data-mobile-target="overview" data-mobile-i18n-aria="homeLabel" aria-label="SillyClient 首页">
+      <img src="./sillyclient-logo.svg" width="28" height="28" alt="">
+      <span>SillyClient</span>
+    </a>
+    <div class="mobile-topbar__actions">
+      <div class="mobile-language" role="group" data-mobile-i18n-aria="languageSwitcher" aria-label="语言">
+        <button class="is-active" type="button" data-mobile-language="zh" aria-pressed="true">中</button>
+        <button type="button" data-mobile-language="en" aria-pressed="false">EN</button>
+      </div>
+      <a class="mobile-icon-button" href="https://space.bilibili.com/237784198?spm_id_from=333.1007.0.0" target="_blank" rel="noopener" data-mobile-i18n-aria="openBilibili" aria-label="打开哔哩哔哩主页">
+        <svg aria-hidden="true"><use href="./landing-icons.svg?v=20260726-social-nav-v1#icon-bilibili"></use></svg>
+      </a>
+      <a class="mobile-icon-button" href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener" data-mobile-i18n-aria="openGithub" aria-label="打开 GitHub">
+        <svg aria-hidden="true"><use href="./landing-icons.svg#icon-github"></use></svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="mobile-pages" id="mobile-pages">
+    <section class="mobile-page mobile-hero is-active" id="overview" data-mobile-page="0">
+      <div class="mobile-hero__copy mobile-reveal">
+        <p class="mobile-eyebrow"><span></span><span data-mobile-i18n="heroEyebrow">开源 SillyTavern 客户端</span></p>
+        <h1 class="hero-title" aria-label="SillyClient">
+          <button class="hero-title-button" id="title-font-button" type="button">
+            <span class="title-wordmark" id="title-wordmark">Silly<span class="accent">Client</span></span>
+          </button>
+        </h1>
+        <p class="mobile-hero__lede" data-mobile-i18n="heroTagline">SillyClient 是面向 Android 与 Windows 的开源 SillyTavern 客户端。</p>
+        <p class="mobile-hero__body" data-mobile-i18n="heroSubtitle">它将本地实例、远程服务、运行状态与日志集中在同一套控制台，并随安装包提供所需运行环境。无论随身使用还是桌面常驻，都能从同一入口启动和管理 SillyTavern。</p>
+      </div>
+
+      <figure class="mobile-product-stage mobile-product-stage--hero mobile-reveal" data-mobile-frame-stage data-mobile-frame="2">
+        <img src="./mobile-frames/together.webp" width="3840" height="2160" alt="SillyClient 在 Android 与 Windows 上的产品界面" data-mobile-i18n-alt="heroProductAlt" fetchpriority="high">
+      </figure>
+
+      <div class="mobile-hero__footer mobile-reveal">
+        <a class="mobile-primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
+          <svg aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg>
+          <span data-mobile-i18n="latestRelease">下载最新版本</span>
+        </a>
+        <dl class="mobile-specs" data-mobile-i18n-aria="techSummary" aria-label="平台支持与系统要求">
+          <div><dt>Android</dt><dd>8.0+ · arm64</dd></div>
+          <div><dt>Windows</dt><dd>10 / 11 · x64</dd></div>
+          <div><dt>Runtime</dt><dd>Node.js included</dd></div>
+        </dl>
+      </div>
+
+      <button class="mobile-scroll-cue" type="button" data-mobile-target="experience" data-mobile-i18n-aria="enterExperience" aria-label="进入产品体验">
+        <svg aria-hidden="true"><use href="./landing-icons.svg#icon-caret-down"></use></svg>
+      </button>
+    </section>
+
+    <section class="mobile-page mobile-experience" id="experience" data-mobile-page="1">
+      <div class="mobile-experience-stage">
+        <header class="mobile-section-heading mobile-reveal">
+          <p class="mobile-section-index" data-mobile-i18n="experienceIndex">01 / 产品体验</p>
+          <h2 data-mobile-i18n="experienceTitle">SillyClient，一套界面，两端都顺手。</h2>
+          <p data-mobile-i18n="experienceBody">手机与电脑共享同一套控制台，运行环境分别由 Kotlin 与 Electron 接管。界面保持一致，各端也保留原生能力。</p>
+        </header>
+
+        <figure class="mobile-product-stage mobile-product-stage--experience mobile-reveal" data-mobile-frame-stage data-mobile-frame="0">
+          <img class="is-active" src="./mobile-frames/android.webp" width="3840" height="2160" alt="SillyClient Android 展示" data-mobile-frame-image="0" data-mobile-i18n-alt="androidProductAlt" loading="eager">
+          <img src="./mobile-frames/windows.webp" width="3840" height="2160" alt="SillyClient Windows 展示" data-mobile-frame-image="1" data-mobile-i18n-alt="windowsProductAlt" loading="eager">
+          <img src="./mobile-frames/together.webp" width="3840" height="2160" alt="SillyClient 双端展示" data-mobile-frame-image="2" data-mobile-i18n-alt="togetherProductAlt" loading="eager">
+          <figcaption><span data-mobile-frame-label>Android</span><span data-mobile-frame-count>01 / 03</span></figcaption>
+        </figure>
+
+        <div class="mobile-accordion mobile-reveal" data-mobile-accordion>
+          <section class="mobile-accordion__item is-active" data-mobile-device-state="0">
+            <h3><button type="button" aria-expanded="true"><span data-mobile-i18n="devicePhoneTitle">Android，随身运行</span><span>01</span></button></h3>
+            <div class="mobile-accordion__tray"><p data-mobile-i18n="devicePhoneBody">Kotlin 宿主管理实例目录、进程与内置 Node.js 生命周期；共享前端通过平台接口读取状态、日志和服务地址。</p></div>
+          </section>
+          <section class="mobile-accordion__item" data-mobile-device-state="1">
+            <h3><button type="button" aria-expanded="false"><span data-mobile-i18n="deviceDesktopTitle">Windows，桌面常驻</span><span>02</span></button></h3>
+            <div class="mobile-accordion__tray" inert><p data-mobile-i18n="deviceDesktopBody">Electron 主进程负责实例文件、Node.js 运行时与窗口调度，控制台和 SillyTavern 内容窗口彼此独立。</p></div>
+          </section>
+          <section class="mobile-accordion__item" data-mobile-device-state="2">
+            <h3><button type="button" aria-expanded="false"><span data-mobile-i18n="deviceTogetherTitle">SillyClient，体验一致</span><span>03</span></button></h3>
+            <div class="mobile-accordion__tray" inert><p data-mobile-i18n="deviceTogetherBody">Android 与 Windows 使用同一套 React 控制台和平台契约，交互、状态模型与版本能力由同一份源码维护。</p></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="mobile-page mobile-source" id="source" data-mobile-page="2">
+      <header class="mobile-section-heading mobile-source__heading mobile-reveal">
+        <div>
+          <p class="mobile-section-index" data-mobile-i18n="platformIndex">02 / 源码与结构</p>
+          <p class="mobile-source__type"><span>source /</span> <strong data-mobile-source-type>共享控制台</strong></p>
+        </div>
+        <h2><span data-mobile-i18n="platformTitleLead">SillyClient，</span><span data-mobile-i18n="platformTitleTail">三层代码，一条运行链路。</span></h2>
+        <p data-mobile-i18n="platformBody">共享控制台定义能力，Android 与 Windows 各自完成系统实现。以下片段均取自当前仓库。</p>
+      </header>
+
+      <div class="mobile-source-carousel mobile-reveal" data-mobile-source-carousel data-mobile-i18n-aria="platformCarouselLabel" aria-label="SillyClient 核心源码展示">
+        <div class="mobile-source-viewport">
+          <div class="mobile-source-track">
+            <article class="mobile-source-card is-active" data-mobile-source-slide aria-hidden="false">
+              <div class="mobile-source-card__copy">
+                <span>01 / 03</span>
+                <h3 data-mobile-i18n="sourceStageTitle">共享契约，统一控制台能力。</h3>
+                <p data-mobile-i18n="sourceStageBody">TarvenEnv 统一描述实例创建、状态、窗口与日志事件。React 控制台只依赖这一层，不区分宿主平台。</p>
+              </div>
+              <div class="mobile-code-window">
+                <header><span>Contract · TypeScript</span><a href="https://github.com/CAPTCHAAAAA/SillyClient-Android/blob/main/web/capacitor-ui/src/capacitor-plugin.ts#L62" target="_blank" rel="noopener"><code>capacitor-plugin.ts</code></a></header>
+                <pre><code><b>export interface</b> TarvenEnvPlugin {
+  provisionAndStart(options: {
+    port: <i>number</i>
+    instanceId: <i>string</i>
+  }): Promise&lt;{ ready: <i>boolean</i> }&gt;
+}</code></pre>
+                <footer><span>React</span><span>Capacitor 7</span><span>TypeScript</span></footer>
+              </div>
+            </article>
+
+            <article class="mobile-source-card" data-mobile-source-slide aria-hidden="true" inert>
+              <div class="mobile-source-card__copy">
+                <span>02 / 03</span>
+                <h3 data-mobile-i18n="repositoryTitle">Android，确认就绪再交付。</h3>
+                <p data-mobile-i18n="repositoryBody">Kotlin 宿主管理下载、进程与端口检测。只有本地服务能够连接时，控制台才会收到 ready 状态。</p>
+              </div>
+              <div class="mobile-code-window">
+                <header><span>Runtime · Kotlin</span><a href="https://github.com/CAPTCHAAAAA/SillyClient-Android/blob/main/app/src/main/java/com/sillyclient/MainActivity.kt#L1235" target="_blank" rel="noopener"><code>MainActivity.kt</code></a></header>
+                <pre><code><b>if</b> (tryConnect(tavernUrl)) {
+  appendLog(<em>"[OK] SillyTavern is online"</em>)
+  serverReady = <i>true</i>
+  pushReady(<i>true</i>)
+  updateHomeReady()
+}</code></pre>
+                <footer><span>Kotlin</span><span>WebView</span><span>Bionic Node.js</span></footer>
+              </div>
+            </article>
+
+            <article class="mobile-source-card" data-mobile-source-slide aria-hidden="true" inert>
+              <div class="mobile-source-card__copy">
+                <span>03 / 03</span>
+                <h3 data-mobile-i18n="deliveryStageTitle">Windows，同一契约接入桌面。</h3>
+                <p data-mobile-i18n="deliveryStageBody">Preload 代理把控制台调用送入 Electron 主进程；管理窗口、内容窗口与内置运行时保持各自边界。</p>
+              </div>
+              <div class="mobile-code-window">
+                <header><span>Bridge · Electron</span><a href="https://github.com/CAPTCHAAAAA/SillyClient-Windows/blob/master/src/preload.ts#L107" target="_blank" rel="noopener"><code>preload.ts</code></a></header>
+                <pre><code><b>return</b> (options?: <i>any</i>) =&gt; {
+  <b>return</b> ipcRenderer.invoke(
+    <em>'tarven-env'</em>,
+    { method: prop, options: options ?? {} }
+  )
+}</code></pre>
+                <footer><span>Electron 33</span><span>TypeScript</span><span>Node.js 22</span></footer>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <footer class="mobile-source-controls">
+          <span aria-live="polite"><strong data-mobile-source-current>01</strong> / 03</span>
+          <div>
+            <button type="button" data-mobile-source-previous data-mobile-i18n-aria="previousStage" aria-label="上一幕" disabled><svg aria-hidden="true"><use href="./landing-icons.svg#icon-caret-left"></use></svg></button>
+            <button type="button" data-mobile-source-next data-mobile-i18n-aria="nextStage" aria-label="下一幕"><svg aria-hidden="true"><use href="./landing-icons.svg#icon-caret-right"></use></svg></button>
+          </div>
+        </footer>
+      </div>
+
+      <footer class="mobile-site-footer mobile-reveal">
+        <span>SillyClient</span>
+        <div><a href="https://github.com/CAPTCHAAAAA/SillyClient" target="_blank" rel="noopener">GitHub</a><a href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">Releases</a></div>
+      </footer>
+    </section>
+  </main>
+
+  <nav class="mobile-page-rail" data-mobile-i18n-aria="primaryNav" aria-label="主要导航">
+    <button class="is-active" type="button" data-mobile-target="overview" data-mobile-i18n-aria="overview" aria-label="概览" aria-current="page"><span></span></button>
+    <button type="button" data-mobile-target="experience" data-mobile-i18n-aria="experience" aria-label="产品体验"><span></span></button>
+    <button type="button" data-mobile-target="source" data-mobile-i18n-aria="source" aria-label="源码与结构"><span></span></button>
+  </nav>
+
+  <script type="module" src="./mobile/scripts/main.js?v=20260726-mobile-modules-v2"></script>
+</body>
+</html>

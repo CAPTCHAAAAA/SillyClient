@@ -1,0 +1,514 @@
+/* ---------- PLATFORM SECTION (Page 3) ---------- */
+.platform-section {
+  position: relative;
+  z-index: 20;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: block;
+  padding: var(--space-section) var(--space-inline) clamp(100rem, calc(10 * var(--fluid-vw)), 140rem);
+  background: transparent;
+  color: var(--text);
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  transition: opacity 0.32s var(--ease-apple);
+  overflow: visible;
+}
+
+/* Silk liquid background removed — the global Color Bends + Dot Field (fixed canvases)
+   provide consistent background across ALL pages. Localized ::before/::after gradients
+   created a visual discontinuity at the journey/platform boundary. */
+.platform-section::before,
+.platform-section::after {
+  content: none;
+}
+
+.platform-inner {
+  width: min(1080rem, 100%);
+  margin: 0 auto;
+}
+
+/* Platform intro */
+.platform-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280rem, 400rem);
+  gap: clamp(48rem, calc(7 * var(--fluid-vw)), 96rem);
+  align-items: end;
+}
+
+.platform-intro h2 {
+  max-width: 680rem;
+  margin: 0;
+  font-size: var(--font-h2);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.platform-intro h2 span {
+  display: block;
+}
+
+html[lang="en"] .platform-intro h2 {
+  font-size: var(--font-h2);
+}
+
+.platform-intro > p {
+  max-width: 400rem;
+  margin: 0 0 4rem;
+  color: var(--text-muted);
+  font-size: var(--font-body);
+  line-height: 1.6;
+}
+
+/* Runtime topology */
+.runtime-topology {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(48rem, calc(6 * var(--fluid-vw)), 80rem);
+  align-items: center;
+  margin: clamp(80rem, calc(10 * var(--fluid-vw)), 120rem) 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.runtime-topology figcaption > span {
+  display: block;
+  color: var(--text-faint);
+  font-size: 11rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.runtime-topology figcaption strong {
+  display: block;
+  max-width: 360rem;
+  margin-top: 18rem;
+  color: var(--text);
+  font-size: clamp(21rem, calc(2 * var(--fluid-vw)), 26rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.runtime-topology figcaption p {
+  display: block;
+  max-width: 360rem;
+  margin: 18rem 0 0;
+  color: var(--text-muted);
+  font-size: 14rem;
+  line-height: 1.6;
+}
+
+/* Runtime graph — open text panels, NOT dense card grid */
+.runtime-graph {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: clamp(28rem, calc(3.5 * var(--fluid-vw)), 44rem);
+  align-items: center;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.runtime-graph::before,
+.runtime-graph::after {
+  display: none;
+  content: none;
+}
+
+.graph-source,
+.graph-contract,
+.graph-platforms {
+  position: relative;
+  z-index: 1;
+}
+
+.graph-source {
+  display: grid;
+  align-content: center;
+  gap: 6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.graph-contract {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.graph-source small,
+.graph-contract small {
+  color: var(--text-faint);
+  font-size: 11rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.graph-source strong {
+  color: var(--text);
+  font-size: 20rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.graph-contract strong {
+  color: var(--text-muted);
+  font-size: 16rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.graph-source span {
+  color: var(--text-muted);
+  font-size: 13rem;
+}
+
+.graph-platforms {
+  display: grid;
+  gap: clamp(16rem, calc(2 * var(--fluid-vw)), 24rem);
+}
+
+.graph-platforms article {
+  min-width: 0;
+  padding: 24rem;
+  border: 1rem solid var(--line);
+  border-radius: 16rem;
+  background: transparent;
+}
+
+.graph-platforms header,
+.graph-platforms footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rem;
+}
+
+.graph-platforms header strong {
+  color: var(--text);
+  font-size: 18rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.graph-platforms header span {
+  color: var(--text-faint);
+  font-size: 12rem;
+  font-weight: 500;
+}
+
+.graph-platforms p {
+  margin: 10rem 0 12rem;
+  color: var(--text-muted);
+  font-size: 14rem;
+  line-height: 1.6;
+}
+
+.graph-platforms footer span {
+  padding: 4rem 10rem;
+  border-radius: 999rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  font-size: 10rem;
+  font-weight: 500;
+}
+
+/* Repository topology */
+.repository-topology {
+  margin-top: clamp(80rem, calc(10 * var(--fluid-vw)), 120rem);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.repository-topology > header {
+  display: block;
+}
+
+.repository-topology h3 {
+  max-width: 680rem;
+  margin: 18rem 0 0;
+  color: var(--text);
+  font-size: var(--font-h3);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.repository-topology > header > p {
+  display: block;
+  max-width: 620rem;
+  margin: 16rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-body);
+  line-height: 1.6;
+}
+
+/* Repository graph — open text panels */
+.repository-graph {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: clamp(32rem, calc(4 * var(--fluid-vw)), 48rem);
+  margin-top: 48rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.repo-source,
+.repo-targets article,
+.repo-release {
+  min-width: 0;
+  border: 1rem solid var(--line);
+}
+
+.repo-source {
+  display: grid;
+  align-content: start;
+  gap: 8rem;
+  padding: 24rem;
+  border-radius: 16rem;
+  background: transparent;
+}
+
+.repo-source small,
+.repo-targets small {
+  color: var(--text-faint);
+  font-size: 11rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.repo-source strong {
+  color: var(--text);
+  font-size: 18rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.repository-graph code,
+.repository-graph p {
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+  font-size: 14rem;
+}
+
+.repository-graph p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.repository-graph code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13rem;
+}
+
+.repo-targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16rem, calc(2 * var(--fluid-vw)), 24rem);
+}
+
+.repo-targets article {
+  display: grid;
+  align-content: start;
+  gap: 8rem;
+  padding: 24rem;
+  border-radius: 16rem;
+  background: transparent;
+}
+
+.repo-targets span {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 16rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.repo-targets code,
+.repo-targets p {
+  margin: 0;
+}
+
+.repo-targets small {
+  margin-top: 8rem;
+}
+
+.repo-release {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rem;
+  padding: 20rem 24rem;
+  border-radius: 16rem;
+  background: transparent;
+}
+
+.repo-release strong {
+  color: var(--text);
+  font-size: 15rem;
+  font-weight: 600;
+}
+
+.repo-release span {
+  color: var(--text-muted);
+  font-size: 13rem;
+  text-align: right;
+}
+
+/* Download row — Apple-style pill buttons */
+.download-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(40rem, calc(5 * var(--fluid-vw)), 64rem);
+  align-items: center;
+  margin-top: clamp(80rem, calc(10 * var(--fluid-vw)), 120rem);
+  padding-top: clamp(60rem, calc(8 * var(--fluid-vw)), 80rem);
+  min-width: 0;
+  border: 0;
+  border-top: 1rem solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.download-row h3 {
+  max-width: 620rem;
+  margin: 0;
+  font-size: var(--font-h2);
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.download-row .section-index {
+  margin-bottom: 20rem;
+}
+
+.platform-actions {
+  display: flex;
+  gap: 14rem;
+}
+
+/* Platform action — LARGE pill button */
+.platform-action {
+  min-height: 56rem;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14rem;
+  padding: 0 28rem;
+  border-radius: 999rem;
+  border: none;
+  background: var(--rose);
+  color: #fff;
+  font: inherit;
+  font-size: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transform: none;
+  transition: background 0.3s var(--ease-apple-soft), color 0.25s var(--ease-apple-soft),
+    border-color 0.4s var(--ease-apple-soft), transform 0.3s var(--ease-apple);
+}
+
+.platform-action.is-secondary {
+  background: transparent;
+  border: 1rem solid var(--line-strong);
+  color: var(--text);
+}
+
+.platform-action:active {
+  transform: scale(0.99);
+  transition-duration: 0.1s;
+}
+
+.platform-action span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2rem;
+  text-align: left;
+}
+
+.platform-action strong {
+  font-size: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.platform-action small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12rem;
+  font-weight: 400;
+}
+
+.platform-action.is-secondary small {
+  color: var(--text-faint);
+}
+
+.platform-action svg {
+  width: 18rem;
+  height: 18rem;
+}
+
+/* Site footer — minimal, quiet */
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rem;
+  padding: 80rem 0 0;
+  border-top: 1rem solid var(--line);
+  color: var(--text-faint);
+  font-size: 12rem;
+  letter-spacing: 0;
+}
+
+.site-footer div {
+  display: flex;
+  gap: 20rem;
+}
+
+.site-footer a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.25s var(--ease-apple-soft);
+}
+
+.site-footer a:hover {
+  color: var(--text-muted);
+}
