@@ -34,10 +34,18 @@ const showcaseBootstrap = `    <script>
         history.replaceState(null, '', \`${'${location.pathname}'}?\${params}\${location.hash}\`);
       })();
     </script>\n`;
+const showcaseLayout = `    <style id="showcase-layout">
+      html, body, #root {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+    </style>\n`;
 const phoneDemo = pageIndex
   .replace('<title>SillyClient 酒馆启动器</title>', '<title>SillyClient 展示界面</title>')
   .replace("var stored = localStorage.getItem('theme');", "var stored = 'dark';")
-  .replace('  </head>', `${showcaseBootstrap}  </head>`);
+  .replace('  </head>', `${showcaseLayout}${showcaseBootstrap}  </head>`);
 fs.writeFileSync(path.join(root, 'docs', 'phone-demo.html'), phoneDemo);
 
 console.log(`Synced ${source} -> ${destination}`);
