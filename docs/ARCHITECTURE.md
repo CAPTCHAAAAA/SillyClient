@@ -29,6 +29,8 @@ flowchart LR
 
 控制台负责实例配置和状态展示。平台层负责下载、解压、进程生命周期、端口检测和窗口切换。实例只有通过可运行性检查后才算创建成功。
 
+远程实例支持 HTTP Basic Auth。共享前端只保存用户名等非敏感元数据，密码分别由 Android Keystore 和 Electron `safeStorage` 保管。连接预检、应用内认证挑战和凭据删除都由平台层实现；密码不得进入 URL、日志、Pages 生成物或浏览器存储。系统浏览器模式不会注入凭据。
+
 ## 前端产物流向
 
 唯一源码：`SillyClient-Android/web/capacitor-ui/`
