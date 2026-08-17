@@ -1,6 +1,6 @@
 const TYPE_LABELS = {
-  zh: ['共享控制台', 'Android 原生宿主', 'Windows 桌面运行时'],
-  en: ['shared console', 'Android native host', 'Windows desktop runtime']
+  zh: ['完整演示', '共享控制台', 'Android 原生宿主', 'Windows 桌面运行时'],
+  en: ['full walkthrough', 'shared console', 'Android native host', 'Windows desktop runtime']
 };
 
 export function initializeSourceCarousel() {
@@ -25,7 +25,7 @@ export function initializeSourceCarousel() {
     });
     previous.disabled = index === 0;
     next.disabled = index === slides.length - 1;
-    current.textContent = `0${index + 1}`;
+    current.textContent = String(index + 1).padStart(2, '0');
     if (type) type.textContent = TYPE_LABELS[language][index];
   };
 

@@ -41,8 +41,12 @@
   function updateSlideWidth() {
     var unit = designUnit();
     var slideWidth = Math.max(318 * unit, Math.min(362 * unit, viewport.clientWidth * 0.34));
+    var videoSlideWidth = Math.max(slideWidth, Math.min(720 * unit, viewport.clientWidth * 0.78));
+    var videoSlideHeight = Math.min(414 * unit, videoSlideWidth * 9 / 16 + 28 * unit);
     var trackPadding = Math.max(18 * unit, (viewport.clientWidth - slideWidth) / 2);
     carousel.style.setProperty('--platform-slide-width', slideWidth + 'px');
+    carousel.style.setProperty('--platform-video-slide-width', videoSlideWidth + 'px');
+    carousel.style.setProperty('--platform-video-slide-height', videoSlideHeight + 'px');
     carousel.style.setProperty('--platform-track-padding', trackPadding + 'px');
     updatePosition(false);
   }

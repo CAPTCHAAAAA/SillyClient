@@ -30,6 +30,10 @@ export function createI18n() {
       const value = copy[element.dataset.mobileI18nAlt];
       if (value) element.setAttribute('alt', value);
     });
+    document.querySelectorAll('[data-mobile-i18n-title]').forEach((element) => {
+      const value = copy[element.dataset.mobileI18nTitle];
+      if (value) element.setAttribute('title', value);
+    });
     document.querySelectorAll('[data-mobile-language]').forEach((button) => {
       const active = button.dataset.mobileLanguage === language;
       button.classList.toggle('is-active', active);

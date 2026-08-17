@@ -62,6 +62,58 @@
   opacity: 1;
 }
 
+.mobile-source-card--video {
+  gap: 14px;
+}
+
+.mobile-video-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--product-line);
+  border-radius: 18px;
+  background: rgba(8, 5, 9, 0.78);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04), 0 6px 24px rgba(0, 0, 0, 0.16);
+}
+
+.mobile-video-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 245, 248, 0.045);
+  pointer-events: none;
+}
+
+.mobile-video-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--product-text-faint);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mobile-video-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+  background: #080508;
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.mobile-video-stage.is-loaded .mobile-video-frame {
+  opacity: 1;
+}
+
 .mobile-source-card__copy > span {
   color: var(--product-text-faint);
   font-size: 9px;
@@ -238,7 +290,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-source-track,
-  .mobile-source-card {
+  .mobile-source-card,
+  .mobile-video-frame {
     transition-duration: 1ms;
   }
 }

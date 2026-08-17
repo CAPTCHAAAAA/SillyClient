@@ -59,9 +59,10 @@ flowchart LR
 | 页面骨架 | `docs/styles/page.css`、`docs/styles/page/` | 按基础、旅程、平台、检查器和响应式规则拆分页面样式 |
 | 首屏构图 | `docs/styles/hero.css` | 左侧产品介绍、右侧交叉设备摄影画幅与翻页提示 |
 | 页面导航 | `docs/styles/navigation.css` | 顶部信息栏与右侧三点页轨 |
-| 展示舞台 | `docs/styles/showcase.css`、`docs/scripts/spotlight-card.js` | 双端设备叙事、横向源码卡片轨道与局部光场 |
+| 展示舞台 | `docs/styles/showcase.css`、`docs/scripts/spotlight-card.js` | 双端设备叙事、视频宽卡、横向源码卡片轨道与局部光场 |
 | 舞台光学 | `docs/styles/optics.css` | 边缘色散与舞台体积边界；设备模型不使用景深或渐进虚化 |
 | 项目轮播 | `docs/scripts/platform-carousel.js` | 第三页分镜切换、键盘控制与可访问状态 |
+| 视频加载 | `docs/scripts/ui/bilibili-player.js` | 桌面与移动第三页的 B 站播放器按需加载 |
 | 文字动效 | `docs/styles/scroll-reveal.css`、`docs/scripts/scroll-reveal.js`、`docs/styles/variable-proximity.css`、`docs/scripts/variable-proximity.js`、`docs/styles/text-type.css`、`docs/scripts/text-type.js` | 翻页主标题、英文邻近字重与源码标签打字效果 |
 | 手机外观 | `docs/styles/phone.css` | 屏幕投影层、灵动岛与反射 |
 | 电脑外观 | `docs/styles/laptop.css` | 桌面屏幕投影层与反射 |
@@ -93,7 +94,8 @@ flowchart LR
 `mobile.html`。路由在页面依赖加载前执行，并在跨越 1:1 临界值时重新判断。
 `?desktop=1`、`?mobile=1` 和 `?productRender=1` 仅用于预览、测试和资产导出。
 移动页沿用桌面页的背景渲染、产品主题、标题字体、导航、概览与源码结构；它不加载
-Three.js 设备模型、GLB、iframe 或 GSAP。第二页由
+Three.js 设备模型、GLB、产品界面 iframe 或 GSAP，第三页仅保留懒加载的 B 站视频。
+第二页由
 `docs/mobile/scripts/frame-stage.js` 使用透明产品帧替代实时 3D。
 
 `product-render/screen-source.html` 根据

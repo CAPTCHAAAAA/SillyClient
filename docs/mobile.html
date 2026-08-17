@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./mobile/styles/shell.css?v=20260726-mobile-desktop-parity-v1">
   <link rel="stylesheet" href="./mobile/styles/hero.css?v=20260726-mobile-desktop-parity-v1">
   <link rel="stylesheet" href="./mobile/styles/experience.css?v=20260726-mobile-desktop-parity-v1">
-  <link rel="stylesheet" href="./mobile/styles/source.css?v=20260726-mobile-desktop-parity-v1">
+  <link rel="stylesheet" href="./mobile/styles/source.css?v=20260817-video-source-cards-v1">
   <script src="./scripts/fonts.js?v=20260725-title-picker-v1"></script>
   <script src="./scripts/background.js?v=20260726-vivid-silk-v3"></script>
 </head>
@@ -124,19 +124,40 @@
     <section class="mobile-page mobile-source" id="source" data-mobile-page="2">
       <header class="mobile-section-heading mobile-source__heading mobile-reveal">
         <div>
-          <p class="mobile-section-index" data-mobile-i18n="platformIndex">02 / 源码与结构</p>
-          <p class="mobile-source__type"><span>source /</span> <strong data-mobile-source-type>共享控制台</strong></p>
+          <p class="mobile-section-index" data-mobile-i18n="platformIndex">02 / 演示与源码</p>
+          <p class="mobile-source__type"><span>showcase /</span> <strong data-mobile-source-type>完整演示</strong></p>
         </div>
         <h2><span data-mobile-i18n="platformTitleLead">SillyClient，</span><span data-mobile-i18n="platformTitleTail">三层代码，一条运行链路。</span></h2>
-        <p data-mobile-i18n="platformBody">共享控制台定义能力，Android 与 Windows 各自完成系统实现。以下片段均取自当前仓库。</p>
+        <p data-mobile-i18n="platformBody">先通过完整演示了解 SillyClient，再查看共享控制台与双端宿主的核心实现。</p>
       </header>
 
       <div class="mobile-source-carousel mobile-reveal" data-mobile-source-carousel data-mobile-i18n-aria="platformCarouselLabel" aria-label="SillyClient 核心源码展示">
         <div class="mobile-source-viewport">
           <div class="mobile-source-track">
-            <article class="mobile-source-card is-active" data-mobile-source-slide aria-hidden="false">
+            <article class="mobile-source-card mobile-source-card--video is-active" data-mobile-source-slide aria-hidden="false">
               <div class="mobile-source-card__copy">
-                <span>01 / 03</span>
+                <span>01 / 04</span>
+                <h3 data-mobile-i18n="videoStageTitle">完整演示，从安装到使用。</h3>
+                <p data-mobile-i18n="videoStageBody">通过真实操作了解实例创建、快捷控制、个性化设置与手机端远程连接。</p>
+              </div>
+              <div class="mobile-video-stage" data-bilibili-stage>
+                <span class="mobile-video-loading" data-mobile-i18n="videoLoading">正在载入视频</span>
+                <iframe
+                  class="mobile-video-frame"
+                  data-bilibili-player="https://player.bilibili.com/player.html?isOutside=true&amp;aid=117107115169376&amp;bvid=BV1ehbb61E2B&amp;cid=40977367671&amp;p=1&amp;high_quality=1&amp;danmaku=0&amp;autoplay=0"
+                  title="SillyClient 1.8.1 视频介绍"
+                  data-mobile-i18n-title="videoFrameTitle"
+                  loading="lazy"
+                  scrolling="no"
+                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                  allowfullscreen
+                ></iframe>
+              </div>
+            </article>
+
+            <article class="mobile-source-card" data-mobile-source-slide aria-hidden="true" inert>
+              <div class="mobile-source-card__copy">
+                <span>02 / 04</span>
                 <h3 data-mobile-i18n="sourceStageTitle">共享契约，统一控制台能力。</h3>
                 <p data-mobile-i18n="sourceStageBody">TarvenEnv 统一描述实例创建、状态、窗口与日志事件。React 控制台只依赖这一层，不区分宿主平台。</p>
               </div>
@@ -154,7 +175,7 @@
 
             <article class="mobile-source-card" data-mobile-source-slide aria-hidden="true" inert>
               <div class="mobile-source-card__copy">
-                <span>02 / 03</span>
+                <span>03 / 04</span>
                 <h3 data-mobile-i18n="repositoryTitle">Android，确认就绪再交付。</h3>
                 <p data-mobile-i18n="repositoryBody">Kotlin 宿主管理下载、进程与端口检测。只有本地服务能够连接时，控制台才会收到 ready 状态。</p>
               </div>
@@ -172,7 +193,7 @@
 
             <article class="mobile-source-card" data-mobile-source-slide aria-hidden="true" inert>
               <div class="mobile-source-card__copy">
-                <span>03 / 03</span>
+                <span>04 / 04</span>
                 <h3 data-mobile-i18n="deliveryStageTitle">Windows，同一契约接入桌面。</h3>
                 <p data-mobile-i18n="deliveryStageBody">Preload 代理把控制台调用送入 Electron 主进程；管理窗口、内容窗口与内置运行时保持各自边界。</p>
               </div>
@@ -191,7 +212,7 @@
         </div>
 
         <footer class="mobile-source-controls">
-          <span aria-live="polite"><strong data-mobile-source-current>01</strong> / 03</span>
+          <span aria-live="polite"><strong data-mobile-source-current>01</strong> / 04</span>
           <div>
             <button type="button" data-mobile-source-previous data-mobile-i18n-aria="previousStage" aria-label="上一幕" disabled><svg aria-hidden="true"><use href="./landing-icons.svg#icon-caret-left"></use></svg></button>
             <button type="button" data-mobile-source-next data-mobile-i18n-aria="nextStage" aria-label="下一幕"><svg aria-hidden="true"><use href="./landing-icons.svg#icon-caret-right"></use></svg></button>
@@ -212,6 +233,6 @@
     <button type="button" data-mobile-target="source" data-mobile-i18n-aria="source" aria-label="源码与结构"><span></span></button>
   </nav>
 
-  <script type="module" src="./mobile/scripts/main.js?v=20260726-mobile-modules-v2"></script>
+  <script type="module" src="./mobile/scripts/main.js?v=20260817-video-source-cards-v1"></script>
 </body>
 </html>

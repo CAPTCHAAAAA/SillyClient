@@ -46,7 +46,7 @@ flowchart LR
 
 1. 第一页显示产品介绍和双设备开屏构图。
 2. 第二页使用同一 Three.js 场景展示手机、电脑和双端协作三个状态。
-3. 第三页使用横向项目卡片介绍共享前端、平台实现和发布结构。
+3. 第三页先以横向宽卡嵌入产品视频，再用三张项目卡片介绍共享前端与双端实现。
 
 ### 页面模块
 
@@ -57,6 +57,7 @@ flowchart LR
 | 组件检查器 | `scripts/page/component-inspector.js` |
 | 分页与输入 | `scripts/page/navigation-controller.js` |
 | 第三页轮播 | `scripts/platform-carousel.js` |
+| 视频懒加载 | `scripts/ui/bilibili-player.js` |
 | 标题字体 | `scripts/ui/title-font-controller.js` |
 
 页面结构变化先修改 `index.html`，对应样式进入 `styles/page/` 或明确的视觉模块。
@@ -111,7 +112,7 @@ flowchart TD
 - 桌面页按设备像素比设置渲染分辨率，并保留上限。
 - 页面离开设备舞台后暂停无意义的屏幕投影更新。
 - 用户启用 `prefers-reduced-motion` 时关闭非必要动效。
-- 移动入口不加载 Three.js、GLB、iframe 或 GSAP。
+- 移动入口不加载 Three.js、GLB、产品界面 iframe 或 GSAP；第三页只允许懒加载的 B 站视频 iframe。
 
 ## 5. 移动入口
 
@@ -129,8 +130,8 @@ flowchart TD
 这个提示不是按钮，也不响应滚动关闭。
 
 移动页源码放在 `mobile/scripts/` 与 `mobile/styles/`，不要用桌面媒体查询继续堆叠
-第二套页面逻辑。桌面和移动只共享稳定的视觉资源与
-`ui/title-font-controller.js`。
+第二套页面逻辑。桌面和移动只共享稳定的视觉资源、标题字体控制器与 B 站播放器
+懒加载器；第三页之外不得新增第三方 iframe。
 
 ## 6. 产品前端更新
 

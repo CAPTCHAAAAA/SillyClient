@@ -49,6 +49,7 @@ const requiredFiles = [
   'scripts/page/content.js',
   'scripts/page/inspector-content.js',
   'scripts/page/navigation-controller.js',
+  'scripts/ui/bilibili-player.js',
   'scripts/ui/title-font-controller.js',
   'scripts/desktop-model-loader.js',
   'scripts/device-scene-config.js',
@@ -174,9 +175,17 @@ validateTranslations({
 validateTranslations({
   htmlName: 'mobile.html',
   scriptName: 'mobile/scripts/content.js',
-  attributePattern: /data-mobile-i18n(?:-aria|-alt)?=["']([^"']+)["']/g,
+  attributePattern: /data-mobile-i18n(?:-aria|-alt|-title)?=["']([^"']+)["']/g,
   namespace: 'mobileTranslations',
 });
+
+const mobileHtml = fs.readFileSync(path.join(docsDir, 'mobile.html'), 'utf8');
+const mobileIframes = [...mobileHtml.matchAll(/<iframe\b[\s\S]*?<\/iframe>/gi)].map((match) => match[0].toLowerCase());
+if (mobileIframes.length !== 1) {
+  errors.push(`mobile page: expected exactly one lazy Bilibili iframe, found ${mobileIframes.length}`);
+} else if (!mobileIframes[0].includes('data-bilibili-player="https://player.bilibili.com/player.html')) {
+  errors.push('mobile page: iframe must be the explicit lazy Bilibili player');
+}
 
 const mobileSources = [
   'mobile.html',
@@ -195,7 +204,7 @@ const mobileSources = [
   'mobile/styles/experience.css',
   'mobile/styles/source.css',
 ].map((relativePath) => fs.readFileSync(path.join(docsDir, relativePath), 'utf8')).join('\n').toLowerCase();
-for (const forbiddenDependency of ['<canvas', '<iframe', 'three.js', "from 'three", 'phone-model.js', 'models/', '.glb', 'gsap']) {
+for (const forbiddenDependency of ['<canvas', 'three.js', "from 'three", 'phone-model.js', 'models/', '.glb', 'gsap']) {
   if (mobileSources.includes(forbiddenDependency)) {
     errors.push(`mobile page: heavy desktop dependency is not allowed: ${forbiddenDependency}`);
   }

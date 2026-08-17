@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="./styles/phone.css?v=20260726-rigid-projection-v6" />
   <link rel="stylesheet" href="./styles/laptop.css?v=20260726-notched-display-v5" />
   <link rel="stylesheet" href="./styles/page.css?v=20260726-reactbits-stage-v3" />
-  <link rel="stylesheet" href="./styles/showcase.css?v=20260726-source-cards-v6" />
+  <link rel="stylesheet" href="./styles/showcase.css?v=20260817-video-source-cards-v1" />
   <link rel="stylesheet" href="./styles/hero.css?v=20260725-authored-split-v3" />
   <link rel="stylesheet" href="./styles/navigation.css?v=20260725-page-rail-v3" />
   <link rel="stylesheet" href="./styles/optics.css?v=20260726-reactbits-stage-v3" />
@@ -177,34 +177,50 @@
           <section class="platform-marcom" data-platform-carousel aria-labelledby="platform-heading">
             <header class="platform-heading" data-reveal>
               <div class="platform-heading-kicker">
-                <div class="section-index" data-i18n="platformIndex">02 / 源码与结构</div>
+                <div class="section-index" data-i18n="platformIndex">02 / 演示与源码</div>
                 <div class="platform-type-line" aria-hidden="true">
-                  <span>source /</span>
+                  <span>showcase /</span>
                   <span
                     class="text-type"
                     data-text-type
                     data-text-type-follow-carousel
-                    data-text-type-zh='["共享控制台","Android 原生宿主","Windows 桌面运行时"]'
-                    data-text-type-en='["shared console","Android native host","Windows desktop runtime"]'
+                    data-text-type-zh='["完整演示","共享控制台","Android 原生宿主","Windows 桌面运行时"]'
+                    data-text-type-en='["full walkthrough","shared console","Android native host","Windows desktop runtime"]'
                     data-text-type-speed="48"
                     data-text-type-delete-speed="26"
                     data-text-type-pause="1450"
                     data-text-type-initial-delay="260"
-                  ><span class="text-type__content">共享控制台</span><span class="text-type__cursor">|</span></span>
+                  ><span class="text-type__content">完整演示</span><span class="text-type__cursor">|</span></span>
                 </div>
               </div>
               <div class="platform-heading-row">
                 <h2 id="platform-heading"><span data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0.04" data-scroll-reveal-rotation="3" data-scroll-reveal-blur="7" data-i18n="platformTitleLead">SillyClient，</span><span data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0.04" data-scroll-reveal-rotation="3" data-scroll-reveal-blur="7" data-i18n="platformTitleTail">三层代码，一条运行链路。</span></h2>
-                <p data-i18n="platformBody">共享控制台定义能力，Android 与 Windows 各自完成系统实现。以下片段均取自当前仓库。</p>
+                <p data-i18n="platformBody">先通过完整演示了解 SillyClient，再查看共享控制台与双端宿主的核心实现。</p>
               </div>
             </header>
 
             <div class="platform-carousel" aria-roledescription="carousel" data-i18n-aria="platformCarouselLabel">
               <div class="platform-viewport">
                 <div class="platform-track">
-                  <article class="platform-slide platform-slide--source card-spotlight is-active" data-platform-slide data-spotlight-card data-spotlight-color="rgba(255, 94, 133, 0.12)" aria-hidden="false">
+                  <article class="platform-slide platform-slide--video is-active" data-platform-slide aria-hidden="false">
+                    <div class="platform-video-stage" data-bilibili-stage>
+                      <span class="platform-video-loading" data-i18n="videoLoading">正在载入视频</span>
+                      <iframe
+                        class="platform-video-frame"
+                        data-bilibili-player="https://player.bilibili.com/player.html?isOutside=true&amp;aid=117107115169376&amp;bvid=BV1ehbb61E2B&amp;cid=40977367671&amp;p=1&amp;high_quality=1&amp;danmaku=0&amp;autoplay=0"
+                        title="SillyClient 1.8.1 视频介绍"
+                        data-i18n-title="videoFrameTitle"
+                        loading="lazy"
+                        scrolling="no"
+                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                        allowfullscreen
+                      ></iframe>
+                    </div>
+                  </article>
+
+                  <article class="platform-slide platform-slide--source card-spotlight" data-platform-slide data-spotlight-card data-spotlight-color="rgba(255, 94, 133, 0.12)" aria-hidden="true" inert>
                     <div class="platform-slide-copy">
-                      <div class="platform-slide-index">01 <span>/ 03</span></div>
+                      <div class="platform-slide-index">02 <span>/ 04</span></div>
                       <h3 data-i18n="sourceStageTitle">共享契约，统一控制台能力。</h3>
                       <p data-i18n="sourceStageBody">TarvenEnv 统一描述实例创建、状态、窗口与日志事件。React 控制台只依赖这一层，不区分宿主平台。</p>
                     </div>
@@ -229,7 +245,7 @@
 
                   <article class="platform-slide platform-slide--android card-spotlight" data-platform-slide data-spotlight-card data-spotlight-color="rgba(255, 94, 133, 0.12)" aria-hidden="true" inert>
                     <div class="platform-slide-copy">
-                      <div class="platform-slide-index">02 <span>/ 03</span></div>
+                      <div class="platform-slide-index">03 <span>/ 04</span></div>
                       <h3 data-i18n="repositoryTitle">Android，确认就绪再交付。</h3>
                       <p data-i18n="repositoryBody">Kotlin 宿主管理下载、进程与端口检测。只有本地服务能够连接时，控制台才会收到 ready 状态。</p>
                     </div>
@@ -254,7 +270,7 @@
 
                   <article class="platform-slide platform-slide--windows card-spotlight" data-platform-slide data-spotlight-card data-spotlight-color="rgba(255, 94, 133, 0.12)" aria-hidden="true" inert>
                     <div class="platform-slide-copy">
-                      <div class="platform-slide-index">03 <span>/ 03</span></div>
+                      <div class="platform-slide-index">04 <span>/ 04</span></div>
                       <h3 data-i18n="deliveryStageTitle">Windows，同一契约接入桌面。</h3>
                       <p data-i18n="deliveryStageBody">Preload 代理把控制台调用送入 Electron 主进程；管理窗口、内容窗口与内置运行时保持各自边界。</p>
                     </div>
@@ -280,7 +296,7 @@
             </div>
 
             <footer class="platform-carousel-footer">
-              <div class="platform-carousel-status" aria-live="polite"><span data-platform-current>01</span><span aria-hidden="true"> / 03</span></div>
+              <div class="platform-carousel-status" aria-live="polite"><span data-platform-current>01</span><span aria-hidden="true"> / 04</span></div>
               <div class="platform-carousel-controls">
                 <button type="button" data-platform-previous aria-label="上一幕" data-i18n-aria="previousStage" disabled>
                   <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-caret-left"></use></svg>
@@ -332,9 +348,9 @@
   <script src="./scripts/scroll-reveal.js?v=20260725-scroll-reveal-v1"></script>
   <script src="./scripts/variable-proximity.js?v=20260725-variable-proximity-v2"></script>
 
-  <script type="module" src="./scripts/page.js?v=20260726-page-modules-v3"></script>
+  <script type="module" src="./scripts/page.js?v=20260817-video-source-cards-v1"></script>
   <script src="./scripts/text-type.js?v=20260726-language-event-v3"></script>
-  <script src="./scripts/platform-carousel.js?v=20260726-source-cards-v4"></script>
+  <script src="./scripts/platform-carousel.js?v=20260817-video-source-cards-v1"></script>
   <script src="./scripts/device-showcase.js?v=20260726-orbit-lock-v1"></script>
   <script type="importmap">
   {

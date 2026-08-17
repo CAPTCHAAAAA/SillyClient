@@ -208,6 +208,69 @@
       border-color 240ms ease;
   }
 
+  .platform-slide--video {
+    flex-basis: var(--platform-video-slide-width, 720px);
+    width: var(--platform-video-slide-width, 720px);
+    height: min(var(--platform-video-slide-height, 414px), 53vh);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: 13rem;
+    background:
+      radial-gradient(circle at 82% 0%, rgba(255, 189, 213, 0.09), transparent 42%),
+      linear-gradient(150deg, rgba(255, 255, 255, 0.052), rgba(63, 19, 40, 0.18) 58%, rgba(8, 4, 8, 0.34)),
+      rgba(18, 7, 13, 0.62);
+  }
+
+  .platform-video-stage {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 17rem;
+    background: rgba(6, 4, 7, 0.82);
+    box-shadow:
+      inset 0 1rem 0 rgba(255, 255, 255, 0.045),
+      0 8rem 28rem rgba(0, 0, 0, 0.16);
+  }
+
+  .platform-video-stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1rem rgba(255, 245, 248, 0.055);
+    pointer-events: none;
+  }
+
+  .platform-video-loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: rgba(255, 239, 245, 0.42);
+    font-size: 10.5rem;
+    font-weight: 600;
+  }
+
+  .platform-video-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: 0;
+    background: #080508;
+    opacity: 0;
+    transition: opacity 360ms var(--ease-apple-soft);
+  }
+
+  .platform-video-stage.is-loaded .platform-video-frame {
+    opacity: 1;
+  }
+
   .platform-slide.is-active {
     border-color: rgba(255, 245, 248, 0.11);
     opacity: 1;
@@ -499,6 +562,11 @@
     padding: 22rem 24rem 0;
   }
 
+  .platform-slide--video {
+    height: min(var(--platform-video-slide-height, 398px), 398rem, 53vh);
+    padding: 11rem;
+  }
+
   .platform-slide h3 {
     font-size: clamp(21rem, 1.8vw, 25rem);
   }
@@ -522,7 +590,8 @@
 @media (prefers-reduced-motion: reduce) {
   .card-spotlight::before,
   .platform-track,
-  .platform-slide {
+  .platform-slide,
+  .platform-video-frame {
     transition: none;
   }
 }
