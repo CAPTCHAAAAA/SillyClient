@@ -1,4 +1,4 @@
-import { setFrame } from './frame-stage.js';
+import { setFrame } from './frame-stage.js?v=20260817-visual-centering-v2';
 
 export function initializeExperience() {
   const accordion = document.querySelector('[data-mobile-accordion]');

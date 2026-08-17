@@ -25,6 +25,7 @@
   height: min(27svh, 250px);
   border-radius: 22px;
   background: rgba(7, 6, 9, 0.18);
+  --mobile-frame-visual-shift-x: 0%;
 }
 
 .mobile-product-stage--experience img {
@@ -33,13 +34,13 @@
 
 .mobile-product-stage--experience img {
   opacity: 0;
-  transform: translate3d(-50%, calc(-50% + 8px), 0) scale(0.98);
+  transform: translate3d(calc(-50% + var(--mobile-frame-visual-shift-x)), calc(-50% + 8px), 0) scale(0.98);
   transition: opacity 260ms ease, transform 420ms var(--mobile-ease);
 }
 
 .mobile-product-stage--experience img.is-active {
   opacity: 1;
-  transform: translate3d(-50%, -50%, 0) scale(1);
+  transform: translate3d(calc(-50% + var(--mobile-frame-visual-shift-x)), -50%, 0) scale(1);
 }
 
 .mobile-product-stage--experience figcaption {

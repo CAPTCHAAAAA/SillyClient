@@ -1,6 +1,6 @@
-import { initializeExperience } from './experience.js';
+import { initializeExperience } from './experience.js?v=20260817-visual-centering-v2';
 import { initializeEntryGate } from './entry-gate.js';
-import { initializeFrameStages } from './frame-stage.js';
+import { initializeFrameStages } from './frame-stage.js?v=20260817-visual-centering-v2';
 import { createI18n } from './i18n.js';
 import { initializeNavigation } from './navigation.js';
 import { initializeSourceCarousel } from './source-carousel.js';
