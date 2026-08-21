@@ -33,7 +33,7 @@ flowchart LR
 
 ## 前端产物流向
 
-主仓库未适配基线：`web/capacitor-ui/`；Android/Windows 各自平台适配源码：`web/capacitor-ui/`
+主仓库未适配基线：`web/capacitor-ui/`（不参与平台构建）；Android/Windows 各自平台适配源码：`web/capacitor-ui/`
 
 | 目标 | 用途 | 是否提交 |
 | --- | --- | --- |

@@ -76,7 +76,7 @@ SillyClient is maintained in three independent repositories without Git submodul
 | [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | Frontend source copy, Kotlin host, and Android runtime | `main` |
 | [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Frontend source copy, Electron host, Windows runtime, and installer | `main` |
 
-The main repository keeps the unadapted frontend baseline under `web/capacitor-ui/`. Android and Windows repositories keep their platform-adapted frontend source under the same path, so platform versions can diverge as needed. The following directories are generated outputs and should not be edited as source:
+The main repository keeps the unadapted frontend baseline under `web/capacitor-ui/` and does not build platform artifacts. Android and Windows repositories keep their platform-adapted frontend source under the same path and own their builds. The following directories are generated outputs and should not be edited as source:
 
 | Generated directory | Purpose |
 | --- | --- |

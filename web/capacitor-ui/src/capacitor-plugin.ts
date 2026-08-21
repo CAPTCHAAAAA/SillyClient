@@ -101,9 +101,6 @@ export interface TarvenEnvPlugin {
   /** 拉取 GitHub SillyTavern releases 列表。 */
   fetchReleases(): Promise<{ releases: GithubRelease[] }>
 
-  /** 检查 SillyClient 应用自身是否有新版本。 */
-  checkAppUpdate(): Promise<AppUpdateInfo>
-
   /** 调用系统目录选择器,返回选中的目录显示名(用作实例安装标识)。 */
   pickDirectory(): Promise<{ name: string; path: string }>
 

@@ -13,23 +13,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11.9.0
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22.16.0
-          cache: pnpm
-          cache-dependency-path: web/capacitor-ui/pnpm-lock.yaml
-      - name: Install frontend dependencies
-        working-directory: web/capacitor-ui
-        run: pnpm install --frozen-lockfile
-      - name: Build frontend
-        working-directory: web/capacitor-ui
-        run: pnpm run build
-      - name: Sync Pages app
-        run: node scripts/sync-pages-app.mjs web/capacitor-ui/dist
-      - name: Verify committed Pages app matches build
-        run: git diff --exit-code -- docs/app docs/phone-demo.html
       - name: Validate GitHub Pages files
         run: node scripts/validate-pages.mjs

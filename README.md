@@ -76,7 +76,7 @@ SillyClient 由三个独立仓库组成，不使用 Git submodule：
 | [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | Android 适配前端源码、Kotlin 宿主和 Android 运行时 | `main` |
 | [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Windows 适配前端源码、Electron 宿主、Windows 运行时和安装器 | `main` |
 
-主仓库保留未适配基线前端源码 `web/capacitor-ui/`；Android 与 Windows 仓库分别保存对应平台适配后的前端源码，方便按平台差异维护。以下目录是构建产物，不作为功能修改入口：
+主仓库保留未适配基线前端源码 `web/capacitor-ui/`，不参与平台构建；Android 与 Windows 仓库分别保存对应平台适配后的前端源码并负责构建，方便按平台差异维护。以下目录是构建产物，不作为功能修改入口：
 
 | 生成目录 | 用途 |
 | --- | --- |

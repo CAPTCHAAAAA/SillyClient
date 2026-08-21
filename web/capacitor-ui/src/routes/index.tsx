@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv, DEFAULT_CONFIG } from "@/capacitor-plugin";
 import type { AppUpdateInfo, ContentOpenMode, InstanceConfig, GithubRelease } from "@/capacitor-plugin";
+import frontendPackage from "../../package.json";
 import OnboardingGuide from "@/components/onboarding/OnboardingGuide";
 
 export const Route = createFileRoute("/")({
@@ -181,6 +182,76 @@ function formatOperationStage(stage?: string, percent?: number) {
   if (value.includes("waiting") || value.includes("poll")) return "正在确认实例可运行";
   if (value.includes("ready") || value.includes("就绪")) return "实例已就绪";
   return stage || "正在初始化";
+}
+
+function compareFrontendVersions(left: string, right: string): number {
+  const parts = (value: string) => value.replace(/^v/i, "").split("-")[0]
+    .split(".")
+    .map((part) => Number.parseInt(part, 10) || 0);
+  const a = parts(left);
+  const b = parts(right);
+  for (let index = 0; index < 3; index += 1) {
+    const diff = (a[index] || 0) - (b[index] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function fetchAppUpdateFromFrontend(): Promise<AppUpdateInfo> {
+  const currentVersion = frontendPackage.version;
+  const apiUrl = "https://api.github.com/repos/CAPTCHAAAAA/SillyClient/releases/latest";
+  let lastError: unknown = null;
+
+  for (const candidate of [apiUrl, `https://gh-proxy.com/${apiUrl}`]) {
+    try {
+      const response = await fetchWithTimeout(candidate);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const raw = await response.json() as { tag_name?: string; html_url?: string; published_at?: string };
+      const latestVersion = String(raw?.tag_name || "").replace(/^v/i, "").trim();
+      if (!latestVersion) throw new Error("Release tag is empty");
+      return {
+        currentVersion,
+        latestVersion,
+        updateAvailable: compareFrontendVersions(currentVersion, latestVersion) < 0,
+        releaseUrl: typeof raw?.html_url === "string" ? raw.html_url : undefined,
+        publishedAt: typeof raw?.published_at === "string" ? raw.published_at : undefined,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  try {
+    const response = await fetchWithTimeout(
+      "https://data.jsdelivr.com/v1/package/gh/CAPTCHAAAAA/SillyClient",
+    );
+    const raw = await response.json() as { versions?: string[] };
+    const latestVersion = String(raw?.versions?.[0] || "").replace(/^v/i, "").trim();
+    if (!latestVersion) throw new Error("jsDelivr returned no versions");
+    return {
+      currentVersion,
+      latestVersion,
+      updateAvailable: compareFrontendVersions(currentVersion, latestVersion) < 0,
+      releaseUrl: "https://github.com/CAPTCHAAAAA/SillyClient/releases/latest",
+    };
+  } catch (error) {
+    lastError = error;
+  }
+
+  throw new Error(lastError instanceof Error ? lastError.message : String(lastError));
 }
 
 function normalizeInstanceId(value: string, fallback: string) {
@@ -444,8 +515,18 @@ function SillyClientLauncher() {
   // APP 设置:下拉刷新
   const [pullToRefresh, setPullToRefresh] = useState(false);
   const [contentOpenMode, setContentOpenMode] = useState<ContentOpenMode>("webview");
-  const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo | null>(null);
-  const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "current" | "available" | "error">("idle");
+  const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo | null>(() => import.meta.env.DEV
+    ? {
+        currentVersion: frontendPackage.version,
+        latestVersion: "1.8.3",
+        updateAvailable: true,
+        releaseUrl: "https://github.com/CAPTCHAAAAA/SillyClient/releases/latest",
+      }
+    : null);
+  const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "current" | "available" | "error">(
+    () => import.meta.env.DEV ? "available" : "idle"
+  );
+  const [updatePromptDismissed, setUpdatePromptDismissed] = useState(false);
   const [verDropdownOpen, setVerDropdownOpen] = useState(false);
   const [isVerDropdownClosing, setIsVerDropdownClosing] = useState(false);
   const [verDropdownPos, setVerDropdownPos] = useState({ bottom: 0, left: 0, width: 0, maxHeight: 360 });
@@ -542,9 +623,10 @@ function SillyClientLauncher() {
   const checkForAppUpdate = useCallback(async () => {
     setAppUpdateState("checking");
     try {
-      const result = await TarvenEnv.checkAppUpdate();
+      const result = await fetchAppUpdateFromFrontend();
       setAppUpdateInfo(result);
       setAppUpdateState(result.updateAvailable ? "available" : "current");
+      if (result.updateAvailable) setUpdatePromptDismissed(false);
       return result;
     } catch (error) {
       console.warn("[checkAppUpdate]", error);
@@ -554,10 +636,10 @@ function SillyClientLauncher() {
   }, []);
 
   useEffect(() => {
-    if ((isWeb && !isWindows) || isShowcase) return;
+    if (isShowcase || import.meta.env.DEV) return;
     const timer = window.setTimeout(() => { void checkForAppUpdate(); }, 900);
     return () => window.clearTimeout(timer);
-  }, [checkForAppUpdate, isShowcase, isWeb, isWindows]);
+  }, [checkForAppUpdate, isShowcase]);
 
   useEffect(() => {
     try {
@@ -2021,6 +2103,47 @@ function SillyClientLauncher() {
           </button>
         </div>
       </header>
+
+      {appUpdateState === "available" && appUpdateInfo && !updatePromptDismissed && (
+        <div
+          className={cn(
+            "fixed left-1/2 -translate-x-1/2 z-[70] flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl border backdrop-blur-[32px] saturate-180 shadow-[0_16px_50px_rgba(0,0,0,0.35)]",
+            isLight ? "bg-white/85 border-black/10" : "bg-[#1a1625]/85 border-white/10"
+          )}
+          style={{ top: `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 60px)` }}
+        >
+          <div className={cn("text-xs font-medium", isLight ? "text-[#1a1625]" : "text-white/90")}>
+            发现新版本 v{appUpdateInfo.latestVersion}
+          </div>
+          <button
+            onClick={() => {
+              const url = appUpdateInfo.releaseUrl || "https://github.com/CAPTCHAAAAA/SillyClient/releases/latest";
+              if (isWeb) {
+                window.open(url, "_blank", "noopener,noreferrer");
+              } else {
+                TarvenEnv.enterImmersive({ url }).catch(() => {});
+              }
+              setUpdatePromptDismissed(true);
+            }}
+            className={cn(
+              "h-8 px-3 rounded-full text-xs font-semibold",
+              isLight ? "bg-[#1a1625] text-white" : "bg-white text-[#1a1625]"
+            )}
+          >
+            查看
+          </button>
+          <button
+            onClick={() => setUpdatePromptDismissed(true)}
+            aria-label="关闭更新提示"
+            className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center",
+              isLight ? "hover:bg-black/5 text-[#1a1625]/50" : "hover:bg-white/10 text-white/50"
+            )}
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* 终端面板 */}
       {(showTerminal || isTerminalClosing) && (
