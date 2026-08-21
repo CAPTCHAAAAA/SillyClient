@@ -6,7 +6,7 @@ SillyClient 的 Tag、Release 和安装包只发布在主仓库。Android 与 Wi
 
 1. 确认 Android `versionName`、Windows `package.json` 和目标 Tag 一致。
 2. 记录 Android、Windows 与主仓库提交哈希。
-3. 构建一次共享前端，并同步到 Android assets、Windows `frontend-dist/` 和主仓库 `docs/app/`。
+3. 在主仓库 `web/capacitor-ui/` 构建一次共享前端，并同步到 Android assets、Windows `frontend-dist/` 和主仓库 `docs/app/`。
 
 ## 2. 验证源码
 

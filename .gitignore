@@ -6,6 +6,11 @@ Thumbs.db
 !.env.example
 
 node_modules/
+web/capacitor-ui/dist/
+web/capacitor-ui/.vite-temp/
+web/capacitor-ui/.microcompact/
+web/capacitor-ui/.todo/
+web/capacitor-ui/.plan/
 coverage/
 playwright-report/
 test-results/

@@ -72,11 +72,11 @@ SillyClient 由三个独立仓库组成，不使用 Git submodule：
 
 | 仓库 | 职责 | 默认分支 |
 | --- | --- | --- |
-| [SillyClient](https://github.com/CAPTCHAAAAA/SillyClient) | GitHub Pages、公共文档、Release 与安装包 | `main` |
-| [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | 共享 React 控制台、Kotlin 宿主和 Android 运行时 | `main` |
-| [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Electron 宿主、Windows 运行时和安装器 | `master` |
+| [SillyClient](https://github.com/CAPTCHAAAAA/SillyClient) | 未适配基线前端源码、GitHub Pages、公共文档、Release 与安装包 | `main` |
+| [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | Android 适配前端源码、Kotlin 宿主和 Android 运行时 | `main` |
+| [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Windows 适配前端源码、Electron 宿主、Windows 运行时和安装器 | `main` |
 
-共享 React 控制台的唯一源码位于 Android 仓库的 `web/capacitor-ui/`。以下目录是构建产物，不作为功能修改入口：
+主仓库保留未适配基线前端源码 `web/capacitor-ui/`；Android 与 Windows 仓库分别保存对应平台适配后的前端源码，方便按平台差异维护。以下目录是构建产物，不作为功能修改入口：
 
 | 生成目录 | 用途 |
 | --- | --- |

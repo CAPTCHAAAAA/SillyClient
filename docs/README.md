@@ -49,8 +49,8 @@ docs/
 
 ## 源码与生成物
 
-共享 React 控制台的唯一源码在
-`SillyClient-Android/web/capacitor-ui/`。本目录中的 `app/` 与
+共享 React 控制台在本仓库维护的源码在
+`web/capacitor-ui/`。本目录中的 `app/` 与
 `phone-demo.html` 是构建副本，不接受功能修改。
 
 以下内容需要提交，因为 GitHub Pages 会直接读取：

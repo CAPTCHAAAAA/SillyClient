@@ -5,7 +5,7 @@
 
 ## 数据入口
 
-- 产品前端唯一源码：`SillyClient-Android/web/capacitor-ui/`
+- 产品前端源码（本仓库平台源码）：`web/capacitor-ui/`
 - Pages 展示副本：`docs/app/`
 - 展示页面：`docs/phone-demo.html`
 - 尺寸与贴图配置：`docs/scripts/product-render/config.js`
@@ -16,7 +16,7 @@
 
 ## 更新流程
 
-1. 在 Android 仓库完成并构建 React 前端。
+1. 在本仓库完成并构建 React 前端。
 2. 在主仓库执行 `node scripts/sync-pages-app.mjs <capacitor-ui/dist>`。
 3. 用 `screen-source.html?screen=phone` 和
    `screen-source.html?screen=laptop` 更新两张屏幕纹理。

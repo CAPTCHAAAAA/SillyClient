@@ -73,10 +73,10 @@ SillyClient is maintained in three independent repositories without Git submodul
 | Repository | Responsibility | Default branch |
 | --- | --- | --- |
 | [SillyClient](https://github.com/CAPTCHAAAAA/SillyClient) | GitHub Pages, public documentation, releases, and installers | `main` |
-| [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | Shared React console, Kotlin host, and Android runtime | `main` |
-| [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Electron host, Windows runtime, and installer | `master` |
+| [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android) | Frontend source copy, Kotlin host, and Android runtime | `main` |
+| [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows) | Frontend source copy, Electron host, Windows runtime, and installer | `main` |
 
-The only source directory for the shared React console is `web/capacitor-ui/` in the Android repository. The following directories are generated outputs and should not be edited as source:
+The main repository keeps the unadapted frontend baseline under `web/capacitor-ui/`. Android and Windows repositories keep their platform-adapted frontend source under the same path, so platform versions can diverge as needed. The following directories are generated outputs and should not be edited as source:
 
 | Generated directory | Purpose |
 | --- | --- |

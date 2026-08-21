@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-    <title>SillyClient 展示界面</title>
+    <title>SillyClient 酒馆启动器</title>
     <style>
       /* Dynamic Display 字体 */
       @font-face {
         font-family: 'Dynamic Display';
-        src: url('./app/fonts/DynamicDisplay.ttf') format('truetype');
+        src: url('./fonts/DynamicDisplay.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -16,7 +16,7 @@
       /* Syndra 字体 */
       @font-face {
         font-family: 'Syndra';
-        src: url('./app/fonts/Syndra-SemiBold.otf') format('opentype');
+        src: url('./fonts/Syndra-SemiBold.otf') format('opentype');
         font-weight: 600;
         font-style: normal;
         font-display: swap;
@@ -24,7 +24,7 @@
       /* Daydream 字体 */
       @font-face {
         font-family: 'Daydream';
-        src: url('./app/fonts/Daydream.otf') format('opentype');
+        src: url('./fonts/Daydream.otf') format('opentype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -32,7 +32,7 @@
       /* 04B_30 像素风字体 */
       @font-face {
         font-family: '04B 30';
-        src: url('./app/fonts/04B_30.ttf') format('truetype');
+        src: url('./fonts/04B_30.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -40,7 +40,7 @@
       /* Noisy Walk 字体 */
       @font-face {
         font-family: 'Noisy Walk';
-        src: url('./app/fonts/NoisyWalk.ttf') format('truetype');
+        src: url('./fonts/NoisyWalk.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -48,7 +48,7 @@
       /* Stay Pixel 字体 */
       @font-face {
         font-family: 'Stay Pixel';
-        src: url('./app/fonts/StayPixel.ttf') format('truetype');
+        src: url('./fonts/StayPixel.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -56,7 +56,7 @@
       /* Arcade Raiders 字体 */
       @font-face {
         font-family: 'Arcade Raiders';
-        src: url('./app/fonts/ArcadeRaiders.ttf') format('truetype');
+        src: url('./fonts/ArcadeRaiders.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -64,7 +64,7 @@
       /* Yummy 字体 */
       @font-face {
         font-family: 'Yummy';
-        src: url('./app/fonts/Yummy.ttf') format('truetype');
+        src: url('./fonts/Yummy.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -72,7 +72,7 @@
       /* Pixel Chaos 字体 */
       @font-face {
         font-family: 'Pixel Chaos';
-        src: url('./app/fonts/PixelChaos.ttf') format('truetype');
+        src: url('./fonts/PixelChaos.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -80,7 +80,7 @@
       /* Soap 字体 */
       @font-face {
         font-family: 'Soap';
-        src: url('./app/fonts/Soap.ttf') format('truetype');
+        src: url('./fonts/Soap.ttf') format('truetype');
         font-weight: 400;
         font-style: normal;
         font-display: swap;
@@ -112,7 +112,7 @@
           document.documentElement.setAttribute('data-theme', theme);
         }
 
-        var stored = 'dark';
+        var stored = localStorage.getItem('theme');
         if (stored === 'dark' || stored === 'light') {
           applyThemeToDOM(stored);
         } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -122,26 +122,9 @@
         }
       })();
     </script>
-    <script type="module" crossorigin src="./app/assets/index-B8aRZjvs.js"></script>
-    <link rel="stylesheet" crossorigin href="./app/assets/index-BPq1uC2f.css">
-    <style id="showcase-layout">
-      html, body, #root {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        overscroll-behavior: none;
-      }
-    </style>
-    <script>
-      (() => {
-        const params = new URLSearchParams(window.location.search);
-        params.set('showcase', '1');
-        if (!params.has('safeTop')) params.set('safeTop', '52');
-        history.replaceState(null, '', `${location.pathname}?${params}${location.hash}`);
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

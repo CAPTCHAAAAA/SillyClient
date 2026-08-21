@@ -135,16 +135,16 @@ flowchart TD
 
 ## 6. 产品前端更新
 
-共享 React 控制台的唯一源码位于：
+共享 React 控制台在本仓库维护的源码位于：
 
 ```text
-SillyClient_Android/web/capacitor-ui/
+web/capacitor-ui/
 ```
 
 主仓库中的 `docs/app/` 和 `docs/phone-demo.html` 是生成物。产品前端变化时按以下顺序
 更新：
 
-1. 在 Android 仓库构建 `web/capacitor-ui/`。
+1. 在本仓库构建 `web/capacitor-ui/`。
 2. 在主仓库运行
    `node scripts/sync-pages-app.mjs <capacitor-ui/dist>`。
 3. 检查 `docs/app/` 和 `docs/phone-demo.html` 的差异。

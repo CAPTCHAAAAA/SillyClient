@@ -1,0 +1,425 @@
+.sc-onboarding {
+  --guide-panel: rgba(28, 19, 31, 0.94);
+  --guide-surface: rgba(255, 255, 255, 0.025);
+  --guide-edge: rgba(255, 255, 255, 0.075);
+  --guide-text: rgba(255, 255, 255, 0.9);
+  --guide-muted: rgba(255, 255, 255, 0.43);
+  --guide-faint: rgba(255, 255, 255, 0.25);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding:
+    max(0.75rem, env(safe-area-inset-top))
+    max(0.75rem, env(safe-area-inset-right))
+    max(0.75rem, env(safe-area-inset-bottom))
+    max(0.75rem, env(safe-area-inset-left));
+  color: var(--guide-text);
+  font-family: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+.sc-onboarding.is-light {
+  --guide-panel: rgba(244, 240, 242, 0.97);
+  --guide-surface: rgba(31, 21, 34, 0.025);
+  --guide-edge: rgba(31, 21, 34, 0.08);
+  --guide-text: rgba(31, 21, 34, 0.9);
+  --guide-muted: rgba(31, 21, 34, 0.46);
+  --guide-faint: rgba(31, 21, 34, 0.27);
+}
+
+.sc-onboarding-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 6, 10, 0.66);
+  backdrop-filter: blur(18px) saturate(82%);
+  -webkit-backdrop-filter: blur(18px) saturate(82%);
+  transition: opacity 220ms ease;
+}
+
+.sc-onboarding-panel {
+  position: relative;
+  width: min(34rem, calc(100vw - 1.25rem));
+  max-height: calc(100dvh - 1.25rem);
+  padding: 1rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  border: 1px solid var(--guide-edge);
+  border-radius: 1.4rem;
+  background: var(--guide-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 24px 64px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(32px) saturate(120%);
+  -webkit-backdrop-filter: blur(32px) saturate(120%);
+  animation: sc-guide-enter 220ms ease-out both;
+  transition: height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sc-onboarding-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.sc-onboarding-panel-content {
+  min-width: 0;
+}
+
+.sc-onboarding-header,
+.sc-onboarding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sc-onboarding-header {
+  min-height: 2rem;
+  padding: 0 0.1rem 0.75rem;
+}
+
+.sc-onboarding-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.sc-onboarding-header strong {
+  color: var(--guide-text);
+  font-size: 0.76rem;
+  font-weight: 680;
+}
+
+.sc-onboarding-header span,
+.sc-onboarding-header button {
+  color: var(--guide-faint);
+  font-size: 0.64rem;
+  font-weight: 560;
+}
+
+.sc-onboarding-header button {
+  padding: 0.32rem 0.44rem;
+  border-radius: 0.5rem;
+}
+
+.sc-onboarding-header button:hover {
+  color: var(--guide-muted);
+  background: var(--guide-surface);
+}
+
+.sc-onboarding-step {
+  opacity: 1;
+  will-change: opacity, transform, filter;
+}
+
+.sc-onboarding-step.is-forward:not(.is-leaving) {
+  animation: sc-guide-in-forward 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sc-onboarding-step.is-backward:not(.is-leaving) {
+  animation: sc-guide-in-backward 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sc-onboarding-step.is-forward.is-leaving {
+  animation: sc-guide-out-forward 150ms ease-in both;
+  pointer-events: none;
+}
+
+.sc-onboarding-step.is-backward.is-leaving {
+  animation: sc-guide-out-backward 150ms ease-in both;
+  pointer-events: none;
+}
+
+.sc-onboarding-shot {
+  display: grid;
+  place-items: center;
+  min-height: 17rem;
+  margin: 0;
+  padding: 1.35rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--guide-surface);
+}
+
+.sc-onboarding-shot img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 16rem;
+  object-fit: contain;
+}
+
+.sc-onboarding-shot.is-toolbar {
+  min-height: 10rem;
+}
+
+.sc-onboarding-shot.is-toolbar img {
+  width: min(19rem, 92%);
+  max-height: none;
+}
+
+.sc-onboarding-shot.is-card img {
+  height: 15rem;
+}
+
+.sc-onboarding-shot.is-terminal img {
+  width: 100%;
+  max-height: none;
+}
+
+.sc-onboarding-shot.is-panel img {
+  height: 16rem;
+}
+
+.sc-onboarding-subnav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 2rem;
+  margin-top: 0.35rem;
+}
+
+.sc-onboarding-subnav button {
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  color: var(--guide-faint);
+  font-size: 0.6rem;
+  font-weight: 580;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.sc-onboarding-subnav button.is-current {
+  color: var(--guide-muted);
+  background: var(--guide-surface);
+}
+
+.sc-onboarding-copy {
+  padding: 1.15rem 0.15rem 0.35rem;
+}
+
+.sc-onboarding-copy > span {
+  color: var(--guide-faint);
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-onboarding h2 {
+  margin: 0.25rem 0 0;
+  color: var(--guide-text);
+  font-size: 1.45rem;
+  line-height: 1.25;
+  font-weight: 680;
+  letter-spacing: 0;
+}
+
+.sc-onboarding-copy p {
+  max-width: 28rem;
+  margin: 0.65rem 0 0;
+  color: var(--guide-muted);
+  font-size: 0.75rem;
+  line-height: 1.65;
+  font-weight: 480;
+}
+
+.sc-onboarding-footer {
+  min-height: 2.7rem;
+  margin-top: 0.55rem;
+}
+
+.sc-onboarding-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding-left: 0.15rem;
+}
+
+.sc-onboarding-dots button {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: var(--guide-faint);
+  transition: width 180ms ease, background-color 180ms ease;
+}
+
+.sc-onboarding-dots button.is-current {
+  width: 1rem;
+  background: var(--guide-muted);
+}
+
+.sc-onboarding-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sc-onboarding-actions button {
+  height: 2.2rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  color: var(--guide-muted);
+  font-size: 0.68rem;
+  font-weight: 620;
+}
+
+.sc-onboarding-actions .is-back {
+  background: transparent;
+}
+
+.sc-onboarding-actions .is-next {
+  color: var(--guide-text);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.is-light .sc-onboarding-actions .is-next {
+  background: rgba(31, 21, 34, 0.07);
+}
+
+@keyframes sc-guide-enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.995);
+  }
+}
+
+@keyframes sc-guide-in-forward {
+  from {
+    transform: translateX(5px);
+    filter: blur(2px);
+  }
+  to {
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes sc-guide-in-backward {
+  from {
+    transform: translateX(-5px);
+    filter: blur(2px);
+  }
+  to {
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes sc-guide-out-forward {
+  to {
+    opacity: 0;
+    transform: translateX(-4px);
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes sc-guide-out-backward {
+  to {
+    opacity: 0;
+    transform: translateX(4px);
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes sc-guide-exit {
+  to {
+    opacity: 0;
+    transform: translateY(3px) scale(0.995);
+    filter: blur(3px);
+  }
+}
+
+.sc-onboarding.is-closing {
+  pointer-events: none;
+}
+
+.sc-onboarding.is-closing .sc-onboarding-backdrop {
+  opacity: 0;
+}
+
+.sc-onboarding.is-closing .sc-onboarding-panel {
+  animation: sc-guide-exit 220ms ease-in both;
+}
+
+@media (max-width: 620px) {
+  .sc-onboarding-panel {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+    padding: 0.85rem;
+    border-radius: 1.25rem;
+  }
+
+  .sc-onboarding-shot {
+    min-height: 13rem;
+    padding: 1rem;
+  }
+
+  .sc-onboarding-shot.is-toolbar {
+    min-height: 8rem;
+  }
+
+  .sc-onboarding-shot.is-card img {
+    height: 12rem;
+  }
+
+  .sc-onboarding-shot.is-panel img {
+    height: 12rem;
+  }
+
+  .sc-onboarding h2 {
+    font-size: 1.3rem;
+  }
+
+  .sc-onboarding-copy {
+    padding-top: 0.9rem;
+  }
+}
+
+@media (max-height: 670px) {
+  .sc-onboarding-shot {
+    min-height: 10rem;
+  }
+
+  .sc-onboarding-shot img {
+    max-height: 9rem;
+  }
+
+  .sc-onboarding-shot.is-toolbar {
+    min-height: 6rem;
+  }
+
+  .sc-onboarding-shot.is-card img {
+    height: 9rem;
+  }
+
+  .sc-onboarding-shot.is-panel img {
+    height: 9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-onboarding-panel,
+  .sc-onboarding-step {
+    animation: none;
+  }
+
+  .sc-onboarding-panel {
+    transition: none;
+  }
+
+  .sc-onboarding-backdrop {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .sc-onboarding-panel {
+    background: #211723;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .sc-onboarding.is-light .sc-onboarding-panel {
+    background: #f4f0f2;
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "sillyclient-ui",
+  "version": "1.8.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3015 --host 0.0.0.0 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 3015 --host 0.0.0.0",
+    "sync:pages": "node ../../scripts/sync-pages-app.mjs dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.2.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-router": "^1.168.25",
+    "@tanstack/router-plugin": "^1.167.28",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.575.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.1",
+    "tw-animate-css": "^1.3.4",
+    "vite-tsconfig-paths": "^6.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.8.3",
+    "vite": "^7.3.1"
+  },
+  "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b"
+}

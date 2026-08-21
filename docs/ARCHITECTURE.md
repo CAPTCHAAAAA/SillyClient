@@ -7,8 +7,8 @@ SillyClient 用一套 React 控制台管理 Android 和 Windows 上的 SillyTave
 | 仓库 | 负责内容 | 默认分支 |
 | --- | --- | --- |
 | `SillyClient` | GitHub Pages、公共文档、Release 与安装包 | `main` |
-| `SillyClient-Android` | React 控制台唯一源码、Kotlin 宿主、Android 运行时 | `main` |
-| `SillyClient-Windows` | Electron 宿主、Windows 运行时与安装器 | `master` |
+| `SillyClient-Android` | Android 适配 React 控制台源码、Kotlin 宿主、Android 运行时 | `main` |
+| `SillyClient-Windows` | Windows 适配 React 控制台源码、Electron 宿主、Windows 运行时与安装器 | `main` |
 
 仓库不通过 Git submodule 互相嵌套。跨仓库关系由版本、同步脚本和 Release 记录表达，避免只有部分平台被子模块追踪。
 
@@ -33,7 +33,7 @@ flowchart LR
 
 ## 前端产物流向
 
-唯一源码：`SillyClient-Android/web/capacitor-ui/`
+主仓库未适配基线：`web/capacitor-ui/`；Android/Windows 各自平台适配源码：`web/capacitor-ui/`
 
 | 目标 | 用途 | 是否提交 |
 | --- | --- | --- |
@@ -41,7 +41,7 @@ flowchart LR
 | Windows `frontend-dist/` | Electron 打包输入 | 否，可再生 |
 | 主仓库 `docs/app/` | GitHub Pages 设备屏幕演示 | 是，Pages 直接使用 |
 
-修改前端后先在 Android 仓库构建，再同步到目标。不要在生成副本上修功能。
+各平台先在自己仓库的 `web/capacitor-ui/` 构建，再同步到对应目标。不要在生成副本上修功能。
 
 ## Pages 宣传页结构
 

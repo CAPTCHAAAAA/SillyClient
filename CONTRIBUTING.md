@@ -8,12 +8,12 @@ SillyClient 由三个独立仓库组成。先确认改动属于哪一层，再�
 | React 控制台、Android 宿主与运行时 | `SillyClient-Android` |
 | Windows 宿主、进程与窗口管理 | `SillyClient-Windows` |
 
-共享 React 控制台的唯一源码是 Android 仓库中的 `web/capacitor-ui/`。Windows 的 `frontend-dist/` 和主仓库的 `docs/app/` 都是它的构建副本，不在副本上直接开发。
+主仓库维护未适配基线前端源码 `web/capacitor-ui/`；Android 与 Windows 仓库分别维护平台适配源码。Windows 的 `frontend-dist/` 和主仓库的 `docs/app/` 是构建产物，不在生成产物上直接开发。
 
 Pages 副本从主仓库同步：
 
 ```bash
-node scripts/sync-pages-app.mjs ../SillyClient_Android/web/capacitor-ui/dist
+node scripts/sync-pages-app.mjs web/capacitor-ui/dist
 ```
 
 宣传页本身由主仓库 `docs/` 维护。目录职责、入口路由、产品帧生成和发布验收见
