@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv, DEFAULT_CONFIG } from "@/capacitor-plugin";
-import type { AppUpdateInfo, ContentOpenMode, InstanceConfig, GithubRelease } from "@/capacitor-plugin";
+import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, GithubRelease } from "@/capacitor-plugin";
 import frontendPackage from "../../package.json";
 import OnboardingGuide from "@/components/onboarding/OnboardingGuide";
 
@@ -70,6 +70,8 @@ interface TavernInstance {
   cover?: string;
   /** 本地实例运行配置(映射管理面板设置) */
   config?: InstanceConfig;
+  /** 创建实例时选用的内置主题预设；宿主通过一次性标记避免后续启动重复覆盖。 */
+  companionPreset?: CompanionPresetSelection;
   /** Android 新建实例首次进入酒馆时显示状态栏返回提示；仅在用户实际滑动返回后清除。 */
   pendingTavernGestureHint?: boolean;
 }
@@ -87,7 +89,7 @@ interface InstanceSnapshot {
 const INSTANCES_KEY = "sillyclient.instances";
 const INSTANCES_VERSION_KEY = "sillyclient.instances.version";
 const ONBOARDING_KEY = "sillyclient.onboarding.version";
-const ONBOARDING_VERSION = "2";
+const ONBOARDING_VERSION = "3";
 const CURRENT_VERSION = 2;
 const BACKGROUND_PANEL_EXIT_MS = 300;
 const PANEL_EXIT_MS = 300;
@@ -170,6 +172,11 @@ const DEMO_INSTANCE: TavernInstance = {
 type BgMode = "dynamic" | "custom";
 type ThemeStyle = "dark" | "light";
 type OperationPurpose = "launch" | "create";
+
+const SC_BORDEAUX_PRESET: CompanionPresetSelection = {
+  bundleId: "sc-bordeaux",
+  revision: 1,
+};
 
 function formatOperationStage(stage?: string, percent?: number) {
   const value = (stage || "").toLowerCase();
@@ -423,8 +430,8 @@ function SillyClientLauncher() {
   const terminalTitle = isWindows ? "Windows 控制台" : "Android 终端";
   const terminalPrompt = isWindows ? "C:\\>" : "~ $";
   const terminalBanner = isWindows
-    ? "SillyClient 1.8.2 · Windows · cmd.exe"
-    : "SillyClient 1.8.2 · Android shell";
+    ? "SillyClient 1.9.0 · Windows · cmd.exe"
+    : "SillyClient 1.9.0 · Android shell";
   const terminalPlaceholder = isWindows ? "输入 Windows 命令" : "输入 Android shell 命令";
   const [showOnboarding, setShowOnboarding] = useState(
     () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
@@ -496,6 +503,7 @@ function SillyClientLauncher() {
   const [newRemoteAuthUsername, setNewRemoteAuthUsername] = useState("");
   const [newRemoteAuthPassword, setNewRemoteAuthPassword] = useState("");
   const [newInstanceVersion, setNewInstanceVersion] = useState("stable");
+  const [newInstanceCompanionPresetEnabled, setNewInstanceCompanionPresetEnabled] = useState(false);
   const [newInstanceLocalZip, setNewInstanceLocalZip] = useState<string | null>(null);
   const [newInstanceError, setNewInstanceError] = useState<string | null>(null);
   const [isCreatingInstance, setIsCreatingInstance] = useState(false);
@@ -1086,6 +1094,7 @@ function SillyClientLauncher() {
     const zipballUrl = instance.zipballUrl;
     const localZipPath = instance.localZipPath;
     const installPath = instance.installPath;
+    const companionPreset = instance.companionPreset;
 
     setLaunchProgress({ pct: 0, text: "初始化" });
     setLaunchError(null);
@@ -1138,7 +1147,7 @@ function SillyClientLauncher() {
       });
 
       // 调用原生 provision
-      const provisionResult = await TarvenEnv.provisionAndStart({ port, instanceId, version, zipballUrl, localZipPath, installPath, config });
+      const provisionResult = await TarvenEnv.provisionAndStart({ port, instanceId, version, zipballUrl, localZipPath, installPath, companionPreset, config });
       if (provisionResult?.ready === false && !readyReceived) {
         throw new Error(errorMsg || "实例未能启动，请检查安装日志");
       }
@@ -1383,6 +1392,7 @@ function SillyClientLauncher() {
               installPath,
               zipballUrl: selectedZipballUrl,
               localZipPath: newInstanceLocalZip || undefined,
+              companionPreset: newInstanceCompanionPresetEnabled ? SC_BORDEAUX_PRESET : undefined,
               config: { ...DEFAULT_CONFIG },
             }
           : {
@@ -1424,6 +1434,7 @@ function SillyClientLauncher() {
         setNewRemoteAuthUsername("");
         setNewRemoteAuthPassword("");
         setNewInstanceVersion("stable");
+        setNewInstanceCompanionPresetEnabled(false);
         setNewInstanceLocalZip(null);
       }, 1100);
     } catch (err: any) {
@@ -1448,6 +1459,7 @@ function SillyClientLauncher() {
     isCreatingInstance,
     launchingId,
     newInstanceDir,
+    newInstanceCompanionPresetEnabled,
     newInstanceLocalZip,
     newInstanceMode,
     newInstanceName,
@@ -2535,6 +2547,7 @@ function SillyClientLauncher() {
                   setNewRemoteAuthUsername("");
                   setNewRemoteAuthPassword("");
                   setNewInstanceVersion("stable");
+                  setNewInstanceCompanionPresetEnabled(false);
                   setNewInstanceLocalZip(null);
                   setNewInstanceError(null);
                   setShowNewInstancePanel(true);
@@ -2594,8 +2607,8 @@ function SillyClientLauncher() {
 
                     <div className="relative h-full flex flex-col p-3.5 overflow-hidden rounded-[18px]">
                     <span className={cn(
-                      "self-start px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border backdrop-blur-md w-fit",
-                      isLight && hoveredCard !== instance.id
+                      "self-start px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border w-fit",
+                      isLight
                         ? "bg-black/[0.06] text-[#1a1625]/55 border-black/[0.08]"
                         : "bg-white/[0.08] text-white/50 border-white/[0.08]"
                     )}>
@@ -2606,20 +2619,20 @@ function SillyClientLauncher() {
 
                     <div className={cn(
                       "text-sm font-medium leading-snug mb-2",
-                      isLight && hoveredCard !== instance.id ? "text-[#1a1625]/75" : "text-white/80"
+                      isLight ? "text-[#1a1625]/75" : "text-white/80"
                     )}>{instance.subtitle}</div>
 
                     <div className="flex items-center justify-between mt-1.5">
                       <div className="flex items-center gap-1.5">
                         <span className={cn(
                           "flex items-center justify-center shrink-0 scale-[0.72]",
-                          isLight && hoveredCard !== instance.id ? "text-[#1a1625]/50" : "text-white"
+                          isLight ? "text-[#1a1625]/50" : "text-white"
                         )}>
                           {instance.icon}
                         </span>
                         <span className={cn(
                           "text-[10px] font-medium",
-                          isLight && hoveredCard !== instance.id ? "text-[#1a1625]/45" : "text-white/55"
+                          isLight ? "text-[#1a1625]/45" : "text-white/55"
                         )}>
                           {instance.type === "local" ? "本地" : "远程"}
                         </span>
@@ -2649,35 +2662,37 @@ function SillyClientLauncher() {
                       <div className="pt-2 space-y-1">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className={cn(
-                            isLight && hoveredCard !== instance.id ? "text-[#1a1625]/35" : "text-white/40"
+                            isLight ? "text-[#1a1625]/35" : "text-white/40"
                           )}>创建时间</span>
                           <span className={cn(
                             "font-medium tabular-nums",
-                            isLight && hoveredCard !== instance.id ? "text-[#1a1625]/60" : "text-white/70"
+                            isLight ? "text-[#1a1625]/60" : "text-white/70"
                           )}>{instance.createdAt || "—"}</span>
                         </div>
                         <div className="flex items-center justify-between text-[11px]">
                           <span className={cn(
-                            isLight && hoveredCard !== instance.id ? "text-[#1a1625]/35" : "text-white/40"
+                            isLight ? "text-[#1a1625]/35" : "text-white/40"
                           )}>上次使用</span>
                           <span className={cn(
                             "font-medium tabular-nums",
-                            isLight && hoveredCard !== instance.id ? "text-[#1a1625]/60" : "text-white/70"
+                            isLight ? "text-[#1a1625]/60" : "text-white/70"
                           )}>{instance.lastUsed || "—"}</span>
                         </div>
                         <div className="flex items-center justify-between text-[11px]">
                           <span className={cn(
-                            isLight && hoveredCard !== instance.id ? "text-[#1a1625]/35" : "text-white/40"
+                            isLight ? "text-[#1a1625]/35" : "text-white/40"
                           )}>累计使用</span>
                           <span className={cn(
                             "font-medium tabular-nums",
-                            isLight && hoveredCard !== instance.id ? "text-[#1a1625]/60" : "text-white/70"
+                            isLight ? "text-[#1a1625]/60" : "text-white/70"
                           )}>{instance.totalUsage || "—"}</span>
                         </div>
                         <div className="flex items-center justify-between pt-1.5">
                           <button onClick={(e) => { e.stopPropagation(); launchTavern(instance); }} disabled={launchingId === instance.id} className={cn(
                             "motion-control h-7 px-4 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1 disabled:opacity-50",
-                            "bg-white/15 text-white hover:bg-white/25 backdrop-blur-md"
+                            isLight
+                              ? "bg-black/[0.07] text-[#1a1625] hover:bg-black/[0.14]"
+                              : "bg-white/15 text-white hover:bg-white/25"
                           )}>
                             <Play className="w-2.5 h-2.5" /> {launchingId === instance.id ? "启动中" : "启动"}
                           </button>
@@ -2692,10 +2707,12 @@ function SillyClientLauncher() {
                               setActiveCardMenu(id);
                             }
                           }} className={cn(
-                            "motion-control w-7 h-7 rounded-full backdrop-blur-md flex items-center justify-center",
-                            "bg-white/15 hover:bg-white/25"
+                            "motion-control w-7 h-7 rounded-full flex items-center justify-center",
+                            isLight
+                              ? "bg-black/[0.07] hover:bg-black/[0.14]"
+                              : "bg-white/15 hover:bg-white/25"
                           )}>
-                            <MoreVertical className="w-3 h-3 text-white" />
+                            <MoreVertical className={cn("w-3 h-3", isLight ? "text-[#1a1625]" : "text-white")} />
                           </button>
                         </div>
                       </div>
@@ -3267,7 +3284,7 @@ function SillyClientLauncher() {
                             : "bg-white/[0.04] border-white/[0.08] text-white"
                         )}
                       >
-                        <span className="truncate">{fetchingReleases ? "获取版本中" : (newInstanceLocalZip ? "本地 ZIP" : newInstanceVersion === "stable" ? "稳定版" : newInstanceVersion)}</span>
+                        <span className="truncate">{fetchingReleases ? "获取版本中" : (newInstanceLocalZip ? "本地 ZIP" : newInstanceVersion === "stable" ? "内置版" : newInstanceVersion)}</span>
                         <ChevronDown className={cn("w-3.5 h-3.5 flex-shrink-0 opacity-40 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]", verDropdownOpen && !isVerDropdownClosing && "rotate-180")} />
                       </button>
                       <button
@@ -3286,6 +3303,37 @@ function SillyClientLauncher() {
                       >{newInstanceLocalZip ? "更换" : "导入 ZIP"}</button>
                     </div>
                   </NewInstanceField>
+
+                  <section className={cn("companion-preset", isLight && "is-light")} data-enabled={newInstanceCompanionPresetEnabled}>
+                    <div className="companion-preset__label">主题预设</div>
+                    <div className="companion-preset__row">
+                      <div className="companion-preset__thumb" aria-hidden="true">
+                        <img src="./assets/companion-presets/sc-bordeaux/sillyclient-bg-preview.jpg" alt="" width="112" height="70" decoding="async" />
+                      </div>
+                      <div className="companion-preset__copy">
+                        <span className="companion-preset__name">SC Bordeaux</span>
+                        <span className="companion-preset__summary">实例安装完成后自动应用</span>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-label="使用 SC Bordeaux 主题预设"
+                        aria-checked={newInstanceCompanionPresetEnabled}
+                        onClick={() => setNewInstanceCompanionPresetEnabled(value => !value)}
+                        className="companion-preset__switch motion-control"
+                      >
+                        <span className="companion-preset__knob" />
+                      </button>
+                    </div>
+                    <div className="companion-preset__details" aria-hidden={!newInstanceCompanionPresetEnabled}>
+                      <div className="companion-preset__details-inner">
+                        <div className="companion-preset__details-body">
+                          <div className="companion-preset__detail-row"><span>主题</span><strong>SC Bordeaux</strong></div>
+                          <div className="companion-preset__detail-row"><span>壁纸</span><strong>7680 × 4320 · JPG</strong></div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
                 </div>
               )}
 
@@ -3426,7 +3474,7 @@ function SillyClientLauncher() {
                 zipballUrl: r.zipballUrl,
                 recommended: r.tag === releases.find(x => !x.prerelease)?.tag
               })),
-              { value: "stable", label: "稳定版", sublabel: "自动获取最新正式版", zipballUrl: undefined },
+              { value: "stable", label: "内置版", sublabel: "本地内置最新版本", zipballUrl: undefined },
             ].map((opt, optionIndex, options) => (
               <button
                 key={opt.value}
@@ -3869,6 +3917,7 @@ function SillyClientLauncher() {
                     setNewRemoteAuthUsername("");
                     setNewRemoteAuthPassword("");
                     setNewInstanceVersion("stable");
+                    setNewInstanceCompanionPresetEnabled(false);
                     setNewInstanceLocalZip(null);
                     setNewInstanceError(null);
                     setShowNewInstancePanel(true);

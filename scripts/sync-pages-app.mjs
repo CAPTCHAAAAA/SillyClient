@@ -24,7 +24,8 @@ fs.cpSync(source, destination, { recursive: true });
 const appIndex = fs.readFileSync(path.join(source, 'index.html'), 'utf8');
 const pageIndex = appIndex
   .replaceAll('./assets/', './app/assets/')
-  .replaceAll('./fonts/', './app/fonts/');
+  .replaceAll('./fonts/', './app/fonts/')
+  .replaceAll('./reviewed-material-runtime.js', './app/reviewed-material-runtime.js');
 
 const showcaseBootstrap = `    <script>
       (() => {

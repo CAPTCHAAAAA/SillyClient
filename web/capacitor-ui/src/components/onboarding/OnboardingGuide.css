@@ -34,7 +34,7 @@
   background: rgba(8, 6, 10, 0.66);
   backdrop-filter: blur(18px) saturate(82%);
   -webkit-backdrop-filter: blur(18px) saturate(82%);
-  transition: opacity 220ms ease;
+  transition: opacity 260ms ease;
 }
 
 .sc-onboarding-panel {
@@ -53,8 +53,8 @@
     0 24px 64px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(32px) saturate(120%);
   -webkit-backdrop-filter: blur(32px) saturate(120%);
-  animation: sc-guide-enter 220ms ease-out both;
-  transition: height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: sc-guide-enter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: height 380ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sc-onboarding-panel::-webkit-scrollbar {
@@ -108,25 +108,53 @@
 
 .sc-onboarding-step {
   opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
   will-change: opacity, transform, filter;
 }
 
-.sc-onboarding-step.is-forward:not(.is-leaving) {
-  animation: sc-guide-in-forward 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.sc-onboarding-step.is-review-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 210ms cubic-bezier(0.4, 0, 1, 1),
+    transform 230ms cubic-bezier(0.4, 0, 1, 1),
+    filter 210ms ease-in;
 }
 
-.sc-onboarding-step.is-backward:not(.is-leaving) {
-  animation: sc-guide-in-backward 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.sc-onboarding-step.is-review-leaving.to-left {
+  transform: translate3d(-3px, 0, 0);
+  filter: blur(1px);
 }
 
-.sc-onboarding-step.is-forward.is-leaving {
-  animation: sc-guide-out-forward 150ms ease-in both;
+.sc-onboarding-step.is-review-leaving.to-right {
+  transform: translate3d(3px, 0, 0);
+  filter: blur(1px);
+}
+
+.sc-onboarding-step.is-review-entering {
+  opacity: 0;
   pointer-events: none;
 }
 
-.sc-onboarding-step.is-backward.is-leaving {
-  animation: sc-guide-out-backward 150ms ease-in both;
-  pointer-events: none;
+.sc-onboarding-step.is-review-entering.from-right {
+  transform: translate3d(4px, 0, 0);
+  filter: blur(1.4px);
+}
+
+.sc-onboarding-step.is-review-entering.from-left {
+  transform: translate3d(-4px, 0, 0);
+  filter: blur(1.4px);
+}
+
+.sc-onboarding-step.is-review-entering.is-review-active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+  transition:
+    opacity 360ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 320ms ease-out;
 }
 
 .sc-onboarding-shot {
@@ -283,44 +311,6 @@
   }
 }
 
-@keyframes sc-guide-in-forward {
-  from {
-    transform: translateX(5px);
-    filter: blur(2px);
-  }
-  to {
-    transform: translateX(0);
-    filter: blur(0);
-  }
-}
-
-@keyframes sc-guide-in-backward {
-  from {
-    transform: translateX(-5px);
-    filter: blur(2px);
-  }
-  to {
-    transform: translateX(0);
-    filter: blur(0);
-  }
-}
-
-@keyframes sc-guide-out-forward {
-  to {
-    opacity: 0;
-    transform: translateX(-4px);
-    filter: blur(1.5px);
-  }
-}
-
-@keyframes sc-guide-out-backward {
-  to {
-    opacity: 0;
-    transform: translateX(4px);
-    filter: blur(1.5px);
-  }
-}
-
 @keyframes sc-guide-exit {
   to {
     opacity: 0;
@@ -338,7 +328,7 @@
 }
 
 .sc-onboarding.is-closing .sc-onboarding-panel {
-  animation: sc-guide-exit 220ms ease-in both;
+  animation: sc-guide-exit 260ms ease-in both;
 }
 
 @media (max-width: 620px) {
@@ -399,16 +389,21 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sc-onboarding-panel,
-  .sc-onboarding-step {
+  .sc-onboarding.is-closing .sc-onboarding-panel {
     animation: none;
-  }
-
-  .sc-onboarding-panel {
     transition: none;
   }
 
   .sc-onboarding-backdrop {
     transition: none;
+  }
+
+  .sc-onboarding-step.is-review-leaving.to-left,
+  .sc-onboarding-step.is-review-leaving.to-right,
+  .sc-onboarding-step.is-review-entering.is-review-active {
+    transform: none;
+    filter: none;
+    transition: opacity 110ms linear;
   }
 }
 

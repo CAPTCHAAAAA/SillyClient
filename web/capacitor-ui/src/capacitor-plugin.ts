@@ -76,6 +76,11 @@ export interface GarbageItem {
   description: string
 }
 
+export interface CompanionPresetSelection {
+  bundleId: 'sc-bordeaux'
+  revision: number
+}
+
 export interface TarvenEnvPlugin {
   provisionAndStart(options: {
     port: number
@@ -85,6 +90,7 @@ export interface TarvenEnvPlugin {
     localZipPath?: string
     /** Windows 可选：实例实际安装目录的绝对路径。Android 忽略该字段。 */
     installPath?: string
+    companionPreset?: CompanionPresetSelection
     config: InstanceConfig
   }): Promise<{ ready: boolean }>
 

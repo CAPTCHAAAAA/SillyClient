@@ -16,7 +16,14 @@ interface GuideView {
   imageClass: string;
 }
 
-const STEP_EXIT_MS = 150;
+const STEP_EXIT_MS = 210;
+const STEP_ENTER_MS = 380;
+const CLOSE_MS = 270;
+const REDUCED_STEP_EXIT_MS = 100;
+const REDUCED_STEP_ENTER_MS = 110;
+const REDUCED_CLOSE_MS = 100;
+
+type TransitionPhase = "idle" | "leaving" | "entering";
 
 interface GuideStep {
   title: string;
@@ -36,10 +43,29 @@ const guideSteps: GuideStep[] = [
       },
       {
         label: "创建面板",
-        description: "填写名称并选择本地或远程连接。本地版本可直接获取，也可从版本一栏右侧导入 ZIP。",
+        description: "填写名称并选择本地或远程连接。本地版本可使用内置版，也可从版本一栏右侧导入 ZIP。",
         image: "./onboarding/create-open.webp",
         imageAlt: "展开后的新建实例面板",
         imageClass: "is-panel",
+      },
+      {
+        label: "主题预设",
+        description: "创建本地实例时可启用 SC Bordeaux，安装完成后会自动应用主题预设与配套壁纸。",
+        image: "./onboarding/theme-preset-open.webp",
+        imageAlt: "新建实例面板中的 SC Bordeaux 主题预设",
+        imageClass: "is-panel",
+      },
+    ],
+  },
+  {
+    title: "实例卡片",
+    views: [
+      {
+        label: "展开后",
+        description: "轻触实例卡片可查看创建时间、最近使用与快捷操作；再次轻触即可收回。",
+        image: "./onboarding/instance-card-default-expanded.webp",
+        imageAlt: "使用默认封面的展开实例卡片",
+        imageClass: "is-card",
       },
     ],
   },
@@ -48,16 +74,16 @@ const guideSteps: GuideStep[] = [
     views: [
       {
         label: "入口",
-        description: "点击顶部信息栏左侧的控制台入口，展开或收起运行记录。",
+        description: "点击顶部控制岛左侧的控制台入口，展开或收起运行记录。",
         image: "./onboarding/console-button.webp",
-        imageAlt: "顶部信息栏左侧的控制台入口",
+        imageAlt: "顶部控制岛左侧的控制台入口",
         imageClass: "is-toolbar",
       },
       {
         label: "展开后",
         description: "下载、安装、启动与错误信息会保留在这里，便于确认实例当前所处的阶段。",
         image: "./onboarding/terminal-open.webp",
-        imageAlt: "展开后的 Windows 控制台",
+        imageAlt: "展开后的运行控制台",
         imageClass: "is-terminal",
       },
     ],
@@ -67,9 +93,9 @@ const guideSteps: GuideStep[] = [
     views: [
       {
         label: "入口",
-        description: "点击顶部时间区域，切换动态背景、明暗主题，或导入自己的本地壁纸。",
+        description: "点击顶部控制岛中间区域，切换动态、黑夜与白天模式，或设置本地壁纸和磨砂强度。",
         image: "./onboarding/background-button.webp",
-        imageAlt: "顶部信息栏中间的背景与主题入口",
+        imageAlt: "顶部控制岛中间的背景与主题入口",
         imageClass: "is-toolbar",
       },
     ],
@@ -79,9 +105,9 @@ const guideSteps: GuideStep[] = [
     views: [
       {
         label: "入口",
-        description: "点击顶部信息栏右侧的菜单，打开 APP 设置。",
+        description: "点击顶部控制岛右侧的菜单，打开 APP 设置。",
         image: "./onboarding/settings-button.webp",
-        imageAlt: "顶部信息栏右侧的 APP 设置入口",
+        imageAlt: "顶部控制岛右侧的 APP 设置入口",
         imageClass: "is-toolbar",
       },
       {
@@ -103,36 +129,88 @@ export default function OnboardingGuide({
   const [currentStep, setCurrentStep] = useState(0);
   const [currentView, setCurrentView] = useState(0);
   const [transitionDirection, setTransitionDirection] = useState<"forward" | "backward">("forward");
-  const [isStepLeaving, setIsStepLeaving] = useState(false);
+  const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>("idle");
+  const [isEntryActive, setIsEntryActive] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [panelHeight, setPanelHeight] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelContentRef = useRef<HTMLDivElement>(null);
+  const stepRootRef = useRef<HTMLDivElement>(null);
   const stepTimerRef = useRef<number | null>(null);
+  const enterTimerRef = useRef<number | null>(null);
   const closeTimerRef = useRef<number | null>(null);
+  const entryFrameRef = useRef<number | null>(null);
+  const restorePanelTransitionFrameRef = useRef<number | null>(null);
+  const transitionTokenRef = useRef(0);
+  const isTransitioningRef = useRef(false);
+  const isClosingRef = useRef(false);
+  const hasMeasuredRef = useRef(false);
+  const reduceMotionRef = useRef(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const step = guideSteps[currentStep];
   const view = step.views[currentView];
 
   const requestClose = useCallback((action: () => void) => {
-    if (isClosing) return;
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    isTransitioningRef.current = false;
+    transitionTokenRef.current += 1;
+    if (stepTimerRef.current !== null) window.clearTimeout(stepTimerRef.current);
+    if (enterTimerRef.current !== null) window.clearTimeout(enterTimerRef.current);
+    if (entryFrameRef.current !== null) window.cancelAnimationFrame(entryFrameRef.current);
     setIsClosing(true);
-    closeTimerRef.current = window.setTimeout(action, 220);
-  }, [isClosing]);
+    closeTimerRef.current = window.setTimeout(
+      action,
+      reduceMotionRef.current ? REDUCED_CLOSE_MS : CLOSE_MS,
+    );
+  }, []);
 
   const transitionTo = useCallback((nextStep: number, nextView: number) => {
-    if (isStepLeaving || (nextStep === currentStep && nextView === currentView)) return;
+    if (
+      isTransitioningRef.current ||
+      isClosingRef.current ||
+      (nextStep === currentStep && nextView === currentView)
+    ) return;
     const currentOrder = currentStep * 10 + currentView;
     const nextOrder = nextStep * 10 + nextView;
+    const token = transitionTokenRef.current + 1;
+    transitionTokenRef.current = token;
+    isTransitioningRef.current = true;
     setTransitionDirection(nextOrder >= currentOrder ? "forward" : "backward");
-    setIsStepLeaving(true);
+    setIsEntryActive(false);
+    setTransitionPhase("leaving");
     if (stepTimerRef.current !== null) window.clearTimeout(stepTimerRef.current);
     stepTimerRef.current = window.setTimeout(() => {
+      if (token !== transitionTokenRef.current || isClosingRef.current) return;
       setCurrentStep(nextStep);
       setCurrentView(nextView);
-      setIsStepLeaving(false);
-    }, STEP_EXIT_MS);
-  }, [currentStep, currentView, isStepLeaving]);
+      setTransitionPhase("entering");
+    }, reduceMotionRef.current ? REDUCED_STEP_EXIT_MS : STEP_EXIT_MS);
+  }, [currentStep, currentView]);
+
+  useLayoutEffect(() => {
+    if (transitionPhase !== "entering") return;
+    const stepRoot = stepRootRef.current;
+    if (!stepRoot) return;
+    const token = transitionTokenRef.current;
+
+    void stepRoot.offsetWidth;
+    entryFrameRef.current = window.requestAnimationFrame(() => {
+      if (token !== transitionTokenRef.current || isClosingRef.current) return;
+      setIsEntryActive(true);
+    });
+    enterTimerRef.current = window.setTimeout(() => {
+      if (token !== transitionTokenRef.current || isClosingRef.current) return;
+      setTransitionPhase("idle");
+      setIsEntryActive(false);
+      isTransitioningRef.current = false;
+    }, reduceMotionRef.current ? REDUCED_STEP_ENTER_MS : STEP_ENTER_MS);
+
+    return () => {
+      if (entryFrameRef.current !== null) window.cancelAnimationFrame(entryFrameRef.current);
+      if (enterTimerRef.current !== null) window.clearTimeout(enterTimerRef.current);
+    };
+  }, [currentStep, currentView, transitionPhase]);
 
   useEffect(() => {
     const previousDocumentOverflow = document.documentElement.style.overflow;
@@ -165,7 +243,12 @@ export default function OnboardingGuide({
   useEffect(() => {
     return () => {
       if (stepTimerRef.current !== null) window.clearTimeout(stepTimerRef.current);
+      if (enterTimerRef.current !== null) window.clearTimeout(enterTimerRef.current);
       if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);
+      if (entryFrameRef.current !== null) window.cancelAnimationFrame(entryFrameRef.current);
+      if (restorePanelTransitionFrameRef.current !== null) {
+        window.cancelAnimationFrame(restorePanelTransitionFrameRef.current);
+      }
     };
   }, []);
 
@@ -190,7 +273,17 @@ export default function OnboardingGuide({
       const contentHeight = Math.max(content.getBoundingClientRect().height, content.scrollHeight);
       const availableHeight = Math.max(0, viewportHeight - rootInsets);
 
-      setPanelHeight(Math.ceil(Math.min(contentHeight + panelChrome, availableHeight)));
+      const targetHeight = Math.ceil(Math.min(contentHeight + panelChrome, availableHeight));
+      if (!hasMeasuredRef.current) {
+        hasMeasuredRef.current = true;
+        panel.style.transition = "none";
+        setPanelHeight(targetHeight);
+        restorePanelTransitionFrameRef.current = window.requestAnimationFrame(() => {
+          panel.style.removeProperty("transition");
+        });
+        return;
+      }
+      setPanelHeight(targetHeight);
     };
 
     const frame = window.requestAnimationFrame(measure);
@@ -218,6 +311,12 @@ export default function OnboardingGuide({
     transitionTo(currentStep + 1, 0);
   };
 
+  const stepMotionClass = transitionPhase === "leaving"
+    ? `is-review-leaving ${transitionDirection === "forward" ? "to-left" : "to-right"}`
+    : transitionPhase === "entering"
+      ? `is-review-entering ${transitionDirection === "forward" ? "from-right" : "from-left"} ${isEntryActive ? "is-review-active" : ""}`
+      : "";
+
   return (
     <div
       ref={rootRef}
@@ -242,7 +341,8 @@ export default function OnboardingGuide({
           </header>
 
           <div
-            className={`sc-onboarding-step is-${transitionDirection} ${isStepLeaving ? "is-leaving" : ""}`}
+            ref={stepRootRef}
+            className={`sc-onboarding-step ${stepMotionClass}`}
             key={`${currentStep}-${currentView}`}
           >
             <figure className={`sc-onboarding-shot ${view.imageClass}`}>
