@@ -1738,8 +1738,11 @@
           if (control) {
             const title = control.querySelector(".preview-wallpaper-blur-control__label > span");
             const output = control.querySelector("output");
-            if (title) title.className = `text-xs font-medium ${isLight ? "text-[#1a1625]/50" : "text-white/40"}`;
-            if (output) output.className = `text-[10px] ${isLight ? "text-[#1a1625]/25" : "text-white/25"}`;
+            // body observer watches class changes; unchanged writes would recursively retrigger it.
+            const titleClass = `text-xs font-medium ${isLight ? "text-[#1a1625]/50" : "text-white/40"}`;
+            const outputClass = `text-[10px] ${isLight ? "text-[#1a1625]/25" : "text-white/25"}`;
+            if (title && title.className !== titleClass) title.className = titleClass;
+            if (output && output.className !== outputClass) output.className = outputClass;
           }
 
           if (toneChanged) playThemeWash(doc, nextTone);
