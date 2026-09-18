@@ -231,9 +231,8 @@
       else if (entry.intersectionRatio >= 0.35) enterSection();
     }
   }, { root: mobile ? null : document.getElementById('scroller'), threshold: [0, 0.35] }).observe(section);
-  let navigateMobilePage;
   if (mobile) {
-    navigateMobilePage = initializeMobilePaging();
+    initializeMobilePaging();
     let pageIndex = document.documentElement.dataset.mobilePage;
     new MutationObserver(() => {
       const nextIndex = document.documentElement.dataset.mobilePage;
@@ -417,20 +416,6 @@
     return navigate;
   }
 
-  function openRequestedSection() {
-    if (new URLSearchParams(location.search).get('section') !== 'showcase') return;
-    document.querySelector('[data-mobile-entry-gate]')?.remove();
-    document.body.classList.remove('mobile-entry-locked');
-    if (navigateMobilePage) navigateMobilePage(2, false);
-    else section.scrollIntoView({ block: 'start', behavior: 'instant' });
-    section.classList.add('is-page-active', 'is-active');
-    document.getElementById('scroller')?.dispatchEvent(new Event('scroll'));
-    enterSection();
-  }
-  document.addEventListener('DOMContentLoaded', () => {
-    requestAnimationFrame(() => requestAnimationFrame(openRequestedSection));
-    setTimeout(openRequestedSection, 700);
-  });
   window.SC_PRODUCT_SHOWCASE = {
     select: (index, focus = false) => gallery.select(index, focus),
     get current() { return current; }

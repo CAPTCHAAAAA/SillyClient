@@ -157,6 +157,9 @@ for (const filename of ['content.js', 'AccordionGallery.js', 'DownloadSwitch.js'
     if (/SC_REVIEW_COPY|\/preview\/|\.\/review\//.test(source)) {
       errors.push(`${relativePath}: depends on the isolated preview`);
     }
+    if (filename === 'mount.js' && /\.get\(['"]section['"]\)|openRequestedSection/.test(source)) {
+      errors.push(`${relativePath}: preview parameters must not navigate the published page`);
+    }
   } catch (error) {
     errors.push(`${relativePath}: ${error.message}`);
   }
