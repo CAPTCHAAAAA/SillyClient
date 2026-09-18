@@ -61,7 +61,7 @@ flowchart LR
 | 页面导航 | `docs/styles/navigation.css` | 顶部信息栏与右侧三点页轨 |
 | 展示舞台 | `docs/styles/showcase.css`、`docs/scripts/spotlight-card.js` | 双端设备叙事、视频宽卡、横向源码卡片轨道与局部光场 |
 | 舞台光学 | `docs/styles/optics.css` | 边缘色散与舞台体积边界；设备模型不使用景深或渐进虚化 |
-| 项目轮播 | `docs/scripts/platform-carousel.js` | 第三页分镜切换、键盘控制与可访问状态 |
+| 功能实览与下载 | `docs/scripts/showcase/`、`docs/styles/product-showcase.css`、`docs/showcase-media/` | 共用双语文案、两段视频与五张图片的横向折叠图集、最新安装包下载拨杆、移动整页切换 |
 | 视频加载 | `docs/scripts/ui/bilibili-player.js` | 桌面与移动第三页的 B 站播放器按需加载 |
 | 文字动效 | `docs/styles/scroll-reveal.css`、`docs/scripts/scroll-reveal.js`、`docs/styles/variable-proximity.css`、`docs/scripts/variable-proximity.js`、`docs/styles/text-type.css`、`docs/scripts/text-type.js` | 翻页主标题、英文邻近字重与源码标签打字效果 |
 | 手机外观 | `docs/styles/phone.css` | 屏幕投影层、灵动岛与反射 |

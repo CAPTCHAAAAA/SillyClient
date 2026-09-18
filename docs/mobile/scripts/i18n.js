@@ -1,4 +1,4 @@
-import { translations } from './content.js';
+import { translations } from './content.js?v=20260918-product-showcase-v1';
 
 const STORAGE_KEY = 'sillyclient-language';
 

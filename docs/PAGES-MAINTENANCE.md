@@ -46,7 +46,18 @@ flowchart LR
 
 1. 第一页显示产品介绍和双设备开屏构图。
 2. 第二页使用同一 Three.js 场景展示手机、电脑和双端协作三个状态。
-3. 第三页先以横向宽卡嵌入产品视频，再用三张项目卡片介绍共享前端与双端实现。
+3. 第三页使用横向折叠图集展示两段视频和五张功能图片，展开项保持 1:1。
+   进入第三页时默认展开第一段视频；切换项目或离开页面时卸载非当前播放器。
+
+`scripts/showcase/` 是桌面与移动共用的宣传页模块。`content.js` 保存当前双语文案；
+`AccordionGallery.js` 控制折叠、键盘与减少动态效果模式；`mount.js` 装配图集、大图
+对话框和移动分页；`DownloadSwitch.js` 控制平台选择与安装包下载。
+两套 HTML 先加载共享文案、图集、装配和下载控制器，再运行各自页面入口。
+现有桌面、移动翻译模块合并共享文案；原源码卡片容器在入口初始化前被替换。
+
+首屏下载拨杆在宽高比不小于 1:1 时默认 Windows，否则默认 Android，允许手动更改。
+点击下载后查询主仓库最新正式 Release，并在后台下载匹配的 EXE 或 APK；
+下方链接始终提供手动选择版本的入口。不得在页面中固定安装包版本。
 
 ### 页面模块
 
@@ -56,8 +67,9 @@ flowchart LR
 | 组件说明数据 | `scripts/page/inspector-content.js` |
 | 组件检查器 | `scripts/page/component-inspector.js` |
 | 分页与输入 | `scripts/page/navigation-controller.js` |
-| 第三页轮播 | `scripts/platform-carousel.js` |
-| 视频懒加载 | `scripts/ui/bilibili-player.js` |
+| 第三页折叠图集与移动分页 | `scripts/showcase/mount.js`、`scripts/showcase/AccordionGallery.js` |
+| 首屏下载拨杆 | `scripts/showcase/DownloadSwitch.js` |
+| 图集视频生命周期 | `scripts/showcase/mount.js` |
 | 标题字体 | `scripts/ui/title-font-controller.js` |
 
 页面结构变化先修改 `index.html`，对应样式进入 `styles/page/` 或明确的视觉模块。
@@ -132,6 +144,14 @@ flowchart TD
 移动页源码放在 `mobile/scripts/` 与 `mobile/styles/`，不要用桌面媒体查询继续堆叠
 第二套页面逻辑。桌面和移动只共享稳定的视觉资源、标题字体控制器与 B 站播放器
 懒加载器；第三页之外不得新增第三方 iframe。
+
+移动端按整页切换，使用变速过渡并同步桌面背景的页面事件。第二页的三个设备状态
+先按顺序切换，再进入下一页。第三页与桌面一样横向折叠；移动端仅使用 CSS 过渡，
+不为图集加载 GSAP。下载动作使用临时隐藏 iframe 接收 GitHub 附件，不展示第三方页面。
+
+`showcase-media/` 中五张 1600 × 1600 WebP 是用户提供的产品展示素材，图集和大图
+对话框共用。它们不同于第二页 `mobile-frames/` 的三张透明产品帧，不参与该目录的
+256 KiB 预算。样图渲染、Blender 工程与本地预览服务不得随发布提交。
 
 ## 6. 产品前端更新
 

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script src="./scripts/viewport-router.js?v=20260726-aspect-route-v3"></script>
-  <title>SillyClient | Android 与 Windows 的 SillyTavern 客户端</title>
-  <meta name="description" content="SillyClient 在 Android 与 Windows 上管理 SillyTavern 本地实例和远程连接。">
+  <title>SillyClient | 安装、启动和管理 SillyTavern</title>
+  <meta name="description" content="在 Android 手机和 Windows 电脑上安装、启动和管理 SillyTavern（酒馆），也能连接已有的酒馆服务。">
   <meta name="theme-color" content="#160d16">
   <link rel="canonical" href="https://captchaaaaa.github.io/SillyClient/">
   <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml">
@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="./mobile/styles/source.css?v=20260817-video-source-cards-v1">
   <script src="./scripts/fonts.js?v=20260725-title-picker-v1"></script>
   <script src="./scripts/background.js?v=20260726-vivid-silk-v3"></script>
+  <link rel="stylesheet" href="./styles/product-showcase.css?v=20260918-product-showcase-v1">
 </head>
 <body class="mobile-entry-locked">
   <section class="mobile-entry-gate" data-mobile-entry-gate role="dialog" aria-modal="true" data-mobile-i18n-aria="entryGateLabel" aria-label="电脑端完整体验提示">
@@ -233,6 +234,10 @@
     <button type="button" data-mobile-target="source" data-mobile-i18n-aria="source" aria-label="源码与结构"><span></span></button>
   </nav>
 
-  <script type="module" src="./mobile/scripts/main.js?v=20260817-visual-centering-v3"></script>
+  <script src="./scripts/showcase/content.js?v=20260918-product-showcase-v1"></script>
+  <script src="./scripts/showcase/AccordionGallery.js?v=20260918-product-showcase-v1"></script>
+  <script src="./scripts/showcase/mount.js?v=20260918-product-showcase-v1"></script>
+  <script src="./scripts/showcase/DownloadSwitch.js?v=20260918-product-showcase-v1"></script>
+  <script type="module" src="./mobile/scripts/main.js?v=20260918-product-showcase-v1"></script>
 </body>
 </html>

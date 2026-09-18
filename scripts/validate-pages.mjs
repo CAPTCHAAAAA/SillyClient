@@ -26,6 +26,7 @@ const requiredFiles = [
   'styles/page/inspector.css',
   'styles/page/responsive.css',
   'styles/showcase.css',
+  'styles/product-showcase.css',
   'styles/hero.css',
   'styles/navigation.css',
   'styles/optics.css',
@@ -51,6 +52,16 @@ const requiredFiles = [
   'scripts/page/navigation-controller.js',
   'scripts/ui/bilibili-player.js',
   'scripts/ui/title-font-controller.js',
+  'scripts/showcase/content.js',
+  'scripts/showcase/AccordionGallery.js',
+  'scripts/showcase/DownloadSwitch.js',
+  'scripts/showcase/mount.js',
+  'showcase-media/README.md',
+  'showcase-media/overview.webp',
+  'showcase-media/create.webp',
+  'showcase-media/manage.webp',
+  'showcase-media/configure.webp',
+  'showcase-media/personalize.webp',
   'scripts/desktop-model-loader.js',
   'scripts/device-scene-config.js',
   'scripts/device-render/input-motion.js',
@@ -134,6 +145,59 @@ for (const htmlName of ['index.html', 'mobile.html', 'landing-3d-v2.html', 'phon
   }
 }
 
+const showcaseContext = { window: {} };
+for (const filename of ['content.js', 'AccordionGallery.js', 'DownloadSwitch.js', 'mount.js']) {
+  const relativePath = `scripts/showcase/${filename}`;
+  const absolutePath = path.join(docsDir, relativePath);
+  if (!fs.existsSync(absolutePath)) continue;
+  const source = fs.readFileSync(absolutePath, 'utf8');
+  try {
+    const compiled = new vm.Script(source, { filename: relativePath });
+    if (filename === 'content.js') compiled.runInNewContext(showcaseContext, { timeout: 1000 });
+    if (/SC_REVIEW_COPY|\/preview\/|\.\/review\//.test(source)) {
+      errors.push(`${relativePath}: depends on the isolated preview`);
+    }
+  } catch (error) {
+    errors.push(`${relativePath}: ${error.message}`);
+  }
+}
+const showcaseCopy = showcaseContext.window.SC_SHOWCASE_COPY;
+if (!showcaseCopy?.zh || !showcaseCopy?.en) {
+  errors.push('showcase content: both Chinese and English are required');
+} else {
+  for (const language of ['zh', 'en']) {
+    const copy = showcaseCopy[language];
+    const baseline = Object.keys(showcaseCopy.zh).sort();
+    if (JSON.stringify(Object.keys(copy).sort()) !== JSON.stringify(baseline)) {
+      errors.push(`showcase.${language}: translation keys differ`);
+    }
+    if (copy.slides?.length !== 5 || !copy.downloadControl?.download) {
+      errors.push(`showcase.${language}: missing gallery or download content`);
+    }
+    for (const slide of copy.slides ?? []) {
+      if (!/^[a-z]+$/.test(slide.id) || !slide.alt
+        || !fs.existsSync(path.join(docsDir, 'showcase-media', `${slide.id}.webp`))) {
+        errors.push(`showcase.${language}: invalid or missing media ${slide.id}`);
+      }
+    }
+  }
+  if (JSON.stringify(showcaseCopy.zh.slides?.map(slide => slide.id))
+    !== JSON.stringify(showcaseCopy.en.slides?.map(slide => slide.id))) {
+    errors.push('showcase content: translated image order differs');
+  }
+}
+for (const htmlName of ['index.html', 'mobile.html']) {
+  const html = fs.readFileSync(path.join(docsDir, htmlName), 'utf8');
+  const order = ['content.js', 'AccordionGallery.js', 'mount.js', 'DownloadSwitch.js']
+    .map(filename => html.indexOf(`./scripts/showcase/${filename}?v=`));
+  if (order.some((position, index) => position < 0 || (index > 0 && position <= order[index - 1]))) {
+    errors.push(`${htmlName}: showcase initialization order is invalid`);
+  }
+  if (!html.includes('./styles/product-showcase.css?v=')) {
+    errors.push(`${htmlName}: showcase stylesheet is missing`);
+  }
+}
+
 function validateTranslations({ htmlName, scriptName, attributePattern, namespace }) {
   const html = fs.readFileSync(path.join(docsDir, htmlName), 'utf8');
   const runtime = fs.readFileSync(path.join(docsDir, scriptName), 'utf8');
@@ -145,6 +209,9 @@ function validateTranslations({ htmlName, scriptName, attributePattern, namespac
   }
 
   const translations = vm.runInNewContext(`(${translationMatch[1]})`);
+  for (const language of Object.keys(translations)) {
+    Object.assign(translations[language], showcaseCopy?.[language]);
+  }
   const languages = Object.keys(translations);
   const baseline = new Set(Object.keys(translations[languages[0]] ?? {}));
   const usedKeys = new Set(

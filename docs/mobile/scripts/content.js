@@ -107,4 +107,8 @@ const translations = {
   }
 };
 
+for (const language of Object.keys(translations)) {
+  Object.assign(translations[language], globalThis.SC_SHOWCASE_COPY?.[language]);
+}
+
 export { translations };

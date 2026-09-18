@@ -31,12 +31,14 @@ docs/
 ├── app/                        共享 React 控制台构建副本
 ├── mobile/                     移动页脚本与样式
 ├── mobile-frames/              移动页使用的透明 4K WebP 产品帧
+├── showcase-media/             第三页图集与大图共用的五张产品图片
 ├── models/                     线上 Three.js 使用的 GLB
 ├── product-render/             屏幕纹理与产品帧生成入口
 ├── scripts/
 │   ├── background/             动态背景渲染
 │   ├── device-render/          WebGL 舞台、手机、投影与输入
 │   ├── page/                   桌面内容、导航与检查器
+│   ├── showcase/               双语实览、折叠图集、下载拨杆与移动分页
 │   ├── product-render/         产品帧配置、贴图与导出
 │   └── ui/                     桌面和移动共用的界面控制器
 └── styles/
@@ -73,8 +75,9 @@ docs/
 | 需求 | 修改位置 |
 | --- | --- |
 | 产品配色、全局材质 | `styles/theme.css` |
-| 桌面页面内容与双语文案 | `scripts/page/content.js`、`index.html` |
-| 移动页面内容与双语文案 | `mobile/scripts/content.js`、`mobile.html` |
+| 共用宣传文案、图集与下载控件 | `scripts/showcase/`、`styles/product-showcase.css`、`showcase-media/` |
+| 桌面页面结构与基础文案 | `scripts/page/content.js`、`index.html` |
+| 移动页面结构与基础文案 | `mobile/scripts/content.js`、`mobile.html` |
 | 背景流光与点阵 | `scripts/background/` |
 | 手机模型与材质 | `scripts/device-render/phone-device.js` |
 | 电脑模型与铰链 | `scripts/laptop-model.js` |
