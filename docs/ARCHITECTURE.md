@@ -54,7 +54,7 @@ flowchart LR
 | 模块 | 文件 | 负责内容 |
 | --- | --- | --- |
 | 产品主题 | `docs/styles/theme.css` | 产品色板、基础材质与全局字体栈 |
-| 移动端轻量页 | `docs/mobile.html`、`docs/mobile/styles/`、`docs/mobile/scripts/`、`docs/mobile-frames/` | 复用桌面视觉与三段内容结构，仅将第二页实时 3D 舞台替换为产品帧切换 |
+| 移动端页面 | `docs/mobile.html`、`docs/mobile/styles/`、`docs/mobile/scripts/`、`docs/mobile-frames/` | 复用桌面视觉与三段内容结构，在首屏和第二页渲染实时设备舞台，并保留产品帧回退 |
 | 产品帧工具 | `docs/product-render/`、`docs/scripts/product-render/` | 集中管理展示尺寸和贴图，从真实前端生成屏幕纹理，并通过 WebGL 导出透明产品帧 |
 | 页面骨架 | `docs/styles/page.css`、`docs/styles/page/` | 按基础、旅程、平台、检查器和响应式规则拆分页面样式 |
 | 首屏构图 | `docs/styles/hero.css` | 左侧产品介绍、右侧交叉设备摄影画幅与翻页提示 |
@@ -93,10 +93,11 @@ flowchart LR
 视口宽度大于或等于高度时使用 `index.html`，高度大于宽度时使用
 `mobile.html`。路由在页面依赖加载前执行，并在跨越 1:1 临界值时重新判断。
 `?desktop=1`、`?mobile=1` 和 `?productRender=1` 仅用于预览、测试和资产导出。
-移动页沿用桌面页的背景渲染、产品主题、标题字体、导航、概览与源码结构；它不加载
-Three.js 设备模型、GLB、产品界面 iframe 或 GSAP，第三页仅保留懒加载的 B 站视频。
-第二页由
-`docs/mobile/scripts/frame-stage.js` 使用透明产品帧替代实时 3D。
+移动页沿用桌面页的背景渲染、产品主题、标题字体、导航、概览与源码结构。
+`docs/mobile/scripts/webgl-stage.js` 复用桌面设备模型、灯光、屏幕材质和站位配置，
+在首屏与第二页的内容区域内渲染同一透明 WebGL 画布。第二页由
+`docs/mobile/scripts/frame-stage.js` 维护三个设备状态并驱动舞台转场；WebGL 不可用
+时继续显示对应的透明产品帧。移动页不加载 GSAP，第三页仅保留懒加载的 B 站视频。
 
 `product-render/screen-source.html` 根据
 `scripts/product-render/config.js` 加载同一份 `phone-demo.html`，生成手机与电脑专用

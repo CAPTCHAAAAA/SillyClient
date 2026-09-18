@@ -1,0 +1,76 @@
+#mobile-product-webgl {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.mobile-product-stage--hero,
+.mobile-product-stage--experience {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.mobile-product-stage--hero::after {
+  content: none;
+}
+
+.mobile-hero {
+  width: 100%;
+}
+
+.mobile-hero__copy,
+.mobile-hero__footer {
+  width: min(100%, calc(var(--mobile-page-width) - 2 * var(--mobile-page-gutter)));
+  justify-self: center;
+}
+
+.mobile-product-stage--hero {
+  width: min(calc(100% + 2 * var(--mobile-page-gutter)), 1100px);
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+  justify-self: center;
+}
+
+.mobile-experience-stage {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.mobile-product-stage--experience {
+  width: min(calc(100% + 2 * var(--mobile-page-gutter)), 1100px);
+  min-height: 220px;
+  height: min(34svh, 304px);
+  justify-self: center;
+}
+
+.mobile-product-stage--experience figcaption {
+  inset-inline: calc(var(--mobile-page-gutter) + 18px);
+}
+
+.mobile-webgl-ready .mobile-product-stage > img {
+  visibility: hidden;
+}
+
+.mobile-product-stage figcaption {
+  z-index: 5;
+}
+
+@media (max-height: 720px) {
+  .mobile-product-stage--experience {
+    min-height: 185px;
+    height: 28svh;
+  }
+}

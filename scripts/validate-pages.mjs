@@ -38,6 +38,7 @@ const requiredFiles = [
   'mobile/styles/hero.css',
   'mobile/styles/experience.css',
   'mobile/styles/source.css',
+  'mobile/styles/webgl-stage.css',
   'scripts/fonts.js',
   'scripts/background.js',
   'scripts/background/shared.js',
@@ -79,7 +80,6 @@ const requiredFiles = [
   'scripts/component-hover.js',
   'scripts/component-motion.js',
   'mobile/scripts/content.js',
-  'mobile/scripts/entry-gate.js',
   'mobile/scripts/i18n.js',
   'mobile/scripts/frame-stage.js',
   'mobile/scripts/experience.js',
@@ -87,6 +87,7 @@ const requiredFiles = [
   'mobile/scripts/title-font.js',
   'mobile/scripts/navigation.js',
   'mobile/scripts/main.js',
+  'mobile/scripts/webgl-stage.js',
   'scripts/product-render/frame-export.js',
   'scripts/product-render/config.js',
   'scripts/product-render/product-frame-renderer.js',
@@ -250,6 +251,15 @@ validateTranslations({
 });
 
 const mobileHtml = fs.readFileSync(path.join(docsDir, 'mobile.html'), 'utf8');
+if (mobileHtml.includes('mobile-entry-gate') || mobileHtml.includes('mobile-entry-locked')) {
+  errors.push('mobile page: obsolete desktop-view entry gate must not be present');
+}
+if (!mobileHtml.includes('./mobile/styles/webgl-stage.css?v=')) {
+  errors.push('mobile page: WebGL stage stylesheet is missing');
+}
+if (!mobileHtml.includes('./mobile/scripts/webgl-stage.js?v=')) {
+  errors.push('mobile page: WebGL stage module is missing');
+}
 const mobileIframes = [...mobileHtml.matchAll(/<iframe\b[\s\S]*?<\/iframe>/gi)].map((match) => match[0].toLowerCase());
 if (mobileIframes.length !== 1) {
   errors.push(`mobile page: expected exactly one lazy Bilibili iframe, found ${mobileIframes.length}`);
@@ -260,7 +270,6 @@ if (mobileIframes.length !== 1) {
 const mobileSources = [
   'mobile.html',
   'mobile/scripts/content.js',
-  'mobile/scripts/entry-gate.js',
   'mobile/scripts/i18n.js',
   'mobile/scripts/frame-stage.js',
   'mobile/scripts/experience.js',
@@ -268,15 +277,29 @@ const mobileSources = [
   'mobile/scripts/title-font.js',
   'mobile/scripts/navigation.js',
   'mobile/scripts/main.js',
+  'mobile/scripts/webgl-stage.js',
   'mobile/styles/tokens.css',
   'mobile/styles/shell.css',
   'mobile/styles/hero.css',
   'mobile/styles/experience.css',
   'mobile/styles/source.css',
+  'mobile/styles/webgl-stage.css',
 ].map((relativePath) => fs.readFileSync(path.join(docsDir, relativePath), 'utf8')).join('\n').toLowerCase();
-for (const forbiddenDependency of ['<canvas', 'three.js', "from 'three", 'phone-model.js', 'models/', '.glb', 'gsap']) {
+for (const forbiddenDependency of ['<canvas', 'three.js', 'phone-model.js', 'models/', '.glb', 'gsap']) {
   if (mobileSources.includes(forbiddenDependency)) {
-    errors.push(`mobile page: heavy desktop dependency is not allowed: ${forbiddenDependency}`);
+    errors.push(`mobile page: unsupported dependency is not allowed: ${forbiddenDependency}`);
+  }
+}
+const mobileWebgl = fs.readFileSync(path.join(docsDir, 'mobile/scripts/webgl-stage.js'), 'utf8');
+for (const requiredDependency of [
+  "from 'three'",
+  "from 'three/addons/loaders/GLTFLoader.js'",
+  '../../scripts/device-render/phone-device.js',
+  '../../scripts/laptop-model.js',
+  '../../scripts/product-render/screen-materials.js',
+]) {
+  if (!mobileWebgl.includes(requiredDependency)) {
+    errors.push(`mobile WebGL stage: required dependency is missing: ${requiredDependency}`);
   }
 }
 

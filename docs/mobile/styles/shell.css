@@ -1,99 +1,3 @@
-.mobile-entry-locked {
-  height: 100svh;
-  overflow: hidden;
-  touch-action: none;
-}
-
-.mobile-entry-gate {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: max(32px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
-  background: rgba(8, 2, 4, 0.42);
-  text-align: center;
-  backdrop-filter: blur(18px) saturate(112%);
-  transition: opacity 380ms ease, backdrop-filter 420ms ease;
-}
-
-.mobile-entry-gate__inner {
-  display: flex;
-  width: min(100%, 440px);
-  flex-direction: column;
-  align-items: center;
-  transition: opacity 320ms ease, transform 420ms var(--mobile-ease), filter 380ms ease;
-}
-
-.mobile-entry-gate__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--product-text);
-  font-size: 15px;
-  font-weight: 680;
-}
-
-.mobile-entry-gate__brand img {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
-}
-
-.mobile-entry-gate__kicker {
-  margin: 34px 0 0;
-  color: var(--product-highlight);
-  font-size: 11px;
-  font-weight: 720;
-}
-
-.mobile-entry-gate h1 {
-  max-width: 420px;
-  margin: 10px 0 0;
-  color: var(--product-text);
-  font-size: clamp(30px, 8vw, 38px);
-  font-weight: 730;
-  line-height: 1.14;
-  letter-spacing: 0;
-  text-wrap: balance;
-}
-
-.mobile-entry-gate__body {
-  max-width: 410px;
-  margin: 17px 0 0;
-  color: var(--product-text-muted);
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.mobile-entry-gate__hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 34px;
-  color: var(--product-text-muted);
-  font-size: 11px;
-  font-weight: 680;
-}
-
-.mobile-entry-gate__hint svg {
-  width: 14px;
-  height: 14px;
-}
-
-.mobile-entry-gate.is-leaving {
-  opacity: 0;
-  pointer-events: none;
-  backdrop-filter: blur(0) saturate(100%);
-}
-
-.mobile-entry-gate.is-leaving .mobile-entry-gate__inner {
-  opacity: 0;
-  transform: scale(0.985);
-  filter: blur(5px);
-}
-
 .mobile-topbar {
   position: fixed;
   top: max(12px, env(safe-area-inset-top));
@@ -290,8 +194,6 @@
   }
 
   .mobile-reveal,
-  .mobile-entry-gate,
-  .mobile-entry-gate__inner,
   .mobile-page-rail span {
     transition-duration: 1ms;
   }
@@ -300,8 +202,7 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .mobile-topbar,
-  .mobile-page-rail,
-  .mobile-entry-gate {
+  .mobile-page-rail {
     background: var(--product-chrome-strong);
     backdrop-filter: none;
   }

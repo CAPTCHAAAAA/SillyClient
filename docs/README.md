@@ -13,7 +13,7 @@
 | 文件 | 用途 | 运行条件 |
 | --- | --- | --- |
 | `index.html` | 桌面完整演示，包含实时 Three.js 设备舞台 | 视口宽度大于或等于高度 |
-| `mobile.html` | 移动轻量演示，使用透明 4K 产品帧 | 视口高度大于宽度 |
+| `mobile.html` | 移动实时设备舞台，使用透明 4K 产品帧回退 | 视口高度大于宽度 |
 | `phone-demo.html` | 手机与电脑屏幕中的产品前端 | 由同步脚本生成 |
 | `product-render/screen-source.html` | 把产品前端转换为设备屏幕纹理 | 仅用于资产生成 |
 | `landing-3d-v2.html` | 旧地址兼容入口 | 保留，不作为开发入口 |
@@ -30,7 +30,7 @@ docs/
 ├── mobile.html                 移动页面结构
 ├── app/                        共享 React 控制台构建副本
 ├── mobile/                     移动页脚本与样式
-├── mobile-frames/              移动页使用的透明 4K WebP 产品帧
+├── mobile-frames/              移动 WebGL 不可用时的透明 4K WebP 回退帧
 ├── showcase-media/             第三页图集与大图共用的五张产品图片
 ├── models/                     线上 Three.js 使用的 GLB
 ├── product-render/             屏幕纹理与产品帧生成入口

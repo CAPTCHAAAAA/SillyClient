@@ -12,30 +12,19 @@
   <link rel="stylesheet" href="./styles/theme.css?v=20260725-guided-focus-v1">
   <link rel="stylesheet" href="./styles/fonts.css?v=20260725-title-picker-v1">
   <link rel="stylesheet" href="./mobile/styles/tokens.css?v=20260726-mobile-desktop-parity-v1">
-  <link rel="stylesheet" href="./mobile/styles/shell.css?v=20260726-mobile-desktop-parity-v1">
+  <link rel="stylesheet" href="./mobile/styles/shell.css?v=20260919-mobile-webgl-v1">
   <link rel="stylesheet" href="./mobile/styles/hero.css?v=20260817-hero-stage-v1">
   <link rel="stylesheet" href="./mobile/styles/experience.css?v=20260817-visual-centering-v1">
   <link rel="stylesheet" href="./mobile/styles/source.css?v=20260817-video-source-cards-v1">
   <script src="./scripts/fonts.js?v=20260725-title-picker-v1"></script>
   <script src="./scripts/background.js?v=20260726-vivid-silk-v3"></script>
   <link rel="stylesheet" href="./styles/product-showcase.css?v=20260918-product-showcase-v1">
+  <link rel="stylesheet" href="./mobile/styles/webgl-stage.css?v=20260919-mobile-webgl-v1">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
+  </script>
 </head>
-<body class="mobile-entry-locked">
-  <section class="mobile-entry-gate" data-mobile-entry-gate role="dialog" aria-modal="true" data-mobile-i18n-aria="entryGateLabel" aria-label="电脑端完整体验提示">
-    <div class="mobile-entry-gate__inner">
-      <div class="mobile-entry-gate__brand">
-        <img src="./sillyclient-logo.svg" width="44" height="44" alt="">
-        <span>SillyClient</span>
-      </div>
-      <p class="mobile-entry-gate__kicker" data-mobile-i18n="entryGateKicker">电脑端完整体验</p>
-      <h1 data-mobile-i18n="entryGateTitle">在电脑上，看到完整的 SillyClient。</h1>
-      <p class="mobile-entry-gate__body" data-mobile-i18n="entryGateBody">实时 3D、镜头交互与完整转场将在电脑浏览器中启用。移动端继续提供轻量预览。</p>
-      <p class="mobile-entry-gate__hint">
-        <span data-mobile-i18n="entryGateContinue">轻触屏幕继续</span>
-        <svg aria-hidden="true"><use href="./landing-icons.svg#icon-caret-right"></use></svg>
-      </p>
-    </div>
-  </section>
+<body>
 
   <header class="mobile-topbar" id="mobile-topbar">
     <a class="mobile-brand" href="#overview" data-mobile-target="overview" data-mobile-i18n-aria="homeLabel" aria-label="SillyClient 首页">
@@ -236,8 +225,9 @@
 
   <script src="./scripts/showcase/content.js?v=20260918-product-showcase-v1"></script>
   <script src="./scripts/showcase/AccordionGallery.js?v=20260918-product-showcase-v1"></script>
-  <script src="./scripts/showcase/mount.js?v=20260918-home-entry-v2"></script>
+  <script src="./scripts/showcase/mount.js?v=20260919-mobile-webgl-v1"></script>
   <script src="./scripts/showcase/DownloadSwitch.js?v=20260918-product-showcase-v1"></script>
-  <script type="module" src="./mobile/scripts/main.js?v=20260918-product-showcase-v1"></script>
+  <script type="module" src="./mobile/scripts/main.js?v=20260919-mobile-webgl-v1"></script>
+  <script type="module" src="./mobile/scripts/webgl-stage.js?v=20260919-mobile-webgl-v1"></script>
 </body>
 </html>

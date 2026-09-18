@@ -337,8 +337,7 @@
     }
 
     function blocked(target) {
-      return document.body.classList.contains('mobile-entry-locked')
-        || !!document.querySelector('dialog[open]')
+      return !!document.querySelector('dialog[open]')
         || !!target?.closest('input, textarea, select, [contenteditable="true"], iframe, [role="slider"]');
     }
 
