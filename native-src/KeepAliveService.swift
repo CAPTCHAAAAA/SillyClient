@@ -69,9 +69,9 @@ public class KeepAliveService {
         data.append(contentsOf: "WAVE".utf8)
         // fmt subchunk
         data.append(contentsOf: "fmt ".utf8)
-        var subchunk1Size: Int32 = 16
+        let subchunk1Size: Int32 = 16
         data.append(contentsOf: withUnsafeBytes(of: subchunk1Size.littleEndian) { Data($0) })
-        var audioFormat: Int16 = 1 // PCM
+        let audioFormat: Int16 = 1 // PCM
         data.append(contentsOf: withUnsafeBytes(of: audioFormat.littleEndian) { Data($0) })
         data.append(contentsOf: withUnsafeBytes(of: numChannels.littleEndian) { Data($0) })
         data.append(contentsOf: withUnsafeBytes(of: sampleRate.littleEndian) { Data($0) })

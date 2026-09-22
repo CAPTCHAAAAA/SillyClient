@@ -42,27 +42,13 @@ public class NodeRunner {
             try? fileManager.createDirectory(atPath: dataDir, withIntermediateDirectories: true)
         }
         
-        // 在后台 POSIX 线程中运行 Node 事件循环
-        var thread: pthread_t?
-        let threadBlock: @convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer? = { arg in
-            let runner = Unmanaged<NodeRunner>.fromOpaque(arg).takeUnretainedValue()
-            runner.runNodeEventLoop(dataPath: dataPath, port: port)
-            return nil
+        // 在后台独立系统线程中运行 Node 事件循环
+        Thread.detachNewThread { [weak self] in
+            self?.runNodeEventLoop(dataPath: dataPath, port: port)
         }
         
-        let selfPointer = Unmanaged.passUnretained(self).toOpaque()
-        let result = pthread_create(&thread, nil, threadBlock, selfPointer)
-        
-        if result == 0 {
-            nodeThread = thread
-            pthread_detach(thread!)
-            appendLog("[NodeRunner] POSIX 线程启动成功，监听端口 \(port)")
-            completion?(true)
-        } else {
-            isNodeRunning = false
-            appendLog("[NodeRunner] 创建线程失败，错误代码: \(result)")
-            completion?(false)
-        }
+        appendLog("[NodeRunner] 后台线程启动成功，监听端口 \(port)")
+        completion?(true)
     }
     
     public func stop() {

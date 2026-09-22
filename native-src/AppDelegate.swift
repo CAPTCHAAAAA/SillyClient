@@ -12,14 +12,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let window = UIWindow(frame: UIScreen.main.bounds)
         self.window = window
         
+        let rootVC = TavernViewController.shared
+        
         // 实例化 Capacitor 桥接控制器
         let bridgeVC = CAPBridgeViewController()
+        bridgeVC.loadViewIfNeeded()
         
-        // 注册控制台 WebView
-        TavernViewController.shared.registerConsoleWebView(bridgeVC.webView!)
+        rootVC.addChild(bridgeVC)
+        if let wv = bridgeVC.webView {
+            rootVC.registerConsoleWebView(wv)
+        }
+        bridgeVC.didMove(toParent: rootVC)
         
         // 设置 TavernViewController 为应用根控制器
-        window.rootViewController = TavernViewController.shared
+        window.rootViewController = rootVC
         window.makeKeyAndVisible()
         
         return true

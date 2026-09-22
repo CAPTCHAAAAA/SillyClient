@@ -40,7 +40,7 @@ public class ChameleonEngine {
     
     public func stopPolling() {
         pollTimer?.invalidate()
-        pollTimer = null
+        pollTimer = nil
     }
     
     /**

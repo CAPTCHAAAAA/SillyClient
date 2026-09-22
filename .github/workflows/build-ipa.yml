@@ -75,38 +75,47 @@ jobs:
           mkdir -p build/Payload
           cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/SillyClient.app
           cd build
-          zip -qr ../../../../../SillyClient-iOS-v1.9.1-unsigned.ipa Payload
-          cd ../../../..
+          zip -qr "$GITHUB_WORKSPACE/SillyClient-iOS-v1.9.1-unsigned.ipa" Payload
+          cd "$GITHUB_WORKSPACE"
 
       - name: Xcode 编译模拟器版并开机真机截图
         run: |
+          # 挑选具有灵动岛的真机模拟器 (iPhone 15 Pro 或 14 Pro)
+          echo "=== 可用 iOS 模拟器列表 ==="
+          xcrun simctl list devices available
+          
+          DEVICE_UUID=$(xcrun simctl list devices available | grep -E "iPhone (15 Pro|14 Pro|16 Pro|15)" | head -n 1 | grep -E -o "[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}")
+          if [ -z "$DEVICE_UUID" ]; then
+            DEVICE_UUID=$(xcrun simctl list devices available | grep "iPhone" | head -n 1 | grep -E -o "[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}")
+          fi
+          echo "=== 选定测试模拟器 UUID: $DEVICE_UUID ==="
+
           cd web/capacitor-ui/ios/App
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -configuration Debug \
                      -sdk iphonesimulator \
-                     -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+                     -destination "id=$DEVICE_UUID" \
                      -derivedDataPath build/derived \
                      build \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGN_IDENTITY=""
-          cd ../../..
+          cd "$GITHUB_WORKSPACE"
 
-          DEVICE_UUID=$(xcrun simctl list devices "iPhone 16 Pro" | grep -v "unavailable" | grep -E -o "[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}" | head -n 1)
           echo "Booting Simulator: $DEVICE_UUID"
           xcrun simctl boot "$DEVICE_UUID" || true
-          sleep 5
+          sleep 8
 
           APP_PATH=$(find web/capacitor-ui/ios/App/build/derived -name "App.app" -type d | head -n 1)
           if [ -d "$APP_PATH" ]; then
             echo "Installing $APP_PATH to $DEVICE_UUID"
             xcrun simctl install "$DEVICE_UUID" "$APP_PATH"
             xcrun simctl launch "$DEVICE_UUID" com.sillyclient.ios || true
-            sleep 6
+            sleep 10
           fi
 
           mkdir -p evidence
-          xcrun simctl io "$DEVICE_UUID" screenshot evidence/iphone16pro-real-render.png
+          xcrun simctl io "$DEVICE_UUID" screenshot evidence/dynamic-island-real-render.png
 
       - name: 上传构建包 Artifact (真机可直接安装的完整 IPA)
         uses: actions/upload-artifact@v4
@@ -117,5 +126,6 @@ jobs:
       - name: 上传灵动岛真机实测截图
         uses: actions/upload-artifact@v4
         with:
-          name: iphone16pro-screenshot
-          path: evidence/iphone16pro-real-render.png
+          name: dynamic-island-screenshot
+          path: evidence/dynamic-island-real-render.png
+
