@@ -29,6 +29,28 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm run build
 
+      - name: 准备 NodeMobile.xcframework 进程内运行时
+        run: |
+          echo "=== 下载 NodeMobile v18.20.4 官方预编译 XCFramework ==="
+          curl -L -s -o nodejs-mobile-v18.20.4-ios.zip https://github.com/nodejs-mobile/nodejs-mobile/releases/download/v18.20.4/nodejs-mobile-v18.20.4-ios.zip
+          unzip -q nodejs-mobile-v18.20.4-ios.zip
+          mv NodeMobile.xcframework native-src/
+          echo "=== 验证 NodeMobile.xcframework 结构 ==="
+          ls -la native-src/NodeMobile.xcframework
+
+      - name: 准备 SillyTavern 官方完整服务与生产依赖
+        run: |
+          echo "=== 正在克隆官方 SillyTavern 仓库 ==="
+          git clone --depth 1 https://github.com/SillyTavern/SillyTavern.git sillytavern-src
+          cd sillytavern-src
+          echo "=== 安装纯 JS 生产依赖 (跳过原生构建脚本) ==="
+          npm install --omit=dev --no-optional --ignore-scripts
+          cp ../native-src/ios-loader.mjs ./
+          rm -rf .git
+          cd ..
+          echo "=== SillyTavern 服务端就绪 (含 public 官方前端) ==="
+          ls -la sillytavern-src/public/
+
       - name: 初始化 Capacitor iOS 原生工程
         run: |
           cd web/capacitor-ui
@@ -65,7 +87,7 @@ jobs:
             console.log(content);
           "
 
-          # 安装 CocoaPods 依赖
+          # 安装 CocoaPods 依赖 (包含 NodeMobile 框架自动签名与链接)
           cd web/capacitor-ui/ios/App
           pod install
 
@@ -82,11 +104,13 @@ jobs:
                      CODE_SIGNING_REQUIRED=NO \
                      CODE_SIGN_IDENTITY=""
 
-      - name: 封装万能签标准免越狱 .ipa 安装包
+      - name: 封装万能签标准免越狱 .ipa 安装包 (内置 SillyTavern 完整包)
         run: |
           cd web/capacitor-ui/ios/App
           mkdir -p build/Payload
           cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/SillyClient.app
+          # 将 SillyTavern 完整服务打入 Payload 应用包
+          cp -r "$GITHUB_WORKSPACE/sillytavern-src" build/Payload/SillyClient.app/sillytavern
           cd build
           zip -qr "$GITHUB_WORKSPACE/SillyClient-iOS-v1.9.1-unsigned.ipa" Payload
           cd "$GITHUB_WORKSPACE"
@@ -118,6 +142,11 @@ jobs:
           APP_PATH=$(find web/capacitor-ui/ios/App/build/derived -name "App.app" -type d | head -n 1)
           echo "Found APP_PATH: $APP_PATH"
 
+          # 将 SillyTavern 完整服务打入模拟器 App Bundle
+          cp -r sillytavern-src "$APP_PATH/sillytavern"
+          echo "=== 验证 App Bundle 内 sillytavern 结构 ==="
+          ls -la "$APP_PATH/sillytavern"
+
           # 运行全自动 E2E 演练脚本，按时序自动操作并抓取 5 大阶段真机截图与生成报告
           node scripts/run-ios-e2e.mjs "$DEVICE_UUID" "$APP_PATH"
 
@@ -132,4 +161,3 @@ jobs:
         with:
           name: ios-e2e-evidence
           path: evidence/
-

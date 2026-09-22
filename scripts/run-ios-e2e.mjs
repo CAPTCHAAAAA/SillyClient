@@ -84,18 +84,18 @@ async function main() {
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot2}"`);
   console.log(`Saved Stage 2 screenshot: ${shot2}`);
 
-  // 阶段 3: 启动酒馆调度与进度终端
+  // 阶段 3: 启动酒馆调度与进度终端 (拉起 NodeMobile 运行时)
   console.log('\n--- Triggering Stage 3: Launch Terminal & Provisioning ---');
   fs.writeFileSync(cmdFile, 'stage3');
-  await sleep(2500);
+  await sleep(5000);
   const shot3 = path.join(outDir, '03-tavern-provisioning.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot3}"`);
   console.log(`Saved Stage 3 screenshot: ${shot3}`);
 
-  // 阶段 4: 进入酒馆全屏沉浸态与状态栏隐藏
-  console.log('\n--- Triggering Stage 4: Tavern Immersive Mode & Status Bar Hidden ---');
+  // 阶段 4: 进入真实酒馆全屏沉浸态与状态栏隐藏
+  console.log('\n--- Triggering Stage 4: Real SillyTavern Immersive Mode (http://127.0.0.1:8000/) ---');
   fs.writeFileSync(cmdFile, 'stage4');
-  await sleep(3500);
+  await sleep(6500);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
   console.log(`Saved Stage 4 screenshot: ${shot4}`);
@@ -178,8 +178,8 @@ async function main() {
     },
     {
       step: '04',
-      title: '酒馆全屏沉浸态与状态栏平滑隐藏',
-      desc: '触发 TarvenEnv.enterImmersive，验证双层 WebView 切换、变色龙 Scrim 顶栏淡入，系统状态栏成功平滑隐藏。',
+      title: '酒馆官方服务全屏沉浸与状态栏隐藏',
+      desc: '加载本地 Node.js (NodeMobile) 真实托管的 SillyTavern 完整服务 (127.0.0.1:8000)，呈现官方全套组件与暗黑界面，系统状态栏成功平滑隐藏。',
       file: '04-tavern-immersive-statusbar-hidden.png',
       statusBar: '【核心验证】已隐藏 (prefersStatusBarHidden = true)'
     },

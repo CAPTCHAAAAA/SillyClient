@@ -12,5 +12,6 @@ Pod::Spec.new do |s|
   s.exclude_files    = 'AppDelegate.swift'
   s.resources        = 'Resources/**/*'
   s.frameworks       = 'UIKit', 'WebKit', 'AVFoundation', 'Security'
+  s.vendored_frameworks = 'NodeMobile.xcframework'
   s.dependency 'Capacitor'
 end
