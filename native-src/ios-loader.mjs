@@ -3,20 +3,18 @@
  *
  * 运行于 NodeMobile 进程内独立工作线程。
  * 职责：
- * 1. 拦截异常与 process.exit，杜绝由于 JS 异常或退出导致 iOS 宿主闪退；
- * 2. 强制启用 ST_DISABLE_SHARP=true，确保图像解码走纯 JS / WASM (@jimp)；
- * 3. 动态加载 server.js 核心并启动 SillyTavern 完整服务；
- * 4. 确保工作目录切换至 SillyTavern 根目录，保证内部相对路径和依赖解析正常。
+ * 1. 拦截 stderr / stdout 输出与异常，全部输出至 STDOUT 管道写入 server.log；
+ * 2. 拦截 process.exit，杜绝由于 JS 异常导致 iOS 宿主闪退；
+ * 3. 强制启用 ST_DISABLE_SHARP=true，确保图像解码走纯 JS / WASM (@jimp)；
+ * 4. 挂载持久心跳定时器，防止 libuv 事件循环因异步间隙提前退出；
+ * 5. 加载 SillyTavern 核心服务并监听 server-started 事件；
+ * 6. 服务就绪后自动在沙盒写入 server-ready.txt 信号。
  */
 
 import path from 'node:path';
 import fs from 'node:fs';
+import util from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-
-console.log('[ios-loader] ==========================================');
-console.log('[ios-loader] SillyClient iOS Node.js Runtime Starting');
-console.log(`[ios-loader] Node.js Version: ${process.version}`);
-console.log('[ios-loader] ==========================================');
 
 // 关键环境变量设置
 process.env.ST_DISABLE_SHARP = 'true';
@@ -25,21 +23,41 @@ process.env.AUTO_LAUNCH = 'false';
 process.env.NO_BROWSER = 'true';
 process.env.BROWSER = 'none';
 
+// 重定向 console.error 和 console.warn 到 process.stdout，保证写进 server.log
+const origError = console.error;
+const origWarn = console.warn;
+console.error = function(...args) {
+    process.stdout.write('[ERR] ' + util.format(...args) + '\n');
+    origError.apply(console, args);
+};
+console.warn = function(...args) {
+    process.stdout.write('[WARN] ' + util.format(...args) + '\n');
+    origWarn.apply(console, args);
+};
+
+console.log('[ios-loader] ==========================================');
+console.log('[ios-loader] SillyClient iOS Node.js Runtime Starting');
+console.log(`[ios-loader] Node.js Version: ${process.version}`);
+console.log('[ios-loader] ==========================================');
+
+// 保持 libuv 事件循环长久活跃，绝不因短暂空闲退出
+const keepAliveTimer = setInterval(() => {}, 60000);
+
 // 拦截 process.exit，防止 SillyTavern 或第三方库杀死 iOS 宿主 App 进程
 const originalExit = process.exit;
 process.exit = function(code) {
-    console.error(`[ios-loader] Intercepted process.exit(${code}) - suppressed to prevent host crash.`);
+    console.log(`[ios-loader] Intercepted process.exit(${code}) - suppressed to prevent host crash.`);
     if (code !== 0) {
-        console.error(new Error('[ios-loader] Stacktrace for non-zero exit:').stack);
+        console.log(new Error('[ios-loader] Stacktrace for non-zero exit:').stack);
     }
 };
 
 process.on('uncaughtException', (err) => {
-    console.error('[ios-loader] 捕获未处理异常 (已拦截防闪退):', err && err.message, err && err.stack);
+    console.log('[ios-loader] 捕获未处理异常 (已拦截防闪退):', err && err.message, err && err.stack);
 });
 
 process.on('unhandledRejection', (reason) => {
-    console.error('[ios-loader] 捕获未处理 Promise 拒绝:', reason);
+    console.log('[ios-loader] 捕获未处理 Promise 拒绝:', reason && (reason.stack || reason.message || reason));
 });
 
 // 计算当前脚本所在目录
@@ -66,24 +84,52 @@ if (process.cwd() !== serverDir) {
         process.chdir(serverDir);
         console.log(`[ios-loader] Successfully changed cwd to: ${serverDir}`);
     } catch (chdirErr) {
-        console.error('[ios-loader] Warning: failed to chdir to serverDir:', chdirErr);
+        console.log('[ios-loader] Warning: failed to chdir to serverDir:', chdirErr);
     }
 }
 
-// 确保 config.yaml 存在并禁用浏览器自启
+// 确保必要的子目录存在，防止只读/缺失报错
+const requiredDirs = [
+    path.join(serverDir, 'backups', '_migration'),
+    path.join(serverDir, 'data', '_storage'),
+    path.join(serverDir, 'data', '_errors'),
+    path.join(serverDir, 'data', 'default-user')
+];
+for (const rd of requiredDirs) {
+    try {
+        if (!fs.existsSync(rd)) {
+            fs.mkdirSync(rd, { recursive: true });
+        }
+    } catch (dirErr) {
+        console.log('[ios-loader] Directory ensure notice:', rd, dirErr && dirErr.message);
+    }
+}
+
+// 监听 SillyTavern 事件总线
 try {
-    const configPath = path.join(serverDir, 'config.yaml');
-    let configContent = '';
-    if (fs.existsSync(configPath)) {
-        configContent = fs.readFileSync(configPath, 'utf8');
+    const eventsPath = path.join(serverDir, 'src', 'server-events.js');
+    if (fs.existsSync(eventsPath)) {
+        const eventsModule = pathToFileURL(eventsPath).href;
+        const { serverEvents, EVENT_NAMES } = await import(eventsModule);
+        serverEvents.on(EVENT_NAMES.SERVER_STARTED, ({ url }) => {
+            console.log(`[ios-loader] 🎉 SillyTavern 官方服务真正监听就绪: ${url}`);
+            const candidates = [
+                process.env.DATA_DIR,
+                path.join(serverDir, 'data'),
+                path.dirname(serverDir)
+            ];
+            for (const c of candidates) {
+                if (c && fs.existsSync(c)) {
+                    try {
+                        fs.writeFileSync(path.join(c, 'server-ready.txt'), 'ready');
+                        console.log(`[ios-loader] Written server-ready.txt to: ${c}`);
+                    } catch (_) {}
+                }
+            }
+        });
     }
-    if (!configContent.includes('browserLaunch')) {
-        const extraConfig = '\nbrowserLaunch:\n  enabled: false\nlisten: false\n';
-        fs.appendFileSync(configPath, extraConfig);
-        console.log('[ios-loader] Injected browserLaunch.enabled: false into config.yaml');
-    }
-} catch (configErr) {
-    console.error('[ios-loader] Warning: could not check/update config.yaml:', configErr);
+} catch (evErr) {
+    console.log('[ios-loader] Notice: could not hook server-events early:', evErr && evErr.message);
 }
 
 if (fs.existsSync(serverEntry)) {
@@ -91,10 +137,10 @@ if (fs.existsSync(serverEntry)) {
         const entryUrl = pathToFileURL(serverEntry).href;
         console.log(`[ios-loader] Importing SillyTavern server entry: ${entryUrl}`);
         await import(entryUrl);
-        console.log('[ios-loader] SillyTavern 核心服务已成功拉起，正在监听端口！');
+        console.log('[ios-loader] SillyTavern server entry import complete, background startup in progress...');
     } catch (e) {
-        console.error('[ios-loader] 加载 server.js 遇到错误:', e && e.message, e && e.stack);
+        console.log('[ios-loader] 加载 server.js 遇到严重错误:', e && e.message, e && e.stack);
     }
 } else {
-    console.error(`[ios-loader] 错误: 未能在 ${serverEntry} 找到 SillyTavern server.js`);
+    console.log(`[ios-loader] 错误: 未能在 ${serverEntry} 找到 SillyTavern server.js`);
 }

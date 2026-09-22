@@ -118,7 +118,18 @@ async function main() {
     await sleep(1000);
   }
   if (!isServerUp) {
-    console.warn('[E2E] Notice: SillyTavern HTTP probe not yet connected within 90s, proceeding to stage 4...');
+    console.error('[E2E] FATAL: SillyTavern HTTP server failed to become ready on http://127.0.0.1:8000/ within 90s!');
+    const logCandidates = [
+      path.join(docDir, 'SillyTavern', 'data', 'server.log'),
+      path.join(docDir, 'data', 'server.log'),
+      path.join(docDir, 'server.log')
+    ];
+    for (const lp of logCandidates) {
+      if (fs.existsSync(lp)) {
+        console.error(`=== Sandboxed server.log dump (${lp}) ===\n`, fs.readFileSync(lp, 'utf8'));
+      }
+    }
+    process.exit(1);
   } else {
     console.log('[E2E] SillyTavern HTTP server is fully listening and active!');
   }
@@ -127,16 +138,18 @@ async function main() {
   console.log('\n--- Triggering Stage 4: Real SillyTavern Immersive Mode (http://127.0.0.1:8000/) ---');
   fs.writeFileSync(cmdFile, 'stage4');
   
-  console.log('Waiting for SillyTavern webview to finish rendering DOM...');
-  for (let i = 0; i < 15; i++) {
+  console.log('Waiting for SillyTavern webview to finish rendering DOM (up to 30s)...');
+  let isRendered = false;
+  for (let i = 0; i < 30; i++) {
     if (fs.existsSync(renderedFile)) {
       console.log(`[E2E] tavern-rendered marker detected at ${i}s!`);
+      isRendered = true;
       break;
     }
     await sleep(1000);
   }
-  // 留出 3.5s 供 DOM、CSS、主题与角色卡渲染稳定
-  await sleep(3500);
+  // 留出 4s 供 DOM、CSS、主题与角色卡渲染完全稳定
+  await sleep(4000);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
   console.log(`Saved Stage 4 screenshot: ${shot4}`);

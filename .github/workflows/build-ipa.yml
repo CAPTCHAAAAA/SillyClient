@@ -51,11 +51,29 @@ jobs:
             const fs = require('fs');
             let c = fs.readFileSync('config.yaml', 'utf8');
             c = c.replace(/listen:\s*true/g, 'listen: false');
-            c = c.replace(/enabled:\s*true/g, 'enabled: false');
+            c = c.replace(/browserLaunch:\s*\n\s*enabled:\s*true/g, 'browserLaunch:\n  enabled: false');
             fs.writeFileSync('config.yaml', c);
             console.log('--- 验证 config.yaml ---');
-            console.log(c.slice(0, 200));
+            console.log(c.slice(0, 300));
           "
+          echo "=== 预编译 Webpack 静态资源 (生成 dist/_webpack 产物) ==="
+          node -e "
+            process.env.ST_DISABLE_SHARP = 'true';
+            import('./src/middleware/webpack-serve.js').then(async m => {
+              console.log('Building webpack dist/_webpack ahead-of-time...');
+              await m.default().runWebpackCompiler({ forceDist: true });
+              console.log('Webpack ahead-of-time build complete!');
+              process.exit(0);
+            }).catch(err => {
+              console.error('Webpack pre-build warning:', err);
+              process.exit(0);
+            });
+          "
+          echo "=== 预置必要的空目录以杜绝 iOS 只读限制 ==="
+          mkdir -p backups/_migration
+          mkdir -p data/_storage
+          mkdir -p data/_errors
+          mkdir -p data/default-user
           cp ../native-src/ios-loader.mjs ./
           rm -rf .git
           cd ..

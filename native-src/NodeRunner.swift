@@ -87,9 +87,8 @@ public class NodeRunner {
                 
                 completion?(true)
             } else {
-                self?.appendLog("[NodeRunner] 警告: 等待服务监听超时，但 Node 线程仍在保持尝试")
-                self?.isNodeRunning = true
-                completion?(true)
+                self?.appendLog("[NodeRunner] 严重错误: 等待服务监听超时 (90s)，本地服务未能成功启动")
+                completion?(false)
             }
         }
     }
@@ -192,7 +191,18 @@ public class NodeRunner {
         
         for path in bundlePaths {
             if !path.isEmpty && fm.fileExists(atPath: (path as NSString).appendingPathComponent("server.js")) {
-                return path
+                appendLog("[NodeRunner] 发现内置酒馆服务包: \(path)")
+                appendLog("[NodeRunner] 正在初始化部署至用户沙盒 (Documents/SillyTavern)...")
+                let parentDir = (dataPath as NSString).deletingLastPathComponent
+                try? fm.createDirectory(atPath: parentDir, withIntermediateDirectories: true)
+                do {
+                    try fm.copyItem(atPath: path, toPath: dataPath)
+                    appendLog("[NodeRunner] 成功将酒馆服务部署至 Documents/SillyTavern (APFS 秒级克隆)")
+                    return dataPath
+                } catch {
+                    appendLog("[NodeRunner] 部署至沙盒失败: \(error.localizedDescription)，回退至 Bundle 运行")
+                    return path
+                }
             }
         }
         
