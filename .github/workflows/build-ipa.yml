@@ -29,27 +29,27 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm run build
 
-      - name: 初始化 Capacitor iOS 原生宿主工程
+      - name: 初始化 Capacitor iOS 原生工程
         run: |
           cd web/capacitor-ui
-          pnpm add -D @capacitor/cli@^7.0.0 @capacitor/ios@^7.0.0
-          npx cap add ios || echo "iOS target already added"
+          npx cap add ios
           npx cap sync ios
 
-      - name: 注入 SillyClient 定制 Swift 原生核心代码
+      - name: 配置 CocoaPods 与注入 SillyClientCore 原生套件
         run: |
-          cp -r native-src/* ios/App/App/
-          mkdir -p ios/App/App/Resources
-          cp native-src/ios-loader.js ios/App/App/Resources/
-
-      - name: 安装 CocoaPods 依赖
-        run: |
-          cd ios/App
+          # 覆盖 Info.plist 开启文件共享与音频保活
+          cp native-src/Info.plist web/capacitor-ui/ios/App/App/Info.plist
+          
+          # 在 Podfile 中链接本地 SillyClientCore 包含全部原生 Swift 与引导脚本
+          sed -i '' "s/target 'App' do/target 'App' do\n  pod 'SillyClientCore', :path => '..\/..\/..\/native-src'/g" web/capacitor-ui/ios/App/Podfile
+          
+          # 安装 CocoaPods 依赖
+          cd web/capacitor-ui/ios/App
           pod install
 
       - name: Xcode 全量编译 (Release - arm64 真实设备二进制)
         run: |
-          cd ios/App
+          cd web/capacitor-ui/ios/App
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -configuration Release \
@@ -62,15 +62,16 @@ jobs:
 
       - name: 封装万能签标准免越狱 .ipa 安装包
         run: |
-          mkdir -p ios/App/build/Payload
-          cp -r ios/App/build/App.xcarchive/Products/Applications/App.app ios/App/build/Payload/SillyClient.app
-          cd ios/App/build
-          zip -qr ../../../SillyClient-iOS-v1.9.1-unsigned.ipa Payload
-          cd ../../..
+          cd web/capacitor-ui/ios/App
+          mkdir -p build/Payload
+          cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/SillyClient.app
+          cd build
+          zip -qr ../../../../../SillyClient-iOS-v1.9.1-unsigned.ipa Payload
+          cd ../../../..
 
       - name: Xcode 编译模拟器版并开机真机截图
         run: |
-          cd ios/App
+          cd web/capacitor-ui/ios/App
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -configuration Debug \
@@ -80,14 +81,14 @@ jobs:
                      build \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGN_IDENTITY=""
-          cd ../..
+          cd ../../..
 
           DEVICE_UUID=$(xcrun simctl list devices "iPhone 16 Pro" | grep -v "unavailable" | grep -E -o "[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}" | head -n 1)
           echo "Booting Simulator: $DEVICE_UUID"
           xcrun simctl boot "$DEVICE_UUID" || true
           sleep 5
 
-          APP_PATH=$(find ios/App/build/derived -name "App.app" -type d | head -n 1)
+          APP_PATH=$(find web/capacitor-ui/ios/App/build/derived -name "App.app" -type d | head -n 1)
           if [ -d "$APP_PATH" ]; then
             echo "Installing $APP_PATH to $DEVICE_UUID"
             xcrun simctl install "$DEVICE_UUID" "$APP_PATH"
