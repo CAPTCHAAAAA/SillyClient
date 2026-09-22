@@ -19,7 +19,11 @@ class SillyBridgeViewController: CAPBridgeViewController {
         return .lightContent
     }
     
-    override var childViewControllerForStatusBarHidden: UIViewController? {
+    override var childForStatusBarHidden: UIViewController? {
+        return nil
+    }
+    
+    override var childForStatusBarStyle: UIViewController? {
         return nil
     }
 }

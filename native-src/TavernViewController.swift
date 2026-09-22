@@ -40,11 +40,11 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
         return .lightContent
     }
 
-    public override var childViewControllerForStatusBarHidden: UIViewController? {
+    public override var childForStatusBarHidden: UIViewController? {
         return nil
     }
 
-    public override var childViewControllerForStatusBarStyle: UIViewController? {
+    public override var childForStatusBarStyle: UIViewController? {
         return nil
     }
 
