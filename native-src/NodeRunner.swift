@@ -75,10 +75,16 @@ public class NodeRunner {
         nodeThread.start()
         
         // 5. 轮询探测 http://127.0.0.1:port 是否已真正就绪
-        pollUntilReady(port: port, timeout: 30.0) { [weak self] success in
+        pollUntilReady(port: port, timeout: 90.0) { [weak self] success in
             if success {
                 self?.isNodeRunning = true
                 self?.appendLog("[NodeRunner] SillyTavern 完整服务监听就绪: http://127.0.0.1:\(port)/")
+                
+                // 写入沙盒 server-ready.txt 信号文件，通知 E2E 驱动脚本与前台
+                let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                let readyFile = docsUrl.appendingPathComponent("server-ready.txt")
+                try? "ready".write(to: readyFile, atomically: true, encoding: .utf8)
+                
                 completion?(true)
             } else {
                 self?.appendLog("[NodeRunner] 警告: 等待服务监听超时，但 Node 线程仍在保持尝试")

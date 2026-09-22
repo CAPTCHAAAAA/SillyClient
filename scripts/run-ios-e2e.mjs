@@ -53,14 +53,18 @@ async function main() {
   // 3. 启动应用并注入 --auto-tour 参数
   console.log('\n>>> [2/5] Launching App with --auto-tour argument...');
   run(`xcrun simctl launch "${deviceUuid}" com.sillyclient.ios --auto-tour`);
-  console.log('Waiting 6s for app cold launch and Capacitor bridge init...');
-  await sleep(6000);
+  console.log('Waiting 14s for app cold launch and Capacitor bridge init...');
+  await sleep(14000);
 
   // 获取沙盒 Documents 路径，实现零权限弹窗的文件直驱
   const appContainer = run(`xcrun simctl get_app_container "${deviceUuid}" com.sillyclient.ios data`).trim();
   const docDir = path.join(appContainer, 'Documents');
   fs.mkdirSync(docDir, { recursive: true });
   const cmdFile = path.join(docDir, 'e2e-command.txt');
+  const readyFile = path.join(docDir, 'server-ready.txt');
+  const renderedFile = path.join(docDir, 'tavern-rendered.txt');
+  if (fs.existsSync(readyFile)) try { fs.unlinkSync(readyFile); } catch (_) {}
+  if (fs.existsSync(renderedFile)) try { fs.unlinkSync(renderedFile); } catch (_) {}
   console.log(`App Sandbox Data Container: ${appContainer}`);
   console.log(`E2E Command Bridge File: ${cmdFile}`);
 
@@ -70,7 +74,7 @@ async function main() {
   // 阶段 1: 控制台初始渲染与灵动岛避让
   console.log('\n--- Triggering Stage 1: Console Loaded & Island Avoidance ---');
   fs.writeFileSync(cmdFile, 'stage1');
-  await sleep(2500);
+  await sleep(3000);
   const shot1 = path.join(outDir, '01-console-loaded.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot1}"`);
   fs.copyFileSync(shot1, path.join(outDir, 'dynamic-island-real-render.png'));
@@ -79,7 +83,7 @@ async function main() {
   // 阶段 2: 实例详情与管理抽屉展开
   console.log('\n--- Triggering Stage 2: Instance Expanded Drawer ---');
   fs.writeFileSync(cmdFile, 'stage2');
-  await sleep(2500);
+  await sleep(3000);
   const shot2 = path.join(outDir, '02-instance-expanded.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot2}"`);
   console.log(`Saved Stage 2 screenshot: ${shot2}`);
@@ -92,14 +96,19 @@ async function main() {
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot3}"`);
   console.log(`Saved Stage 3 screenshot: ${shot3}`);
 
-  // 探活探测本地 HTTP 服务就绪
-  console.log('Waiting for SillyTavern HTTP server on http://127.0.0.1:8000/ ...');
+  // 探活探测本地 HTTP 服务就绪 (检测沙盒 server-ready.txt 或 HTTP 200，上限 90 秒)
+  console.log('Waiting for SillyTavern HTTP server on http://127.0.0.1:8000/ (up to 90s)...');
   let isServerUp = false;
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 90; i++) {
+    if (fs.existsSync(readyFile)) {
+      console.log(`[E2E] SillyTavern Server Ready marker detected at ${i}s!`);
+      isServerUp = true;
+      break;
+    }
     try {
       const res = await fetch('http://127.0.0.1:8000/', { signal: AbortSignal.timeout(1000) });
       if (res.status > 0) {
-        console.log(`[E2E] SillyTavern Server Ready! Status: ${res.status}`);
+        console.log(`[E2E] SillyTavern Server Ready via HTTP fetch! Status: ${res.status}`);
         isServerUp = true;
         break;
       }
@@ -109,7 +118,7 @@ async function main() {
     await sleep(1000);
   }
   if (!isServerUp) {
-    console.warn('[E2E] Notice: SillyTavern HTTP probe not yet connected, proceeding to stage 4...');
+    console.warn('[E2E] Notice: SillyTavern HTTP probe not yet connected within 90s, proceeding to stage 4...');
   } else {
     console.log('[E2E] SillyTavern HTTP server is fully listening and active!');
   }
@@ -117,7 +126,17 @@ async function main() {
   // 阶段 4: 进入真实酒馆全屏沉浸态与状态栏隐藏
   console.log('\n--- Triggering Stage 4: Real SillyTavern Immersive Mode (http://127.0.0.1:8000/) ---');
   fs.writeFileSync(cmdFile, 'stage4');
-  await sleep(6500);
+  
+  console.log('Waiting for SillyTavern webview to finish rendering DOM...');
+  for (let i = 0; i < 15; i++) {
+    if (fs.existsSync(renderedFile)) {
+      console.log(`[E2E] tavern-rendered marker detected at ${i}s!`);
+      break;
+    }
+    await sleep(1000);
+  }
+  // 留出 3.5s 供 DOM、CSS、主题与角色卡渲染稳定
+  await sleep(3500);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
   console.log(`Saved Stage 4 screenshot: ${shot4}`);

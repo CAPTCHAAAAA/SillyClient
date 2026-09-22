@@ -294,5 +294,10 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         NSLog("[TavernViewController] didFinish navigation: %@", webView.url?.absoluteString ?? "")
+        if webView == self.tavernWebView {
+            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let loadedFile = docsUrl.appendingPathComponent("tavern-rendered.txt")
+            try? "loaded".write(to: loadedFile, atomically: true, encoding: .utf8)
+        }
     }
 }

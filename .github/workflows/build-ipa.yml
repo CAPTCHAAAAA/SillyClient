@@ -46,7 +46,16 @@ jobs:
           echo "=== 安装纯 JS 生产依赖 (跳过原生构建脚本) ==="
           npm install --omit=dev --no-optional --ignore-scripts
           echo "=== 预设官方 config.yaml (禁用浏览器自启与 LAN 暴露) ==="
-          printf "port: 8000\nlisten: false\nbrowserLaunch:\n  enabled: false\n" > config.yaml
+          cp default/config.yaml config.yaml
+          node -e "
+            const fs = require('fs');
+            let c = fs.readFileSync('config.yaml', 'utf8');
+            c = c.replace(/listen:\s*true/g, 'listen: false');
+            c = c.replace(/enabled:\s*true/g, 'enabled: false');
+            fs.writeFileSync('config.yaml', c);
+            console.log('--- 验证 config.yaml ---');
+            console.log(c.slice(0, 200));
+          "
           cp ../native-src/ios-loader.mjs ./
           rm -rf .git
           cd ..
