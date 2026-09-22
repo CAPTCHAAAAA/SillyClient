@@ -37,12 +37,21 @@ jobs:
 
       - name: 配置 CocoaPods 与注入 SillyClientCore 原生套件
         run: |
-          # 覆盖 Info.plist 开启文件共享与音频保活
+          # 覆盖 Info.plist 与 AppDelegate.swift
           cp native-src/Info.plist web/capacitor-ui/ios/App/App/Info.plist
-          
-          # 在 Podfile 中链接本地 SillyClientCore 包含全部原生 Swift 与引导脚本
-          sed -i '' "s/target 'App' do/target 'App' do\n  pod 'SillyClientCore', :path => '..\/..\/..\/native-src'/g" web/capacitor-ui/ios/App/Podfile
-          
+          cp native-src/AppDelegate.swift web/capacitor-ui/ios/App/App/AppDelegate.swift
+
+          # 用 Node.js 精确修改 Podfile，杜绝 sed 跨平台转义问题并验证绝对路径
+          node -e "
+            const fs = require('fs');
+            const file = 'web/capacitor-ui/ios/App/Podfile';
+            let content = fs.readFileSync(file, 'utf8');
+            content = content.replace(\"target 'App' do\", \"target 'App' do\n  pod 'SillyClientCore', :path => '../../../../native-src'\");
+            fs.writeFileSync(file, content);
+            console.log('--- 验证修改后的 Podfile ---');
+            console.log(content);
+          "
+
           # 安装 CocoaPods 依赖
           cd web/capacitor-ui/ios/App
           pod install

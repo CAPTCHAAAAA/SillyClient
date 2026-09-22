@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import SillyClientCore
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
