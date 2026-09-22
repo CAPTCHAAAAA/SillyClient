@@ -1,8 +1,6 @@
 import Foundation
 
-// 外部符号绑定: 直接链接 NodeMobile.framework 导出的 node_start C 入口
-@_silgen_name("node_start")
-private func node_start(_ argc: Int32, _ argv: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?) -> Int32
+private typealias NodeStartFunc = @convention(c) (Int32, UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?) -> Int32
 
 /**
  * 进程内 NodeMobile 运行调度器 (NodeRunner)
@@ -174,6 +172,49 @@ public class NodeRunner {
     }
     
     /**
+     * 动态解析并调用 NodeMobile node_start
+     */
+    private func invokeNodeStart(arguments: [String]) -> Int32 {
+        var sym = dlsym(dlopen(nil, RTLD_NOW), "node_start")
+        
+        if sym == nil {
+            let candidates = [
+                Bundle.main.bundleURL.appendingPathComponent("Frameworks/NodeMobile.framework/NodeMobile").path,
+                (Bundle.main.privateFrameworksPath ?? "") + "/NodeMobile.framework/NodeMobile",
+                Bundle.main.bundleURL.appendingPathComponent("Frameworks/NodeMobile.framework").path
+            ]
+            for path in candidates {
+                if let handle = dlopen(path, RTLD_NOW) {
+                    sym = dlsym(handle, "node_start")
+                    if sym != nil {
+                        appendLog("[NodeRunner] 成功通过 dlopen 加载 NodeMobile: \(path)")
+                        break
+                    }
+                }
+            }
+        }
+        
+        guard let nodeStartPtr = sym else {
+            appendLog("[NodeRunner] 严重错误: 未能在运行时符号表中找到 node_start C 入口")
+            return -1
+        }
+        
+        let nodeStart = unsafeBitCast(nodeStartPtr, to: NodeStartFunc.self)
+        
+        var cArgs: [UnsafeMutablePointer<CChar>?] = arguments.map { strdup($0) }
+        cArgs.append(nil)
+        
+        let exitCode = cArgs.withUnsafeMutableBufferPointer { ptr in
+            nodeStart(Int32(arguments.count), ptr.baseAddress)
+        }
+        
+        for p in cArgs where p != nil {
+            free(p)
+        }
+        return exitCode
+    }
+    
+    /**
      * 内部后台线程执行方法
      */
     private func runNodeEventLoop(serverDir: String, dataDir: String, loaderPath: String, port: Int) {
@@ -196,17 +237,7 @@ public class NodeRunner {
         ]
         
         appendLog("[NodeRunner] 正在拉起 NodeMobile node_start 事件循环...")
-        
-        var cArgs: [UnsafeMutablePointer<CChar>?] = args.map { strdup($0) }
-        cArgs.append(nil)
-        
-        let exitCode = cArgs.withUnsafeMutableBufferPointer { ptr in
-            node_start(Int32(args.count), ptr.baseAddress)
-        }
-        
-        for p in cArgs where p != nil {
-            free(p)
-        }
+        let exitCode = invokeNodeStart(arguments: args)
         
         appendLog("[NodeRunner] Node 事件循环已退出，退出码: \(exitCode)")
         isNodeRunning = false
