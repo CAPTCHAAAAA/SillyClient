@@ -10,5 +10,9 @@
   },
   "plugins": {
     "TarvenEnv": {}
-  }
+  },
+  "packageClassList": [
+    "TarvenEnvPlugin",
+    "SillyClientCore.TarvenEnvPlugin"
+  ]
 }

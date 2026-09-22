@@ -35,6 +35,29 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     public override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
         return .fade
     }
+
+    public override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
+
+    public override var childViewControllerForStatusBarHidden: UIViewController? {
+        return nil
+    }
+
+    public override var childViewControllerForStatusBarStyle: UIViewController? {
+        return nil
+    }
+
+    public func setStatusBarHidden(_ hidden: Bool, animated: Bool = true) {
+        self.isTavernActive = hidden
+        if animated {
+            UIView.animate(withDuration: 0.25) {
+                self.setNeedsStatusBarAppearanceUpdate()
+            }
+        } else {
+            self.setNeedsStatusBarAppearanceUpdate()
+        }
+    }
     
     public override func viewDidLoad() {
         super.viewDidLoad()

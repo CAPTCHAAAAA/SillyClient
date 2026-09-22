@@ -41,6 +41,19 @@ jobs:
           cp native-src/Info.plist web/capacitor-ui/ios/App/App/Info.plist
           cp native-src/AppDelegate.swift web/capacitor-ui/ios/App/App/AppDelegate.swift
 
+          # 确保 App/capacitor.config.json 包含 TarvenEnvPlugin 原生插件定义
+          node -e "
+            const fs = require('fs');
+            const targetPath = 'web/capacitor-ui/ios/App/App/capacitor.config.json';
+            if (fs.existsSync(targetPath)) {
+              const cfg = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+              cfg.packageClassList = ['TarvenEnvPlugin', 'SillyClientCore.TarvenEnvPlugin'];
+              fs.writeFileSync(targetPath, JSON.stringify(cfg, null, 2));
+              console.log('--- 验证已注入 packageClassList 到 App capacitor.config.json ---');
+              console.log(fs.readFileSync(targetPath, 'utf8'));
+            }
+          "
+
           # 用 Node.js 精确修改 Podfile，杜绝 sed 跨平台转义问题并验证绝对路径
           node -e "
             const fs = require('fs');

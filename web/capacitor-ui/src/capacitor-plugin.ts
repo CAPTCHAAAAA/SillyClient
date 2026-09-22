@@ -185,7 +185,16 @@ export interface TarvenEnvPlugin {
 export class TarvenEnvWeb extends WebPlugin implements TarvenEnvPlugin {
   async getPlatform() { return { platform: 'ios' as const } }
   async getAppVersion() { return { version: '1.9.1' } }
-  async provisionAndStart(_options: any) { return { ready: true } }
+  async provisionAndStart(_options: any) {
+    setTimeout(() => {
+      this.notifyListeners('ready', {
+        ready: true,
+        port: _options?.port || 8000,
+        url: `http://127.0.0.1:${_options?.port || 8000}/`,
+      })
+    }, 200)
+    return { ready: true }
+  }
   async enterImmersive(_options: any) {}
   async exitImmersive() {}
   async returnToTavern() {}
@@ -217,13 +226,20 @@ export class TarvenEnvWeb extends WebPlugin implements TarvenEnvPlugin {
   async setRemoteBasicAuth(_options: any) { return { configured: true, username: _options.username } }
   async getRemoteBasicAuthStatus(_options: any) { return { configured: false } }
   async clearRemoteBasicAuth(_options: any) { return { success: true } }
-  async pingUrl(_options: any) { return { online: false } }
+  async pingUrl(_options: any) { return { online: true, statusCode: 200 } }
   async uninstallInstance(_options: any) { return { success: true, freedBytes: 0 } }
   async cleanGarbage(_options: any) { return { items: [], totalBytes: 0 } }
   async deleteGarbageItem(_options: any) { return { success: true } }
+  async openFilesApp() { return { success: true } }
+  async setSecret(_options: any) { return { success: true } }
+  async getSecret(_options: any) { return { value: '' } }
+  async deleteSecret(_options: any) { return { success: true } }
+  async checkUpdate() { return { hasUpdate: false } }
 }
 
 export const TarvenEnv = registerPlugin<TarvenEnvPlugin>('TarvenEnv', {
   web: () => new TarvenEnvWeb(),
+  ios: () => new TarvenEnvWeb(),
+  android: () => new TarvenEnvWeb(),
 })
 

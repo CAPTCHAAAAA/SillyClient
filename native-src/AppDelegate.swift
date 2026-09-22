@@ -2,6 +2,28 @@ import UIKit
 import Capacitor
 import SillyClientCore
 
+class SillyBridgeViewController: CAPBridgeViewController {
+    override func capacitorDidLoad() {
+        super.capacitorDidLoad()
+        if let bridge = self.bridge {
+            _ = (bridge as AnyObject).perform(NSSelectorFromString("registerPluginType:"), with: TarvenEnvPlugin.self)
+            NSLog("[SillyBridgeViewController] capacitorDidLoad: TarvenEnvPlugin registered via bridge")
+        }
+    }
+    
+    override var prefersStatusBarHidden: Bool {
+        return TavernViewController.shared.prefersStatusBarHidden
+    }
+    
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
+    
+    override var childViewControllerForStatusBarHidden: UIViewController? {
+        return nil
+    }
+}
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
@@ -15,8 +37,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let rootVC = TavernViewController.shared
         
         // 实例化 Capacitor 桥接控制器
-        let bridgeVC = CAPBridgeViewController()
+        let bridgeVC = SillyBridgeViewController()
         bridgeVC.loadViewIfNeeded()
+        
+        if let bridge = bridgeVC.bridge {
+            _ = (bridge as AnyObject).perform(NSSelectorFromString("registerPluginType:"), with: TarvenEnvPlugin.self)
+            NSLog("[AppDelegate] TarvenEnvPlugin registered via bridge directly")
+        }
         
         rootVC.addChild(bridgeVC)
         if let wv = bridgeVC.webView {
