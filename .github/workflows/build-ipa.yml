@@ -54,6 +54,7 @@ jobs:
             let c = fs.readFileSync('config.yaml', 'utf8');
             c = c.replace(/listen:\s*true/g, 'listen: false');
             c = c.replace(/browserLaunch:\s*\n\s*enabled:\s*true/g, 'browserLaunch:\n  enabled: false');
+            c = c.replace(/whitelistMode:\s*true/g, 'whitelistMode: false');
             fs.writeFileSync('config.yaml', c);
             console.log('--- 验证 config.yaml ---');
             console.log(c.slice(0, 300));

@@ -236,6 +236,7 @@ public class NodeRunner {
             let minimalConfig = """
             port: 8000
             listen: false
+            whitelistMode: false
             browserLaunch:
               enabled: false
             """

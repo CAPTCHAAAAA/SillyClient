@@ -3,10 +3,12 @@
  *
  * 运行于构建期与启动预备期。
  * 核心任务：
- * 1. 修复 sillytavern-transformers 中 NodeMobile (iOS small-icu) 不支持的 Unicode 属性转义正则 (/^\p{Cc}|\p{Cf}|\p{Co}|\p{Cs}$/u)；
- * 2. 修复 @jsquash/png, @jsquash/oxipng, isomorphic-git 中由于 small-icu 不支持 fatal: true 抛出 ERR_NO_ICU 的问题；
- * 3. 将 SillyTavern src/transformers.js 改造成按需懒加载 (Lazy import)，杜绝服务启动阶段不必要的 100MB+ 模型库解析与内存占用；
- * 4. 深度递归扫描并安全兜底 node_modules 中任何潜在的 ICU 正则与 TextDecoder 选项冲突。
+ * 1. 修复 sillytavern-transformers 中 NodeMobile (iOS small-icu) 不支持的 Unicode 属性转义正则 (/^\p{Cc}|\p{Cf}|\p{Co}|\p{Cs}$/u) 与分词模式串；
+ * 2. 修复 gpt-3-encoder 中不支持的 \p{L} / \p{N} 正则语法错误 (SyntaxError: Invalid regular expression: Invalid property name)；
+ * 3. 修复 @jsquash/png, @jsquash/oxipng, isomorphic-git 中由于 small-icu 不支持 fatal: true 抛出 ERR_NO_ICU 的问题；
+ * 4. 修复 tiktoken 在 iOS jitless / 无 WebAssembly 运行时环境下的安全降级适配；
+ * 5. 将 SillyTavern src/transformers.js 改造成按需懒加载 (Lazy import)，杜绝服务启动阶段不必要的 100MB+ 模型库解析与内存占用；
+ * 6. 深度递归扫描并防御性替换 node_modules 中任何潜在的 ICU 正则与 TextDecoder 选项冲突。
  */
 
 import fs from 'node:fs';
@@ -23,6 +25,9 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 console.log(`[patch-sillytavern] Starting patch on directory: ${targetDir}`);
 
+const origPatStr = "/'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+/gu";
+const safePatStr = "/'s|'t|'re|'ve|'m|'ll|'d| ?[a-zA-Z\\u0080-\\uFFFF]+| ?[0-9]+| ?[^\\s\\w\\u0080-\\uFFFF]+|\\s+(?!\\S)|\\s+/g";
+
 // 1. 补丁 sillytavern-transformers 的 src/tokenizers.js
 const tokenizersPath = path.join(targetDir, 'node_modules', 'sillytavern-transformers', 'src', 'tokenizers.js');
 if (fs.existsSync(tokenizersPath)) {
@@ -31,11 +36,12 @@ if (fs.existsSync(tokenizersPath)) {
   const replacement = 'const code = char.charCodeAt(0);\n                return (code <= 31 || (code >= 127 && code <= 159) || (code >= 55296 && code <= 57343) || (code >= 57344 && code <= 63743));';
   if (targetRegex.test(content)) {
     content = content.replace(targetRegex, replacement);
-    fs.writeFileSync(tokenizersPath, content, 'utf8');
-    console.log(`[patch-sillytavern] [1/5] Successfully patched: ${tokenizersPath}`);
-  } else {
-    console.log(`[patch-sillytavern] [1/5] Notice: target regex pattern not found in tokenizers.js (may already be patched)`);
   }
+  if (content.includes(origPatStr)) {
+    content = content.replaceAll(origPatStr, safePatStr);
+  }
+  fs.writeFileSync(tokenizersPath, content, 'utf8');
+  console.log(`[patch-sillytavern] [1/6] Successfully patched: ${tokenizersPath}`);
 }
 
 // 2. 补丁 sillytavern-transformers 的 dist/transformers.js
@@ -46,9 +52,12 @@ if (fs.existsSync(distPath)) {
   const replacement = 'const code = char.charCodeAt(0); return (code <= 31 || (code >= 127 && code <= 159) || (code >= 55296 && code <= 57343) || (code >= 57344 && code <= 63743));';
   if (targetRegex.test(content)) {
     content = content.replace(targetRegex, replacement);
-    fs.writeFileSync(distPath, content, 'utf8');
-    console.log(`[patch-sillytavern] [2/5] Successfully patched: ${distPath}`);
   }
+  if (content.includes(origPatStr)) {
+    content = content.replaceAll(origPatStr, safePatStr);
+  }
+  fs.writeFileSync(distPath, content, 'utf8');
+  console.log(`[patch-sillytavern] [2/6] Successfully patched: ${distPath}`);
 }
 
 // 补丁 sillytavern-transformers 的 dist/transformers.min.js
@@ -58,12 +67,28 @@ if (fs.existsSync(distMinPath)) {
   const targetRegex = /\/\^\\p\{Cc\}\|\\p\{Cf\}\|\\p\{Co\}\|\\p\{Cs\}\$\/u\.test\(([a-zA-Z0-9_$]+)\)/g;
   if (targetRegex.test(content)) {
     content = content.replace(targetRegex, '($1.charCodeAt(0)<=31||($1.charCodeAt(0)>=127&&$1.charCodeAt(0)<=159)||($1.charCodeAt(0)>=55296&&$1.charCodeAt(0)<=63743))');
-    fs.writeFileSync(distMinPath, content, 'utf8');
-    console.log(`[patch-sillytavern] [2b/5] Successfully patched minified: ${distMinPath}`);
+  }
+  if (content.includes(origPatStr)) {
+    content = content.replaceAll(origPatStr, safePatStr);
+  }
+  fs.writeFileSync(distMinPath, content, 'utf8');
+  console.log(`[patch-sillytavern] [2b/6] Successfully patched minified: ${distMinPath}`);
+}
+
+// 3. 补丁 gpt-3-encoder 的 Encoder.js (vectra -> gpt-3-encoder 依赖)
+const gpt3EncoderPath = path.join(targetDir, 'node_modules', 'gpt-3-encoder', 'Encoder.js');
+if (fs.existsSync(gpt3EncoderPath)) {
+  let content = fs.readFileSync(gpt3EncoderPath, 'utf8');
+  if (content.includes(origPatStr)) {
+    content = content.replaceAll(origPatStr, safePatStr);
+    fs.writeFileSync(gpt3EncoderPath, content, 'utf8');
+    console.log(`[patch-sillytavern] [3/6] Successfully patched gpt-3-encoder: ${gpt3EncoderPath}`);
+  } else {
+    console.log(`[patch-sillytavern] [3/6] gpt-3-encoder already patched or pattern not found: ${gpt3EncoderPath}`);
   }
 }
 
-// 3. 补丁 TextDecoder { fatal: true } (ERR_NO_ICU: fatal option is not supported on Node.js compiled without ICU)
+// 4. 补丁 TextDecoder { fatal: true } (ERR_NO_ICU: fatal option is not supported on Node.js compiled without ICU)
 const textDecoderTargets = [
   path.join(targetDir, 'node_modules', '@jsquash', 'png', 'codec', 'pkg', 'squoosh_png.js'),
   path.join(targetDir, 'node_modules', '@jsquash', 'oxipng', 'codec', 'pkg', 'squoosh_oxipng.js'),
@@ -80,12 +105,12 @@ for (const tf of textDecoderTargets) {
       c = c.replace(/ignoreBOM:\s*true,\s*fatal:\s*true/g, 'ignoreBOM: true');
       c = c.replace(/fatal:\s*true/g, 'fatal: false');
       fs.writeFileSync(tf, c, 'utf8');
-      console.log(`[patch-sillytavern] [3/6] Successfully stripped fatal: true from: ${tf}`);
+      console.log(`[patch-sillytavern] [4/6] Successfully stripped fatal: true from: ${tf}`);
     }
   }
 }
 
-// 4. 补丁 tiktoken (在 iOS jitless / 无 WebAssembly 运行时下提供安全 dummy Tokenizer)
+// 5. 补丁 tiktoken (在 iOS jitless / 无 WebAssembly 运行时下提供安全 dummy Tokenizer)
 const tiktokenFiles = [
   path.join(targetDir, 'node_modules', 'tiktoken', 'tiktoken.cjs'),
   path.join(targetDir, 'node_modules', 'tiktoken', 'lite', 'tiktoken.cjs')
@@ -135,13 +160,13 @@ try {
       if (c.includes('const wasmModule = new WebAssembly.Module(bytes);')) {
         c = c.replace(origInstantiation, safeInstantiation);
         fs.writeFileSync(tf, c, 'utf8');
-        console.log(`[patch-sillytavern] [4/6] Successfully injected tiktoken WebAssembly fallback in: ${tf}`);
+        console.log(`[patch-sillytavern] [5/6] Successfully injected tiktoken WebAssembly fallback in: ${tf}`);
       }
     }
   }
 }
 
-// 5. 补丁 SillyTavern 官方源码 src/transformers.js 使其按需懒加载
+// 6. 补丁 SillyTavern 官方源码 src/transformers.js 使其按需懒加载
 const serverTransformersPath = path.join(targetDir, 'src', 'transformers.js');
 if (fs.existsSync(serverTransformersPath)) {
   let content = fs.readFileSync(serverTransformersPath, 'utf8');
@@ -172,13 +197,13 @@ async function getTransformers() {
     );
 
     fs.writeFileSync(serverTransformersPath, content, 'utf8');
-    console.log(`[patch-sillytavern] [4/5] Successfully made transformers lazy in: ${serverTransformersPath}`);
+    console.log(`[patch-sillytavern] [6/7] Successfully made transformers lazy in: ${serverTransformersPath}`);
   } else {
-    console.log(`[patch-sillytavern] [4/5] Notice: src/transformers.js does not contain static import or is already patched`);
+    console.log(`[patch-sillytavern] [6/7] Notice: src/transformers.js does not contain static import or is already patched`);
   }
 }
 
-// 5. 深度递归扫描并防御性替换 node_modules 中的任意 \p{Cc} 与 fatal: true 遗留
+// 7. 深度递归扫描并防御性替换 node_modules 中的任意 \p{Cc}, \p{L}, \p{N} 与 fatal: true 遗留
 function deepScanAndPatch(dir) {
   if (!fs.existsSync(dir)) return;
   try {
@@ -189,10 +214,16 @@ function deepScanAndPatch(dir) {
         if (entry.name !== '.git' && entry.name !== 'build') {
           deepScanAndPatch(fullPath);
         }
-      } else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.mjs'))) {
+      } else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.mjs') || entry.name.endsWith('.cjs'))) {
         try {
           let code = fs.readFileSync(fullPath, 'utf8');
           let modified = false;
+
+          if (code.includes(origPatStr)) {
+            code = code.replaceAll(origPatStr, safePatStr);
+            modified = true;
+          }
+
           if (code.includes('\\p{Cc}') || code.includes('\\p{Cf}')) {
             code = code.replace(
               /\/\^\\p\{Cc\}\|\\p\{Cf\}\|\\p\{Co\}\|\\p\{Cs\}\$\/u/g,
@@ -204,14 +235,27 @@ function deepScanAndPatch(dir) {
             );
             modified = true;
           }
-          if (code.includes('fatal: true') && (code.includes('TextDecoder') || fullPath.includes('@jsquash') || fullPath.includes('squoosh'))) {
+
+          if (code.includes('\\p{L}') || code.includes('\\p{N}') || code.includes('\\p{Lu}') || code.includes('\\p{Ll}')) {
+            code = code.replace(/\\p\{L\}/g, 'a-zA-Z\\u0080-\\uFFFF');
+            code = code.replace(/\\p\{N\}/g, '0-9');
+            code = code.replace(/\\p\{Lu\}|\\p\{Uppercase_Letter\}/g, 'A-Z\\u0080-\\uFFFF');
+            code = code.replace(/\\p\{Ll\}|\\p\{Lowercase_Letter\}/g, 'a-z');
+            code = code.replace(/\\p\{Alpha\}/g, 'a-zA-Z\\u0080-\\uFFFF');
+            code = code.replace(/\\p\{XID_Start\}/g, 'a-zA-Z\\u0080-\\uFFFF');
+            code = code.replace(/\\p\{XID_Continue\}/g, 'a-zA-Z0-9\\u0080-\\uFFFF');
+            modified = true;
+          }
+
+          if (code.includes('fatal: true') && (code.includes('TextDecoder') || fullPath.includes('@jsquash') || fullPath.includes('squoosh') || fullPath.includes('isomorphic-git'))) {
             code = code.replace(/ignoreBOM:\s*true,\s*fatal:\s*true/g, 'ignoreBOM: true');
             code = code.replace(/fatal:\s*true/g, 'fatal: false');
             modified = true;
           }
+
           if (modified) {
             fs.writeFileSync(fullPath, code, 'utf8');
-            console.log(`[patch-sillytavern] [5/5] Deep patched: ${fullPath}`);
+            console.log(`[patch-sillytavern] [7/7] Deep patched: ${fullPath}`);
           }
         } catch (_) {}
       }
@@ -221,7 +265,7 @@ function deepScanAndPatch(dir) {
 
 const nodeModulesDir = path.join(targetDir, 'node_modules');
 if (fs.existsSync(nodeModulesDir)) {
-  console.log(`[patch-sillytavern] [5/5] Scanning node_modules for remaining ICU regexes & TextDecoder fatal options...`);
+  console.log(`[patch-sillytavern] [7/7] Scanning node_modules for remaining ICU regexes & TextDecoder fatal options...`);
   deepScanAndPatch(nodeModulesDir);
 }
 
