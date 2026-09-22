@@ -433,8 +433,14 @@ function SillyClientLauncher() {
     ? "SillyClient 1.9.1 · Windows · cmd.exe"
     : "SillyClient 1.9.1 · Android shell";
   const terminalPlaceholder = isWindows ? "输入 Windows 命令" : "输入 Android shell 命令";
+  const isAutoTourActive = typeof window !== "undefined" && (
+    (window as any).__E2E_AUTO_TOUR__ === true ||
+    (window as any).__SILKY_AUTO_TOUR__ === true ||
+    (window as any).__SILLEY_AUTO_TOUR__ === true ||
+    new URLSearchParams(window.location.search).get("autotour") === "1"
+  );
   const [showOnboarding, setShowOnboarding] = useState(
-    () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
+    () => !isAutoTourActive && (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
   );
   const [instances, setInstances] = useState<TavernInstance[]>(() => {
     if (isShowcase) return [];

@@ -56,12 +56,20 @@ async function main() {
   console.log('Waiting 6s for app cold launch and Capacitor bridge init...');
   await sleep(6000);
 
+  // 获取沙盒 Documents 路径，实现零权限弹窗的文件直驱
+  const appContainer = run(`xcrun simctl get_app_container "${deviceUuid}" com.sillyclient.ios data`).trim();
+  const docDir = path.join(appContainer, 'Documents');
+  fs.mkdirSync(docDir, { recursive: true });
+  const cmdFile = path.join(docDir, 'e2e-command.txt');
+  console.log(`App Sandbox Data Container: ${appContainer}`);
+  console.log(`E2E Command Bridge File: ${cmdFile}`);
+
   // 4. 阶段驱动与截图
-  console.log('\n>>> [3/5] Driving 5 E2E Stages via URL Scheme...');
+  console.log('\n>>> [3/5] Driving 5 E2E Stages via Direct Sandbox Bridge...');
 
   // 阶段 1: 控制台初始渲染与灵动岛避让
   console.log('\n--- Triggering Stage 1: Console Loaded & Island Avoidance ---');
-  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage1"`); } catch (e) { console.warn(e.message); }
+  fs.writeFileSync(cmdFile, 'stage1');
   await sleep(2500);
   const shot1 = path.join(outDir, '01-console-loaded.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot1}"`);
@@ -70,7 +78,7 @@ async function main() {
 
   // 阶段 2: 实例详情与管理抽屉展开
   console.log('\n--- Triggering Stage 2: Instance Expanded Drawer ---');
-  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage2"`); } catch (e) { console.warn(e.message); }
+  fs.writeFileSync(cmdFile, 'stage2');
   await sleep(2500);
   const shot2 = path.join(outDir, '02-instance-expanded.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot2}"`);
@@ -78,7 +86,7 @@ async function main() {
 
   // 阶段 3: 启动酒馆调度与进度终端
   console.log('\n--- Triggering Stage 3: Launch Terminal & Provisioning ---');
-  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage3"`); } catch (e) { console.warn(e.message); }
+  fs.writeFileSync(cmdFile, 'stage3');
   await sleep(2500);
   const shot3 = path.join(outDir, '03-tavern-provisioning.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot3}"`);
@@ -86,7 +94,7 @@ async function main() {
 
   // 阶段 4: 进入酒馆全屏沉浸态与状态栏隐藏
   console.log('\n--- Triggering Stage 4: Tavern Immersive Mode & Status Bar Hidden ---');
-  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage4"`); } catch (e) { console.warn(e.message); }
+  fs.writeFileSync(cmdFile, 'stage4');
   await sleep(3500);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
@@ -94,7 +102,7 @@ async function main() {
 
   // 阶段 5: 退出沉浸态返回控制台与状态栏恢复
   console.log('\n--- Triggering Stage 5: Return to Console & Status Bar Restored ---');
-  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage5"`); } catch (e) { console.warn(e.message); }
+  fs.writeFileSync(cmdFile, 'stage5');
   await sleep(3000);
   const shot5 = path.join(outDir, '05-console-restored-statusbar-visible.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot5}"`);
