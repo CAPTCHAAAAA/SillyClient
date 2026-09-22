@@ -197,14 +197,14 @@ export class TarvenEnvWeb extends WebPlugin implements TarvenEnvPlugin {
   async pickZipFile() { return { path: '', sizeBytes: 0 } }
   async saveTextFile(_options: any) {}
   async scanInstances() { return { instances: [] } }
-  async getInstanceInfo(_options: any) {
+  async getInstanceInfo(_options: any): Promise<InstanceInfo> {
     return {
       instanceId: _options?.instanceId || 'default',
       version: '1.12.0',
-      installPath: '',
-      port: 8000,
+      path: '',
       sizeBytes: 0,
-      status: 'stopped' as const
+      createdAt: new Date().toISOString(),
+      status: 'stopped'
     }
   }
   async sendCommand(_options: any) {}
