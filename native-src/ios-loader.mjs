@@ -16,6 +16,26 @@ import fs from 'node:fs';
 import util from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+// 注入 SafeTextDecoder，彻底消除 NodeMobile (small-icu) 下对 fatal: true 的 ERR_NO_ICU 报错
+if (typeof globalThis.TextDecoder !== 'undefined') {
+    const OrigTextDecoder = globalThis.TextDecoder;
+    class SafeTextDecoder extends OrigTextDecoder {
+        constructor(encoding = 'utf-8', options = {}) {
+            if (options && options.fatal) {
+                const safeOpts = { ...options };
+                delete safeOpts.fatal;
+                super(encoding, safeOpts);
+            } else {
+                super(encoding, options);
+            }
+        }
+    }
+    globalThis.TextDecoder = SafeTextDecoder;
+    if (util && util.TextDecoder) {
+        util.TextDecoder = SafeTextDecoder;
+    }
+}
+
 // 关键环境变量设置
 process.env.ST_DISABLE_SHARP = 'true';
 process.env.NODE_ENV = 'production';
