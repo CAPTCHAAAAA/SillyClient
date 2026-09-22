@@ -36,6 +36,22 @@ if (typeof globalThis.TextDecoder !== 'undefined') {
     }
 }
 
+// 注入 WebAssembly 兜底存根，防止在 iOS jitless 环境下抛出 ReferenceError: WebAssembly is not defined
+if (typeof globalThis.WebAssembly === 'undefined') {
+    globalThis.WebAssembly = {
+        compile: async () => ({}),
+        compileStreaming: async () => ({}),
+        instantiate: async () => ({ instance: { exports: {} }, module: {} }),
+        instantiateStreaming: async () => ({ instance: { exports: {} }, module: {} }),
+        validate: () => false,
+        Module: class { constructor() {} },
+        Instance: class { constructor() { this.exports = {}; } },
+        Memory: class { constructor() { this.buffer = new ArrayBuffer(0); } },
+        Table: class { constructor() {} },
+        Global: class { constructor() {} },
+    };
+}
+
 // 关键环境变量设置
 process.env.ST_DISABLE_SHARP = 'true';
 process.env.NODE_ENV = 'production';

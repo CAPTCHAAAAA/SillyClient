@@ -69,7 +69,9 @@ const textDecoderTargets = [
   path.join(targetDir, 'node_modules', '@jsquash', 'oxipng', 'codec', 'pkg', 'squoosh_oxipng.js'),
   path.join(targetDir, 'node_modules', '@jsquash', 'oxipng', 'codec', 'pkg-parallel', 'squoosh_oxipng.js'),
   path.join(targetDir, 'node_modules', 'isomorphic-git', 'models', 'index.js'),
-  path.join(targetDir, 'node_modules', 'isomorphic-git', 'models', 'index.cjs')
+  path.join(targetDir, 'node_modules', 'isomorphic-git', 'models', 'index.cjs'),
+  path.join(targetDir, 'node_modules', 'tiktoken', 'tiktoken_bg.cjs'),
+  path.join(targetDir, 'node_modules', 'tiktoken', 'lite', 'tiktoken_bg.cjs')
 ];
 for (const tf of textDecoderTargets) {
   if (fs.existsSync(tf)) {
@@ -78,12 +80,68 @@ for (const tf of textDecoderTargets) {
       c = c.replace(/ignoreBOM:\s*true,\s*fatal:\s*true/g, 'ignoreBOM: true');
       c = c.replace(/fatal:\s*true/g, 'fatal: false');
       fs.writeFileSync(tf, c, 'utf8');
-      console.log(`[patch-sillytavern] [3/5] Successfully stripped fatal: true from: ${tf}`);
+      console.log(`[patch-sillytavern] [3/6] Successfully stripped fatal: true from: ${tf}`);
     }
   }
 }
 
-// 4. 补丁 SillyTavern 官方源码 src/transformers.js 使其按需懒加载
+// 4. 补丁 tiktoken (在 iOS jitless / 无 WebAssembly 运行时下提供安全 dummy Tokenizer)
+const tiktokenFiles = [
+  path.join(targetDir, 'node_modules', 'tiktoken', 'tiktoken.cjs'),
+  path.join(targetDir, 'node_modules', 'tiktoken', 'lite', 'tiktoken.cjs')
+];
+for (const tf of tiktokenFiles) {
+  if (fs.existsSync(tf)) {
+    let c = fs.readFileSync(tf, 'utf8');
+    if (!c.includes('// SillyClient iOS tiktoken fallback')) {
+      const origInstantiation = `const wasmModule = new WebAssembly.Module(bytes);
+const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
+wasm.__wbg_set_wasm(wasmInstance.exports);
+exports["get_encoding"] = wasm["get_encoding"];
+exports["encoding_for_model"] = wasm["encoding_for_model"];
+exports["get_encoding_name_for_model"] = wasm["get_encoding_name_for_model"];
+exports["Tiktoken"] = wasm["Tiktoken"];`;
+
+      const safeInstantiation = `// SillyClient iOS tiktoken fallback
+const dummyTokenizer = {
+  encode: (text) => new Uint32Array([...text].map((_, i) => i)),
+  decode: (tokens) => '',
+  free: () => {}
+};
+
+try {
+  if (typeof WebAssembly !== 'undefined' && typeof WebAssembly.Module === 'function' && typeof WebAssembly.Instance === 'function') {
+    const wasmModule = new WebAssembly.Module(bytes);
+    const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
+    if (wasmInstance && wasmInstance.exports && Object.keys(wasmInstance.exports).length > 0) {
+      wasm.__wbg_set_wasm(wasmInstance.exports);
+      exports["get_encoding"] = wasm["get_encoding"];
+      exports["encoding_for_model"] = wasm["encoding_for_model"];
+      exports["get_encoding_name_for_model"] = wasm["get_encoding_name_for_model"];
+      exports["Tiktoken"] = wasm["Tiktoken"];
+    } else {
+      throw new Error("WebAssembly exports empty");
+    }
+  } else {
+    throw new Error("WebAssembly not supported");
+  }
+} catch (e) {
+  exports["get_encoding"] = () => dummyTokenizer;
+  exports["encoding_for_model"] = () => dummyTokenizer;
+  exports["get_encoding_name_for_model"] = () => "cl100k_base";
+  exports["Tiktoken"] = class { constructor() { return dummyTokenizer; } };
+}`;
+
+      if (c.includes('const wasmModule = new WebAssembly.Module(bytes);')) {
+        c = c.replace(origInstantiation, safeInstantiation);
+        fs.writeFileSync(tf, c, 'utf8');
+        console.log(`[patch-sillytavern] [4/6] Successfully injected tiktoken WebAssembly fallback in: ${tf}`);
+      }
+    }
+  }
+}
+
+// 5. 补丁 SillyTavern 官方源码 src/transformers.js 使其按需懒加载
 const serverTransformersPath = path.join(targetDir, 'src', 'transformers.js');
 if (fs.existsSync(serverTransformersPath)) {
   let content = fs.readFileSync(serverTransformersPath, 'utf8');
