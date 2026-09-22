@@ -1,4 +1,4 @@
-import { registerPlugin, PluginListenerHandle } from '@capacitor/core'
+import { registerPlugin, WebPlugin, type PluginListenerHandle } from '@capacitor/core'
 
 /**
  * TarvenEnv 插件 —— 由原生侧 com.sillyclient.plugin.TarvenEnvPlugin 实现。
@@ -182,4 +182,48 @@ export interface TarvenEnvPlugin {
   ): Promise<PluginListenerHandle>
 }
 
-export const TarvenEnv = registerPlugin<TarvenEnvPlugin>('TarvenEnv')
+export class TarvenEnvWeb extends WebPlugin implements TarvenEnvPlugin {
+  async getPlatform() { return { platform: 'ios' as const } }
+  async getAppVersion() { return { version: '1.9.1' } }
+  async provisionAndStart(_options: any) { return { ready: true } }
+  async enterImmersive(_options: any) {}
+  async exitImmersive() {}
+  async returnToTavern() {}
+  async closeTavern() {}
+  async getStatus() { return { serverReady: false, mode: 'local' } }
+  async fetchReleases() { return { releases: [] } }
+  async pickDirectory() { return { name: 'Documents', path: '/Documents' } }
+  async pickImage(_options: any) { return { path: '' } }
+  async pickZipFile() { return { path: '', sizeBytes: 0 } }
+  async saveTextFile(_options: any) {}
+  async scanInstances() { return { instances: [] } }
+  async getInstanceInfo(_options: any) {
+    return {
+      instanceId: _options?.instanceId || 'default',
+      version: '1.12.0',
+      installPath: '',
+      port: 8000,
+      sizeBytes: 0,
+      status: 'stopped' as const
+    }
+  }
+  async sendCommand(_options: any) {}
+  async reloadTavern() {}
+  async clearWebViewData() {}
+  async getSafeInsets() { return { top: 47, bottom: 34, left: 0, right: 0 } }
+  async setPullToRefresh(_options: any) {}
+  async getContentOpenMode() { return { mode: 'webview' as const } }
+  async setContentOpenMode(options: any) { return { mode: options.mode } }
+  async setRemoteBasicAuth(_options: any) { return { configured: true, username: _options.username } }
+  async getRemoteBasicAuthStatus(_options: any) { return { configured: false } }
+  async clearRemoteBasicAuth(_options: any) { return { success: true } }
+  async pingUrl(_options: any) { return { online: false } }
+  async uninstallInstance(_options: any) { return { success: true, freedBytes: 0 } }
+  async cleanGarbage(_options: any) { return { items: [], totalBytes: 0 } }
+  async deleteGarbageItem(_options: any) { return { success: true } }
+}
+
+export const TarvenEnv = registerPlugin<TarvenEnvPlugin>('TarvenEnv', {
+  web: () => new TarvenEnvWeb(),
+})
+

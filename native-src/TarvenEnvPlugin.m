@@ -1,0 +1,41 @@
+#import <Foundation/Foundation.h>
+#import <Capacitor/Capacitor.h>
+
+CAP_PLUGIN(TarvenEnvPlugin, "TarvenEnv",
+    CAP_PLUGIN_METHOD(getPlatform, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getAppVersion, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getStatus, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getSafeInsets, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(scanInstances, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(provisionAndStart, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(enterImmersive, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(exitImmersive, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(returnToTavern, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(closeTavern, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(stop, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getLogs, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(fetchReleases, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getInstanceInfo, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(pingUrl, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getContentOpenMode, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(setContentOpenMode, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(setRemoteBasicAuth, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getRemoteBasicAuthStatus, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(clearRemoteBasicAuth, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(pickDirectory, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(pickImage, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(pickZipFile, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(saveTextFile, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(sendCommand, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(reloadTavern, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(clearWebViewData, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(setPullToRefresh, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(uninstallInstance, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(cleanGarbage, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(deleteGarbageItem, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(openFilesApp, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(setSecret, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(getSecret, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(deleteSecret, CAPPluginReturnPromise);
+    CAP_PLUGIN_METHOD(checkUpdate, CAPPluginReturnPromise);
+)
