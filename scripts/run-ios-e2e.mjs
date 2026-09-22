@@ -148,8 +148,8 @@ async function main() {
     }
     await sleep(1000);
   }
-  // 留出 4s 供 DOM、CSS、主题与角色卡渲染完全稳定
-  await sleep(4000);
+  // 留出 7s 供 DOM、CSS、主题与角色卡渲染完全稳定
+  await sleep(7000);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
   console.log(`Saved Stage 4 screenshot: ${shot4}`);

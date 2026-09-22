@@ -132,6 +132,17 @@ try {
     console.log('[ios-loader] Notice: could not hook server-events early:', evErr && evErr.message);
 }
 
+// 运行时防御性检查与修补 (确保无遗留 ICU 正则阻断)
+try {
+    const patchScript = path.join(serverDir, 'patch-sillytavern.mjs');
+    if (fs.existsSync(patchScript)) {
+        console.log('[ios-loader] 执行运行时环境防御性补丁...');
+        await import(pathToFileURL(patchScript).href);
+    }
+} catch (pErr) {
+    console.log('[ios-loader] Defense patch notice:', pErr && pErr.message);
+}
+
 if (fs.existsSync(serverEntry)) {
     try {
         const entryUrl = pathToFileURL(serverEntry).href;

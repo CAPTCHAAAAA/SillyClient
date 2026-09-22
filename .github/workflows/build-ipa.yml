@@ -45,6 +45,8 @@ jobs:
           cd sillytavern-src
           echo "=== 安装纯 JS 生产依赖 (跳过原生构建脚本) ==="
           npm install --omit=dev --no-optional --ignore-scripts
+          echo "=== 注入 NodeMobile (iOS small-icu) 兼容性补丁与懒加载适配 ==="
+          node ../native-src/patch-sillytavern.mjs ./
           echo "=== 预设官方 config.yaml (禁用浏览器自启与 LAN 暴露) ==="
           cp default/config.yaml config.yaml
           node -e "
@@ -75,6 +77,7 @@ jobs:
           mkdir -p data/_errors
           mkdir -p data/default-user
           cp ../native-src/ios-loader.mjs ./
+          cp ../native-src/patch-sillytavern.mjs ./
           rm -rf .git
           cd ..
           echo "=== SillyTavern 服务端就绪 (含 public 官方前端) ==="
