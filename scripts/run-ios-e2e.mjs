@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 function run(cmd) {
   console.log(`[EXEC] ${cmd}`);
@@ -28,14 +29,21 @@ async function main() {
   const outDir = path.resolve('evidence');
   fs.mkdirSync(outDir, { recursive: true });
 
-  // 2. 开机与安装
-  console.log('\n>>> [1/5] Booting Simulator & Installing App...');
+  // 2. 开机与等待 SpringBoard
+  console.log('\n>>> [1/5] Booting Simulator & Waiting for SpringBoard...');
   try {
     run(`xcrun simctl boot "${deviceUuid}"`);
   } catch (e) {
-    console.log('Simulator already booted or warning:', e.message);
+    console.log('Simulator boot notice (may already be booted):', e.message);
   }
-  await sleep(6000);
+
+  console.log('Waiting for simulator to reach bootstatus ready state...');
+  try {
+    run(`xcrun simctl bootstatus "${deviceUuid}" -b`);
+  } catch (e) {
+    console.log('bootstatus warning:', e.message);
+  }
+  await sleep(3000);
 
   if (appPath && fs.existsSync(appPath)) {
     console.log(`Installing ${appPath}...`);
@@ -45,43 +53,69 @@ async function main() {
   // 3. 启动应用并注入 --auto-tour 参数
   console.log('\n>>> [2/5] Launching App with --auto-tour argument...');
   run(`xcrun simctl launch "${deviceUuid}" com.sillyclient.ios --auto-tour`);
+  console.log('Waiting 6s for app cold launch and Capacitor bridge init...');
+  await sleep(6000);
 
-  // 阶段 1: 控制台初始渲染与灵动岛避让 (等待 4 秒)
-  console.log('\n>>> [3/5] Stage 1: Waiting for Console Load & Safe Insets (t = 4s)...');
-  await sleep(4000);
+  // 4. 阶段驱动与截图
+  console.log('\n>>> [3/5] Driving 5 E2E Stages via URL Scheme...');
+
+  // 阶段 1: 控制台初始渲染与灵动岛避让
+  console.log('\n--- Triggering Stage 1: Console Loaded & Island Avoidance ---');
+  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage1"`); } catch (e) { console.warn(e.message); }
+  await sleep(2500);
   const shot1 = path.join(outDir, '01-console-loaded.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot1}"`);
-  // 保持向后兼容
   fs.copyFileSync(shot1, path.join(outDir, 'dynamic-island-real-render.png'));
   console.log(`Saved Stage 1 screenshot: ${shot1}`);
 
-  // 阶段 2: 实例详情与管理抽屉展开 (等待 3.8 秒，此时 t = 7.8s)
-  console.log('\n>>> Stage 2: Waiting for Instance Card Expansion (t = 7.8s)...');
-  await sleep(3800);
+  // 阶段 2: 实例详情与管理抽屉展开
+  console.log('\n--- Triggering Stage 2: Instance Expanded Drawer ---');
+  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage2"`); } catch (e) { console.warn(e.message); }
+  await sleep(2500);
   const shot2 = path.join(outDir, '02-instance-expanded.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot2}"`);
   console.log(`Saved Stage 2 screenshot: ${shot2}`);
 
-  // 阶段 3: 启动酒馆调度与进度终端 (等待 3.8 秒，此时 t = 11.6s)
-  console.log('\n>>> Stage 3: Waiting for Launch Terminal & TarvenEnv Provisioning (t = 11.6s)...');
-  await sleep(3800);
+  // 阶段 3: 启动酒馆调度与进度终端
+  console.log('\n--- Triggering Stage 3: Launch Terminal & Provisioning ---');
+  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage3"`); } catch (e) { console.warn(e.message); }
+  await sleep(2500);
   const shot3 = path.join(outDir, '03-tavern-provisioning.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot3}"`);
   console.log(`Saved Stage 3 screenshot: ${shot3}`);
 
-  // 阶段 4: 进入酒馆全屏沉浸态与状态栏隐藏 (等待 4.5 秒，此时 t = 16.1s)
-  console.log('\n>>> Stage 4: Waiting for Full Immersive Tavern & Status Bar Hidden (t = 16.1s)...');
-  await sleep(4500);
+  // 阶段 4: 进入酒馆全屏沉浸态与状态栏隐藏
+  console.log('\n--- Triggering Stage 4: Tavern Immersive Mode & Status Bar Hidden ---');
+  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage4"`); } catch (e) { console.warn(e.message); }
+  await sleep(3500);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
   console.log(`Saved Stage 4 screenshot: ${shot4}`);
 
-  // 阶段 5: 退出沉浸态返回控制台与状态栏恢复 (等待 5.5 秒，此时 t = 21.6s)
-  console.log('\n>>> Stage 5: Waiting for Return to Console & Status Bar Restored (t = 21.6s)...');
-  await sleep(5500);
+  // 阶段 5: 退出沉浸态返回控制台与状态栏恢复
+  console.log('\n--- Triggering Stage 5: Return to Console & Status Bar Restored ---');
+  try { run(`xcrun simctl openurl "${deviceUuid}" "sillyclient://stage5"`); } catch (e) { console.warn(e.message); }
+  await sleep(3000);
   const shot5 = path.join(outDir, '05-console-restored-statusbar-visible.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot5}"`);
   console.log(`Saved Stage 5 screenshot: ${shot5}`);
+
+  // 校验 5 张截图的唯一性与有效性
+  console.log('\n>>> Validating Screenshot Integrity & Uniqueness...');
+  const shots = [shot1, shot2, shot3, shot4, shot5];
+  const hashes = new Map();
+  for (const s of shots) {
+    const data = fs.readFileSync(s);
+    const hash = crypto.createHash('sha256').update(data).digest('hex');
+    const size = data.length;
+    console.log(`  - ${path.basename(s)}: ${size} bytes, sha256=${hash.slice(0, 16)}...`);
+    if (hashes.has(hash)) {
+      console.warn(`  WARNING: Duplicate image hash with ${hashes.get(hash)}!`);
+    } else {
+      hashes.set(hash, path.basename(s));
+    }
+  }
+  console.log(`Unique screenshots verified: ${hashes.size}/5`);
 
   // 4. 停止应用
   console.log('\n>>> [4/5] Terminating App...');

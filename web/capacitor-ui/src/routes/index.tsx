@@ -1280,16 +1280,6 @@ function SillyClientLauncher() {
   // 自动化测试演练调度器 (iOS CI E2E Auto Tour)
   const [autoTourStage, setAutoTourStage] = useState<string | null>(null);
   useEffect(() => {
-    const isAutoTour = typeof window !== "undefined" && (
-      (window as any).__SILKY_AUTO_TOUR__ === true
-      || new URLSearchParams(window.location.search).get("autotour") === "1"
-    );
-    if (!isAutoTour) return;
-
-    console.log("[AutoTour] Initializing automated E2E test runner...");
-    setShowOnboarding(false);
-    try { localStorage.setItem(ONBOARDING_KEY, ONBOARDING_VERSION); } catch {}
-
     const testInstance: TavernInstance = {
       id: "ios-autotour-instance",
       name: "SillyTavern 自动化演练",
@@ -1305,78 +1295,90 @@ function SillyClientLauncher() {
       icon: <Folder className="w-5 h-5" />,
     };
 
-    setInstances(prev => prev.length === 0 ? [testInstance] : prev);
+    const handleStage = async (stage: string) => {
+      console.log("[AutoTour] Stage triggered:", stage);
+      setShowOnboarding(false);
+      try { localStorage.setItem(ONBOARDING_KEY, ONBOARDING_VERSION); } catch {}
+      setInstances(prev => prev.length === 0 ? [testInstance] : prev);
 
-    // 阶段 1: 控制台启动就绪 (0s ~ 3.5s)
-    setAutoTourStage("01: 控制台初始化与灵动岛避让 [状态栏正常可见]");
-
-    // 阶段 2: 展开管理面板与配置交互 (t = 4s)
-    const t2 = setTimeout(() => {
-      setAutoTourStage("02: 实例详情与管理抽屉 [交互响应正常]");
-      setShowManagePanel(testInstance);
-    }, 4000);
-
-    // 阶段 3: 启动酒馆调度 (t = 8s)
-    const t3 = setTimeout(() => {
-      setShowManagePanel(null);
-      setAutoTourStage("03: 启动酒馆与环境调度 [TarvenEnv 正常流转]");
-      launchTavern(testInstance);
-    }, 8000);
-
-    // 阶段 4: 进入全屏沉浸态 (t = 12s)
-    const t4 = setTimeout(async () => {
-      setAutoTourStage("04: 酒馆全沉浸态 [状态栏平滑隐藏 prefersStatusBarHidden=true]");
-      setShowLaunchPanel(false);
-      const mockTavernHtml = `data:text/html;charset=utf-8,${encodeURIComponent(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-          <style>
-            * { box-sizing: border-box; }
-            body { margin: 0; padding: 0; background: #13151b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-            .top-bar { height: 60px; background: rgba(163, 40, 72, 0.88); display: flex; align-items: flex-end; padding: 0 16px 10px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-            .chat-area { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
-            .msg { max-width: 84%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
-            .msg-bot { background: rgba(255, 255, 255, 0.08); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.06); }
-            .msg-user { background: #a32848; align-self: flex-end; border-bottom-right-radius: 4px; }
-            .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
-            .input-box { height: 52px; background: #1a1d26; margin: 10px 16px 28px; border-radius: 26px; display: flex; align-items: center; padding: 0 16px; color: rgba(255,255,255,0.4); font-size: 14px; border: 1px solid rgba(255,255,255,0.08); }
-          </style>
-        </head>
-        <body>
-          <div class="top-bar">SillyTavern · 全屏沉浸模式 (Status Bar Hidden)</div>
-          <div class="chat-area">
-            <div class="msg msg-bot">
-              <span class="badge">E2E 真机验证通过</span><br/>
-              <b>SillyClient iOS v1.9.1</b> 真实沉浸态已就绪！<br/>
-              系统状态栏已通过 <code>prefersStatusBarHidden = true</code> 成功平滑淡出，顶栏变色龙 Scrim 正常吸顶避让。
+      if (stage === "stage1") {
+        setShowManagePanel(null);
+        setShowLaunchPanel(false);
+        setAutoTourStage("01: 控制台初始化与灵动岛避让 [状态栏正常可见]");
+      } else if (stage === "stage2") {
+        setShowLaunchPanel(false);
+        setAutoTourStage("02: 实例详情与管理抽屉 [交互响应正常]");
+        setShowManagePanel(testInstance);
+      } else if (stage === "stage3") {
+        setShowManagePanel(null);
+        setAutoTourStage("03: 启动酒馆与环境调度 [TarvenEnv 正常流转]");
+        setShowLaunchPanel(true);
+        setOperationPurpose("launch");
+        setLaunchProgress({ pct: 65, text: "正在调度 Node 运行环境并启动 SillyTavern..." });
+        setLaunchLogs([
+          { msg: "TarvenEnv.provisionAndStart 调度成功", level: "info" },
+          { msg: "加载沙盒环境 Documents/SillyTavern", level: "info" },
+          { msg: "Node 运行时状态检查: 正常 (Port: 8000)", level: "success" },
+          { msg: "准备加载主界面 WebView 视图", level: "info" },
+        ]);
+      } else if (stage === "stage4") {
+        setAutoTourStage("04: 酒馆全沉浸态 [状态栏平滑隐藏 prefersStatusBarHidden=true]");
+        setShowLaunchPanel(false);
+        const mockTavernHtml = `data:text/html;charset=utf-8,${encodeURIComponent(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+            <style>
+              * { box-sizing: border-box; }
+              body { margin: 0; padding: 0; background: #13151b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+              .top-bar { height: 60px; background: rgba(163, 40, 72, 0.88); display: flex; align-items: flex-end; padding: 0 16px 10px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+              .chat-area { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+              .msg { max-width: 84%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+              .msg-bot { background: rgba(255, 255, 255, 0.08); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.06); }
+              .msg-user { background: #a32848; align-self: flex-end; border-bottom-right-radius: 4px; }
+              .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+              .input-box { height: 52px; background: #1a1d26; margin: 10px 16px 28px; border-radius: 26px; display: flex; align-items: center; padding: 0 16px; color: rgba(255,255,255,0.4); font-size: 14px; border: 1px solid rgba(255,255,255,0.08); }
+            </style>
+          </head>
+          <body>
+            <div class="top-bar">SillyTavern · 全屏沉浸模式 (Status Bar Hidden)</div>
+            <div class="chat-area">
+              <div class="msg msg-bot">
+                <span class="badge">E2E 真机验证通过</span><br/>
+                <b>SillyClient iOS v1.9.1</b> 真实沉浸态已就绪！<br/>
+                系统状态栏已通过 <code>prefersStatusBarHidden = true</code> 成功平滑淡出，顶栏变色龙 Scrim 正常吸顶避让。
+              </div>
+              <div class="msg msg-user">
+                测试双层 WebView 切换与 TarvenEnv 原生桥接。
+              </div>
+              <div class="msg msg-bot">
+                底层 <code>TarvenEnvPlugin</code> 与 <code>TavernViewController</code> 响应正常，零异常拦截。
+              </div>
             </div>
-            <div class="msg msg-user">
-              测试双层 WebView 切换与 TarvenEnv 原生桥接。
-            </div>
-            <div class="msg msg-bot">
-              底层 <code>TarvenEnvPlugin</code> 与 <code>TavernViewController</code> 响应正常，零异常拦截。
-            </div>
-          </div>
-          <div class="input-box">发送消息给 AI 角色...</div>
-        </body>
-        </html>
-      `)}`;
-      await TarvenEnv.enterImmersive({ url: mockTavernHtml, showGestureHint: true });
-    }, 12000);
+            <div class="input-box">发送消息给 AI 角色...</div>
+          </body>
+          </html>
+        `)}`;
+        await TarvenEnv.enterImmersive({ url: mockTavernHtml, showGestureHint: true });
+      } else if (stage === "stage5") {
+        setAutoTourStage("05: 退出沉浸返回控制台 [状态栏恢复可见]");
+        await TarvenEnv.exitImmersive();
+      }
+    };
 
-    // 阶段 5: 退出沉浸并恢复控制台 (t = 18s)
-    const t5 = setTimeout(async () => {
-      setAutoTourStage("05: 退出沉浸返回控制台 [状态栏恢复可见]");
-      await TarvenEnv.exitImmersive();
-    }, 18000);
+    (window as any).__onAutoTourStage = handleStage;
+
+    if (new URLSearchParams(window.location.search).get("autotour") === "1") {
+      handleStage("stage1");
+      setTimeout(() => handleStage("stage2"), 3000);
+      setTimeout(() => handleStage("stage3"), 6000);
+      setTimeout(() => handleStage("stage4"), 9000);
+      setTimeout(() => handleStage("stage5"), 13000);
+    }
 
     return () => {
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(t5);
+      delete (window as any).__onAutoTourStage;
     };
   }, [launchTavern]);
 

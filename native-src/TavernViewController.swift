@@ -15,8 +15,14 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     public static let shared = TavernViewController()
     
     // 双层视图
-    private var consoleWebView: WKWebView?
-    private var tavernWebView: WKWebView?
+    public private(set) var consoleWebView: WKWebView?
+    public private(set) var tavernWebView: WKWebView?
+    
+    public func evaluateConsoleJavaScript(_ js: String, completion: ((Any?, Error?) -> Void)? = nil) {
+        DispatchQueue.main.async {
+            self.consoleWebView?.evaluateJavaScript(js, completionHandler: completion)
+        }
+    }
     
     // 沉浸顶栏与交互
     private let topScrimBar = UIView()
@@ -68,6 +74,9 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     
     public func registerConsoleWebView(_ webView: WKWebView) {
         self.consoleWebView = webView
+        webView.isOpaque = false
+        webView.backgroundColor = UIColor.clear
+        webView.scrollView.backgroundColor = UIColor.clear
         view.insertSubview(webView, at: 0)
         webView.frame = view.bounds
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -82,6 +91,9 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
         wv.navigationDelegate = self
         wv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         wv.scrollView.contentInsetAdjustmentBehavior = .never
+        wv.isOpaque = true
+        wv.backgroundColor = UIColor(red: 19/255.0, green: 21/255.0, blue: 27/255.0, alpha: 1.0)
+        wv.scrollView.backgroundColor = UIColor(red: 19/255.0, green: 21/255.0, blue: 27/255.0, alpha: 1.0)
         wv.alpha = 0.0
         wv.isHidden = true
         view.addSubview(wv)
@@ -138,7 +150,30 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
         currentTavernUrl = url
         isTavernActive = true
         
-        wv.load(URLRequest(url: url))
+        if url.scheme == "data" {
+            let fullStr = url.absoluteString
+            if let commaIndex = fullStr.range(of: ",")?.upperBound {
+                let payload = String(fullStr[commaIndex...])
+                if fullStr.contains(";base64,") {
+                    if let data = Data(base64Encoded: payload), let html = String(data: data, encoding: .utf8) {
+                        wv.loadHTMLString(html, baseURL: nil)
+                    } else {
+                        wv.load(URLRequest(url: url))
+                    }
+                } else {
+                    let html = payload.removingPercentEncoding ?? payload
+                    wv.loadHTMLString(html, baseURL: nil)
+                }
+            } else if let decoded = fullStr.removingPercentEncoding {
+                let html = decoded.replacingOccurrences(of: "data:text/html;charset=utf-8,", with: "")
+                wv.loadHTMLString(html, baseURL: nil)
+            } else {
+                wv.load(URLRequest(url: url))
+            }
+        } else {
+            wv.load(URLRequest(url: url))
+        }
+        
         wv.isHidden = false
         topScrimBar.isHidden = false
         

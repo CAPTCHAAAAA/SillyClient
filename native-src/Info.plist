@@ -35,6 +35,19 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 
+	<!-- 自定义 URL Scheme 支持 (用于自动化测试与外部唤醒) -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.sillyclient.ios</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>sillyclient</string>
+			</array>
+		</dict>
+	</array>
+
 	<!-- 开启 iOS 原生“文件”App 共享 (iTunes File Sharing & Open in Place) -->
 	<key>UIFileSharingEnabled</key>
 	<true/>
