@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 function run(cmd) {
   console.log(`[EXEC] ${cmd}`);
-  return execSync(cmd, { encoding: 'utf-8', stdio: ['inherit', 'pipe', 'pipe'] });
+  return execSync(cmd, { encoding: 'utf-8', stdio: ['inherit', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
 }
 
 async function sleep(ms) {
@@ -87,10 +87,32 @@ async function main() {
   // 阶段 3: 启动酒馆调度与进度终端 (拉起 NodeMobile 运行时)
   console.log('\n--- Triggering Stage 3: Launch Terminal & Provisioning ---');
   fs.writeFileSync(cmdFile, 'stage3');
-  await sleep(5000);
+  await sleep(3500);
   const shot3 = path.join(outDir, '03-tavern-provisioning.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot3}"`);
   console.log(`Saved Stage 3 screenshot: ${shot3}`);
+
+  // 探活探测本地 HTTP 服务就绪
+  console.log('Waiting for SillyTavern HTTP server on http://127.0.0.1:8000/ ...');
+  let isServerUp = false;
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await fetch('http://127.0.0.1:8000/', { signal: AbortSignal.timeout(1000) });
+      if (res.status > 0) {
+        console.log(`[E2E] SillyTavern Server Ready! Status: ${res.status}`);
+        isServerUp = true;
+        break;
+      }
+    } catch (e) {
+      // not yet ready
+    }
+    await sleep(1000);
+  }
+  if (!isServerUp) {
+    console.warn('[E2E] Notice: SillyTavern HTTP probe not yet connected, proceeding to stage 4...');
+  } else {
+    console.log('[E2E] SillyTavern HTTP server is fully listening and active!');
+  }
 
   // 阶段 4: 进入真实酒馆全屏沉浸态与状态栏隐藏
   console.log('\n--- Triggering Stage 4: Real SillyTavern Immersive Mode (http://127.0.0.1:8000/) ---');
@@ -107,6 +129,20 @@ async function main() {
   const shot5 = path.join(outDir, '05-console-restored-statusbar-visible.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot5}"`);
   console.log(`Saved Stage 5 screenshot: ${shot5}`);
+
+  // 检查沙盒 server.log
+  const serverLogPaths = [
+    path.join(docDir, 'data', 'server.log'),
+    path.join(docDir, 'SillyTavern', 'data', 'server.log'),
+    path.join(docDir, 'server.log')
+  ];
+  for (const lp of serverLogPaths) {
+    if (fs.existsSync(lp)) {
+      const logContent = fs.readFileSync(lp, 'utf8');
+      console.log(`\n=== SillyTavern Sandboxed server.log (${lp}, ${logContent.length} bytes) ===`);
+      console.log(logContent.slice(-2000));
+    }
+  }
 
   // 校验 5 张截图的唯一性与有效性
   console.log('\n>>> Validating Screenshot Integrity & Uniqueness...');
@@ -125,6 +161,23 @@ async function main() {
   }
   console.log(`Unique screenshots verified: ${hashes.size}/5`);
 
+  // 检查是否有系统崩溃报告
+  try {
+    const diagDir = path.join(process.env.HOME || '', 'Library/Logs/DiagnosticReports');
+    if (fs.existsSync(diagDir)) {
+      const crashFiles = fs.readdirSync(diagDir).filter(f => f.includes('App') || f.includes('sillyclient'));
+      if (crashFiles.length > 0) {
+        console.log('Detected Crash Reports in DiagnosticReports:', crashFiles);
+        for (const cf of crashFiles) {
+          const crashContent = fs.readFileSync(path.join(diagDir, cf), 'utf8');
+          console.log(`=== Crash Report: ${cf} ===\n`, crashContent.slice(0, 3000));
+        }
+      }
+    }
+  } catch (diagErr) {
+    console.warn('Crash report check note:', diagErr.message);
+  }
+
   // 4. 停止应用
   console.log('\n>>> [4/5] Terminating App...');
   try {
@@ -136,12 +189,18 @@ async function main() {
   // 5. 抓取系统日志并断言
   console.log('\n>>> [5/5] Extracting Simulator System Logs & Asserting...');
   let logText = '';
+  const simLogFile = path.join(outDir, 'simulator-e2e.log');
   try {
-    logText = run(`xcrun simctl spawn "${deviceUuid}" log show --predicate 'subsystem == "com.sillyclient.ios" or processImagePath contains "App"' --last 2m`);
-    fs.writeFileSync(path.join(outDir, 'simulator-e2e.log'), logText);
-    console.log(`Log saved to evidence/simulator-e2e.log (${logText.length} chars)`);
+    execSync(`xcrun simctl spawn "${deviceUuid}" log show --predicate 'subsystem == "com.sillyclient.ios" or processImagePath contains "App"' --last 3m > "${simLogFile}"`, {
+      encoding: 'utf-8',
+      stdio: 'ignore'
+    });
+    if (fs.existsSync(simLogFile)) {
+      logText = fs.readFileSync(simLogFile, 'utf8');
+      console.log(`Log saved to evidence/simulator-e2e.log (${logText.length} chars)`);
+    }
   } catch (e) {
-    console.warn('Failed to extract logs via predicate, dumping generic syslog:', e.message);
+    console.warn('Failed to extract logs via file redirection:', e.message);
   }
 
   const hasNotImplemented = logText.toLowerCase().includes('plugin is not implemented');

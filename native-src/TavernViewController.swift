@@ -274,4 +274,25 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
+    
+    // MARK: - WKNavigationDelegate
+    public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        NSLog("[TavernViewController] didFailProvisionalNavigation: %@", error.localizedDescription)
+        // 若因本地服务正在拉起连接被拒，1 秒后自动重试加载
+        if isTavernActive, let url = currentTavernUrl {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self = self, self.isTavernActive else { return }
+                NSLog("[TavernViewController] Retrying loading SillyTavern URL: %@", url.absoluteString)
+                self.tavernWebView?.load(URLRequest(url: url))
+            }
+        }
+    }
+    
+    public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        NSLog("[TavernViewController] didFail navigation: %@", error.localizedDescription)
+    }
+    
+    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        NSLog("[TavernViewController] didFinish navigation: %@", webView.url?.absoluteString ?? "")
+    }
 }

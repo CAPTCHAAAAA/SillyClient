@@ -98,14 +98,15 @@ public class TarvenEnvPlugin: CAPPlugin, CAPBridgedPlugin {
         let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let stPath = documentsUrl.appendingPathComponent("SillyTavern").path
         let fileManager = FileManager.default
+        let serverDir = NodeRunner.shared.resolveServerDirectory(dataPath: stPath)
         
         var instances: [[String: Any]] = []
-        if fileManager.fileExists(atPath: stPath) {
+        if fileManager.fileExists(atPath: (serverDir as NSString).appendingPathComponent("server.js")) {
             instances.append([
                 "instanceId": "default",
                 "version": "1.12.0",
                 "hasServer": true,
-                "path": stPath,
+                "path": serverDir,
                 "sizeBytes": 0,
                 "lastUsedAt": Date().timeIntervalSince1970 * 1000,
                 "createdAt": Date().timeIntervalSince1970 * 1000,

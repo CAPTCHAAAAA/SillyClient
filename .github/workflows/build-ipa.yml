@@ -45,6 +45,13 @@ jobs:
           cd sillytavern-src
           echo "=== 安装纯 JS 生产依赖 (跳过原生构建脚本) ==="
           npm install --omit=dev --no-optional --ignore-scripts
+          echo "=== 预设官方 config.yaml (禁用浏览器自启与 LAN 暴露) ==="
+          cat << 'EOF' > config.yaml
+port: 8000
+listen: false
+browserLaunch:
+  enabled: false
+EOF
           cp ../native-src/ios-loader.mjs ./
           rm -rf .git
           cd ..
