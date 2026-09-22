@@ -44,6 +44,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let bridgeVC = SillyBridgeViewController()
         bridgeVC.loadViewIfNeeded()
         
+        // 自动化演练模式注入 (E2E CI 自动化测试)
+        if ProcessInfo.processInfo.arguments.contains("--auto-tour") {
+            NSLog("[AppDelegate] Detected --auto-tour argument! Enabling automated test runner mode.")
+            let script = WKUserScript(
+                source: "window.__SILKY_AUTO_TOUR__ = true;",
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+            bridgeVC.webView?.configuration.userContentController.addUserScript(script)
+        }
+        
         if let bridge = bridgeVC.bridge {
             _ = (bridge as AnyObject).perform(NSSelectorFromString("registerPluginType:"), with: TarvenEnvPlugin.self)
             NSLog("[AppDelegate] TarvenEnvPlugin registered via bridge directly")

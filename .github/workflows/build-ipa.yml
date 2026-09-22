@@ -115,20 +115,11 @@ jobs:
                      CODE_SIGN_IDENTITY=""
           cd "$GITHUB_WORKSPACE"
 
-          echo "Booting Simulator: $DEVICE_UUID"
-          xcrun simctl boot "$DEVICE_UUID" || true
-          sleep 8
-
           APP_PATH=$(find web/capacitor-ui/ios/App/build/derived -name "App.app" -type d | head -n 1)
-          if [ -d "$APP_PATH" ]; then
-            echo "Installing $APP_PATH to $DEVICE_UUID"
-            xcrun simctl install "$DEVICE_UUID" "$APP_PATH"
-            xcrun simctl launch "$DEVICE_UUID" com.sillyclient.ios || true
-            sleep 10
-          fi
+          echo "Found APP_PATH: $APP_PATH"
 
-          mkdir -p evidence
-          xcrun simctl io "$DEVICE_UUID" screenshot evidence/dynamic-island-real-render.png
+          # 运行全自动 E2E 演练脚本，按时序自动操作并抓取 5 大阶段真机截图与生成报告
+          node scripts/run-ios-e2e.mjs "$DEVICE_UUID" "$APP_PATH"
 
       - name: 上传构建包 Artifact (真机可直接安装的完整 IPA)
         uses: actions/upload-artifact@v4
@@ -136,9 +127,9 @@ jobs:
           name: SillyClient-iOS-v1.9.1-IPA
           path: SillyClient-iOS-v1.9.1-unsigned.ipa
 
-      - name: 上传灵动岛真机实测截图
+      - name: 上传 E2E 自动化测试全流程阶段截图与可视化报告
         uses: actions/upload-artifact@v4
         with:
-          name: dynamic-island-screenshot
-          path: evidence/dynamic-island-real-render.png
+          name: ios-e2e-evidence
+          path: evidence/
 
