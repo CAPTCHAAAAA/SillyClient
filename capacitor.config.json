@@ -1,0 +1,14 @@
+{
+  "appId": "com.sillyclient.ios",
+  "appName": "SillyClient",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true
+  },
+  "plugins": {
+    "TarvenEnv": {}
+  }
+}
