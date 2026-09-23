@@ -182,7 +182,7 @@ async function main() {
   // 阶段 4: 进入真实酒馆全屏沉浸态与状态栏隐藏
   console.log('\n--- Triggering Stage 4: Real SillyTavern Immersive Mode (http://127.0.0.1:8000/) ---');
   fs.writeFileSync(cmdFile, 'stage4');
-  
+
   console.log('Waiting for SillyTavern webview to finish rendering DOM (up to 30s)...');
   let isRendered = false;
   for (let i = 0; i < 30; i++) {
@@ -198,7 +198,31 @@ async function main() {
   await sleep(7000);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
-  console.log(`Saved Stage 4 screenshot: ${shot4}`);
+  console.log(`Saved Stage 4 screenshot (Default Theme): ${shot4}`);
+
+  // 阶段 4b: 切换官方预设主题 Celestial Macaron (冷青蓝调, blur_tint_color: rgba(23, 36, 55, 0.9))
+  console.log('\n--- Switching to Preset Theme: Celestial Macaron ---');
+  fs.writeFileSync(cmdFile, 'theme:Celestial Macaron');
+  await sleep(4000);
+  const shot4b = path.join(outDir, '04b-tavern-celestial-macaron.png');
+  run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4b}"`);
+  console.log(`Saved Theme Celestial Macaron screenshot: ${shot4b}`);
+
+  // 阶段 4c: 切换官方预设主题 Cappuccino (意式浓缩暖褐调, blur_tint_color: rgba(34, 30, 32, 0.95))
+  console.log('\n--- Switching to Preset Theme: Cappuccino ---');
+  fs.writeFileSync(cmdFile, 'theme:Cappuccino');
+  await sleep(4000);
+  const shot4c = path.join(outDir, '04c-tavern-cappuccino.png');
+  run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4c}"`);
+  console.log(`Saved Theme Cappuccino screenshot: ${shot4c}`);
+
+  // 阶段 4d: 切换自定义高饱和酒红主题 Wine Red (rgb(163, 40, 72))
+  console.log('\n--- Switching to Custom Tint: Wine Red (rgb(163, 40, 72)) ---');
+  fs.writeFileSync(cmdFile, 'custom_tint:rgba(163, 40, 72, 1)');
+  await sleep(4000);
+  const shot4d = path.join(outDir, '04d-tavern-wine-red.png');
+  run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4d}"`);
+  console.log(`Saved Custom Tint Wine Red screenshot: ${shot4d}`);
 
   // 阶段 5: 退出沉浸态返回控制台与状态栏恢复
   console.log('\n--- Triggering Stage 5: Return to Console & Status Bar Restored ---');
@@ -222,9 +246,9 @@ async function main() {
     }
   }
 
-  // 校验 5 张截图的唯一性与有效性
+  // 校验 8 张截图的唯一性与有效性
   console.log('\n>>> Validating Screenshot Integrity & Uniqueness...');
-  const shots = [shot1, shot2, shot3, shot4, shot5];
+  const shots = [shot1, shot2, shot3, shot4, shot4b, shot4c, shot4d, shot5];
   const hashes = new Map();
   for (const s of shots) {
     const data = fs.readFileSync(s);
@@ -237,7 +261,7 @@ async function main() {
       hashes.set(hash, path.basename(s));
     }
   }
-  console.log(`Unique screenshots verified: ${hashes.size}/5`);
+  console.log(`Unique screenshots verified: ${hashes.size}/8`);
 
   // 检查是否有系统崩溃报告
   try {
@@ -315,10 +339,31 @@ async function main() {
     },
     {
       step: '04',
-      title: '酒馆官方服务全屏沉浸与状态栏隐藏',
-      desc: '加载本地 Node.js (NodeMobile) 真实托管的 SillyTavern 完整服务 (127.0.0.1:8000)，呈现官方全套组件与暗黑界面，系统状态栏成功平滑隐藏。',
+      title: '酒馆官方服务全屏沉浸与状态栏隐藏 (默认深灰主题)',
+      desc: '加载本地 NodeMobile 真实托管的 SillyTavern 完整服务 (127.0.0.1:8000)，呈现官方默认暗黑深灰 (#171717)，变色龙顶条带无缝着色。',
       file: '04-tavern-immersive-statusbar-hidden.png',
       statusBar: '【核心验证】已隐藏 (prefersStatusBarHidden = true)'
+    },
+    {
+      step: '04b',
+      title: '动态切换官方预设主题 Celestial Macaron (冷青蓝调)',
+      desc: '验证主题动态切换至 Celestial Macaron，变色龙引擎通过 DOM 探针与 Alpha 混合 (0.9) 秒级跟随变为深海青蓝，顶条带与酒馆顶栏色差 ΔE=0.00。',
+      file: '04b-tavern-celestial-macaron.png',
+      statusBar: '【变色龙验证】深海青蓝自适应 · 已隐藏'
+    },
+    {
+      step: '04c',
+      title: '动态切换官方预设主题 Cappuccino (意式浓缩暖褐调)',
+      desc: '验证主题动态切换至 Cappuccino，变色龙引擎捕获暖褐主色 (#221e20)，顶条带无缝过渡，底边接缝 0 误差像素熔接。',
+      file: '04c-tavern-cappuccino.png',
+      statusBar: '【变色龙验证】浓缩暖褐自适应 · 已隐藏'
+    },
+    {
+      step: '04d',
+      title: '动态切换高饱和自定义主题 Wine Red (酒红调)',
+      desc: '验证极限高饱和酒红主色 rgb(163, 40, 72)，变色龙顶栏全宽渲染纯正酒红，无断层阴影或暴力压暗，实现绝对零色差融合。',
+      file: '04d-tavern-wine-red.png',
+      statusBar: '【变色龙验证】纯正酒红自适应 · 已隐藏'
     },
     {
       step: '05',

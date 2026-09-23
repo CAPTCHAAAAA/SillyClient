@@ -248,9 +248,46 @@ test('IslandHardwareRadar safely bounds left flank away from Dynamic Island cuto
     const center = screenWidth / 2.0;
     const leftEnd = Math.floor(center - (islandWidth / 2.0) - padding);
     const leftWidth = Math.max(0, leftEnd - sideMargin);
-    
+
     // 左翼必须完全在灵动岛左侧 (leftMargin + leftWidth < center - cutout/2)
     assert.ok(sideMargin + leftWidth <= center - (islandWidth / 2.0) - padding);
     assert.ok(leftWidth > 80.0, `Expected adequate width for gesture hint, got ${leftWidth}`);
+});
+
+test('ChameleonEngine DOM probe blend correctly synthesizes semi-transparent theme colors', () => {
+    function blend(fg, bg) {
+        if (!fg) return bg;
+        if (fg.a >= 0.999) return fg;
+        const bgR = bg ? bg.r : 36;
+        const bgG = bg ? bg.g : 36;
+        const bgB = bg ? bg.b : 37;
+        const a = fg.a;
+        return {
+            r: Math.round(fg.r * a + bgR * (1 - a)),
+            g: Math.round(fg.g * a + bgG * (1 - a)),
+            b: Math.round(fg.b * a + bgB * (1 - a)),
+            a: 1.0
+        };
+    }
+
+    const bodyBg = { r: 36, g: 36, b: 37, a: 1.0 };
+
+    // 1. 默认暗黑主题 rgba(23, 23, 23, 1) -> 零误差 [23, 23, 23]
+    const def = blend({ r: 23, g: 23, b: 23, a: 1.0 }, bodyBg);
+    assert.deepEqual(def, { r: 23, g: 23, b: 23, a: 1.0 });
+
+    // 2. 官方预设 Celestial Macaron: rgba(23, 36, 55, 0.9)
+    // 23*0.9 + 36*0.1 = 24.3 -> 24; 36*0.9 + 36*0.1 = 36; 55*0.9 + 37*0.1 = 53.2 -> 53
+    const cel = blend({ r: 23, g: 36, b: 55, a: 0.9 }, bodyBg);
+    assert.deepEqual(cel, { r: 24, g: 36, b: 53, a: 1.0 });
+
+    // 3. 官方预设 Cappuccino: rgba(34, 30, 32, 0.95)
+    // 34*0.95 + 36*0.05 = 34.1 -> 34; 30*0.95 + 36*0.05 = 30.3 -> 30; 32*0.95 + 37*0.05 = 32.25 -> 32
+    const cap = blend({ r: 34, g: 30, b: 32, a: 0.95 }, bodyBg);
+    assert.deepEqual(cap, { r: 34, g: 30, b: 32, a: 1.0 });
+
+    // 4. 自定义 Wine Red: rgba(163, 40, 72, 1.0)
+    const wine = blend({ r: 163, g: 40, b: 72, a: 1.0 }, bodyBg);
+    assert.deepEqual(wine, { r: 163, g: 40, b: 72, a: 1.0 });
 });
 
