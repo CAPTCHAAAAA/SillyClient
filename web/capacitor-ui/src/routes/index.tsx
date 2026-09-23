@@ -319,7 +319,7 @@ function ManageDetailRow({ label, value, isLight, mono = false }: { label: strin
   return (
     <div className="flex items-start justify-between gap-6 py-3">
       <span className={cn("text-xs flex-shrink-0", isLight ? "text-[#1a1625]/40" : "text-white/40")}>{label}</span>
-      <span className={cn("text-xs font-medium text-right break-all", mono && "font-mono text-[10px]", isLight ? "text-[#1a1625]/70" : "text-white/70")}>{value}</span>
+      <span className={cn("text-xs font-medium text-right break-all", mono && "text-[11px] tabular-nums tracking-tight", isLight ? "text-[#1a1625]/70" : "text-white/70")}>{value}</span>
     </div>
   );
 }
@@ -460,6 +460,7 @@ function SillyClientLauncher() {
   const [launchingId, setLaunchingId] = useState<string | null>(null);
   const [launchProgress, setLaunchProgress] = useState<{ pct: number; text: string } | null>(null);
   const [showLaunchPanel, setShowLaunchPanel] = useState(false);
+  const [isLaunchPanelClosing, setIsLaunchPanelClosing] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [launchLogs, setLaunchLogs] = useState<{ msg: string; level?: string }[]>([]);
   const [lastLaunchParams, setLastLaunchParams] = useState<any>(null);
@@ -535,6 +536,7 @@ function SillyClientLauncher() {
     () => import.meta.env.DEV ? "available" : "idle"
   );
   const [updatePromptDismissed, setUpdatePromptDismissed] = useState(false);
+  const [updateBannerRight, setUpdateBannerRight] = useState(28);
   const [verDropdownOpen, setVerDropdownOpen] = useState(false);
   const [isVerDropdownClosing, setIsVerDropdownClosing] = useState(false);
   const [verDropdownPos, setVerDropdownPos] = useState({ bottom: 0, left: 0, width: 0, maxHeight: 360 });
@@ -548,6 +550,16 @@ function SillyClientLauncher() {
   const renameCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [terminalPos, setTerminalPos] = useState({ left: 16, right: 16 });
+
+  // 向导模式平滑过渡 (本地 / 远程)
+  const wizardLocalRef = useRef<HTMLDivElement>(null);
+  const wizardRemoteRef = useRef<HTMLDivElement>(null);
+  const [wizardHeight, setWizardHeight] = useState<number | undefined>(undefined);
+
+  // 背景设置模式平滑过渡 (基础 / 自定义)
+  const bgDynamicRef = useRef<HTMLDivElement>(null);
+  const bgCustomRef = useRef<HTMLDivElement>(null);
+  const [bgContentHeight, setBgContentHeight] = useState<number | undefined>(undefined);
 
   // 下拉刷新启动页
   const [pullDistance, setPullDistance] = useState(0);
@@ -574,6 +586,7 @@ function SillyClientLauncher() {
   const [isSavingManagePanel, setIsSavingManagePanel] = useState(false);
   // 清理垃圾
   const [showCleanPanel, setShowCleanPanel] = useState(false);
+  const [isCleanPanelClosing, setIsCleanPanelClosing] = useState(false);
   const [garbageItems, setGarbageItems] = useState<any[]>([]);
   const [cleaningGarbage, setCleaningGarbage] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<TavernInstance | null>(null);
@@ -648,6 +661,19 @@ function SillyClientLauncher() {
     const timer = window.setTimeout(() => { void checkForAppUpdate(); }, 900);
     return () => window.clearTimeout(timer);
   }, [checkForAppUpdate, isShowcase]);
+
+  useEffect(() => {
+    if (appUpdateState !== "available") return;
+    const updateRight = () => {
+      const el = settingsBtnRef.current;
+      if (el) {
+        setUpdateBannerRight(Math.max(0, window.innerWidth - el.getBoundingClientRect().right));
+      }
+    };
+    updateRight();
+    window.addEventListener("resize", updateRight);
+    return () => window.removeEventListener("resize", updateRight);
+  }, [appUpdateState]);
 
   useEffect(() => {
     try {
@@ -935,10 +961,52 @@ function SillyClientLauncher() {
 
   const switchThemeMode = useCallback((apply: () => void) => {
     setThemeSmoothing(true);
-    startTransition(apply);
+    apply();
     if (themeSmoothingTimer.current !== null) window.clearTimeout(themeSmoothingTimer.current);
     themeSmoothingTimer.current = window.setTimeout(() => setThemeSmoothing(false), 1200);
   }, []);
+
+  const switchInstanceMode = useCallback((mode: "local" | "remote") => {
+    if (newInstanceMode === mode) return;
+    setThemeSmoothing(true);
+    setNewInstanceMode(mode);
+    if (themeSmoothingTimer.current !== null) window.clearTimeout(themeSmoothingTimer.current);
+    themeSmoothingTimer.current = window.setTimeout(() => setThemeSmoothing(false), 800);
+  }, [newInstanceMode]);
+
+  // 向导容器自适应平滑高度测量
+  useEffect(() => {
+    const activeEl = newInstanceMode === "local" ? wizardLocalRef.current : wizardRemoteRef.current;
+    if (!activeEl) return;
+    setWizardHeight(activeEl.offsetHeight);
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === activeEl) {
+          setWizardHeight(entry.target.clientHeight || entry.contentRect.height);
+        }
+      }
+    });
+    ro.observe(activeEl);
+    return () => ro.disconnect();
+  }, [newInstanceMode, newInstanceCompanionPresetEnabled, showNewInstancePanel, newRemoteAuthEnabled]);
+
+  // 背景设置容器自适应平滑高度测量
+  useEffect(() => {
+    const activeEl = bgMode === "dynamic" ? bgDynamicRef.current : bgCustomRef.current;
+    if (!activeEl) return;
+    setBgContentHeight(activeEl.offsetHeight);
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === activeEl) {
+          setBgContentHeight(entry.target.clientHeight || entry.contentRect.height);
+        }
+      }
+    });
+    ro.observe(activeEl);
+    return () => ro.disconnect();
+  }, [bgMode, showBgPanel, customWallpaperUrl]);
 
   // 实例列表持久化到 localStorage
   useEffect(() => {
@@ -1101,6 +1169,18 @@ function SillyClientLauncher() {
     setLaunchLogs([{ msg: `启动 ${instance.name} (${instance.type})`, level: "info" }]);
     setLaunchLogs(prev => [...prev, { msg: `准备 Node 环境 [${instanceId}] :${port}`, level: "info" }]);
 
+    if (isWeb) {
+      for (let p = 25; p <= 75; p += 25) {
+        await new Promise(r => setTimeout(r, 200));
+        setLaunchProgress({ pct: p, text: `准备启动服务 (${p}%)` });
+        setLaunchLogs(prev => [...prev, { msg: `服务就绪进度 ${p}%`, level: "info" }]);
+      }
+      await new Promise(r => setTimeout(r, 200));
+      setLaunchProgress({ pct: 100, text: "实例已就绪" });
+      setLaunchLogs(prev => [...prev, { msg: "服务已就绪 (浏览器演示)", level: "success" }]);
+      return { url: "http://127.0.0.1:8000/", port: 8000 };
+    }
+
     // 注册事件监听
     let readyHandle: any;
     let progressHandle: any;
@@ -1259,11 +1339,25 @@ function SillyClientLauncher() {
           lastUsed: info.lastUsedAt ? formatNativeDate(info.lastUsedAt) : t.lastUsed,
           totalUsage: info.totalUsageMs !== undefined ? formatUsageDuration(info.totalUsageMs) : t.totalUsage,
         } : t));
-        setTimeout(() => { setShowLaunchPanel(false); setLaunchProgress(null); }, 800);
+        setTimeout(() => {
+          setIsLaunchPanelClosing(true);
+          setTimeout(() => {
+            setShowLaunchPanel(false);
+            setIsLaunchPanelClosing(false);
+            setLaunchProgress(null);
+          }, PANEL_EXIT_MS);
+        }, 800);
       } else {
         await openRemoteInstance(instance);
         setInstances(prev => prev.map(t => t.id === instance.id ? { ...t, status: "online" } : t));
-        setTimeout(() => { setShowLaunchPanel(false); setLaunchProgress(null); }, 500);
+        setTimeout(() => {
+          setIsLaunchPanelClosing(true);
+          setTimeout(() => {
+            setShowLaunchPanel(false);
+            setIsLaunchPanelClosing(false);
+            setLaunchProgress(null);
+          }, PANEL_EXIT_MS);
+        }, 500);
       }
     } catch (err: any) {
       const msg = err?.message || String(err);
@@ -1278,6 +1372,19 @@ function SillyClientLauncher() {
   }, [launchingId, doLaunch, openRemoteInstance]);
 
   const provisionCreatedInstance = useCallback(async (instance: TavernInstance) => {
+    if (isWeb) {
+      for (let p = 20; p <= 80; p += 20) {
+        await new Promise(r => setTimeout(r, 200));
+        setLaunchProgress({ pct: p, text: `正在安装组件... (${p}%)` });
+        setLaunchLogs(prev => [...prev, { msg: `安装进度 ${p}%`, level: "info" }]);
+      }
+      await new Promise(r => setTimeout(r, 250));
+      setLaunchProgress({ pct: 100, text: "创建完成，可以运行" });
+      setLaunchLogs(prev => [...prev, { msg: "服务可访问，实例创建完成", level: "success" }]);
+      setInstances(prev => prev.some(t => t.id === instance.id) ? prev : [...prev, { ...instance, status: "running" }]);
+      return;
+    }
+
     if (instance.type === "remote") {
       const url = instance.url || "";
       setLaunchProgress({ pct: 20, text: "正在检查远程连接" });
@@ -1335,16 +1442,21 @@ function SillyClientLauncher() {
       if (newInstanceMode === "local" && !newInstanceLocalZip) {
         let availableReleases = releases;
         if (availableReleases.length === 0) {
-          const response = await TarvenEnv.fetchReleases();
-          availableReleases = response.releases || [];
-          setReleases(availableReleases);
+          try {
+            const response = await TarvenEnv.fetchReleases();
+            availableReleases = response.releases || [];
+            setReleases(availableReleases);
+          } catch {
+            availableReleases = [{ tag: "1.12.0", prerelease: false, zipballUrl: "" }];
+            setReleases(availableReleases);
+          }
         }
         const selectedRelease = selectedVersion === "stable"
           ? availableReleases.find(release => !release.prerelease) || availableReleases[0]
-          : availableReleases.find(release => release.tag === selectedVersion);
-        if (!selectedRelease) throw new Error("无法获取当前 SillyTavern 版本，请检查网络后重试");
-        selectedVersion = selectedRelease.tag;
-        selectedZipballUrl = selectedRelease.zipballUrl;
+          : availableReleases.find(release => release.tag === selectedVersion) || availableReleases[0];
+        if (!selectedRelease && !isWeb) throw new Error("无法获取当前 SillyTavern 版本，请检查网络后重试");
+        selectedVersion = selectedRelease?.tag || "1.12.0";
+        selectedZipballUrl = selectedRelease?.zipballUrl;
       }
 
       let port = 8000;
@@ -1424,19 +1536,15 @@ function SillyClientLauncher() {
       operationStarted = true;
 
       await provisionCreatedInstance(instance);
-      setTimeout(() => {
-        setShowLaunchPanel(false);
-        setLaunchProgress(null);
-        setNewInstanceName("");
-        setNewInstanceDir("");
-        setNewInstanceUrl("http://");
-        setNewRemoteAuthEnabled(false);
-        setNewRemoteAuthUsername("");
-        setNewRemoteAuthPassword("");
-        setNewInstanceVersion("stable");
-        setNewInstanceCompanionPresetEnabled(false);
-        setNewInstanceLocalZip(null);
-      }, 1100);
+      setNewInstanceName("");
+      setNewInstanceDir("");
+      setNewInstanceUrl("http://");
+      setNewRemoteAuthEnabled(false);
+      setNewRemoteAuthUsername("");
+      setNewRemoteAuthPassword("");
+      setNewInstanceVersion("stable");
+      setNewInstanceCompanionPresetEnabled(false);
+      setNewInstanceLocalZip(null);
     } catch (err: any) {
       const message = err?.message || String(err);
       if (!operationStarted) {
@@ -1747,6 +1855,7 @@ function SillyClientLauncher() {
   }, [isManagePanelClosing, showManagePanel]);
 
   const dismissLaunchPanel = useCallback(async () => {
+    if (isLaunchPanelClosing) return;
     if (
       operationPurpose === "create" &&
       lastLaunchParams?.type === "remote" &&
@@ -1755,10 +1864,23 @@ function SillyClientLauncher() {
       try { await TarvenEnv.clearRemoteBasicAuth({ instanceId: lastLaunchParams.id }); } catch {}
       setShowNewInstancePanel(true);
     }
-    setShowLaunchPanel(false);
-    setLaunchError(null);
-    setLaunchProgress(null);
-  }, [instances, lastLaunchParams, operationPurpose]);
+    setIsLaunchPanelClosing(true);
+    setTimeout(() => {
+      setShowLaunchPanel(false);
+      setIsLaunchPanelClosing(false);
+      setLaunchError(null);
+      setLaunchProgress(null);
+    }, PANEL_EXIT_MS);
+  }, [instances, isLaunchPanelClosing, lastLaunchParams, operationPurpose]);
+
+  const closeCleanPanel = useCallback(() => {
+    if (cleaningGarbage || isCleanPanelClosing) return;
+    setIsCleanPanelClosing(true);
+    setTimeout(() => {
+      setShowCleanPanel(false);
+      setIsCleanPanelClosing(false);
+    }, PANEL_EXIT_MS);
+  }, [cleaningGarbage, isCleanPanelClosing]);
 
   const saveManagedInstance = useCallback(async () => {
     if (!showManagePanel || isSavingManagePanel) return;
@@ -1890,6 +2012,7 @@ function SillyClientLauncher() {
       themeSmoothing && "theme-smoothing",
       isLight ? "bg-[#f0ece8] text-[#1a1625]" : "bg-[#1a1625] text-white"
     )}>
+
       {/* 下拉刷新指示器 — 固定在顶部,不跟随拖拽 */}
       <div className="fixed left-0 right-0 z-[60] flex justify-center pointer-events-none" style={{ top: `calc(env(safe-area-inset-top) + 72px)`, opacity: pullDistance > 5 || isRefreshing ? 1 : 0, transition: isRefreshing || !isPulling.current ? 'opacity 0.3s' : 'none' }}>
         <div className={cn("flex flex-col items-center gap-1.5", isLight ? "text-[#1a1625]/30" : "text-white/30")}>
@@ -1969,13 +2092,13 @@ function SillyClientLauncher() {
               <span className={cn("text-xs font-medium", isLight ? "text-[#1a1625]/50" : "text-white/40")}>背景模式</span>
               <div className="grid grid-cols-2 gap-1.5">
                 <button onClick={() => switchThemeMode(() => setBgMode("dynamic"))} aria-pressed={bgMode === "dynamic"} className={cn(
-                  "ios-choice-control px-2 py-2 rounded-lg text-xs font-medium transition-all border",
+                  "ios-choice-control px-2 py-2 rounded-lg text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   bgMode === "dynamic"
                     ? isLight ? "bg-black/10 border-black/20 text-[#1a1625]" : "bg-white/10 border-white/20 text-white/90"
                     : isLight ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:bg-black/10" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
                 )}>基础</button>
                 <button onClick={() => switchThemeMode(() => setBgMode("custom"))} aria-pressed={bgMode === "custom"} className={cn(
-                  "ios-choice-control px-2 py-2 rounded-lg text-xs font-medium transition-all border",
+                  "ios-choice-control px-2 py-2 rounded-lg text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   bgMode === "custom"
                     ? isLight ? "bg-black/10 border-black/20 text-[#1a1625]" : "bg-white/10 border-white/20 text-white/90"
                     : isLight ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:bg-black/10" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
@@ -1983,23 +2106,47 @@ function SillyClientLauncher() {
               </div>
             </div>
 
-            {bgMode === "dynamic" && (
-              <div className="flex items-center justify-between py-1">
-                <span className={cn("text-xs font-medium", isLight ? "text-[#1a1625]" : "text-white/90")}>动态壁纸</span>
-                <button onClick={() => setDynamicPaused(!dynamicPaused)} className="ios-toggle" aria-label="切换动态壁纸">
-                  <div className={cn("ios-toggle-track", !dynamicPaused && "ios-toggle-track-active")}>
-                    <div className="ios-toggle-icons">
-                      <span className="ios-toggle-icon-off">○</span>
-                      <span className="ios-toggle-icon-on">│</span>
+            {/* 背景模式切换容器（平滑高度过渡 + 白天黑夜级优雅溶变） */}
+            <div
+              className="relative transition-[height] duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+              style={{ height: bgContentHeight ? `${bgContentHeight}px` : undefined }}
+            >
+              {/* 动态/基础模式 */}
+              <div
+                ref={bgDynamicRef}
+                className={cn(
+                  "w-full transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  bgMode === "dynamic"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={bgMode !== "dynamic"}
+              >
+                <div className="flex items-center justify-between py-1">
+                  <span className={cn("text-xs font-medium", isLight ? "text-[#1a1625]" : "text-white/90")}>动态壁纸</span>
+                  <button onClick={() => setDynamicPaused(!dynamicPaused)} className="ios-toggle" aria-label="切换动态壁纸">
+                    <div className={cn("ios-toggle-track", !dynamicPaused && "ios-toggle-track-active")}>
+                      <div className="ios-toggle-icons">
+                        <span className="ios-toggle-icon-off">○</span>
+                        <span className="ios-toggle-icon-on">│</span>
+                      </div>
+                      <div className={cn("ios-toggle-thumb", !dynamicPaused && "ios-toggle-thumb-active")} />
                     </div>
-                    <div className={cn("ios-toggle-thumb", !dynamicPaused && "ios-toggle-thumb-active")} />
-                  </div>
-                </button>
+                  </button>
+                </div>
               </div>
-            )}
 
-            {bgMode === "custom" && (
-              <div className="space-y-3">
+              {/* 自定义模式 */}
+              <div
+                ref={bgCustomRef}
+                className={cn(
+                  "w-full space-y-3 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  bgMode === "custom"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={bgMode !== "custom"}
+              >
                 <div className="space-y-1.5">
                   <span className={cn("text-xs font-medium", isLight ? "text-[#1a1625]/50" : "text-white/40")}>主题风格</span>
                   <div className="grid grid-cols-2 gap-2">
@@ -2024,7 +2171,7 @@ function SillyClientLauncher() {
                     "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all border",
                     isLight ? "bg-black/5 border-black/10 hover:bg-black/10 text-[#1a1625]" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   )}>
-                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", customWallpaperUrl ? "bg-emerald-500/20 text-emerald-400" : isLight ? "bg-black/10 text-[#1a1625]/50" : "bg-white/10 text-white/50")}>
+                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", customWallpaperUrl ? isLight ? "bg-black/10 text-[#1a1625]/70" : "bg-white/10 text-white/70" : isLight ? "bg-black/10 text-[#1a1625]/50" : "bg-white/10 text-white/50")}>
                       {customWallpaperUrl ? <Check className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -2040,7 +2187,7 @@ function SillyClientLauncher() {
                   )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
@@ -2119,12 +2266,15 @@ function SillyClientLauncher() {
       {appUpdateState === "available" && appUpdateInfo && !updatePromptDismissed && (
         <div
           className={cn(
-            "fixed left-1/2 -translate-x-1/2 z-[70] flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl border backdrop-blur-[32px] saturate-180 shadow-[0_16px_50px_rgba(0,0,0,0.35)]",
-            isLight ? "bg-white/85 border-black/10" : "bg-[#1a1625]/85 border-white/10"
+            "fixed z-[70] flex items-center gap-2 h-10 pl-3.5 pr-1.5 rounded-2xl border backdrop-blur-[40px] saturate-180 shadow-[0_16px_50px_rgba(0,0,0,0.35)]",
+            glassBg
           )}
-          style={{ top: `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 60px)` }}
+          style={{
+            top: `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 60px)`,
+            right: updateBannerRight,
+          }}
         >
-          <div className={cn("text-xs font-medium", isLight ? "text-[#1a1625]" : "text-white/90")}>
+          <div className={cn("text-xs font-medium whitespace-nowrap", isLight ? "text-[#1a1625]/85" : "text-white/85")}>
             发现新版本 v{appUpdateInfo.latestVersion}
           </div>
           <button
@@ -2138,8 +2288,10 @@ function SillyClientLauncher() {
               setUpdatePromptDismissed(true);
             }}
             className={cn(
-              "h-8 px-3 rounded-full text-xs font-semibold",
-              isLight ? "bg-[#1a1625] text-white" : "bg-white text-[#1a1625]"
+              "motion-control h-7 px-3 rounded-full text-xs font-semibold transition-all border",
+              isLight
+                ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625] hover:bg-black/[0.14]"
+                : "bg-white/20 border-white/15 text-white hover:bg-white/30"
             )}
           >
             查看
@@ -2148,7 +2300,7 @@ function SillyClientLauncher() {
             onClick={() => setUpdatePromptDismissed(true)}
             aria-label="关闭更新提示"
             className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center",
+              "motion-control w-7 h-7 rounded-full flex items-center justify-center transition-all",
               isLight ? "hover:bg-black/5 text-[#1a1625]/50" : "hover:bg-white/10 text-white/50"
             )}
           >
@@ -2227,18 +2379,18 @@ function SillyClientLauncher() {
 
           {/* 终端内容区 */}
           <div
-            className={cn("flex-1 font-mono leading-relaxed p-4 overflow-y-auto scrollbar-subtle", isLight ? "bg-[#1e1e2e]/90 text-[#cdd6f4]" : "bg-[#0d0d14]/90 text-[#cdd6f4]")}
+            className={cn("flex-1 font-sans leading-relaxed p-4 overflow-y-auto scrollbar-subtle", isLight ? "bg-[#1e1e2e]/90 text-[#cdd6f4]" : "bg-[#0d0d14]/90 text-[#cdd6f4]")}
             style={{ fontSize: `${terminalFontSize}px` }}
           >
             <div className="opacity-50 mb-1">{terminalDisplayBanner}</div>
             {terminalLogs.map((log, i) => (
               <div key={i} className={cn(
                 "mb-0.5 whitespace-pre-wrap break-all",
-                log.level === "error" ? "text-red-400" : log.level === "success" ? "text-emerald-400" : "opacity-80"
+                log.level === "error" ? "text-red-400" : log.level === "success" ? (isLight ? "text-[#1a1625]/90 font-medium" : "text-white/90 font-medium") : "opacity-80"
               )}>{log.msg}</div>
             ))}
             <div className="flex gap-2 mt-1">
-              <span className="text-emerald-400/70 select-none">{terminalDisplayPrompt}</span>
+              <span className="text-white/35 select-none">{terminalDisplayPrompt}</span>
               <input
                 type="text"
                 value={terminalInput}
@@ -2502,8 +2654,8 @@ function SillyClientLauncher() {
               }
             }
           }} placeholder="搜索并打开实例" className={cn(
-            "w-full h-14 pl-12 pr-4 rounded-[20px] border focus:outline-none focus:border-[#1a1625]/30 transition-[background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            isLight ? "bg-black/5 border-black/10 text-[#1a1625] placeholder:text-[#1a1625]/40 focus:bg-black/8" : "bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:bg-white/10"
+            "w-full h-14 pl-12 pr-4 rounded-[20px] border focus:outline-none focus:ring-0",
+            isLight ? "bg-black/5 border-black/10 text-[#1a1625] placeholder:text-[#1a1625]/40" : "bg-white/5 border-white/10 text-white placeholder:text-white/40"
           )} />
           {searchQuery && (
             <div className="motion-menu-list animate-dropdown absolute top-full left-0 right-0 mt-2 rounded-2xl border overflow-hidden z-30 max-h-64 overflow-y-auto scrollbar-subtle">
@@ -2638,19 +2790,19 @@ function SillyClientLauncher() {
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className={cn("w-1.5 h-1.5 rounded-full",
+                      <div className={cn("w-1.5 h-1.5 rounded-full",
                           instance.type === "local"
-                            ? "bg-sky-400/70 shadow-[0_0_4px_sky-400/50]"
+                            ? isLight ? "bg-[#1a1625]/45" : "bg-white/50"
                             : instance.status === "online"
-                              ? "bg-emerald-400/70 shadow-[0_0_4px_emerald-400/50]"
-                              : "bg-red-400/60 shadow-[0_0_3px_red-400/40]"
+                              ? isLight ? "bg-[#1a1625]/45" : "bg-white/50"
+                              : "bg-red-400/50"
                         )} />
                         <span className={cn("text-[10px] font-medium",
                           instance.type === "local"
-                            ? "text-sky-400/80 shadow-[0_0_6px_sky-400/40]"
+                            ? isLight ? "text-[#1a1625]/60" : "text-white/60"
                             : instance.status === "online"
-                              ? "text-emerald-400/80 shadow-[0_0_6px_emerald-400/40]"
-                              : "text-red-400/60 shadow-[0_0_4px_red-400/30]"
+                              ? isLight ? "text-[#1a1625]/60" : "text-white/60"
+                              : "text-red-400/55"
                         )}>
                           {instance.type === "local" ? "本地" : getStatusText(instance.status)}
                         </span>
@@ -2841,17 +2993,17 @@ function SillyClientLauncher() {
                 className={cn(
                   "w-full h-10 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                   isLight
-                    ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                    : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                    ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                    : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                 )}
               />
               <div className="flex gap-2 mt-4">
-                <button onClick={closeRenameDialog} className={cn("flex-1 h-9 rounded-xl text-xs font-medium border transition-colors", isLight ? "border-black/[0.08] text-[#1a1625]/50 hover:bg-black/5" : "border-white/[0.08] text-white/50 hover:bg-white/5")}>取消</button>
+                <button onClick={closeRenameDialog} className={cn("flex-1 h-9 rounded-full text-xs font-medium border transition-all", isLight ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/5" : "border-white/[0.08] text-white/60 hover:bg-white/10")}>取消</button>
                 <button onClick={() => {
                   const name = renameValue.trim();
                   if (name) setInstances(prev => prev.map(t => t.id === renamingId ? { ...t, name, subtitle: name } : t));
                   closeRenameDialog();
-                }} className={cn("flex-1 h-9 rounded-xl text-xs font-medium transition-colors", isLight ? "bg-[#1a1625] text-[#f5f3ef] hover:bg-[#1a1625]/90" : "bg-white/90 text-[#1a1625] hover:bg-white")}>确定</button>
+                }} className={cn("flex-1 h-9 rounded-full text-xs font-semibold transition-all border", isLight ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625] hover:bg-black/[0.14] active:bg-black/[0.18]" : "bg-white/20 border-white/15 text-white hover:bg-white/30 active:bg-white/35")}>确定</button>
               </div>
             </div>
           </div>
@@ -2919,8 +3071,8 @@ function SillyClientLauncher() {
                 disabled={isDeletingInstance}
                 onClick={() => { setPendingDelete(null); setDeleteInstanceError(null); }}
                 className={cn(
-                  "motion-control h-8 rounded-xl px-4 text-[11px] font-medium disabled:pointer-events-none disabled:opacity-40",
-                  isLight ? "bg-black/[0.05] text-[#1a1625]/45 hover:bg-black/[0.08]" : "bg-white/[0.06] text-white/45 hover:bg-white/10"
+                  "motion-control h-8 rounded-full px-4 text-xs font-medium transition-all border disabled:pointer-events-none disabled:opacity-40",
+                  isLight ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]" : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
                 )}
               >
                 取消
@@ -2930,8 +3082,8 @@ function SillyClientLauncher() {
                 disabled={isDeletingInstance}
                 onClick={confirmDeleteInstance}
                 className={cn(
-                  "motion-control flex h-8 items-center justify-center gap-1.5 rounded-xl px-4 text-[11px] font-semibold disabled:pointer-events-none disabled:opacity-60",
-                  isLight ? "bg-[#1a1625] text-[#f5f3ef] hover:bg-[#1a1625]/90" : "bg-white/90 text-[#1a1625] hover:bg-white"
+                  "motion-control flex h-8 items-center justify-center gap-1.5 rounded-full px-5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 transition-all border",
+                  isLight ? "bg-red-500/10 border-red-500/15 text-red-600 hover:bg-red-500/20 active:bg-red-500/25" : "bg-red-500/20 border-red-500/25 text-red-300 hover:bg-red-500/30 active:bg-red-500/35"
                 )}
               >
                 {isDeletingInstance && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
@@ -2942,148 +3094,233 @@ function SillyClientLauncher() {
         </>
       )}
 
+      {/* 共享遮罩背景（新建实例与启动面板无缝衔接，消除闪跳） */}
+      {(showNewInstancePanel || isNewInstancePanelClosing || showLaunchPanel || isLaunchPanelClosing) && (
+        <div
+          key="shared-instance-modal-backdrop"
+          className={cn(
+            "fixed inset-0 z-[60] bg-black/20 backdrop-blur-[3px] overlay-backdrop",
+            !showNewInstancePanel && !showLaunchPanel && (isNewInstancePanelClosing || isLaunchPanelClosing) && "overlay-backdrop-exit"
+          )}
+          onClick={() => {
+            if (showNewInstancePanel && !isCreatingInstance) {
+              closeVersionDropdown();
+              setIsNewInstancePanelClosing(true);
+              setTimeout(() => {
+                setShowNewInstancePanel(false);
+                setIsNewInstancePanelClosing(false);
+              }, PANEL_EXIT_MS);
+            } else if (showLaunchPanel && (launchError || (operationPurpose === "create" && launchProgress?.pct === 100))) {
+              dismissLaunchPanel();
+            }
+          }}
+        />
+      )}
+
       {/* 启动进度面板 */}
-      {showLaunchPanel && (
-        <>
-          <div className="fixed inset-0 z-[60] bg-black/25 backdrop-blur-[4px]" />
-          <div className={cn(
-            "ios-task-surface fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[61] w-[min(360px,calc(100vw-2rem))] rounded-3xl overflow-hidden backdrop-blur-[40px] saturate-180",
+      {(showLaunchPanel || isLaunchPanelClosing) && (
+        <div
+          className={cn(
+            "ios-task-surface fixed z-[61] rounded-3xl overflow-hidden backdrop-blur-[40px] saturate-180",
             "shadow-[0_24px_80px_rgba(0,0,0,0.4),0_0_0_0.5px_rgba(255,255,255,0.06),inset_0_0.5px_0_rgba(255,255,255,0.08)]",
             glassBg,
-            isLight && "is-light"
-          )}>
-            {/* 标题 */}
-            <div className="px-6 pt-6 pb-4">
-              <div className="flex items-center justify-between">
-                <h3 className={cn("text-[17px] font-bold tracking-tight", isLight ? "text-[#1a1625]" : "text-white")}>
-                  {launchError
-                    ? operationPurpose === "create" ? "创建失败" : "启动失败"
-                    : operationPurpose === "create" ? "正在创建实例" : "启动中"}
-                </h3>
-                {launchProgress && !launchError && (
-                  <span className={cn("text-[14px] font-mono tabular-nums font-semibold", isLight ? "text-[#8b3a52]" : "text-[#c4788e]")}>{launchProgress.pct}%</span>
-                )}
-              </div>
-              <p className={cn("text-[12px] mt-1", isLight ? "text-[#1a1625]/40" : "text-white/40")}>
-                {lastLaunchParams?.name || "实例"}
-              </p>
-            </div>
-
-            {/* 进度条 */}
-            <div className="px-6 pb-4">
-              <div className={cn(
-                "h-[3px] rounded-full overflow-hidden relative",
-                isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
-              )}>
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-[width,background-color] duration-500 ease-out relative overflow-hidden",
-                    launchError
-                      ? "bg-red-500/80"
-                      : isLight
-                        ? "bg-[#8b3a52]"
-                        : "bg-gradient-to-r from-[#7a3245] via-[#a04860] to-[#8b3a52]"
-                  )}
-                  style={{ width: `${launchError ? 100 : (launchProgress?.pct || 0)}%` }}
-                >
-                  {!launchError && launchProgress && launchProgress.pct > 0 && launchProgress.pct < 100 && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
-                  )}
-                </div>
-              </div>
-              <p className={cn("text-[12px] mt-2 font-medium truncate", isLight ? "text-[#1a1625]/50" : "text-white/50")}>
-                {launchError ? launchError : (launchProgress?.text || "初始化")}
-              </p>
-            </div>
-
-            {/* 日志区域 — 色差内凹效果 */}
-            <div className="mx-6 mb-5">
-              <div className={cn(
-                "rounded-2xl overflow-hidden max-h-[200px] overflow-y-auto",
-                "border shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_0.5px_0_rgba(0,0,0,0.2)]",
-                isLight
-                  ? "bg-black/[0.04] border-black/[0.1]"
-                  : "bg-black/[0.32] border-white/[0.03]"
-              )}>
-                <div className="px-4 py-3 font-mono text-[11px] leading-[1.7] space-y-1">
-                  {launchLogs.map((log, i) => (
-                    <div key={i} className={cn(
-                      "truncate",
-                      log.level === "error" ? "text-red-400/90" :
-                      log.level === "success" ? "text-emerald-400/90" :
-                      isLight ? "text-[#1a1625]/50" : "text-white/50"
-                    )}>
-                      {log.msg}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 底部按钮 */}
-            <div className="px-6 pb-6 flex gap-2.5">
-              {launchError ? (
-                <>
-                  <button
-                    onClick={() => retryLaunch()}
-                    disabled={!!launchingId}
-                    className={cn(
-                      "motion-control flex-1 h-10 rounded-xl text-[13px] font-semibold disabled:opacity-50",
-                      isLight ? "bg-[#1a1625] text-[#f5f3ef] hover:bg-[#1a1625]/90" : "bg-white/90 text-[#1a1625] hover:bg-white"
-                    )}
-                  >
-                    重试
-                  </button>
-                  <button
-                    onClick={dismissLaunchPanel}
-                    className={cn(
-                      "motion-control flex-1 h-10 rounded-xl text-[13px] font-semibold",
-                      isLight ? "bg-black/[0.05] text-[#1a1625]/60 hover:bg-black/[0.08]" : "bg-white/[0.08] text-white/60 hover:bg-white/[0.12]"
-                    )}
-                  >
-                    关闭
-                  </button>
-                </>
-              ) : (
-                operationPurpose === "create" ? (
-                  <div className={cn(
-                    "w-full h-10 rounded-xl flex items-center justify-center gap-2 text-[12px] font-medium",
-                    isLight ? "bg-black/[0.04] text-[#1a1625]/45" : "bg-white/[0.06] text-white/45"
-                  )}>
-                    {launchProgress?.pct === 100
-                      ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                      : <LoaderCircle className="h-4 w-4 animate-spin" />}
-                    {launchProgress?.pct === 100 ? "已确认实例可运行" : "完成前请保持应用打开"}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setShowLaunchPanel(false); setLaunchProgress(null); }}
-                    className={cn(
-                      "motion-control w-full h-10 rounded-xl text-[13px] font-semibold",
-                      isLight ? "bg-black/[0.05] text-[#1a1625]/40 hover:bg-black/[0.08]" : "bg-white/[0.08] text-white/40 hover:bg-white/[0.12]"
-                    )}
-                  >
-                    隐藏
-                  </button>
-                )
+            isLight && "is-light",
+            isLaunchPanelClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
+          )}
+          style={{
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'min(360px, calc(100vw - 2rem))',
+          }}
+        >
+          {/* 标题 */}
+          <div className="px-6 pt-6 pb-4">
+            <div className="flex items-center justify-between">
+              <h3 className={cn("text-[17px] font-bold tracking-tight", isLight ? "text-[#1a1625]" : "text-white")}>
+                {launchError
+                  ? operationPurpose === "create" ? "创建失败" : "启动失败"
+                  : operationPurpose === "create"
+                    ? (launchProgress?.pct === 100 ? "实例创建完成" : "正在创建实例")
+                    : "启动中"}
+              </h3>
+              {launchProgress && !launchError && (
+                <span className={cn("text-[14px] font-medium tabular-nums tracking-tight", isLight ? "text-[#8b3a52]" : "text-[#c4788e]")}>{launchProgress.pct}%</span>
               )}
             </div>
+            <p className={cn("text-[12px] mt-1", isLight ? "text-[#1a1625]/40" : "text-white/40")}>
+              {lastLaunchParams?.name || "实例"}
+            </p>
           </div>
-        </>
+
+          {/* 进度条 */}
+          <div className="px-6 pb-4">
+            <div className={cn(
+              "h-[3px] rounded-full overflow-hidden relative",
+              isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
+            )}>
+              <div
+                className={cn(
+                  "h-full rounded-full transition-[width,background-color] duration-500 ease-out relative overflow-hidden",
+                  launchError
+                    ? "bg-red-500/80"
+                    : isLight
+                      ? "bg-[#8b3a52]"
+                      : "bg-gradient-to-r from-[#7a3245] via-[#a04860] to-[#8b3a52]"
+                )}
+                style={{ width: `${launchError ? 100 : (launchProgress?.pct || 0)}%` }}
+              >
+                {!launchError && launchProgress && launchProgress.pct > 0 && launchProgress.pct < 100 && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
+                )}
+              </div>
+            </div>
+            <p className={cn("text-[12px] mt-2 font-medium truncate", isLight ? "text-[#1a1625]/50" : "text-white/50")}>
+              {launchError ? launchError : (launchProgress?.text || "初始化")}
+            </p>
+          </div>
+
+          {/* 日志区域 — 色差内凹效果 */}
+          <div className="mx-6 mb-5">
+            <div className={cn(
+              "rounded-2xl overflow-hidden max-h-[200px] overflow-y-auto",
+              "border shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_0.5px_0_rgba(0,0,0,0.2)]",
+              isLight
+                ? "bg-black/[0.04] border-black/[0.1]"
+                : "bg-black/[0.32] border-white/[0.03]"
+            )}>
+              <div className="px-4 py-3 text-[11px] leading-[1.7] space-y-1">
+                {launchLogs.map((log, i) => (
+                  <div key={i} className={cn(
+                    "truncate",
+                    log.level === "error" ? "text-red-400/90" :
+                    log.level === "success" ? (isLight ? "text-[#1a1625]/65" : "text-white/65") :
+                    isLight ? "text-[#1a1625]/50" : "text-white/50"
+                  )}>
+                    {log.msg}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 底部按钮 */}
+          <div className="px-6 pb-6 flex gap-2.5">
+            {launchError ? (
+              <>
+                <button
+                  onClick={() => retryLaunch()}
+                  disabled={!!launchingId}
+                  className={cn(
+                    "motion-control flex-1 h-9 rounded-full text-xs font-semibold disabled:opacity-50 transition-all border",
+                    isLight
+                      ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625] hover:bg-black/[0.14] active:bg-black/[0.18]"
+                      : "bg-white/15 border-white/10 text-white hover:bg-white/25 active:bg-white/30"
+                  )}
+                >
+                  重试
+                </button>
+                <button
+                  onClick={dismissLaunchPanel}
+                  className={cn(
+                    "motion-control flex-1 h-9 rounded-full text-xs font-medium transition-all border",
+                    isLight
+                      ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]"
+                      : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
+                  )}
+                >
+                  关闭
+                </button>
+              </>
+            ) : (
+              operationPurpose === "create" ? (
+                launchProgress?.pct === 100 ? (
+                  <div className="w-full flex items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        const target = lastLaunchParams;
+                        if (target) {
+                          await launchTavern(target);
+                        } else {
+                          dismissLaunchPanel();
+                        }
+                      }}
+                      className={cn(
+                        "motion-control flex-1 h-9 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border",
+                        isLight
+                          ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625] hover:bg-black/[0.14] active:bg-black/[0.18]"
+                          : "bg-white/20 border-white/15 text-white hover:bg-white/30 active:bg-white/35"
+                      )}
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>进入酒馆</span>
+                    </button>
+                    <button
+                      onClick={dismissLaunchPanel}
+                      className={cn(
+                        "motion-control px-4 h-9 rounded-full text-xs font-medium transition-all border",
+                        isLight
+                          ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]"
+                          : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
+                      )}
+                    >
+                      稍后
+                    </button>
+                  </div>
+                ) : (
+                  <div className={cn(
+                    "w-full h-10 rounded-xl flex items-center justify-center gap-2 text-[12px] font-medium transition-all duration-300",
+                    isLight ? "bg-black/[0.04] text-[#1a1625]/45" : "bg-white/[0.06] text-white/45"
+                  )}>
+                    <LoaderCircle className="h-4 w-4 animate-spin text-current" />
+                    <span>完成前请保持应用打开</span>
+                  </div>
+                )
+              ) : (
+                <button
+                  onClick={dismissLaunchPanel}
+                  className={cn(
+                    "motion-control w-full h-10 rounded-xl text-[13px] font-semibold",
+                    isLight ? "bg-black/[0.05] text-[#1a1625]/40 hover:bg-black/[0.08]" : "bg-white/[0.08] text-white/40 hover:bg-white/[0.12]"
+                  )}
+                >
+                  隐藏
+                </button>
+              )
+            )}
+          </div>
+        </div>
       )}
 
       {/* 清理垃圾面板 */}
-      {showCleanPanel && (
+      {(showCleanPanel || isCleanPanelClosing) && (
         <>
-          <div className="fixed inset-0 z-[70] bg-black/15 backdrop-blur-[2px]" onClick={() => { if (!cleaningGarbage) setShowCleanPanel(false); }} />
-          <div className={cn("ios-task-surface fixed z-[72] rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180", glassBg, isLight && "is-light")} style={{
-            top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: 'min(420px, calc(100vw - 2rem))',
-            maxHeight: 'min(80vh, calc(100vh - 4rem))',
-          }}>
+          <div
+            className={cn(
+              "fixed inset-0 z-[70] bg-black/20 backdrop-blur-[3px] overlay-backdrop",
+              isCleanPanelClosing && "overlay-backdrop-exit"
+            )}
+            onClick={() => { if (!cleaningGarbage) closeCleanPanel(); }}
+          />
+          <div
+            className={cn(
+              "ios-task-surface fixed z-[72] rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
+              glassBg,
+              isLight && "is-light",
+              isCleanPanelClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
+            )}
+            style={{
+              top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              width: 'min(420px, calc(100vw - 2rem))',
+              maxHeight: 'min(80vh, calc(100vh - 4rem))',
+            }}
+          >
             <div className={cn("flex items-center justify-between px-5 h-12 flex-shrink-0 border-b", isLight ? "border-black/[0.06]" : "border-white/[0.06]")}>
               <span className={cn("text-sm font-semibold", isLight ? "text-[#1a1625]" : "text-white")}>清理垃圾</span>
-              <button onClick={() => { if (!cleaningGarbage) setShowCleanPanel(false); }} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-black/5 text-[#1a1625]/30" : "hover:bg-white/5 text-white/30")}>
+              <button
+                onClick={() => { if (!cleaningGarbage) closeCleanPanel(); }}
+                className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-black/5 text-[#1a1625]/30" : "hover:bg-white/5 text-white/30")}
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -3111,10 +3348,16 @@ function SillyClientLauncher() {
               )}
             </div>
             <div className={cn("flex items-center justify-end gap-2 px-5 py-3 border-t flex-shrink-0", isLight ? "border-black/[0.06]" : "border-white/[0.06]")}>
-              <button onClick={() => setShowCleanPanel(false)} disabled={cleaningGarbage} className={cn(
-                "motion-control px-4 h-8 rounded-xl text-[11px] font-medium disabled:opacity-50",
-                isLight ? "bg-black/[0.05] text-[#1a1625]/45 hover:bg-black/[0.08]" : "bg-white/[0.06] text-white/45 hover:bg-white/10"
-              )}>取消</button>
+              <button
+                onClick={closeCleanPanel}
+                disabled={cleaningGarbage}
+                className={cn(
+                  "motion-control px-4 h-8 rounded-xl text-[11px] font-medium disabled:opacity-50",
+                  isLight ? "bg-black/[0.05] text-[#1a1625]/45 hover:bg-black/[0.08]" : "bg-white/[0.06] text-white/45 hover:bg-white/10"
+                )}
+              >
+                取消
+              </button>
               <button
                 onClick={async () => {
                   setCleaningGarbage(true);
@@ -3123,7 +3366,7 @@ function SillyClientLauncher() {
                       try { await TarvenEnv.deleteGarbageItem({ path: item.path }); } catch {}
                     }
                     setGarbageItems([]);
-                    setShowCleanPanel(false);
+                    closeCleanPanel();
                   } catch (e) { console.error(e); }
                   setCleaningGarbage(false);
                 }}
@@ -3131,7 +3374,10 @@ function SillyClientLauncher() {
                 className={cn(
                   "motion-control px-4 h-8 rounded-xl text-[11px] font-semibold disabled:opacity-50",
                   isLight ? "bg-[#1a1625] text-[#f5f3ef] hover:bg-[#1a1625]/90" : "bg-white/90 text-[#1a1625] hover:bg-white"
-                )}>全部清理</button>
+                )}
+              >
+                全部清理
+              </button>
             </div>
           </div>
         </>
@@ -3139,26 +3385,12 @@ function SillyClientLauncher() {
 
       {/* 新建实例面板 */}
       {(showNewInstancePanel || isNewInstancePanelClosing) && (
-        <>
-          <div className={cn(
-            "fixed inset-0 z-[60] bg-black/15 backdrop-blur-[2px] overlay-backdrop",
-            isNewInstancePanelClosing && "overlay-backdrop-exit"
-          )} onClick={() => {
-            if (!isCreatingInstance) {
-              closeVersionDropdown();
-              setIsNewInstancePanelClosing(true);
-              setTimeout(() => {
-                setShowNewInstancePanel(false);
-                setIsNewInstancePanelClosing(false);
-              }, PANEL_EXIT_MS);
-            }
-          }} />
-          <div className={cn(
-            "ios-task-surface fixed z-[62] rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
-            glassBg,
-            isLight && "is-light",
-            isNewInstancePanelClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
-          )} style={{
+        <div className={cn(
+          "ios-task-surface fixed z-[62] rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
+          glassBg,
+          isLight && "is-light",
+          isNewInstancePanelClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
+        )} style={{
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
@@ -3184,8 +3416,8 @@ function SillyClientLauncher() {
                   className={cn(
                     "w-full h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                     isLight
-                      ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                      : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                      ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                      : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                   )}
                 />
               </NewInstanceField>
@@ -3195,20 +3427,20 @@ function SillyClientLauncher() {
                 <div className={cn("text-xs font-medium mb-2", isLight ? "text-[#1a1625]/70" : "text-white/70")}>实例模式</div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setNewInstanceMode("local")}
+                    onClick={() => switchInstanceMode("local")}
                     aria-pressed={newInstanceMode === "local"}
                     className={cn(
-                      "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border",
+                      "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                       newInstanceMode === "local"
                         ? isLight ? "bg-[#1a1625]/8 border-[#1a1625]/15 text-[#1a1625]" : "bg-white/10 border-white/15 text-white"
                         : isLight ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:border-black/12 hover:text-[#1a1625]/55" : "bg-transparent border-white/[0.06] text-white/35 hover:border-white/12 hover:text-white/55"
                     )}
                   >本地实例</button>
                   <button
-                    onClick={() => setNewInstanceMode("remote")}
+                    onClick={() => switchInstanceMode("remote")}
                     aria-pressed={newInstanceMode === "remote"}
                     className={cn(
-                      "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border",
+                      "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                       newInstanceMode === "remote"
                         ? isLight ? "bg-[#1a1625]/8 border-[#1a1625]/15 text-[#1a1625]" : "bg-white/10 border-white/15 text-white"
                         : isLight ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:border-black/12 hover:text-[#1a1625]/55" : "bg-transparent border-white/[0.06] text-white/35 hover:border-white/12 hover:text-white/55"
@@ -3217,9 +3449,22 @@ function SillyClientLauncher() {
                 </div>
               </div>
 
-              {/* 本地模式配置 */}
-              {newInstanceMode === "local" && (
-                <div key="local" className="motion-section-enter space-y-5">
+              {/* 模式配置切换容器（平滑高度过渡 + 白天黑夜级优雅溶变） */}
+              <div
+                className="relative transition-[height] duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+                style={{ height: wizardHeight ? `${wizardHeight}px` : undefined }}
+              >
+                {/* 本地模式配置 */}
+                <div
+                  ref={wizardLocalRef}
+                  className={cn(
+                    "w-full space-y-5 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                    newInstanceMode === "local"
+                      ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                      : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                  )}
+                  aria-hidden={newInstanceMode !== "local"}
+                >
                   <NewInstanceField label="安装目录" isLight={isLight}>
                     <div className="flex items-center gap-2 w-full">
                       <input
@@ -3230,8 +3475,8 @@ function SillyClientLauncher() {
                         className={cn(
                           "flex-1 h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                           isLight
-                            ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                            : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                            ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                            : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                         )}
                       />
                       <button onClick={async () => {
@@ -3335,11 +3580,18 @@ function SillyClientLauncher() {
                     </div>
                   </section>
                 </div>
-              )}
 
-              {/* 远程模式配置 */}
-              {newInstanceMode === "remote" && (
-                <div key="remote" className="motion-section-enter space-y-5">
+                {/* 远程模式配置 */}
+                <div
+                  ref={wizardRemoteRef}
+                  className={cn(
+                    "w-full space-y-5 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                    newInstanceMode === "remote"
+                      ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                      : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                  )}
+                  aria-hidden={newInstanceMode !== "remote"}
+                >
                   <NewInstanceField label="连接地址" isLight={isLight}>
                     <input
                       type="url"
@@ -3351,8 +3603,8 @@ function SillyClientLauncher() {
                       className={cn(
                         "w-full h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                         isLight
-                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                       )}
                     />
                   </NewInstanceField>
@@ -3385,8 +3637,8 @@ function SillyClientLauncher() {
                           className={cn(
                             "h-9 min-w-0 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                             isLight
-                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                           )}
                         />
                         <input
@@ -3399,8 +3651,8 @@ function SillyClientLauncher() {
                           className={cn(
                             "h-9 min-w-0 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                             isLight
-                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                           )}
                         />
                       </div>
@@ -3412,7 +3664,7 @@ function SillyClientLauncher() {
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* 底部按钮 */}
@@ -3428,16 +3680,18 @@ function SillyClientLauncher() {
               )}
               <div className="flex items-center justify-end gap-2">
               <button disabled={isCreatingInstance} onClick={() => { closeVersionDropdown(); setIsNewInstancePanelClosing(true); setTimeout(() => { setShowNewInstancePanel(false); setIsNewInstancePanelClosing(false); }, PANEL_EXIT_MS); }} className={cn(
-                "motion-control px-4 h-8 rounded-xl text-[11px] font-medium",
+                "motion-control px-4 h-8 rounded-full text-xs font-medium transition-all border",
                 "disabled:pointer-events-none disabled:opacity-40",
-                isLight ? "bg-black/[0.05] text-[#1a1625]/45 hover:bg-black/[0.08]" : "bg-white/[0.06] text-white/45 hover:bg-white/10"
+                isLight ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]" : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
               )}>取消</button>
               <button
                 onClick={createInstance}
                 disabled={isCreatingInstance}
                 className={cn(
-                  "motion-control px-4 h-8 rounded-xl text-[11px] font-semibold disabled:pointer-events-none disabled:opacity-60 flex items-center gap-1.5",
-                  isLight ? "bg-[#1a1625] text-[#f5f3ef] hover:bg-[#1a1625]/90" : "bg-white/90 text-[#1a1625] hover:bg-white"
+                  "motion-control px-5 h-8 rounded-full text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 flex items-center gap-1.5 transition-all border",
+                  isLight
+                    ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625] hover:bg-black/[0.14] active:bg-black/[0.18]"
+                    : "bg-white/20 border-white/15 text-white hover:bg-white/30 active:bg-white/35"
                 )}
               >
                 {isCreatingInstance && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
@@ -3446,8 +3700,7 @@ function SillyClientLauncher() {
               </div>
             </div>
           </div>
-        </>
-      )}
+        )}
 
       {/* 版本下拉菜单 — 渲染在面板外部避免 transform 裁剪 */}
       {(verDropdownOpen || isVerDropdownClosing) && (
@@ -3668,7 +3921,7 @@ function SillyClientLauncher() {
                     <input type="text" inputMode="numeric" pattern="[0-9]*" value={draftPort} onChange={(e) => {
                       setDraftPort(parseInt(e.target.value) || 8000);
                     }} className={cn("w-20 h-7 px-2 rounded-lg text-xs text-center border focus:outline-none focus:ring-0 transition-colors",
-                      isLight ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] focus:border-[#1a1625]/20" : "bg-white/[0.04] border-white/[0.08] text-white focus:border-white/20"
+                      isLight ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625]" : "bg-white/[0.04] border-white/[0.08] text-white"
                     )} />
                   </ManageItem>
                   <ManageItem label="允许外部监听" desc="Android 宿主默认建议关闭，只在明确需要局域网访问时开启" isLight={isLight}>
@@ -3688,7 +3941,7 @@ function SillyClientLauncher() {
                       const heartbeat = parseInt(e.target.value) || 0;
                       setDraftConfig(prev => ({ ...prev, heartbeat }));
                     }} className={cn("w-20 h-7 px-2 rounded-lg text-xs text-center border focus:outline-none focus:ring-0 transition-colors",
-                      isLight ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] focus:border-[#1a1625]/20" : "bg-white/[0.04] border-white/[0.08] text-white focus:border-white/20"
+                      isLight ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625]" : "bg-white/[0.04] border-white/[0.08] text-white"
                     )} />
                   </ManageItem>
                   <ManageItem label="启用 HTTP Keep-Alive" desc="网络波动大时可临时关闭" isLight={isLight}>
@@ -3718,8 +3971,8 @@ function SillyClientLauncher() {
                           className={cn(
                             "w-full h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                             isLight
-                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                           )}
                         />
                         <input
@@ -3732,8 +3985,8 @@ function SillyClientLauncher() {
                           className={cn(
                             "w-full h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
                             isLight
-                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-[#1a1625]/20"
-                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                           )}
                         />
                         <p className={cn("text-[10px] leading-relaxed", isLight ? "text-[#1a1625]/35" : "text-white/35")}>
@@ -3856,7 +4109,7 @@ function SillyClientLauncher() {
                         <Eraser className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <div className="min-h-0 flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed scrollbar-subtle">
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4 font-sans text-[11.5px] leading-relaxed scrollbar-subtle">
                       {terminalLogs.map((log, index) => (
                         <div key={index} className={cn("mb-0.5 whitespace-pre-wrap break-all", log.level === "error" ? "text-red-300/85" : log.level === "success" ? "text-white/85" : "text-white/60")}>
                           {log.msg}
@@ -3998,6 +4251,75 @@ function SillyClientLauncher() {
           onComplete={dismissOnboarding}
           onSkip={dismissOnboarding}
         />
+      )}
+
+      {/* 底部悬浮调试板 (仅在开发或Web预览环境可见，固定于右下角，不遮挡任何主视觉) */}
+      {(import.meta.env.DEV || isWeb) && (
+        <div className="fixed bottom-4 right-4 z-[99] flex flex-wrap items-center gap-1.5 p-1.5 rounded-full border backdrop-blur-[32px] saturate-180 shadow-[0_8px_32px_rgba(0,0,0,0.4)] select-none text-[11px] transition-all bg-[#14101e]/85 border-white/10">
+          <div className="flex items-center gap-1.5 pl-2.5 pr-1 text-white/50 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+            <span>调试板</span>
+          </div>
+          <button
+            onClick={() => {
+              setShowLaunchPanel(false);
+              setIsLaunchPanelClosing(false);
+              setShowNewInstancePanel(true);
+              setIsNewInstancePanelClosing(false);
+            }}
+            className="motion-control h-7 px-3 rounded-full border border-white/10 bg-white/10 text-white/90 hover:bg-white/20 active:bg-white/25 font-medium transition-all"
+          >
+            打开向导
+          </button>
+          <button
+            onClick={() => {
+              setShowNewInstancePanel(false);
+              setIsNewInstancePanelClosing(false);
+              setOperationPurpose("create");
+              setLastLaunchParams({ id: "demo-test", name: "体验新实例", type: "local" });
+              setShowLaunchPanel(true);
+              setIsLaunchPanelClosing(false);
+              setLaunchError(null);
+              setLaunchProgress({ pct: 45, text: "正在下载运行环境..." });
+              setLaunchLogs([
+                { msg: "开始创建 体验新实例", level: "info" },
+                { msg: "解压运行时与核心组件...", level: "info" },
+              ]);
+            }}
+            className="motion-control h-7 px-3 rounded-full border border-white/10 bg-white/10 text-white/90 hover:bg-white/20 active:bg-white/25 font-medium transition-all"
+          >
+            模拟过渡
+          </button>
+          <button
+            onClick={() => {
+              setShowNewInstancePanel(false);
+              setIsNewInstancePanelClosing(false);
+              setOperationPurpose("create");
+              setLastLaunchParams({ id: "demo-test", name: "体验新实例", type: "local" });
+              setShowLaunchPanel(true);
+              setIsLaunchPanelClosing(false);
+              setLaunchError(null);
+              setLaunchProgress({ pct: 100, text: "创建完成，可以运行" });
+              setLaunchLogs([
+                { msg: "服务可访问，实例创建完成", level: "success" },
+              ]);
+            }}
+            className="motion-control h-7 px-3 rounded-full border border-white/20 bg-white/20 text-white hover:bg-white/30 active:bg-white/35 font-semibold transition-all"
+          >
+            模拟完成态
+          </button>
+          <button
+            onClick={() => {
+              dismissLaunchPanel();
+              setShowNewInstancePanel(false);
+              setIsNewInstancePanelClosing(false);
+            }}
+            title="关闭弹层"
+            className="motion-control w-7 h-7 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
       )}
 
     </div>

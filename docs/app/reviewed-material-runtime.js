@@ -987,10 +987,18 @@
             background: rgb(var(--preview-success-rgb) / 0.22) !important;
           }
 
+          input,
+          input:focus,
           input:focus-visible,
-          textarea:focus-visible {
-            border-color: rgb(var(--preview-success-rgb) / 0.72) !important;
-            box-shadow: 0 0 0 3px rgb(var(--preview-success-rgb) / 0.16) !important;
+          textarea,
+          textarea:focus,
+          textarea:focus-visible,
+          select,
+          select:focus,
+          select:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
           }
 
           .motion-instance-card [class~="bg-emerald-400/70"] {
