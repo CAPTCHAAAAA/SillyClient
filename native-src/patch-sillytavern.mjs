@@ -207,110 +207,94 @@ async function getTransformers() {
   }
 }
 
-// 7. 补丁 SillyTavern 官方源码 src/middleware/webpack-serve.js 使其优先使用预编译的 lib.js，跳过移动端运行时的 Webpack 编译
+// 7. 补丁 SillyTavern 官方源码 src/middleware/webpack-serve.js 确保使用 prebuilt-webpack，杜绝运行时导入 webpack
 const webpackServePath = path.join(targetDir, 'src', 'middleware', 'webpack-serve.js');
 if (fs.existsSync(webpackServePath)) {
   let content = fs.readFileSync(webpackServePath, 'utf8');
-  if (!content.includes('findPrecompiledLib')) {
-    const safeWebpackServe = `import fs from 'node:fs';
+  if (content.includes('ios-frontend') || content.includes('prebuilt-webpack')) {
+    console.log(`[patch-sillytavern] [7/8] Notice: webpack-serve.js is already using prebuilt-webpack: ${webpackServePath}`);
+  } else {
+    const prebuiltCandidates = [
+      path.join(path.dirname(fileURLToPath(import.meta.url)), 'prebuilt-webpack.mjs'),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'native-src', 'prebuilt-webpack.mjs'),
+    ];
+    let installed = false;
+    for (const cand of prebuiltCandidates) {
+      if (fs.existsSync(cand)) {
+        fs.copyFileSync(cand, webpackServePath);
+        console.log(`[patch-sillytavern] [7/8] Successfully installed prebuilt-webpack from ${cand} into: ${webpackServePath}`);
+        installed = true;
+        break;
+      }
+    }
+    if (!installed) {
+      const safeWebpackServe = `import fs from 'node:fs';
 import path from 'node:path';
-import webpack from 'webpack';
-import getPublicLibConfig from '../../webpack.config.js';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+
+// Installed as SillyTavern/src/middleware/webpack-serve.js after the host build.
+const serverRoot = fileURLToPath(new URL('../../', import.meta.url));
+const assetRoot = path.join(serverRoot, 'dist', 'ios-frontend');
 
 export default function getWebpackServeMiddleware() {
-    function findPrecompiledLib() {
-        const candidates = [
-            path.resolve(process.cwd(), 'dist', '_webpack'),
-            path.resolve(process.cwd(), 'data', '_webpack'),
-            path.resolve(process.cwd(), 'public')
-        ];
-        for (const cand of candidates) {
-            if (fs.existsSync(cand)) {
-                const search = (d) => {
-                    for (const dirent of fs.readdirSync(d, { withFileTypes: true })) {
-                        const full = path.join(d, dirent.name);
-                        if (dirent.isDirectory()) {
-                            const res = search(full);
-                            if (res) return res;
-                        } else if (dirent.name === 'lib.js') {
-                            return full;
-                        }
-                    }
-                    return null;
-                };
-                const found = search(cand);
-                if (found) return found;
-            }
+    let assets = null;
+
+    function middleware(req, res, next) {
+        const name = req.path?.slice(1);
+        if (assets?.has(name) && (req.method === 'GET' || req.method === 'HEAD')) {
+            return res.sendFile(name, { root: assetRoot, dotfiles: 'deny' });
         }
-        return null;
-    }
-
-    function devMiddleware(req, res, next) {
-        const publicLibConfig = getPublicLibConfig();
-        const outputPath = publicLibConfig.output?.path;
-        const outputFile = publicLibConfig.output?.filename || 'lib.js';
-        const parsedPath = path.parse(req.path);
-
-        if (req.method === 'GET' && parsedPath.dir === '/' && parsedPath.base === outputFile) {
-            if (outputPath && fs.existsSync(path.join(outputPath, outputFile))) {
-                return res.sendFile(outputFile, { root: outputPath });
-            }
-            const precompiled = findPrecompiledLib();
-            if (precompiled) {
-                return res.sendFile(path.basename(precompiled), { root: path.dirname(precompiled) });
-            }
-        }
-
         next();
     }
 
-    devMiddleware.runWebpackCompiler = ({ forceDist = false, pruneCache = false } = {}) => {
-        const publicLibConfig = getPublicLibConfig({ forceDist, pruneCache });
-        const outputPath = publicLibConfig.output?.path;
-        const outputFile = publicLibConfig.output?.filename || 'lib.js';
-        const targetFile = outputPath ? path.join(outputPath, outputFile) : null;
-
-        if (targetFile && fs.existsSync(targetFile)) {
-            console.log(\`[webpack-serve] Pre-compiled \${outputFile} already present: \${targetFile}\`);
-            return Promise.resolve();
+    middleware.runWebpackCompiler = async () => {
+        assets = null;
+        const manifestFile = path.join(assetRoot, 'manifest.json');
+        if (!fs.existsSync(manifestFile)) {
+            console.log('[ios-frontend] Notice: manifest.json not found, frontend prebuild bypassed.');
+            return;
+        }
+        const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+        const pkg = JSON.parse(fs.readFileSync(path.join(serverRoot, 'package.json'), 'utf8'));
+        if (manifest.format !== 1 || manifest.version !== pkg.version || !Array.isArray(manifest.assets)) {
+            throw new Error('Invalid or incompatible iOS frontend manifest. Rebuild the application.');
         }
 
-        const precompiled = findPrecompiledLib();
-        if (precompiled && targetFile) {
-            try {
-                fs.mkdirSync(outputPath, { recursive: true });
-                fs.copyFileSync(precompiled, targetFile);
-                console.log(\`[webpack-serve] Successfully deployed pre-compiled \${outputFile} from \${precompiled} to \${targetFile}\`);
-                return Promise.resolve();
-            } catch (err) {
-                console.warn('[webpack-serve] Could not copy pre-compiled lib:', err.message);
+        const verified = new Set();
+        for (const asset of manifest.assets) {
+            const name = asset.name;
+            if (typeof name !== 'string' || !name || name.includes('\\\\') || name.includes(':')
+                || name.split('/').some(part => !part || part === '.' || part === '..' || part.startsWith('.'))
+                || verified.has(name) || !/^[a-f0-9]{64}$/.test(asset.sha256)) {
+                throw new Error('Invalid asset entry in the iOS frontend manifest.');
             }
+            const file = path.join(assetRoot, name);
+            const realRoot = fs.realpathSync(assetRoot);
+            const relative = path.relative(realRoot, fs.realpathSync(file));
+            if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.statSync(file).isFile()) {
+                throw new Error(\`Invalid iOS frontend asset path: \${name}\`);
+            }
+            const content = fs.readFileSync(file);
+            if (content.length !== asset.bytes
+                || createHash('sha256').update(content).digest('hex') !== asset.sha256) {
+                throw new Error(\`iOS frontend asset verification failed: \${name}\`);
+            }
+            verified.add(name);
         }
-
-        console.log();
-        console.log('Compiling frontend libraries via Webpack...');
-
-        const compiler = webpack(publicLibConfig);
-
-        return new Promise((resolve) => {
-            compiler.run((_error, stats) => {
-                const output = stats?.toString(publicLibConfig.stats);
-                if (output) {
-                    console.log(output);
-                    console.log();
-                }
-                compiler.close(() => {
-                    resolve();
-                });
-            });
-        });
+        if (!verified.has('lib.js')) {
+            throw new Error('The prebuilt iOS frontend is missing lib.js.');
+        }
+        assets = verified;
+        console.log(\`[ios-frontend] Verified \${assets.size} prebuilt assets; runtime compilation disabled.\`);
     };
 
-    return devMiddleware;
+    return middleware;
 }
 `;
-    fs.writeFileSync(webpackServePath, safeWebpackServe, 'utf8');
-    console.log(`[patch-sillytavern] [7/8] Successfully made webpack-serve bypass runtime compilation: ${webpackServePath}`);
+      fs.writeFileSync(webpackServePath, safeWebpackServe, 'utf8');
+      console.log(`[patch-sillytavern] [7/8] Successfully installed embedded prebuilt-webpack into: ${webpackServePath}`);
+    }
   }
 }
 
