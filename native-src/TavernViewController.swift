@@ -693,6 +693,19 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         presenter.present(alert, animated: true)
     }
 
+    // MARK: - WKUIDelegate Media Capture Permission (iOS 15+)
+    @available(iOS 15.0, *)
+    public func webView(
+        _ webView: WKWebView,
+        requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        type: WKMediaCaptureType,
+        decisionHandler: @escaping (WKPermissionDecision) -> Void
+    ) {
+        NSLog("[TavernViewController] requestMediaCapturePermissionFor type: \(type.rawValue), origin: \(origin.host)")
+        decisionHandler(.grant)
+    }
+
     // MARK: - UIDocumentPickerDelegate & Testing
     public func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         NSLog("[TavernViewController] DocumentPicker didPickDocumentsAt: %@", urls)

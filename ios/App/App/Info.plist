@@ -76,5 +76,9 @@
 	<array>
 		<string>_http._tcp</string>
 	</array>
+
+	<!-- 麦克风访问权限声明 (支持酒馆语音输入与录音对讲功能) -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SillyClient 需要使用麦克风以支持酒馆语音输入与录音对讲功能。</string>
 </dict>
 </plist>

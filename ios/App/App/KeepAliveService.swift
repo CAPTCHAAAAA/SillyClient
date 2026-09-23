@@ -23,7 +23,7 @@ public class KeepAliveService {
         
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setCategory(.playAndRecord, mode: .default, options: [.mixWithOthers, .defaultToSpeaker, .allowBluetooth])
             try session.setActive(true)
             
             // 动态生成一段极短的静音 WAV 数据 (44.1kHz, 16bit, 0.5s 单声道 PCM)

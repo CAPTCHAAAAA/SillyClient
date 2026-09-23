@@ -372,3 +372,21 @@ test('TavernViewController and AppDelegate define prefersHomeIndicatorAutoHidden
     // AppDelegate SillyBridgeViewController must forward prefersHomeIndicatorAutoHidden
     assert.ok(appDelegateSwift.includes('override var prefersHomeIndicatorAutoHidden: Bool'), 'AppDelegate must forward prefersHomeIndicatorAutoHidden');
 });
+
+test('iOS Info.plist declares NSMicrophoneUsageDescription and TavernViewController implements requestMediaCapturePermissionFor', () => {
+    const infoPlist = fs.readFileSync(path.join(root, 'native-src', 'Info.plist'), 'utf8');
+    const tavernVCSwift = fs.readFileSync(path.join(root, 'native-src', 'TavernViewController.swift'), 'utf8');
+    const keepAliveSwift = fs.readFileSync(path.join(root, 'native-src', 'KeepAliveService.swift'), 'utf8');
+
+    // 1. Info.plist must declare microphone usage description
+    assert.ok(infoPlist.includes('NSMicrophoneUsageDescription'), 'Info.plist must declare NSMicrophoneUsageDescription');
+
+    // 2. TavernViewController must implement requestMediaCapturePermissionFor
+    assert.ok(tavernVCSwift.includes('requestMediaCapturePermissionFor'), 'TavernViewController must implement requestMediaCapturePermissionFor');
+    assert.ok(tavernVCSwift.includes('decisionHandler(.grant)'), 'TavernViewController must grant media capture permission');
+
+    // 3. KeepAliveService must support .playAndRecord with speaker and bluetooth options
+    assert.ok(keepAliveSwift.includes('.playAndRecord'), 'KeepAliveService must use .playAndRecord category');
+    assert.ok(keepAliveSwift.includes('.defaultToSpeaker'), 'KeepAliveService must enable .defaultToSpeaker option');
+    assert.ok(keepAliveSwift.includes('.allowBluetooth'), 'KeepAliveService must enable .allowBluetooth option');
+});
