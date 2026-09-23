@@ -329,20 +329,18 @@ test('multi-instance ID normalization sanitizes characters safely', () => {
 test('Home Indicator avoidance and keyboard avoidance layout bounds match hardware specs', () => {
     const screenHeight = 852.0; // iPhone 16 Pro height
     const fixedStatusBarHeight = 54.0;
-    const fixedBottomSafeInset = 34.0;
     const currentKeyboardHeight = 336.0;
 
-    // 1. Full screen immersive layout with Home Indicator bottom safe area avoidance:
-    const normalAvoidanceHeight = Math.max(0, screenHeight - fixedStatusBarHeight - fixedBottomSafeInset);
-    assert.equal(normalAvoidanceHeight, 764.0);
+    // 1. Full-bleed immersive layout (reaches physical bottom when keyboard is 0):
+    const normalFullBleedHeight = Math.max(0, screenHeight - fixedStatusBarHeight - 0);
+    assert.equal(normalFullBleedHeight, 798.0);
 
     // 2. Keyboard presented layout (bottomInset transitions to currentKeyboardHeight):
-    const bottomInsetWithKeyboard = currentKeyboardHeight > 0 ? currentKeyboardHeight : fixedBottomSafeInset;
-    const keyboardLayoutHeight = Math.max(0, screenHeight - fixedStatusBarHeight - bottomInsetWithKeyboard);
+    const keyboardLayoutHeight = Math.max(0, screenHeight - fixedStatusBarHeight - currentKeyboardHeight);
     assert.equal(keyboardLayoutHeight, 462.0);
 
     // 3. Difference between keyboard up and keyboard down:
-    assert.equal(normalAvoidanceHeight - keyboardLayoutHeight, currentKeyboardHeight - fixedBottomSafeInset);
+    assert.equal(normalFullBleedHeight - keyboardLayoutHeight, currentKeyboardHeight);
 });
 
 test('NodeRunner and ios-loader expose and respond to garbage collection signal', () => {
@@ -366,9 +364,10 @@ test('TavernViewController and AppDelegate define prefersHomeIndicatorAutoHidden
     assert.ok(tavernVCSwift.includes('override var prefersHomeIndicatorAutoHidden: Bool'), 'TavernViewController must override prefersHomeIndicatorAutoHidden');
     assert.ok(tavernVCSwift.includes('setNeedsUpdateOfHomeIndicatorAutoHidden()'), 'TavernViewController must trigger auto-hide update');
 
-    // TavernViewController must define bottom safe area tracking and bottomScrimBar
+    // TavernViewController must define bottom safe area tracking and injected safe area script
     assert.ok(tavernVCSwift.includes('fixedBottomSafeInset'), 'TavernViewController must define fixedBottomSafeInset');
     assert.ok(tavernVCSwift.includes('bottomScrimBar'), 'TavernViewController must define bottomScrimBar');
+    assert.ok(tavernVCSwift.includes('sillyclient-ios-bottom-safe-area'), 'TavernViewController must inject bottom safe area style');
 
     // AppDelegate SillyBridgeViewController must forward prefersHomeIndicatorAutoHidden
     assert.ok(appDelegateSwift.includes('override var prefersHomeIndicatorAutoHidden: Bool'), 'AppDelegate must forward prefersHomeIndicatorAutoHidden');

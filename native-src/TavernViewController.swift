@@ -113,6 +113,22 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         config.allowsInlineMediaPlayback = true
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
 
+        // 注入 iOS 底部安全区微调样式，使 #send_form 底部自然留出 12pt 缓冲空间，背景 100% 满版贴底延展
+        let safeAreaCss = """
+        (function() {
+            var css = '#send_form { padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important; box-sizing: border-box !important; }';
+            var head = document.head || document.getElementsByTagName('head')[0];
+            if (head) {
+                var style = document.createElement('style');
+                style.id = 'sillyclient-ios-bottom-safe-area';
+                style.textContent = css;
+                head.appendChild(style);
+            }
+        })();
+        """
+        let userScript = WKUserScript(source: safeAreaCss, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        config.userContentController.addUserScript(userScript)
+
         let wv = WKWebView(frame: view.bounds, configuration: config)
         wv.navigationDelegate = self
         wv.uiDelegate = self
@@ -155,7 +171,7 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
     }
 
     public func updateTavernWebViewLayout() {
-        let bottomInset = currentKeyboardHeight > 0 ? currentKeyboardHeight : fixedBottomSafeInset
+        let bottomInset = currentKeyboardHeight
         let height = max(0, view.bounds.height - fixedStatusBarHeight - bottomInset)
         tavernWebView?.frame = CGRect(
             x: 0,
@@ -164,15 +180,10 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
             height: height
         )
 
-        // 底部变色龙同色安全区衬垫：软键盘弹起时隐藏，键盘收起且在沉浸态时显示
-        bottomScrimBar.frame = CGRect(
-            x: 0,
-            y: view.bounds.height - fixedBottomSafeInset,
-            width: view.bounds.width,
-            height: fixedBottomSafeInset
-        )
-        bottomScrimBar.alpha = (isTavernActive && currentKeyboardHeight == 0) ? 1.0 : 0.0
-        bottomScrimBar.isHidden = !isTavernActive || (currentKeyboardHeight > 0)
+        // 底部通底设计：底边直通屏幕物理底端，废弃独立底边色块，防止接缝与浮空割裂
+        bottomScrimBar.frame = .zero
+        bottomScrimBar.alpha = 0.0
+        bottomScrimBar.isHidden = true
     }
 
     public override func viewDidLayoutSubviews() {
@@ -201,15 +212,11 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         // 2. 原生变色龙顶条带排布于屏幕顶端 [0, 0, width, fixedStatusBarHeight]
         topScrimBar.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: fixedStatusBarHeight)
 
-        // 底部变色龙同色衬垫条排布于屏幕底端 [0, height - fixedBottomSafeInset, width, fixedBottomSafeInset]
-        bottomScrimBar.frame = CGRect(
-            x: 0,
-            y: view.bounds.height - fixedBottomSafeInset,
-            width: view.bounds.width,
-            height: fixedBottomSafeInset
-        )
+        // 底部通底设计：废弃底边硬切原生色块，保持 zero 与隐藏
+        bottomScrimBar.frame = .zero
+        bottomScrimBar.isHidden = true
 
-        // 3. 酒馆 WebView 下移 fixedStatusBarHeight 并自动避让底部小白条与输入法软键盘
+        // 3. 酒馆 WebView 下移 fixedStatusBarHeight，底边直通屏幕物理边缘，输入法软键盘弹出时平滑避让
         updateTavernWebViewLayout()
 
         // 4. 布局流光指引：通过硬件雷达计算在灵动岛左侧安全翼区居中
@@ -259,7 +266,7 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
 
         wv.isHidden = false
         topScrimBar.isHidden = false
-        bottomScrimBar.isHidden = false
+        bottomScrimBar.isHidden = true
 
         view.setNeedsLayout()
         view.layoutIfNeeded()
@@ -270,7 +277,7 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
             self.setNeedsUpdateOfHomeIndicatorAutoHidden()
             wv.alpha = 1.0
             self.topScrimBar.alpha = 1.0
-            self.bottomScrimBar.alpha = 1.0
+            self.bottomScrimBar.alpha = 0.0
             self.consoleWebView?.alpha = 0.0
         }) { _ in
             self.consoleWebView?.isHidden = true
@@ -582,6 +589,19 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
             let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
             let loadedFile = docsUrl.appendingPathComponent("tavern-rendered.txt")
             try? "loaded".write(to: loadedFile, atomically: true, encoding: .utf8)
+
+            // 动态兜底注入底部安全区样式，确保换页或异步加载后 #send_form 依旧具备 12pt 内边距
+            let injectBottomPadJs = """
+            (function() {
+                if (!document.getElementById('sillyclient-ios-bottom-safe-area')) {
+                    var style = document.createElement('style');
+                    style.id = 'sillyclient-ios-bottom-safe-area';
+                    style.textContent = '#send_form { padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important; box-sizing: border-box !important; }';
+                    (document.head || document.documentElement).appendChild(style);
+                }
+            })();
+            """
+            webView.evaluateJavaScript(injectBottomPadJs, completionHandler: nil)
 
             // 页面 DOM 加载完毕，立即执行变色龙零色差取色
             self.chameleonEngine?.sample { [weak self] color, isDark in
