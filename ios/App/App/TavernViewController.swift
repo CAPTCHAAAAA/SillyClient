@@ -310,6 +310,13 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
             let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
             let loadedFile = docsUrl.appendingPathComponent("tavern-rendered.txt")
             try? "loaded".write(to: loadedFile, atomically: true, encoding: .utf8)
+            
+            // 页面 DOM 加载完毕，立即执行变色龙零色差取色
+            self.chameleonEngine?.sample { [weak self] color, isDark in
+                guard let self = self else { return }
+                self.topScrimBar.setColor(color, animated: false)
+                self.shimmerHint?.updateTone(isDarkScrim: isDark)
+            }
         }
     }
 }

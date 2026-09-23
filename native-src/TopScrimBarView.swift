@@ -3,12 +3,11 @@ import UIKit
 /**
  * 酒馆顶部自适应原生 Scrim 条带 (TopScrimBarView)
  *
- * 100% 镜像 Android 端 com.sillyclient.ui.TopScrimBar：
  * 1. 纯视觉独立顶栏：占据屏幕顶部 [0, 0, width, statusBarHeight]；
- * 2. Scrim 三段垂直渐变：[顶 45% / 中 80% / 底 100% 页面色]；
- *    顶部压暗掩映灵动岛黑区，底部满色 100% 与下方 WebView 顶端首行像素无缝平滑熔接；
- * 3. Gloss 独立白色光泽：顶部 30% 范围，轻触时触发 2400ms 优雅扫光波纹；
- * 4. 色波动画：当酒馆换色时，三段 Stops 自平滑渐变过渡。
+ * 2. 满色无缝熔接：三段 Stops 均采用 100% 页面色，与下方 WebView 顶端首行像素零色差平滑熔接；
+ * 3. 初始基线暗色设为酒馆官方默认底色 rgba(23, 23, 23, 1) (#171717)；
+ * 4. Gloss 独立白色光泽：顶部 30% 范围，轻触时触发 2400ms 优雅扫光波纹；
+ * 5. 色波动画：当酒馆换色时，三段 Stops 自平滑渐变过渡；初次上色无延迟直接呈现。
  */
 public class TopScrimBarView: UIView {
     
@@ -16,8 +15,8 @@ public class TopScrimBarView: UIView {
     private let glossView = UIView()
     private let glossGradientLayer = CAGradientLayer()
     
-    // 默认起始基线暗色 [顶 45%, 中 80%, 底 100%]
-    private var currentTargetColor: UIColor = UIColor(red: 25/255.0, green: 27/255.0, blue: 33/255.0, alpha: 1.0)
+    // 默认酒馆官方暗色基线 rgba(23, 23, 23, 1) (#171717)
+    private var currentTargetColor: UIColor = UIColor(red: 23/255.0, green: 23/255.0, blue: 23/255.0, alpha: 1.0)
     
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -33,7 +32,7 @@ public class TopScrimBarView: UIView {
         isUserInteractionEnabled = true
         backgroundColor = .clear
         
-        // 1. 三段垂直渐变层
+        // 1. 三段垂直渐变层 (全宽满色)
         scrimGradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
         scrimGradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
         scrimGradientLayer.locations = [0.0, 0.5, 1.0]
@@ -75,21 +74,23 @@ public class TopScrimBarView: UIView {
      * 响应变色龙取色：应用新页面色驱动自下而上色波
      */
     public func setColor(_ color: UIColor, animated: Bool = true) {
+        let isFirstColor = (scrimGradientLayer.colors == nil)
         self.currentTargetColor = color
         let stops = TopColor.scrimStops(for: color)
         let newCGColors = stops.map { $0.cgColor }
         
-        if animated {
+        if animated && !isFirstColor {
             let animation = CABasicAnimation(keyPath: "colors")
             animation.fromValue = scrimGradientLayer.colors
             animation.toValue = newCGColors
-            animation.duration = 1.2
+            animation.duration = 0.8
             animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.0, 0.2, 1.0)
             animation.fillMode = .forwards
             animation.isRemovedOnCompletion = false
             scrimGradientLayer.add(animation, forKey: "colorTransition")
             scrimGradientLayer.colors = newCGColors
         } else {
+            scrimGradientLayer.removeAllAnimations()
             scrimGradientLayer.colors = newCGColors
         }
     }

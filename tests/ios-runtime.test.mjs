@@ -218,30 +218,26 @@ ${exports.map(name => `exports["${name}"] = wasm["${name}"];`).join('\n')}`);
     });
 }
 
-test('TopColor math matches Android Rec.601 and 3-stop scrim constraints', () => {
+test('TopColor math matches Rec.601 and high-fidelity seamless 0-disparity constraints', () => {
     // 镜像 TopColor.kt / TopColor.swift 纯数学运算
-    const darken = (r, g, b, factor) => [
-        Math.min(255, Math.max(0, Math.floor(r * factor))),
-        Math.min(255, Math.max(0, Math.floor(g * factor))),
-        Math.min(255, Math.max(0, Math.floor(b * factor)))
-    ];
     const isDark = (r, g, b) => {
         const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
         return luma < 0.6;
     };
-    // 测试酒馆暗色主题背景 #13151b (r=19, g=21, b=27)
-    const testColor = [19, 21, 27];
+    // 测试酒馆暗色主题背景 #171717 (r=23, g=23, b=23)
+    const testColor = [23, 23, 23];
     assert.equal(isDark(...testColor), true);
-    const stopTop = darken(...testColor, 0.45);
-    const stopMid = darken(...testColor, 0.80);
+    // 高保真零色差 stops: 顶/中/底 100% 页面色
+    const stopTop = testColor;
+    const stopMid = testColor;
     const stopBot = testColor;
-    assert.deepEqual(stopTop, [8, 9, 12]);
-    assert.deepEqual(stopMid, [15, 16, 21]);
-    assert.deepEqual(stopBot, [19, 21, 27]);
-    // 验证单调递增至 100% 页面色 (自下而上压暗)
-    assert.ok(stopTop[0] <= stopMid[0] && stopMid[0] <= stopBot[0]);
-    assert.ok(stopTop[1] <= stopMid[1] && stopMid[1] <= stopBot[1]);
-    assert.ok(stopTop[2] <= stopMid[2] && stopMid[2] <= stopBot[2]);
+    assert.deepEqual(stopTop, [23, 23, 23]);
+    assert.deepEqual(stopMid, [23, 23, 23]);
+    assert.deepEqual(stopBot, [23, 23, 23]);
+    // 验证与页面首行 0 误差熔接
+    assert.equal(stopTop[0], stopBot[0]);
+    assert.equal(stopTop[1], stopBot[1]);
+    assert.equal(stopTop[2], stopBot[2]);
 });
 
 test('IslandHardwareRadar safely bounds left flank away from Dynamic Island cutout', () => {

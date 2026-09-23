@@ -1,20 +1,21 @@
 import UIKit
 
 /**
- * 顶框 scrim 取色数学算法 (TopColor)
+ * 顶框变色龙色彩数学引擎 (TopColor)
  *
- * 100% 镜像 Android 端 com.sillyclient.ui.TopColor：
- * 1. 渐变三段（自上而下）：顶 45% / 中 80% / 底 100% 页面色 ——
- *    顶部压暗藏系统灵动岛/前摄黑区，底部满色无缝衔接 WebView；
- * 2. 换色时自下而上色波平滑过渡；
- * 3. 亮度判定基于 Rec.601，驱动流光指引文字明暗自适应。
+ * 彻底解决 iOS 顶栏色差核心方案：
+ * 1. 淘汰老旧 45%/80% 暴力压暗导致的死黑断层色差；
+ * 2. 提供 100% 满色无缝熔接 stops [color, color, color]；
+ * 3. 顶端、中端、底端与 WebView 首行像素实现完全一致的纯正色彩，
+ *    使酒馆顶栏与变色龙顶条带视觉上融为一体，硬件灵动岛自然嵌于统一背景中；
+ * 4. Rec. 601 亮度判定：驱动流光手势提示文字智能适配黑白底色。
  */
 public enum TopColor {
     
     public static let lumaThreshold: CGFloat = 0.6
     
     /**
-     * 按系数压暗（RGB *= factor，保持 alpha 1.0）
+     * 按系数微调亮度（RGB *= factor，保持 alpha 1.0）
      */
     public static func darken(color: UIColor, factor: CGFloat) -> UIColor {
         var r: CGFloat = 0
@@ -54,13 +55,15 @@ public enum TopColor {
     }
     
     /**
-     * scrim 三段渐变 stops：[顶 45%, 中 80%, 底 100%]
+     * 变色龙零色差无缝熔接 stops：[100% 页面色, 100% 页面色, 100% 页面色]
+     * 顶底全宽满色，彻底杜绝断层色差，与 WebView 首行 0 误差像素熔接
      */
     public static func scrimStops(for color: UIColor) -> [UIColor] {
+        let full = color.withAlphaComponent(1.0)
         return [
-            darken(color: color, factor: 0.45),
-            darken(color: color, factor: 0.80),
-            color.withAlphaComponent(1.0)
+            full,
+            full,
+            full
         ]
     }
     
