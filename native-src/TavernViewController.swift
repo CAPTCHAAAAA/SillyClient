@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import UniformTypeIdentifiers
 
 /**
  * 酒馆主视图控制器 (TavernViewController)
@@ -8,9 +9,10 @@ import WebKit
  * 1. 管理双层 WebView (Capacitor 控制台 vs 全屏 SillyTavern 交互)；
  * 2. 调度 prefersStatusBarHidden 实现进入酒馆时系统状态栏优雅淡出；
  * 3. 挂载变色龙 Scrim 遮罩顶栏与 IslandHardwareRadar 避让雷达；
- * 4. 挂载流光指引 ShimmerHintView 并绑定左右滑动返回手势。
+ * 4. 挂载流光指引 ShimmerHintView 并绑定左右滑动返回手势；
+ * 5. 挂载 WKUIDelegate 实现 Native 对话框映射与原生文件选择器支持。
  */
-public class TavernViewController: UIViewController, WKNavigationDelegate, UIGestureRecognizerDelegate {
+public class TavernViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, UIGestureRecognizerDelegate, UIDocumentPickerDelegate {
 
     public static let shared = TavernViewController()
 
@@ -89,6 +91,7 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
 
         let wv = WKWebView(frame: view.bounds, configuration: config)
         wv.navigationDelegate = self
+        wv.uiDelegate = self
         wv.scrollView.contentInsetAdjustmentBehavior = .never
         wv.isOpaque = true
         wv.backgroundColor = UIColor(red: 19/255.0, green: 21/255.0, blue: 27/255.0, alpha: 1.0)
@@ -304,6 +307,7 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
                 if (tb) tb.style.backgroundColor = targetTheme.blur_tint_color;
             } else {
                 var presets = {
+                    'SC Bordeaux': 'rgba(36, 14, 24, 0.55)',
                     'Celestial Macaron': 'rgba(23, 36, 55, 0.9)',
                     'Cappuccino': 'rgba(34, 30, 32, 0.95)',
                     'Azure': 'rgba(28, 41, 56, 0.61)',
@@ -316,6 +320,14 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
                     if (m) m.setAttribute('content', c);
                     var b = document.getElementById('top-bar');
                     if (b) b.style.backgroundColor = c;
+                    if (name === 'SC Bordeaux') {
+                        var bg = document.getElementById('bg_custom');
+                        if (bg) {
+                            bg.style.backgroundImage = 'url("/backgrounds/sillyclient-bg-8k.jpg")';
+                            bg.style.backgroundSize = 'cover';
+                            bg.style.opacity = '1';
+                        }
+                    }
                 }
             }
             return document.documentElement.style.getPropertyValue('--SmartThemeBlurTintColor') || name;
@@ -422,6 +434,62 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
                 self.topScrimBar.setColor(color, animated: false)
                 self.shimmerHint?.updateTone(isDarkScrim: isDark)
             }
+        }
+    }
+
+    // MARK: - WKUIDelegate (JavaScript 弹窗原生代理，杜绝静默失败与冲突)
+    public func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        NSLog("[TavernViewController] Intercepted JavaScript Alert: %@", message)
+        let alert = UIAlertController(title: "酒馆提示", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { _ in completionHandler() }))
+        let presenter = self.presentedViewController ?? self
+        presenter.present(alert, animated: true)
+    }
+
+    public func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        NSLog("[TavernViewController] Intercepted JavaScript Confirm: %@", message)
+        let alert = UIAlertController(title: "请确认", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { _ in completionHandler(false) }))
+        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { _ in completionHandler(true) }))
+        let presenter = self.presentedViewController ?? self
+        presenter.present(alert, animated: true)
+    }
+
+    public func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        NSLog("[TavernViewController] Intercepted JavaScript Prompt: %@", prompt)
+        let alert = UIAlertController(title: prompt, message: nil, preferredStyle: .alert)
+        alert.addTextField { tf in tf.text = defaultText }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { _ in completionHandler(nil) }))
+        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { [weak alert] _ in
+            completionHandler(alert?.textFields?.first?.text)
+        }))
+        let presenter = self.presentedViewController ?? self
+        presenter.present(alert, animated: true)
+    }
+
+    // MARK: - UIDocumentPickerDelegate & Testing
+    public func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        NSLog("[TavernViewController] DocumentPicker didPickDocumentsAt: %@", urls)
+    }
+
+    public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        NSLog("[TavernViewController] DocumentPicker was cancelled")
+    }
+
+    public func presentDocumentPickerForTesting() {
+        var contentTypes: [UTType] = [.image, .png, .json]
+        if let customZip = UTType(filenameExtension: "zip") {
+            contentTypes.append(customZip)
+        }
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes, asCopy: true)
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+        picker.modalPresentationStyle = .formSheet
+        let presenter = self.presentedViewController ?? self
+        presenter.present(picker, animated: true) {
+            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let marker = docsUrl.appendingPathComponent("native-picker-presented.txt")
+            try? "tavern_picker".write(to: marker, atomically: true, encoding: .utf8)
         }
     }
 }

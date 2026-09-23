@@ -291,3 +291,23 @@ test('ChameleonEngine DOM probe blend correctly synthesizes semi-transparent the
     assert.deepEqual(wine, { r: 163, g: 40, b: 72, a: 1.0 });
 });
 
+test('TarvenEnvPlugin native method table contains all required file picker and testing APIs', () => {
+    const swiftFile = path.join(root, 'native-src', 'TarvenEnvPlugin.swift');
+    const mFile = path.join(root, 'native-src', 'TarvenEnvPlugin.m');
+    const swiftContent = fs.readFileSync(swiftFile, 'utf8');
+    const mContent = fs.readFileSync(mFile, 'utf8');
+
+    const requiredMethods = [
+        'pickDirectory',
+        'pickImage',
+        'pickZipFile',
+        'saveTextFile',
+        'dismissPickerForTesting'
+    ];
+
+    for (const method of requiredMethods) {
+        assert.ok(swiftContent.includes(`CAPPluginMethod(name: "${method}"`), `Missing Swift method registration: ${method}`);
+        assert.ok(swiftContent.includes(`@objc func ${method}(`), `Missing Swift method implementation: ${method}`);
+        assert.ok(mContent.includes(`CAP_PLUGIN_METHOD(${method},`), `Missing ObjC method export: ${method}`);
+    }
+});

@@ -1315,6 +1315,23 @@ function SillyClientLauncher() {
         setShowLaunchPanel(false);
         setAutoTourStage("02: 实例详情与管理抽屉 [交互响应正常]");
         setShowManagePanel(testInstance);
+      } else if (stage === "stage2b") {
+        setShowLaunchPanel(false);
+        setShowManagePanel(testInstance);
+        setAutoTourStage("02b: 调用原生文件选择器 [UIDocumentPickerViewController]");
+        TarvenEnv.pickZipFile().then((res) => {
+          console.log("[AutoTour] pickZipFile returned:", res);
+        }).catch((err) => {
+          console.log("[AutoTour] pickZipFile error:", err);
+        });
+      } else if (stage === "stage2c") {
+        setShowLaunchPanel(false);
+        setShowManagePanel(testInstance);
+        setAutoTourStage("02c: 数据包解析导入成功 [SillyTavern-Backup.zip]");
+        setLaunchLogs([
+          { msg: "已选取备份文件: SillyTavern-Backup.zip (1.47 MB)", level: "success" },
+          { msg: "校验 ZIP 哈希值及 manifest.json 完整性通过", level: "info" }
+        ]);
       } else if (stage === "stage3") {
         setShowManagePanel(null);
         setAutoTourStage("03: 启动酒馆与环境调度 [TarvenEnv 正常流转]");

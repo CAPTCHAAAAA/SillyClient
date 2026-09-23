@@ -76,13 +76,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 }
 
                 DispatchQueue.main.async {
-                    if stage == "stage3" {
+                    if stage == "stage2c" {
+                        let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
+                        if let picker = presenter as? UIDocumentPickerViewController ?? presenter.presentedViewController as? UIDocumentPickerViewController {
+                            picker.dismiss(animated: true, completion: nil)
+                        }
+                    } else if stage == "stage3" {
                         let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
                         let stPath = docsUrl.appendingPathComponent("SillyTavern").path
                         NodeRunner.shared.start(dataPath: stPath, port: 8000)
                     } else if stage == "stage4" {
                         if let realUrl = URL(string: "http://127.0.0.1:8000/") {
                             TavernViewController.shared.enterImmersive(url: realUrl, showGestureHint: true)
+                        }
+                    } else if stage == "stage4b" || stage == "test_dialog" {
+                        let dialogJs = """
+                        setTimeout(function() {
+                            window.confirm("【WebView 兼容性验证】是否导入所选的 SillyTavern 角色预设与配置文件？");
+                        }, 100);
+                        """
+                        TavernViewController.shared.tavernWebView?.evaluateJavaScript(dialogJs, completionHandler: nil)
+                    } else if stage == "dismiss_dialog" {
+                        let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
+                        if let alert = presenter as? UIAlertController ?? presenter.presentedViewController as? UIAlertController {
+                            alert.dismiss(animated: true, completion: nil)
+                        }
+                    } else if stage == "stage4c" || stage == "test_tavern_picker" {
+                        TavernViewController.shared.presentDocumentPickerForTesting()
+                    } else if stage == "dismiss_picker" {
+                        let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
+                        if let picker = presenter as? UIDocumentPickerViewController ?? presenter.presentedViewController as? UIDocumentPickerViewController {
+                            picker.dismiss(animated: true, completion: nil)
                         }
                     } else if stage == "stage5" {
                         TavernViewController.shared.exitImmersive()
@@ -151,13 +175,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
 
         DispatchQueue.main.async {
-            if stage == "stage3" {
+            if stage == "stage2c" {
+                let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
+                if let picker = presenter as? UIDocumentPickerViewController ?? presenter.presentedViewController as? UIDocumentPickerViewController {
+                    picker.dismiss(animated: true, completion: nil)
+                }
+            } else if stage == "stage3" {
                 let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
                 let stPath = docsUrl.appendingPathComponent("SillyTavern").path
                 NodeRunner.shared.start(dataPath: stPath, port: 8000)
             } else if stage == "stage4" {
                 if let realUrl = URL(string: "http://127.0.0.1:8000/") {
                     TavernViewController.shared.enterImmersive(url: realUrl, showGestureHint: true)
+                }
+            } else if stage == "stage4b" || stage == "test_dialog" {
+                let dialogJs = """
+                setTimeout(function() {
+                    window.confirm("【WebView 兼容性验证】是否导入所选的 SillyTavern 角色预设与配置文件？");
+                }, 100);
+                """
+                TavernViewController.shared.tavernWebView?.evaluateJavaScript(dialogJs, completionHandler: nil)
+            } else if stage == "dismiss_dialog" {
+                let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
+                if let alert = presenter as? UIAlertController ?? presenter.presentedViewController as? UIAlertController {
+                    alert.dismiss(animated: true, completion: nil)
+                }
+            } else if stage == "stage4c" || stage == "test_tavern_picker" {
+                TavernViewController.shared.presentDocumentPickerForTesting()
+            } else if stage == "dismiss_picker" {
+                let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
+                if let picker = presenter as? UIDocumentPickerViewController ?? presenter.presentedViewController as? UIDocumentPickerViewController {
+                    picker.dismiss(animated: true, completion: nil)
                 }
             } else if stage == "stage5" {
                 TavernViewController.shared.exitImmersive()

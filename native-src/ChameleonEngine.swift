@@ -74,7 +74,12 @@ public class ChameleonEngine {
         if (topBar) {
             var cs = window.getComputedStyle(topBar);
             var c = parseCssColor(cs.backgroundColor);
-            if (c) return blend(c, bodyBg);
+            if (c) {
+                if (c.a >= 0.90) return c;
+                if (bodyBg && bodyBg.a >= 0.90) return blend(c, bodyBg);
+                // 半透明毛玻璃 (如 SC Bordeaux, a=0.55 带壁纸模糊)：返回 null 交由引擎 B 硬件快照直方图提取真实视窗色
+                return null;
+            }
         }
 
         // 2. 读取酒馆 SmartTheme 动态主色变量 --SmartThemeBlurTintColor
@@ -83,7 +88,11 @@ public class ChameleonEngine {
             var tint = rootStyle.getPropertyValue('--SmartThemeBlurTintColor');
             if (tint) {
                 var tc = parseCssColor(tint.trim());
-                if (tc) return blend(tc, bodyBg);
+                if (tc) {
+                    if (tc.a >= 0.90) return tc;
+                    if (bodyBg && bodyBg.a >= 0.90) return blend(tc, bodyBg);
+                    return null;
+                }
             }
         } catch(e) {}
 

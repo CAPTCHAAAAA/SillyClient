@@ -73,6 +73,32 @@ jobs:
           mkdir -p data/_storage
           mkdir -p data/_errors
           mkdir -p data/default-user
+          echo "=== 预置 SillyClient 官方专属伴侣预设 SC Bordeaux (扁平轻拟物 + TG Glass 液态毛玻璃) ==="
+          mkdir -p data/default-user/themes
+          mkdir -p data/default-user/backgrounds
+          mkdir -p public/themes
+          mkdir -p public/backgrounds
+          cp "../resources/companion-presets/sc-bordeaux/themes/SC Bordeaux.json" "data/default-user/themes/"
+          cp "../resources/companion-presets/sc-bordeaux/themes/SC Bordeaux.json" "public/themes/"
+          cp "../resources/companion-presets/sc-bordeaux/wallpaper/sillyclient-bg-8k.jpg" "data/default-user/backgrounds/"
+          cp "../resources/companion-presets/sc-bordeaux/wallpaper/sillyclient-bg-8k.jpg" "public/backgrounds/"
+          node -e "
+            const fs = require('fs');
+            const settings = {
+              theme: 'SC Bordeaux',
+              themeName: 'SC Bordeaux',
+              background: {
+                name: 'sillyclient-bg-8k.jpg',
+                url: 'url(\"backgrounds/sillyclient-bg-8k.jpg\")',
+                fitting: 'cover',
+                animation: false,
+                sortOrder: 'az'
+              }
+            };
+            fs.writeFileSync('data/default-user/settings.json', JSON.stringify(settings, null, 2));
+            console.log('--- 验证已写入 SC Bordeaux 初始配置到 settings.json ---');
+            console.log(fs.readFileSync('data/default-user/settings.json', 'utf8'));
+          "
           cp ../native-src/ios-loader.mjs ./
           cp ../native-src/patch-sillytavern.mjs ./
           rm -rf .git
@@ -167,7 +193,7 @@ jobs:
           # 挑选具有灵动岛的真机模拟器 (iPhone 15 Pro 或 14 Pro)
           echo "=== 可用 iOS 模拟器列表 ==="
           xcrun simctl list devices available
-          
+
           DEVICE_UUID=$(xcrun simctl list devices available | grep -E "iPhone (15 Pro|14 Pro|16 Pro|15)" | head -n 1 | grep -E -o "[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}")
           if [ -z "$DEVICE_UUID" ]; then
             DEVICE_UUID=$(xcrun simctl list devices available | grep "iPhone" | head -n 1 | grep -E -o "[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}")
