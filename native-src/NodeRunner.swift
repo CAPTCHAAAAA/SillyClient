@@ -65,6 +65,9 @@ public class NodeRunner {
         
         // 3. 预置 config.yaml (禁用浏览器自启与 LAN 暴露)
         ensureServerConfig(serverDir: serverDir)
+        let failureFile = URL(fileURLWithPath: serverDir).deletingLastPathComponent()
+            .appendingPathComponent("server-failed.json")
+        try? fileManager.removeItem(at: failureFile)
         
         // 4. 在独立系统线程中拉起 Node 事件循环 (显式分配 4MB 栈空间，防止 V8 栈溢出)
         let nodeThread = Thread { [weak self] in
@@ -75,7 +78,7 @@ public class NodeRunner {
         nodeThread.start()
         
         // 5. 轮询探测 http://127.0.0.1:port 是否已真正就绪
-        pollUntilReady(port: port, timeout: 90.0) { [weak self] success in
+        pollUntilReady(port: port, timeout: 90.0, failureFile: failureFile) { [weak self] success in
             if success {
                 self?.isNodeRunning = true
                 self?.appendLog("[NodeRunner] SillyTavern 完整服务监听就绪: http://127.0.0.1:\(port)/")
@@ -87,7 +90,7 @@ public class NodeRunner {
                 
                 completion?(true)
             } else {
-                self?.appendLog("[NodeRunner] 严重错误: 等待服务监听超时 (90s)，本地服务未能成功启动")
+                self?.appendLog("[NodeRunner] 本地服务启动失败，请查看上方错误日志")
                 completion?(false)
             }
         }
@@ -328,7 +331,7 @@ public class NodeRunner {
     /**
      * 轮询探测 http://127.0.0.1:port 是否响应
      */
-    private func pollUntilReady(port: Int, timeout: TimeInterval, completion: @escaping (Bool) -> Void) {
+    private func pollUntilReady(port: Int, timeout: TimeInterval, failureFile: URL, completion: @escaping (Bool) -> Void) {
         guard let url = URL(string: "http://127.0.0.1:\(port)/") else {
             completion(false)
             return
@@ -339,9 +342,15 @@ public class NodeRunner {
         request.timeoutInterval = 1.0
         
         func check() {
+            if let data = try? Data(contentsOf: failureFile),
+               let failure = try? JSONSerialization.jsonObject(with: data) as? [String: String] {
+                appendLog("[NodeRunner] Startup failed: \(failure["message"] ?? "Unknown error")")
+                completion(false)
+                return
+            }
             let session = URLSession(configuration: .ephemeral)
             let task = session.dataTask(with: request) { [weak self] _, response, error in
-                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode > 0 {
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                     self?.appendLog("[NodeRunner] 探测成功: HTTP \(httpResponse.statusCode)")
                     completion(true)
                 } else {

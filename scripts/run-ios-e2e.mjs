@@ -3,6 +3,33 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
+let diagnosticContext;
+
+function collectDiagnostics() {
+  if (!diagnosticContext) return;
+  const { deviceUuid, docDir, outDir } = diagnosticContext;
+  for (const relative of ['SillyTavern/data/server.log', 'data/server.log', 'server.log', 'server-failed.json']) {
+    const source = path.join(docDir, relative);
+    try {
+      if (fs.existsSync(source)) {
+        fs.copyFileSync(source, path.join(outDir, relative.replaceAll('/', '-')));
+      }
+    } catch (error) {
+      console.warn(`Could not collect ${relative}:`, error.message);
+    }
+  }
+  try {
+    fs.writeFileSync(path.join(outDir, 'simulator-final.log'), run(
+      `xcrun simctl spawn "${deviceUuid}" log show --predicate 'processImagePath contains "App"' --last 5m`
+    ));
+  } catch (error) {
+    console.warn('Final system log collection failed:', error.message);
+  }
+  try {
+    run(`xcrun simctl terminate "${deviceUuid}" com.sillyclient.ios`);
+  } catch (_) {}
+}
+
 function run(cmd) {
   console.log(`[EXEC] ${cmd}`);
   return execSync(cmd, { encoding: 'utf-8', stdio: ['inherit', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
@@ -18,7 +45,7 @@ async function main() {
 
   if (!deviceUuid) {
     console.error('Error: deviceUuid argument is required');
-    process.exit(1);
+    throw new Error('deviceUuid is required');
   }
 
   console.log('=== SillyClient iOS E2E Automated Test Runner ===');
@@ -63,6 +90,8 @@ async function main() {
   const cmdFile = path.join(docDir, 'e2e-command.txt');
   const readyFile = path.join(docDir, 'server-ready.txt');
   const renderedFile = path.join(docDir, 'tavern-rendered.txt');
+  const failureFile = path.join(docDir, 'server-failed.json');
+  diagnosticContext = { deviceUuid, docDir, outDir };
   if (fs.existsSync(readyFile)) try { fs.unlinkSync(readyFile); } catch (_) {}
   if (fs.existsSync(renderedFile)) try { fs.unlinkSync(renderedFile); } catch (_) {}
   console.log(`App Sandbox Data Container: ${appContainer}`);
@@ -100,6 +129,10 @@ async function main() {
   console.log('Waiting for SillyTavern HTTP server on http://127.0.0.1:8000/ (up to 90s)...');
   let isServerUp = false;
   for (let i = 0; i < 90; i++) {
+    if (fs.existsSync(failureFile)) {
+      const failure = JSON.parse(fs.readFileSync(failureFile, 'utf8'));
+      throw new Error(`SillyTavern startup failed: ${failure.message}`);
+    }
     if (fs.existsSync(readyFile)) {
       console.log(`[E2E] SillyTavern Server Ready marker detected at ${i}s!`);
       isServerUp = true;
@@ -107,7 +140,7 @@ async function main() {
     }
     try {
       const res = await fetch('http://127.0.0.1:8000/', { signal: AbortSignal.timeout(1000) });
-      if (res.status > 0) {
+      if (res.status === 200) {
         console.log(`[E2E] SillyTavern Server Ready via HTTP fetch! Status: ${res.status}`);
         isServerUp = true;
         break;
@@ -129,9 +162,21 @@ async function main() {
         console.error(`=== Sandboxed server.log dump (${lp}) ===\n`, fs.readFileSync(lp, 'utf8'));
       }
     }
-    process.exit(1);
+    throw new Error('SillyTavern did not become ready within 90s.');
   } else {
     console.log('[E2E] SillyTavern HTTP server is fully listening and active!');
+  }
+
+  const library = await fetch('http://127.0.0.1:8000/lib.js', { signal: AbortSignal.timeout(5000) });
+  const libraryBytes = Buffer.from(await library.arrayBuffer());
+  const manifest = JSON.parse(fs.readFileSync(
+    path.join(docDir, 'SillyTavern', 'dist', 'ios-frontend', 'manifest.json'), 'utf8'
+  ));
+  const expectedLibrary = manifest.assets.find(asset => asset.name === 'lib.js');
+  if (library.status !== 200 || !(library.headers.get('content-type') || '').includes('javascript')
+      || !expectedLibrary || libraryBytes.length !== expectedLibrary.bytes
+      || crypto.createHash('sha256').update(libraryBytes).digest('hex') !== expectedLibrary.sha256) {
+    throw new Error('The verified prebuilt SillyTavern frontend library is not being served.');
   }
 
   // 阶段 4: 进入真实酒馆全屏沉浸态与状态栏隐藏
@@ -148,6 +193,7 @@ async function main() {
     }
     await sleep(1000);
   }
+  if (!isRendered) throw new Error('The SillyTavern webview did not report DOM readiness.');
   // 留出 7s 供 DOM、CSS、主题与角色卡渲染完全稳定
   await sleep(7000);
   const shot4 = path.join(outDir, '04-tavern-immersive-statusbar-hidden.png');
@@ -238,7 +284,7 @@ async function main() {
   const hasNotImplemented = logText.toLowerCase().includes('plugin is not implemented');
   if (hasNotImplemented) {
     console.error('FAIL: Detected "plugin is not implemented" error in simulator log!');
-    process.exit(1);
+    throw new Error('The native plugin is not implemented.');
   } else {
     console.log('PASS: Zero "plugin is not implemented" errors detected.');
   }
@@ -344,5 +390,8 @@ async function main() {
 
 main().catch(err => {
   console.error('E2E Test Runner Failed:', err);
-  process.exit(1);
-});
+  const outDir = path.resolve('evidence');
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(path.join(outDir, 'failure.txt'), String(err.stack || err));
+  process.exitCode = 1;
+}).finally(collectDiagnostics);

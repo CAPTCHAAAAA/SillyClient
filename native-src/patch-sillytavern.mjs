@@ -110,7 +110,7 @@ for (const tf of textDecoderTargets) {
   }
 }
 
-// 5. 补丁 tiktoken (在 iOS jitless / 无 WebAssembly 运行时下提供安全 dummy Tokenizer)
+// 5. Keep imports usable without WASM, but never fabricate token IDs or decoded text.
 const tiktokenFiles = [
   path.join(targetDir, 'node_modules', 'tiktoken', 'tiktoken.cjs'),
   path.join(targetDir, 'node_modules', 'tiktoken', 'lite', 'tiktoken.cjs')
@@ -119,20 +119,21 @@ for (const tf of tiktokenFiles) {
   if (fs.existsSync(tf)) {
     let c = fs.readFileSync(tf, 'utf8');
     if (!c.includes('// SillyClient iOS tiktoken fallback')) {
+      const exportNames = tf.includes(`${path.sep}lite${path.sep}`)
+        ? ['Tiktoken']
+        : ['get_encoding', 'encoding_for_model', 'get_encoding_name_for_model', 'Tiktoken'];
+      const exportAssignments = exportNames.map(name => `exports["${name}"] = wasm["${name}"];`).join('\n');
       const origInstantiation = `const wasmModule = new WebAssembly.Module(bytes);
 const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
 wasm.__wbg_set_wasm(wasmInstance.exports);
-exports["get_encoding"] = wasm["get_encoding"];
-exports["encoding_for_model"] = wasm["encoding_for_model"];
-exports["get_encoding_name_for_model"] = wasm["get_encoding_name_for_model"];
-exports["Tiktoken"] = wasm["Tiktoken"];`;
+${exportAssignments}`;
 
       const safeInstantiation = `// SillyClient iOS tiktoken fallback
-const dummyTokenizer = {
-  encode: (text) => new Uint32Array([...text].map((_, i) => i)),
-  decode: (tokens) => '',
-  free: () => {}
-};
+function unavailableTokenizer() {
+  const error = new Error("This tokenizer requires WebAssembly, which is unavailable in the iOS runtime.");
+  error.code = "ERR_IOS_WASM_UNAVAILABLE";
+  throw error;
+}
 
 try {
   if (typeof WebAssembly !== 'undefined' && typeof WebAssembly.Module === 'function' && typeof WebAssembly.Instance === 'function') {
@@ -151,13 +152,16 @@ try {
     throw new Error("WebAssembly not supported");
   }
 } catch (e) {
-  exports["get_encoding"] = () => dummyTokenizer;
-  exports["encoding_for_model"] = () => dummyTokenizer;
-  exports["get_encoding_name_for_model"] = () => "cl100k_base";
-  exports["Tiktoken"] = class { constructor() { return dummyTokenizer; } };
+  exports["get_encoding"] = unavailableTokenizer;
+  exports["encoding_for_model"] = unavailableTokenizer;
+  exports["get_encoding_name_for_model"] = unavailableTokenizer;
+  exports["Tiktoken"] = class { constructor() { unavailableTokenizer(); } };
 }`;
 
       if (c.includes('const wasmModule = new WebAssembly.Module(bytes);')) {
+        if (!c.includes(origInstantiation)) {
+          throw new Error(`Unsupported tiktoken initialization in ${tf}`);
+        }
         c = c.replace(origInstantiation, safeInstantiation);
         fs.writeFileSync(tf, c, 'utf8');
         console.log(`[patch-sillytavern] [5/6] Successfully injected tiktoken WebAssembly fallback in: ${tf}`);
@@ -203,7 +207,114 @@ async function getTransformers() {
   }
 }
 
-// 7. 深度递归扫描并防御性替换 node_modules 中的任意 \p{Cc}, \p{L}, \p{N} 与 fatal: true 遗留
+// 7. 补丁 SillyTavern 官方源码 src/middleware/webpack-serve.js 使其优先使用预编译的 lib.js，跳过移动端运行时的 Webpack 编译
+const webpackServePath = path.join(targetDir, 'src', 'middleware', 'webpack-serve.js');
+if (fs.existsSync(webpackServePath)) {
+  let content = fs.readFileSync(webpackServePath, 'utf8');
+  if (!content.includes('findPrecompiledLib')) {
+    const safeWebpackServe = `import fs from 'node:fs';
+import path from 'node:path';
+import webpack from 'webpack';
+import getPublicLibConfig from '../../webpack.config.js';
+
+export default function getWebpackServeMiddleware() {
+    function findPrecompiledLib() {
+        const candidates = [
+            path.resolve(process.cwd(), 'dist', '_webpack'),
+            path.resolve(process.cwd(), 'data', '_webpack'),
+            path.resolve(process.cwd(), 'public')
+        ];
+        for (const cand of candidates) {
+            if (fs.existsSync(cand)) {
+                const search = (d) => {
+                    for (const dirent of fs.readdirSync(d, { withFileTypes: true })) {
+                        const full = path.join(d, dirent.name);
+                        if (dirent.isDirectory()) {
+                            const res = search(full);
+                            if (res) return res;
+                        } else if (dirent.name === 'lib.js') {
+                            return full;
+                        }
+                    }
+                    return null;
+                };
+                const found = search(cand);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    function devMiddleware(req, res, next) {
+        const publicLibConfig = getPublicLibConfig();
+        const outputPath = publicLibConfig.output?.path;
+        const outputFile = publicLibConfig.output?.filename || 'lib.js';
+        const parsedPath = path.parse(req.path);
+
+        if (req.method === 'GET' && parsedPath.dir === '/' && parsedPath.base === outputFile) {
+            if (outputPath && fs.existsSync(path.join(outputPath, outputFile))) {
+                return res.sendFile(outputFile, { root: outputPath });
+            }
+            const precompiled = findPrecompiledLib();
+            if (precompiled) {
+                return res.sendFile(path.basename(precompiled), { root: path.dirname(precompiled) });
+            }
+        }
+
+        next();
+    }
+
+    devMiddleware.runWebpackCompiler = ({ forceDist = false, pruneCache = false } = {}) => {
+        const publicLibConfig = getPublicLibConfig({ forceDist, pruneCache });
+        const outputPath = publicLibConfig.output?.path;
+        const outputFile = publicLibConfig.output?.filename || 'lib.js';
+        const targetFile = outputPath ? path.join(outputPath, outputFile) : null;
+
+        if (targetFile && fs.existsSync(targetFile)) {
+            console.log(\`[webpack-serve] Pre-compiled \${outputFile} already present: \${targetFile}\`);
+            return Promise.resolve();
+        }
+
+        const precompiled = findPrecompiledLib();
+        if (precompiled && targetFile) {
+            try {
+                fs.mkdirSync(outputPath, { recursive: true });
+                fs.copyFileSync(precompiled, targetFile);
+                console.log(\`[webpack-serve] Successfully deployed pre-compiled \${outputFile} from \${precompiled} to \${targetFile}\`);
+                return Promise.resolve();
+            } catch (err) {
+                console.warn('[webpack-serve] Could not copy pre-compiled lib:', err.message);
+            }
+        }
+
+        console.log();
+        console.log('Compiling frontend libraries via Webpack...');
+
+        const compiler = webpack(publicLibConfig);
+
+        return new Promise((resolve) => {
+            compiler.run((_error, stats) => {
+                const output = stats?.toString(publicLibConfig.stats);
+                if (output) {
+                    console.log(output);
+                    console.log();
+                }
+                compiler.close(() => {
+                    resolve();
+                });
+            });
+        });
+    };
+
+    return devMiddleware;
+}
+`;
+    fs.writeFileSync(webpackServePath, safeWebpackServe, 'utf8');
+    console.log(`[patch-sillytavern] [7/8] Successfully made webpack-serve bypass runtime compilation: ${webpackServePath}`);
+  }
+}
+
+// 8. 深度递归扫描并防御性替换 node_modules 中的任意 \p{Cc}, \p{L}, \p{N} 与 fatal: true 遗留
 function deepScanAndPatch(dir) {
   if (!fs.existsSync(dir)) return;
   try {

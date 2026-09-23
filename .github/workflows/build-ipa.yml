@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-simulate:
     runs-on: macos-14
+    timeout-minutes: 30
 
     steps:
       - name: 检出源码
@@ -22,6 +23,9 @@ jobs:
         uses: pnpm/action-setup@v3
         with:
           version: 10
+
+      - name: Verify iOS runtime regression tests
+        run: node --test tests/ios-runtime.test.mjs
 
       - name: 编译 React 控制台前端
         run: |
@@ -41,10 +45,13 @@ jobs:
       - name: 准备 SillyTavern 官方完整服务与生产依赖
         run: |
           echo "=== 正在克隆官方 SillyTavern 仓库 ==="
-          git clone --depth 1 https://github.com/SillyTavern/SillyTavern.git sillytavern-src
+          git init sillytavern-src
           cd sillytavern-src
+          git remote add origin https://github.com/SillyTavern/SillyTavern.git
+          git fetch --depth 1 origin 06bde939fb1e9c4c8d8641d810f0a916b5bce127
+          git checkout --detach FETCH_HEAD
           echo "=== 安装纯 JS 生产依赖 (跳过原生构建脚本) ==="
-          npm install --omit=dev --no-optional --ignore-scripts
+          npm ci --omit=dev --omit=optional --ignore-scripts
           echo "=== 注入 NodeMobile (iOS small-icu) 兼容性补丁与懒加载适配 ==="
           node ../native-src/patch-sillytavern.mjs ./
           echo "=== 预设官方 config.yaml (禁用浏览器自启与 LAN 暴露) ==="
@@ -59,19 +66,8 @@ jobs:
             console.log('--- 验证 config.yaml ---');
             console.log(c.slice(0, 300));
           "
-          echo "=== 预编译 Webpack 静态资源 (生成 dist/_webpack 产物) ==="
-          node -e "
-            process.env.ST_DISABLE_SHARP = 'true';
-            import('./src/middleware/webpack-serve.js').then(async m => {
-              console.log('Building webpack dist/_webpack ahead-of-time...');
-              await m.default().runWebpackCompiler({ forceDist: true });
-              console.log('Webpack ahead-of-time build complete!');
-              process.exit(0);
-            }).catch(err => {
-              console.error('Webpack pre-build warning:', err);
-              process.exit(0);
-            });
-          "
+          echo "=== Build and verify the frontend for the iOS runtime ==="
+          ST_DISABLE_SHARP=true node ../scripts/prepare-ios-frontend.mjs .
           echo "=== 预置必要的空目录以杜绝 iOS 只读限制 ==="
           mkdir -p backups/_migration
           mkdir -p data/_storage
@@ -83,6 +79,24 @@ jobs:
           cd ..
           echo "=== SillyTavern 服务端就绪 (含 public 官方前端) ==="
           ls -la sillytavern-src/public/
+
+      - name: Match the embedded NodeMobile runtime version
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.20.4
+
+      - name: Verify server startup with WASM disabled
+        env:
+          SILLYCLIENT_IOS_SERVER: ${{ github.workspace }}/sillytavern-src
+          SILLYCLIENT_TEST_LOG: ${{ github.workspace }}/evidence/server-smoke.log
+        run: |
+          mkdir -p evidence
+          node --test tests/ios-runtime.test.mjs tests/ios-server.test.mjs
+
+      - name: Restore the frontend build runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: 初始化 Capacitor iOS 原生工程
         run: |
@@ -190,6 +204,7 @@ jobs:
           path: SillyClient-iOS-v1.9.1-unsigned.ipa
 
       - name: 上传 E2E 自动化测试全流程阶段截图与可视化报告
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-e2e-evidence

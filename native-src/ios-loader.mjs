@@ -14,6 +14,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import util from 'node:util';
+import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // 注入 SafeTextDecoder，彻底消除 NodeMobile (small-icu) 下对 fatal: true 的 ERR_NO_ICU 报错
@@ -36,20 +37,25 @@ if (typeof globalThis.TextDecoder !== 'undefined') {
     }
 }
 
-// 注入 WebAssembly 兜底存根，防止在 iOS jitless 环境下抛出 ReferenceError: WebAssembly is not defined
-if (typeof globalThis.WebAssembly === 'undefined') {
-    globalThis.WebAssembly = {
-        compile: async () => ({}),
-        compileStreaming: async () => ({}),
-        instantiate: async () => ({ instance: { exports: {} }, module: {} }),
-        instantiateStreaming: async () => ({ instance: { exports: {} }, module: {} }),
-        validate: () => false,
-        Module: class { constructor() {} },
-        Instance: class { constructor() { this.exports = {}; } },
-        Memory: class { constructor() { this.buffer = new ArrayBuffer(0); } },
-        Table: class { constructor() {} },
-        Global: class { constructor() {} },
-    };
+// 注入 WebAssembly 实例安全兜底，防止在 iOS jitless 环境下缺少 exports 属性引发 TypeError: exports.init is not a function
+if (typeof globalThis.WebAssembly !== 'undefined' && globalThis.WebAssembly.Instance) {
+    const OrigInstance = globalThis.WebAssembly.Instance;
+    try {
+        class SafeInstance extends OrigInstance {
+            constructor(module, importObject) {
+                super(module, importObject);
+                if (!this.exports) this.exports = {};
+                if (typeof this.exports.init !== 'function') this.exports.init = () => {};
+                if (typeof this.exports.update !== 'function') this.exports.update = () => {};
+                if (typeof this.exports.final !== 'function') this.exports.final = () => {};
+                if (typeof this.exports.digest !== 'function') this.exports.digest = () => '00000000';
+                if (!this.exports.memory || !this.exports.memory.buffer) {
+                    this.exports.memory = { buffer: new ArrayBuffer(65536) };
+                }
+            }
+        }
+        globalThis.WebAssembly.Instance = SafeInstance;
+    } catch (_) {}
 }
 
 // 关键环境变量设置
@@ -78,6 +84,24 @@ console.log('[ios-loader] ==========================================');
 
 // 保持 libuv 事件循环长久活跃，绝不因短暂空闲退出
 const keepAliveTimer = setInterval(() => {}, 60000);
+const statusDirectory = path.dirname(process.env.TARVEN_SERVER_DIR || fileURLToPath(new URL('.', import.meta.url)));
+let startupFailed = false;
+let serviceReady = false;
+
+function reportStartupFailure(error) {
+    if (serviceReady || startupFailed) return;
+    startupFailed = true;
+    const message = String(error?.message || error || 'Unknown startup failure').slice(0, 2000);
+    try {
+        fs.writeFileSync(path.join(statusDirectory, 'server-failed.json'), JSON.stringify({ message }));
+    } catch (writeError) {
+        console.log('[ios-loader] Could not write startup failure marker:', writeError.message);
+    }
+}
+
+for (const name of ['server-ready.txt', 'server-failed.json']) {
+    fs.rmSync(path.join(statusDirectory, name), { force: true });
+}
 
 // 拦截 process.exit，防止 SillyTavern 或第三方库杀死 iOS 宿主 App 进程
 const originalExit = process.exit;
@@ -86,14 +110,17 @@ process.exit = function(code) {
     if (code !== 0) {
         console.log(new Error('[ios-loader] Stacktrace for non-zero exit:').stack);
     }
+    reportStartupFailure(new Error(`SillyTavern exited before becoming ready (code ${code}).`));
 };
 
 process.on('uncaughtException', (err) => {
     console.log('[ios-loader] 捕获未处理异常 (已拦截防闪退):', err && err.message, err && err.stack);
+    reportStartupFailure(err);
 });
 
 process.on('unhandledRejection', (reason) => {
     console.log('[ios-loader] 捕获未处理 Promise 拒绝:', reason && (reason.stack || reason.message || reason));
+    reportStartupFailure(reason);
 });
 
 // 计算当前脚本所在目录
@@ -148,6 +175,8 @@ try {
         const eventsModule = pathToFileURL(eventsPath).href;
         const { serverEvents, EVENT_NAMES } = await import(eventsModule);
         serverEvents.on(EVENT_NAMES.SERVER_STARTED, ({ url }) => {
+            if (startupFailed) return;
+            serviceReady = true;
             console.log(`[ios-loader] 🎉 SillyTavern 官方服务真正监听就绪: ${url}`);
             const candidates = [
                 process.env.DATA_DIR,
@@ -181,13 +210,30 @@ try {
 
 if (fs.existsSync(serverEntry)) {
     try {
+        if (typeof globalThis.WebAssembly === 'undefined') {
+            // Node's built-in fetch lazily loads Undici's WASM HTTP parser.
+            const fetchGlobals = ['fetch', 'Headers', 'Request', 'Response', 'FormData', 'Blob', 'File'];
+            // Replacing a lazy property directly can invoke its native getter.
+            for (const name of fetchGlobals) delete globalThis[name];
+            const require = createRequire(path.join(serverDir, 'package.json'));
+            const fetchModule = await import(pathToFileURL(require.resolve('node-fetch')).href);
+            for (const name of fetchGlobals) {
+                Object.defineProperty(globalThis, name, {
+                    value: fetchModule[name === 'fetch' ? 'default' : name],
+                    configurable: true, enumerable: true, writable: true,
+                });
+            }
+            console.log('[ios-loader] Using node-fetch without a WASM HTTP parser.');
+        }
         const entryUrl = pathToFileURL(serverEntry).href;
         console.log(`[ios-loader] Importing SillyTavern server entry: ${entryUrl}`);
         await import(entryUrl);
         console.log('[ios-loader] SillyTavern server entry import complete, background startup in progress...');
     } catch (e) {
         console.log('[ios-loader] 加载 server.js 遇到严重错误:', e && e.message, e && e.stack);
+        reportStartupFailure(e);
     }
 } else {
     console.log(`[ios-loader] 错误: 未能在 ${serverEntry} 找到 SillyTavern server.js`);
+    reportStartupFailure(new Error('SillyTavern server.js is missing.'));
 }
