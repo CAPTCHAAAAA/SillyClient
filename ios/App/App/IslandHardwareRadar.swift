@@ -34,9 +34,14 @@ public class IslandHardwareRadar {
     /**
      * 计算指定视图宿主内的安全避让双翼区域
      */
-    public func calculateFlanks(for view: UIView) -> IslandFlanks {
+    public func calculateFlanks(for view: UIView, overrideSafeTop: CGFloat? = nil) -> IslandFlanks {
         let screenWidth = view.bounds.width > 0 ? view.bounds.width : UIScreen.main.bounds.width
-        let safeTop = view.safeAreaInsets.top > 0 ? view.safeAreaInsets.top : 47.0
+        let safeTop: CGFloat
+        if let override = overrideSafeTop, override > 0 {
+            safeTop = override
+        } else {
+            safeTop = view.safeAreaInsets.top > 0 ? view.safeAreaInsets.top : 47.0
+        }
         
         let center = screenWidth / 2.0
         

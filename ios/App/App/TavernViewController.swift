@@ -15,14 +15,20 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     public static let shared = TavernViewController()
     
     // 双层视图
-    private var consoleWebView: WKWebView?
-    private var tavernWebView: WKWebView?
+    public private(set) var consoleWebView: WKWebView?
+    public private(set) var tavernWebView: WKWebView?
     
-    // 沉浸顶栏与交互
-    private let topScrimBar = UIView()
-    private let sweepGlossView = UIView()
+    public func evaluateConsoleJavaScript(_ js: String, completion: ((Any?, Error?) -> Void)? = nil) {
+        DispatchQueue.main.async {
+            self.consoleWebView?.evaluateJavaScript(js, completionHandler: completion)
+        }
+    }
+    
+    // 沉浸顶栏与交互 (对齐 Android TopScrimBar)
+    public private(set) var topScrimBar = TopScrimBarView()
     private var chameleonEngine: ChameleonEngine?
     private var shimmerHint: ShimmerHintView?
+    public private(set) var fixedStatusBarHeight: CGFloat = 0
     
     // 状态
     private var isTavernActive = false
@@ -35,16 +41,42 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     public override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
         return .fade
     }
+
+    public override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
+
+    public override var childForStatusBarHidden: UIViewController? {
+        return nil
+    }
+
+    public override var childForStatusBarStyle: UIViewController? {
+        return nil
+    }
+
+    public func setStatusBarHidden(_ hidden: Bool, animated: Bool = true) {
+        self.isTavernActive = hidden
+        if animated {
+            UIView.animate(withDuration: 0.25) {
+                self.setNeedsStatusBarAppearanceUpdate()
+            }
+        } else {
+            self.setNeedsStatusBarAppearanceUpdate()
+        }
+    }
     
     public override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = #colorLiteral(red: 0.05882352941, green: 0.06666666667, blue: 0.09019607843, alpha: 1)
+        view.backgroundColor = UIColor(red: 15/255.0, green: 17/255.0, blue: 23/255.0, alpha: 1.0)
         setupTavernWebView()
         setupTopScrimBar()
     }
     
     public func registerConsoleWebView(_ webView: WKWebView) {
         self.consoleWebView = webView
+        webView.isOpaque = false
+        webView.backgroundColor = UIColor.clear
+        webView.scrollView.backgroundColor = UIColor.clear
         view.insertSubview(webView, at: 0)
         webView.frame = view.bounds
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -57,8 +89,10 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
         
         let wv = WKWebView(frame: view.bounds, configuration: config)
         wv.navigationDelegate = self
-        wv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         wv.scrollView.contentInsetAdjustmentBehavior = .never
+        wv.isOpaque = true
+        wv.backgroundColor = UIColor(red: 19/255.0, green: 21/255.0, blue: 27/255.0, alpha: 1.0)
+        wv.scrollView.backgroundColor = UIColor(red: 19/255.0, green: 21/255.0, blue: 27/255.0, alpha: 1.0)
         wv.alpha = 0.0
         wv.isHidden = true
         view.addSubview(wv)
@@ -73,21 +107,15 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     }
     
     private func setupTopScrimBar() {
-        topScrimBar.backgroundColor = UIColor(red: 163/255.0, green: 40/255.0, blue: 72/255.0, alpha: 0.7) // SC Bordeaux
         topScrimBar.alpha = 0.0
         topScrimBar.isHidden = true
         view.addSubview(topScrimBar)
-        
-        // 点击微光动画层
-        sweepGlossView.backgroundColor = UIColor(white: 1.0, alpha: 0.2)
-        sweepGlossView.alpha = 0.0
-        topScrimBar.addSubview(sweepGlossView)
         
         // 滑动手势返回控制台
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleScrimPan(_:)))
         topScrimBar.addGestureRecognizer(panGesture)
         
-        // 顶栏点击波纹
+        // 顶栏点击光泽扫光
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleScrimTap))
         topScrimBar.addGestureRecognizer(tap)
     }
@@ -95,15 +123,37 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
-        let safeTop = view.safeAreaInsets.top > 0 ? view.safeAreaInsets.top : 44.0
-        let barHeight: CGFloat = safeTop + 16.0
-        topScrimBar.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: barHeight)
-        sweepGlossView.frame = topScrimBar.bounds
+        // 1. 测定并持久化硬件状态栏/安全区高度 (Android statusBarFixedPx 对齐)
+        let rawSafeTop = view.safeAreaInsets.top
+        if rawSafeTop > 0 {
+            fixedStatusBarHeight = max(fixedStatusBarHeight, rawSafeTop)
+        }
+        if fixedStatusBarHeight <= 0 {
+            let screenH = max(view.bounds.height, view.bounds.width)
+            fixedStatusBarHeight = screenH >= 852.0 ? 54.0 : (screenH >= 812.0 ? 47.0 : 20.0)
+        }
         
-        // 布局流光指引：通过硬件雷达计算避让区
+        // 2. 原生变色龙顶条带排布于屏幕顶端 [0, 0, width, fixedStatusBarHeight]
+        topScrimBar.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: fixedStatusBarHeight)
+        
+        // 3. 酒馆 WebView 下移 fixedStatusBarHeight (对齐 Android webViewScreen.topMargin = statusBarFixedPx)
+        // 彻底杜绝灵动岛穿模遮挡酒馆菜单栏图标，且底边 100% 页面色无缝熔接
+        tavernWebView?.frame = CGRect(
+            x: 0,
+            y: fixedStatusBarHeight,
+            width: view.bounds.width,
+            height: view.bounds.height - fixedStatusBarHeight
+        )
+        
+        // 4. 布局流光指引：通过硬件雷达计算在灵动岛左侧安全翼区居中
         if let hint = shimmerHint {
-            let flanks = IslandHardwareRadar.shared.calculateFlanks(for: view)
+            let flanks = IslandHardwareRadar.shared.calculateFlanks(for: view, overrideSafeTop: fixedStatusBarHeight)
             hint.frame = flanks.leftFlank
+        }
+        
+        view.bringSubviewToFront(topScrimBar)
+        if let hint = shimmerHint {
+            view.bringSubviewToFront(hint)
         }
     }
     
@@ -115,9 +165,35 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
         currentTavernUrl = url
         isTavernActive = true
         
-        wv.load(URLRequest(url: url))
+        if url.scheme == "data" {
+            let fullStr = url.absoluteString
+            if let commaIndex = fullStr.range(of: ",")?.upperBound {
+                let payload = String(fullStr[commaIndex...])
+                if fullStr.contains(";base64,") {
+                    if let data = Data(base64Encoded: payload), let html = String(data: data, encoding: .utf8) {
+                        wv.loadHTMLString(html, baseURL: nil)
+                    } else {
+                        wv.load(URLRequest(url: url))
+                    }
+                } else {
+                    let html = payload.removingPercentEncoding ?? payload
+                    wv.loadHTMLString(html, baseURL: nil)
+                }
+            } else if let decoded = fullStr.removingPercentEncoding {
+                let html = decoded.replacingOccurrences(of: "data:text/html;charset=utf-8,", with: "")
+                wv.loadHTMLString(html, baseURL: nil)
+            } else {
+                wv.load(URLRequest(url: url))
+            }
+        } else {
+            wv.load(URLRequest(url: url))
+        }
+        
         wv.isHidden = false
         topScrimBar.isHidden = false
+        
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
         
         // 优雅隐藏系统状态栏并淡入酒馆
         UIView.animate(withDuration: 0.25, animations: {
@@ -161,10 +237,11 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     private func showGestureHint() {
         shimmerHint?.removeFromSuperview()
         
-        let flanks = IslandHardwareRadar.shared.calculateFlanks(for: view)
+        let flanks = IslandHardwareRadar.shared.calculateFlanks(for: view, overrideSafeTop: fixedStatusBarHeight)
         let hint = ShimmerHintView(frame: flanks.leftFlank)
         hint.alpha = 0.0
         view.addSubview(hint)
+        view.bringSubviewToFront(hint)
         self.shimmerHint = hint
         
         UIView.animate(withDuration: 0.3) {
@@ -175,30 +252,23 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     private func startChameleon() {
         chameleonEngine?.startPolling { [weak self] color, isDark in
             guard let self = self else { return }
-            UIView.animate(withDuration: 0.25) {
-                self.topScrimBar.backgroundColor = color.withAlphaComponent(0.72)
-                self.shimmerHint?.updateTone(isDarkScrim: isDark)
-            }
+            self.topScrimBar.setColor(color)
+            self.shimmerHint?.updateTone(isDarkScrim: isDark)
         }
     }
     
     @objc private func handleTavernTap() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
             self?.chameleonEngine?.sample { color, isDark in
-                UIView.animate(withDuration: 0.2) {
-                    self?.topScrimBar.backgroundColor = color.withAlphaComponent(0.72)
-                    self?.shimmerHint?.updateTone(isDarkScrim: isDark)
-                }
+                guard let self = self else { return }
+                self.topScrimBar.setColor(color)
+                self.shimmerHint?.updateTone(isDarkScrim: isDark)
             }
         }
     }
     
     @objc private func handleScrimTap() {
-        // 白色扫光动效
-        sweepGlossView.alpha = 1.0
-        UIView.animate(withDuration: 0.35, animations: {
-            self.sweepGlossView.alpha = 0.0
-        })
+        topScrimBar.sweepGloss()
     }
     
     @objc private func handleScrimPan(_ gesture: UIPanGestureRecognizer) {
@@ -215,5 +285,31 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, UIGes
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
+    }
+    
+    // MARK: - WKNavigationDelegate
+    public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        NSLog("[TavernViewController] didFailProvisionalNavigation: %@", error.localizedDescription)
+        // 若因本地服务正在拉起连接被拒，1 秒后自动重试加载
+        if isTavernActive, let url = currentTavernUrl {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self = self, self.isTavernActive else { return }
+                NSLog("[TavernViewController] Retrying loading SillyTavern URL: %@", url.absoluteString)
+                self.tavernWebView?.load(URLRequest(url: url))
+            }
+        }
+    }
+    
+    public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        NSLog("[TavernViewController] didFail navigation: %@", error.localizedDescription)
+    }
+    
+    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        NSLog("[TavernViewController] didFinish navigation: %@", webView.url?.absoluteString ?? "")
+        if webView == self.tavernWebView {
+            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let loadedFile = docsUrl.appendingPathComponent("tavern-rendered.txt")
+            try? "loaded".write(to: loadedFile, atomically: true, encoding: .utf8)
+        }
     }
 }

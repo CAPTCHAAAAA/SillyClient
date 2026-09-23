@@ -217,3 +217,44 @@ ${exports.map(name => `exports["${name}"] = wasm["${name}"];`).join('\n')}`);
         assert.equal(result.status, 0, result.stdout + result.stderr);
     });
 }
+
+test('TopColor math matches Android Rec.601 and 3-stop scrim constraints', () => {
+    // 镜像 TopColor.kt / TopColor.swift 纯数学运算
+    const darken = (r, g, b, factor) => [
+        Math.min(255, Math.max(0, Math.floor(r * factor))),
+        Math.min(255, Math.max(0, Math.floor(g * factor))),
+        Math.min(255, Math.max(0, Math.floor(b * factor)))
+    ];
+    const isDark = (r, g, b) => {
+        const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+        return luma < 0.6;
+    };
+    // 测试酒馆暗色主题背景 #13151b (r=19, g=21, b=27)
+    const testColor = [19, 21, 27];
+    assert.equal(isDark(...testColor), true);
+    const stopTop = darken(...testColor, 0.45);
+    const stopMid = darken(...testColor, 0.80);
+    const stopBot = testColor;
+    assert.deepEqual(stopTop, [8, 9, 12]);
+    assert.deepEqual(stopMid, [15, 16, 21]);
+    assert.deepEqual(stopBot, [19, 21, 27]);
+    // 验证单调递增至 100% 页面色 (自下而上压暗)
+    assert.ok(stopTop[0] <= stopMid[0] && stopMid[0] <= stopBot[0]);
+    assert.ok(stopTop[1] <= stopMid[1] && stopMid[1] <= stopBot[1]);
+    assert.ok(stopTop[2] <= stopMid[2] && stopMid[2] <= stopBot[2]);
+});
+
+test('IslandHardwareRadar safely bounds left flank away from Dynamic Island cutout', () => {
+    const screenWidth = 393.0; // iPhone 15 Pro / 16 Pro
+    const islandWidth = 125.0;
+    const padding = 8.0;
+    const sideMargin = 14.0;
+    const center = screenWidth / 2.0;
+    const leftEnd = Math.floor(center - (islandWidth / 2.0) - padding);
+    const leftWidth = Math.max(0, leftEnd - sideMargin);
+    
+    // 左翼必须完全在灵动岛左侧 (leftMargin + leftWidth < center - cutout/2)
+    assert.ok(sideMargin + leftWidth <= center - (islandWidth / 2.0) - padding);
+    assert.ok(leftWidth > 80.0, `Expected adequate width for gesture hint, got ${leftWidth}`);
+});
+

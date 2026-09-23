@@ -51,9 +51,9 @@ public class ChameleonEngine {
         isSampling = true
         
         let config = WKSnapshotConfiguration()
-        // 采样顶部安全区边缘的像素点
-        let safeTop = webView.safeAreaInsets.top > 0 ? webView.safeAreaInsets.top : 44.0
-        config.rect = CGRect(x: webView.bounds.midX - 50.0, y: safeTop + 2.0, width: 100.0, height: 2.0)
+        // WebView 已经排布在固定顶条带下方，自身顶部 y=1.0 处即为酒馆首行真实渲染像素 (采样 100x3)
+        let midX = webView.bounds.midX > 50.0 ? webView.bounds.midX : 150.0
+        config.rect = CGRect(x: midX - 50.0, y: 1.0, width: 100.0, height: 3.0)
         
         webView.takeSnapshot(with: config) { [weak self] image, error in
             guard let self = self else { return }
