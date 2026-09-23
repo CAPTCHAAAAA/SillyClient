@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // 精确解析目标目录，过滤形如 --port=8000 的命令行参数
 let targetDir = process.cwd();
