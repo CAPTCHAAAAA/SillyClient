@@ -97,10 +97,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         """
                         TavernViewController.shared.tavernWebView?.evaluateJavaScript(dialogJs, completionHandler: nil)
                     } else if stage == "dismiss_dialog" {
-                        let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
-                        if let alert = presenter as? UIAlertController ?? presenter.presentedViewController as? UIAlertController {
-                            alert.dismiss(animated: true, completion: nil)
-                        }
+                        TavernViewController.shared.dismissActiveAlert()
                     } else if stage == "stage4c" || stage == "test_tavern_picker" {
                         TavernViewController.shared.presentDocumentPickerForTesting()
                     } else if stage == "dismiss_picker" {
@@ -196,10 +193,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 """
                 TavernViewController.shared.tavernWebView?.evaluateJavaScript(dialogJs, completionHandler: nil)
             } else if stage == "dismiss_dialog" {
-                let presenter = TavernViewController.shared.presentedViewController ?? TavernViewController.shared
-                if let alert = presenter as? UIAlertController ?? presenter.presentedViewController as? UIAlertController {
-                    alert.dismiss(animated: true, completion: nil)
-                }
+                TavernViewController.shared.dismissActiveAlert()
             } else if stage == "stage4c" || stage == "test_tavern_picker" {
                 TavernViewController.shared.presentDocumentPickerForTesting()
             } else if stage == "dismiss_picker" {

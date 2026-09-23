@@ -210,7 +210,9 @@ async function main() {
     await sleep(1000);
   }
   if (!isRendered) throw new Error('The SillyTavern webview did not report DOM readiness.');
-  // 留出 7s 供 DOM、CSS、主题与角色卡渲染完全稳定
+  console.log('Explicitly enforcing official SC Bordeaux preset and 8K wallpaper...');
+  fs.writeFileSync(cmdFile, 'theme:SC Bordeaux');
+  // 留出 7s 供 DOM、CSS、主题、壁纸与角色卡渲染完全稳定
   await sleep(7000);
   const shot4 = path.join(outDir, '04-tavern-sc-bordeaux-immersive.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4}"`);
@@ -225,12 +227,12 @@ async function main() {
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4b}"`);
   console.log(`Saved Stage 4b screenshot (Native Confirm Dialog): ${shot4b}`);
   fs.writeFileSync(cmdFile, 'dismiss_dialog');
-  await sleep(1000);
+  await sleep(1500);
 
   // 阶段 4c: 酒馆内唤起原生文件选择器 (角色/预设导入 UIDocumentPickerViewController)
   console.log('\n--- Triggering Stage 4c: SillyTavern Character Import File Picker ---');
   fs.writeFileSync(cmdFile, 'stage4c');
-  await sleep(3000);
+  await sleep(3500);
   const shot4c = path.join(outDir, '04c-tavern-character-import-picker.png');
   run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4c}"`);
   console.log(`Saved Stage 4c screenshot (Character Import Picker): ${shot4c}`);

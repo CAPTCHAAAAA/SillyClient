@@ -321,11 +321,11 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
                     var b = document.getElementById('top-bar');
                     if (b) b.style.backgroundColor = c;
                     if (name === 'SC Bordeaux') {
-                        var bg = document.getElementById('bg_custom');
-                        if (bg) {
-                            bg.style.backgroundImage = 'url("/backgrounds/sillyclient-bg-8k.jpg")';
-                            bg.style.backgroundSize = 'cover';
-                            bg.style.opacity = '1';
+                        var bg1 = document.getElementById('bg1');
+                        if (bg1) {
+                            bg1.style.backgroundImage = 'url("/backgrounds/sillyclient-bg-8k.jpg")';
+                            bg1.style.backgroundSize = 'cover';
+                            bg1.style.opacity = '1';
                         }
                     }
                 }
@@ -438,31 +438,82 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
     }
 
     // MARK: - WKUIDelegate (JavaScript 弹窗原生代理，杜绝静默失败与冲突)
+    private var activeAlertCompletion: (() -> Void)?
+
+    public func dismissActiveAlert() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.activeAlertCompletion?()
+            self.activeAlertCompletion = nil
+            let presenter = self.presentedViewController ?? self
+            if let alert = presenter as? UIAlertController ?? presenter.presentedViewController as? UIAlertController {
+                alert.dismiss(animated: true, completion: nil)
+            }
+        }
+    }
+
     public func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
         NSLog("[TavernViewController] Intercepted JavaScript Alert: %@", message)
+        var hasCalled = false
+        let safeCompletion: () -> Void = {
+            if !hasCalled {
+                hasCalled = true
+                completionHandler()
+            }
+        }
         let alert = UIAlertController(title: "酒馆提示", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { _ in completionHandler() }))
+        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { [weak self] _ in
+            self?.activeAlertCompletion = nil
+            safeCompletion()
+        }))
+        self.activeAlertCompletion = safeCompletion
         let presenter = self.presentedViewController ?? self
         presenter.present(alert, animated: true)
     }
 
     public func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
         NSLog("[TavernViewController] Intercepted JavaScript Confirm: %@", message)
+        var hasCalled = false
+        let safeCompletion: (Bool) -> Void = { res in
+            if !hasCalled {
+                hasCalled = true
+                completionHandler(res)
+            }
+        }
         let alert = UIAlertController(title: "请确认", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { _ in completionHandler(false) }))
-        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { _ in completionHandler(true) }))
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { [weak self] _ in
+            self?.activeAlertCompletion = nil
+            safeCompletion(false)
+        }))
+        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { [weak self] _ in
+            self?.activeAlertCompletion = nil
+            safeCompletion(true)
+        }))
+        self.activeAlertCompletion = { safeCompletion(false) }
         let presenter = self.presentedViewController ?? self
         presenter.present(alert, animated: true)
     }
 
     public func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         NSLog("[TavernViewController] Intercepted JavaScript Prompt: %@", prompt)
+        var hasCalled = false
+        let safeCompletion: (String?) -> Void = { res in
+            if !hasCalled {
+                hasCalled = true
+                completionHandler(res)
+            }
+        }
         let alert = UIAlertController(title: prompt, message: nil, preferredStyle: .alert)
         alert.addTextField { tf in tf.text = defaultText }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { _ in completionHandler(nil) }))
-        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { [weak alert] _ in
-            completionHandler(alert?.textFields?.first?.text)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { [weak self] _ in
+            self?.activeAlertCompletion = nil
+            safeCompletion(nil)
         }))
+        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: { [weak self, weak alert] _ in
+            self?.activeAlertCompletion = nil
+            safeCompletion(alert?.textFields?.first?.text)
+        }))
+        self.activeAlertCompletion = { safeCompletion(nil) }
         let presenter = self.presentedViewController ?? self
         presenter.present(alert, animated: true)
     }

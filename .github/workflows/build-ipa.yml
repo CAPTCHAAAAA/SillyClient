@@ -84,20 +84,25 @@ jobs:
           cp "../resources/companion-presets/sc-bordeaux/wallpaper/sillyclient-bg-8k.jpg" "public/backgrounds/"
           node -e "
             const fs = require('fs');
-            const settings = {
-              theme: 'SC Bordeaux',
-              themeName: 'SC Bordeaux',
-              background: {
-                name: 'sillyclient-bg-8k.jpg',
-                url: 'url(\"backgrounds/sillyclient-bg-8k.jpg\")',
-                fitting: 'cover',
-                animation: false,
-                sortOrder: 'az'
-              }
+            const defaultSettingsPath = 'default/content/settings.json';
+            const settings = fs.existsSync(defaultSettingsPath) ? JSON.parse(fs.readFileSync(defaultSettingsPath, 'utf8')) : {};
+            const themeSettings = JSON.parse(fs.readFileSync('data/default-user/themes/SC Bordeaux.json', 'utf8'));
+            settings.power_user = settings.power_user || {};
+            for (const [k, v] of Object.entries(themeSettings)) {
+              if (k !== 'name') settings.power_user[k] = v;
+            }
+            settings.power_user.theme = 'SC Bordeaux';
+            settings.power_user.theme_fallback = 'SC Bordeaux';
+            settings.background = {
+              name: 'sillyclient-bg-8k.jpg',
+              url: 'url(\"backgrounds/sillyclient-bg-8k.jpg\")',
+              fitting: 'cover',
+              animation: false,
+              sortOrder: 'az'
             };
             fs.writeFileSync('data/default-user/settings.json', JSON.stringify(settings, null, 2));
-            console.log('--- 验证已写入 SC Bordeaux 初始配置到 settings.json ---');
-            console.log(fs.readFileSync('data/default-user/settings.json', 'utf8'));
+            console.log('--- 验证已写入 SC Bordeaux 初始配置到 settings.json (含 power_user) ---');
+            console.log(fs.readFileSync('data/default-user/settings.json', 'utf8').slice(0, 500));
           "
           cp ../native-src/ios-loader.mjs ./
           cp ../native-src/patch-sillytavern.mjs ./
