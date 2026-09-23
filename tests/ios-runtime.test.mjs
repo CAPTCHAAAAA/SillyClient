@@ -14,7 +14,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 function fixture(t) {
     const parent = process.env.SILLYCLIENT_TEST_TMP || os.tmpdir();
     fs.mkdirSync(parent, { recursive: true });
-    const directory = fs.mkdtempSync(path.join(parent, 'ios-runtime-'));
+    const directory = fs.realpathSync(fs.mkdtempSync(path.join(parent, 'ios-runtime-')));
     t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
     const server = path.join(directory, 'SillyTavern');
     const output = path.join(server, 'dist', 'ios-frontend');
@@ -51,7 +51,7 @@ test('prebuilt frontend is validated and served without WASM or webpack', t => {
             middleware({ method, path: '/lib.js' }, {
                 sendFile(name, options) {
                     assert.equal(name, 'lib.js');
-                    assert.equal(options.root, ${JSON.stringify(f.output)});
+                    assert.equal(fs.realpathSync(options.root), fs.realpathSync(${JSON.stringify(f.output)}));
                     served = true;
                 }
             }, () => assert.fail('Unexpected fallthrough'));

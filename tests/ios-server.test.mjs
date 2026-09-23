@@ -19,7 +19,7 @@ test('the prepared server starts without WASM and serves verified frontend asset
     const server = fs.realpathSync(directory);
     const parent = process.env.SILLYCLIENT_TEST_TMP || os.tmpdir();
     fs.mkdirSync(parent, { recursive: true });
-    const temporary = fs.mkdtempSync(path.join(parent, 'ios-server-'));
+    const temporary = fs.realpathSync(fs.mkdtempSync(path.join(parent, 'ios-server-')));
     t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 
     const listener = net.createServer();
