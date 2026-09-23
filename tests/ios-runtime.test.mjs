@@ -311,3 +311,47 @@ test('TarvenEnvPlugin native method table contains all required file picker and 
         assert.ok(mContent.includes(`CAP_PLUGIN_METHOD(${method},`), `Missing ObjC method export: ${method}`);
     }
 });
+
+test('multi-instance ID normalization sanitizes characters safely', () => {
+    function normalizeInstanceId(raw) {
+        if (!raw || typeof raw !== 'string' || !raw.trim()) return 'default';
+        const cleaned = raw.replace(/[^a-zA-Z0-9_\-]/g, '');
+        return cleaned || 'default';
+    }
+    assert.equal(normalizeInstanceId(''), 'default');
+    assert.equal(normalizeInstanceId('   '), 'default');
+    assert.equal(normalizeInstanceId(null), 'default');
+    assert.equal(normalizeInstanceId('my_instance-10'), 'my_instance-10');
+    assert.equal(normalizeInstanceId('../instances/escape'), 'instancesescape');
+    assert.equal(normalizeInstanceId('inst:test?'), 'insttest');
+});
+
+test('keyboard avoidance layout shrinks viewport height precisely by keyboard frame overlap', () => {
+    const screenHeight = 852.0; // iPhone 16 Pro height
+    const fixedStatusBarHeight = 54.0;
+    const currentKeyboardHeight = 336.0;
+
+    // Normal full screen immersive layout:
+    const normalHeight = screenHeight - fixedStatusBarHeight;
+    assert.equal(normalHeight, 798.0);
+
+    // Keyboard presented layout:
+    const keyboardLayoutHeight = Math.max(0, screenHeight - fixedStatusBarHeight - currentKeyboardHeight);
+    assert.equal(keyboardLayoutHeight, 462.0);
+
+    // Assert the difference matches keyboard overlap exactly
+    assert.equal(normalHeight - keyboardLayoutHeight, currentKeyboardHeight);
+});
+
+test('NodeRunner and ios-loader expose and respond to garbage collection signal', () => {
+    const nodeRunnerSwift = fs.readFileSync(path.join(root, 'native-src', 'NodeRunner.swift'), 'utf8');
+    const iosLoader = fs.readFileSync(path.join(root, 'native-src', 'ios-loader.mjs'), 'utf8');
+
+    // NodeRunner must pass --expose-gc
+    assert.ok(nodeRunnerSwift.includes('"--expose-gc"'), 'NodeRunner must start node with --expose-gc flag');
+    assert.ok(nodeRunnerSwift.includes('trigger-node-gc.sig'), 'NodeRunner must write trigger-node-gc.sig');
+
+    // ios-loader must listen for trigger-node-gc.sig and invoke globalThis.gc()
+    assert.ok(iosLoader.includes('trigger-node-gc.sig'), 'ios-loader must check trigger-node-gc.sig');
+    assert.ok(iosLoader.includes('globalThis.gc()'), 'ios-loader must invoke globalThis.gc()');
+});

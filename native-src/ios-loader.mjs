@@ -82,9 +82,20 @@ console.log('[ios-loader] SillyClient iOS Node.js Runtime Starting');
 console.log(`[ios-loader] Node.js Version: ${process.version}`);
 console.log('[ios-loader] ==========================================');
 
-// 保持 libuv 事件循环长久活跃，绝不因短暂空闲退出
-const keepAliveTimer = setInterval(() => {}, 60000);
+// 保持 libuv 事件循环长久活跃，并响应原生内存警戒 GC 触发信号
 const statusDirectory = path.dirname(process.env.TARVEN_SERVER_DIR || fileURLToPath(new URL('.', import.meta.url)));
+const keepAliveTimer = setInterval(() => {
+    try {
+        const sigFile = path.join(statusDirectory, 'trigger-node-gc.sig');
+        if (fs.existsSync(sigFile)) {
+            fs.rmSync(sigFile, { force: true });
+            if (typeof globalThis.gc === 'function') {
+                console.log('[ios-loader] 收到原生内存告警信号，执行 V8 global.gc()...');
+                globalThis.gc();
+            }
+        }
+    } catch (_) {}
+}, 2000);
 let startupFailed = false;
 let serviceReady = false;
 

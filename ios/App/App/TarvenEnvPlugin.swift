@@ -103,40 +103,133 @@ public class TarvenEnvPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDeleg
         }
     }
 
-    @objc func scanInstances(_ call: CAPPluginCall) {
-        let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let stPath = documentsUrl.appendingPathComponent("SillyTavern").path
-        let fileManager = FileManager.default
-        let serverDir = NodeRunner.shared.resolveServerDirectory(dataPath: stPath)
+    // MARK: - Multi-Instance Path Helpers
+    private func normalizeInstanceId(_ raw: String?) -> String {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return "default"
+        }
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+        let cleaned = raw.components(separatedBy: allowed.inverted).joined()
+        return cleaned.isEmpty ? "default" : cleaned
+    }
 
+    private func resolveInstanceDataPath(instanceId: String) -> String {
+        let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let safeId = normalizeInstanceId(instanceId)
+        let fm = FileManager.default
+        if safeId == "default" {
+            let defaultDir = docsUrl.appendingPathComponent("SillyTavern").path
+            let instDefaultDir = docsUrl.appendingPathComponent("instances").appendingPathComponent("default").path
+            if !fm.fileExists(atPath: defaultDir) && fm.fileExists(atPath: instDefaultDir) {
+                return instDefaultDir
+            }
+            return defaultDir
+        } else {
+            return docsUrl.appendingPathComponent("instances").appendingPathComponent(safeId).path
+        }
+    }
+
+    private func calculateDirectorySize(at path: String) -> Int64 {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(atPath: path) else { return 0 }
+        var total: Int64 = 0
+        while let file = enumerator.nextObject() as? String {
+            let fullPath = (path as NSString).appendingPathComponent(file)
+            if let attrs = try? fm.attributesOfItem(atPath: fullPath) {
+                total += (attrs[.size] as? Int64) ?? 0
+            }
+        }
+        return total
+    }
+
+    @objc func scanInstances(_ call: CAPPluginCall) {
+        let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let fm = FileManager.default
         var instances: [[String: Any]] = []
-        if fileManager.fileExists(atPath: (serverDir as NSString).appendingPathComponent("server.js")) {
+
+        // 1. 扫描默认实例 Documents/SillyTavern
+        let defaultDir = docsUrl.appendingPathComponent("SillyTavern").path
+        let serverDir = NodeRunner.shared.resolveServerDirectory(dataPath: defaultDir)
+        let hasServerDefault = fm.fileExists(atPath: (serverDir as NSString).appendingPathComponent("server.js"))
+        if hasServerDefault || fm.fileExists(atPath: defaultDir) {
+            let size = calculateDirectorySize(at: defaultDir)
+            let attrs = try? fm.attributesOfItem(atPath: defaultDir)
+            let mtime = (attrs?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? Date().timeIntervalSince1970
+            let ctime = (attrs?[.creationDate] as? Date)?.timeIntervalSince1970 ?? mtime
+            instances.append([
+                "instanceId": "default",
+                "version": "1.12.0",
+                "hasServer": hasServerDefault,
+                "path": serverDir,
+                "dataPath": (defaultDir as NSString).appendingPathComponent("data"),
+                "sizeBytes": size,
+                "lastUsedAt": mtime * 1000,
+                "createdAt": ctime * 1000,
+                "totalUsageMs": 0
+            ])
+        }
+
+        // 2. 扫描 Documents/instances/ 下的独立多实例文件夹
+        let instancesDir = docsUrl.appendingPathComponent("instances")
+        if let subdirs = try? fm.contentsOfDirectory(atPath: instancesDir.path) {
+            for sub in subdirs {
+                let safeId = normalizeInstanceId(sub)
+                if safeId == "default" && !instances.isEmpty { continue }
+                let subPath = instancesDir.appendingPathComponent(sub).path
+                var isDir: ObjCBool = false
+                if fm.fileExists(atPath: subPath, isDirectory: &isDir), isDir.boolValue {
+                    let subServerDir = NodeRunner.shared.resolveServerDirectory(dataPath: subPath)
+                    let hasServer = fm.fileExists(atPath: (subServerDir as NSString).appendingPathComponent("server.js"))
+                    let size = calculateDirectorySize(at: subPath)
+                    let attrs = try? fm.attributesOfItem(atPath: subPath)
+                    let mtime = (attrs?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? Date().timeIntervalSince1970
+                    let ctime = (attrs?[.creationDate] as? Date)?.timeIntervalSince1970 ?? mtime
+                    instances.append([
+                        "instanceId": safeId,
+                        "version": "1.12.0",
+                        "hasServer": hasServer,
+                        "path": subServerDir,
+                        "dataPath": (subPath as NSString).appendingPathComponent("data"),
+                        "sizeBytes": size,
+                        "lastUsedAt": mtime * 1000,
+                        "createdAt": ctime * 1000,
+                        "totalUsageMs": 0
+                    ])
+                }
+            }
+        }
+
+        // 若未发现任何实例，提供兜底的 default 实例元数据
+        if instances.isEmpty {
             instances.append([
                 "instanceId": "default",
                 "version": "1.12.0",
                 "hasServer": true,
                 "path": serverDir,
+                "dataPath": (defaultDir as NSString).appendingPathComponent("data"),
                 "sizeBytes": 0,
                 "lastUsedAt": Date().timeIntervalSince1970 * 1000,
                 "createdAt": Date().timeIntervalSince1970 * 1000,
                 "totalUsageMs": 0
             ])
         }
+
         call.resolve(["instances": instances])
     }
 
     @objc func provisionAndStart(_ call: CAPPluginCall) {
         let port = call.getInt("port") ?? 8000
-        let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let stPath = documentsUrl.appendingPathComponent("SillyTavern").path
+        let rawId = call.getString("instanceId") ?? "default"
+        let safeId = normalizeInstanceId(rawId)
+        let dataPath = resolveInstanceDataPath(instanceId: safeId)
 
         if let config = call.getObject("config"), let keepAlive = config["keepAlive"] as? Bool, keepAlive {
             KeepAliveService.shared.start()
         }
 
-        NodeRunner.shared.start(dataPath: stPath, port: port) { [weak self] success in
+        NodeRunner.shared.start(dataPath: dataPath, port: port) { [weak self] success in
             if success {
-                self?.notifyListeners("ready", data: ["ready": true, "url": "http://127.0.0.1:\(port)", "port": port])
+                self?.notifyListeners("ready", data: ["ready": true, "url": "http://127.0.0.1:\(port)", "port": port, "instanceId": safeId])
                 call.resolve(["ready": true])
             } else {
                 self?.notifyListeners("error", data: ["message": "启动本地 Node 实例失败"])
@@ -217,15 +310,29 @@ public class TarvenEnvPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDeleg
     }
 
     @objc func getInstanceInfo(_ call: CAPPluginCall) {
-        let instanceId = call.getString("instanceId") ?? "default"
-        let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let stPath = documentsUrl.appendingPathComponent("SillyTavern").path
+        let rawId = call.getString("instanceId") ?? "default"
+        let port = call.getInt("port") ?? 8000
+        let safeId = normalizeInstanceId(rawId)
+        let dataPath = resolveInstanceDataPath(instanceId: safeId)
+        let fm = FileManager.default
+        let serverDir = NodeRunner.shared.resolveServerDirectory(dataPath: dataPath)
+        let hasServer = fm.fileExists(atPath: (serverDir as NSString).appendingPathComponent("server.js"))
+        let size = calculateDirectorySize(at: dataPath)
+        let attrs = try? fm.attributesOfItem(atPath: dataPath)
+        let ctime = (attrs?[.creationDate] as? Date) ?? Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        let createdAtStr = fmt.string(from: ctime)
+
         call.resolve([
-            "instanceId": instanceId,
+            "instanceId": safeId,
             "version": "1.12.0",
-            "installPath": stPath,
-            "port": 8000,
-            "sizeBytes": 0,
+            "path": serverDir,
+            "installPath": dataPath,
+            "sizeBytes": size,
+            "createdAt": createdAtStr,
+            "port": port,
+            "status": hasServer ? "已就绪" : "未完成",
             "uptimeSeconds": NodeRunner.shared.isRunning ? 60 : 0
         ])
     }
@@ -441,7 +548,16 @@ public class TarvenEnvPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDeleg
     }
 
     @objc func uninstallInstance(_ call: CAPPluginCall) {
-        call.resolve(["success": true, "freedBytes": 0])
+        let rawId = call.getString("instanceId") ?? ""
+        let safeId = normalizeInstanceId(rawId)
+        let dataPath = resolveInstanceDataPath(instanceId: safeId)
+        let fm = FileManager.default
+        var freed: Int64 = 0
+        if fm.fileExists(atPath: dataPath) {
+            freed = calculateDirectorySize(at: dataPath)
+            try? fm.removeItem(atPath: dataPath)
+        }
+        call.resolve(["success": true, "freedBytes": freed])
     }
 
     @objc func cleanGarbage(_ call: CAPPluginCall) {

@@ -70,6 +70,11 @@ async function main() {
   } catch (e) {
     console.log('bootstatus warning:', e.message);
   }
+  try {
+    run('defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false');
+  } catch (e) {
+    console.log('ConnectHardwareKeyboard notice:', e.message);
+  }
   await sleep(3000);
 
   if (appPath && fs.existsSync(appPath)) {
@@ -239,6 +244,16 @@ async function main() {
   fs.writeFileSync(cmdFile, 'dismiss_picker');
   await sleep(1500);
 
+  // 阶段 4g: 点击酒馆输入框软键盘避让测试 (软键盘弹出时底部输入区域平滑避让，不被遮挡)
+  console.log('\n--- Triggering Stage 4g: SillyTavern Keyboard Avoidance Test ---');
+  fs.writeFileSync(cmdFile, 'stage4g');
+  await sleep(4000);
+  const shot4g = path.join(outDir, '04g-tavern-keyboard-avoidance.png');
+  run(`xcrun simctl io "${deviceUuid}" screenshot "${shot4g}"`);
+  console.log(`Saved Stage 4g screenshot (Keyboard Avoidance): ${shot4g}`);
+  fs.writeFileSync(cmdFile, 'blur_input');
+  await sleep(1500);
+
   // 阶段 4d: 切换官方预设主题 Celestial Macaron (冷青蓝调, blur_tint_color: rgba(23, 36, 55, 0.9))
   console.log('\n--- Switching to Preset Theme: Celestial Macaron ---');
   fs.writeFileSync(cmdFile, 'theme:Celestial Macaron');
@@ -285,9 +300,9 @@ async function main() {
     }
   }
 
-  // 校验 12 张截图的唯一性与有效性
+  // 校验 13 张截图的唯一性与有效性
   console.log('\n>>> Validating Screenshot Integrity & Uniqueness...');
-  const shots = [shot1, shot2, shot2b, shot2c, shot3, shot4, shot4b, shot4c, shot4d, shot4e, shot4f, shot5];
+  const shots = [shot1, shot2, shot2b, shot2c, shot3, shot4, shot4b, shot4c, shot4g, shot4d, shot4e, shot4f, shot5];
   const hashes = new Map();
   for (const s of shots) {
     const data = fs.readFileSync(s);
@@ -300,7 +315,7 @@ async function main() {
       hashes.set(hash, path.basename(s));
     }
   }
-  console.log(`Unique screenshots verified: ${hashes.size}/12`);
+  console.log(`Unique screenshots verified: ${hashes.size}/13`);
 
   // 检查是否有系统崩溃报告
   try {
@@ -410,6 +425,13 @@ async function main() {
       desc: '验证全屏沉浸态下酒馆触发文件上传时，iOS 系统 UIDocumentPickerViewController 原生弹层层级分明、触控稳定。',
       file: '04c-tavern-character-import-picker.png',
       statusBar: '系统文件选择器 · 已隐藏'
+    },
+    {
+      step: '04g',
+      title: '酒馆输入法软键盘弹出与视口底部避让',
+      desc: '验证点击酒馆底部输入框（#send_textarea）聚焦时，原生监听系统软键盘动画并联动缩减 WebView 视口高度，酒馆底部输入框与发送按钮平滑上抬，杜绝输入法遮挡。',
+      file: '04g-tavern-keyboard-avoidance.png',
+      statusBar: '软键盘避让联动 · 视口高度收缩 · 已隐藏'
     },
     {
       step: '04d',

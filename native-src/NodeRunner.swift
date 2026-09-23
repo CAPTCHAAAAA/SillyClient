@@ -102,6 +102,17 @@ public class NodeRunner {
         isNodeRunning = false
         KeepAliveService.shared.stop()
     }
+
+    /**
+     * 触发 V8 垃圾回收主动降压 (防御系统 Jetsam 强杀)
+     */
+    public func triggerGarbageCollection() {
+        guard isNodeRunning else { return }
+        appendLog("[NodeRunner] 收到内存告警，正在请求 V8 引擎执行主动垃圾回收 (gc)...")
+        let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sig = docsUrl.appendingPathComponent("trigger-node-gc.sig")
+        try? "\(Date().timeIntervalSince1970)".write(to: sig, atomically: true, encoding: .utf8)
+    }
     
     /**
      * 重定向 stdout 管道至沙盒 server.log 与内存缓冲区
@@ -318,7 +329,8 @@ public class NodeRunner {
             "--port=\(port)",
             "--dataRoot=\(dataDir)",
             "--listen=false",
-            "--browserLaunchEnabled=false"
+            "--browserLaunchEnabled=false",
+            "--expose-gc"
         ]
         
         appendLog("[NodeRunner] 正在拉起 NodeMobile node_start 事件循环: \(args.joined(separator: " "))")

@@ -105,6 +105,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         if let picker = presenter as? UIDocumentPickerViewController ?? presenter.presentedViewController as? UIDocumentPickerViewController {
                             picker.dismiss(animated: true, completion: nil)
                         }
+                    } else if stage == "stage4g" || stage == "focus_input" {
+                        TavernViewController.shared.focusInputFieldForTesting()
+                    } else if stage == "blur_input" {
+                        TavernViewController.shared.blurInputFieldForTesting()
                     } else if stage == "stage5" {
                         TavernViewController.shared.exitImmersive()
                     } else if stage.hasPrefix("theme:") {
@@ -140,12 +144,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 进入后台预备
     }
 
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // 切入后台：KeepAliveService 保持服务活跃
+        // 切入后台：申请 UIBackgroundTaskIdentifier 缓冲，防止 Node.js 进程在写入/请求未完成前被系统直接冻结
+        backgroundTask = application.beginBackgroundTask(withName: "com.sillyclient.backgroundTask") { [weak self] in
+            guard let self = self else { return }
+            if self.backgroundTask != .invalid {
+                application.endBackgroundTask(self.backgroundTask)
+                self.backgroundTask = .invalid
+            }
+        }
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // 恢复前台
+        // 恢复前台：结束后台任务并触发酒馆连接自检
+        if backgroundTask != .invalid {
+            application.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
+        TavernViewController.shared.ensureActiveConnection()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
@@ -201,6 +219,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 if let picker = presenter as? UIDocumentPickerViewController ?? presenter.presentedViewController as? UIDocumentPickerViewController {
                     picker.dismiss(animated: true, completion: nil)
                 }
+            } else if stage == "stage4g" || stage == "focus_input" {
+                TavernViewController.shared.focusInputFieldForTesting()
+            } else if stage == "blur_input" {
+                TavernViewController.shared.blurInputFieldForTesting()
             } else if stage == "stage5" {
                 TavernViewController.shared.exitImmersive()
             } else if stage.hasPrefix("theme:") {

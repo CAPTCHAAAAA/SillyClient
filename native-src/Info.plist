@@ -68,5 +68,13 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+
+	<!-- 本地局域网发现与访问权限声明 (支持局域网其他设备访问酒馆) -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>SillyClient 需要访问本地网络以允许本地酒馆服务运行及局域网设备协同访问。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp</string>
+	</array>
 </dict>
 </plist>
