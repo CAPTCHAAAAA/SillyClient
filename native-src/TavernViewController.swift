@@ -32,11 +32,13 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         }
     }
 
-    // 沉浸顶栏与交互 (对齐 Android TopScrimBar)
+    // 沉浸顶栏与底栏交互 (对齐 Android TopScrimBar + 底部安全区衬垫)
     public private(set) var topScrimBar = TopScrimBarView()
+    public private(set) var bottomScrimBar = UIView()
     private var chameleonEngine: ChameleonEngine?
     private var shimmerHint: ShimmerHintView?
     public private(set) var fixedStatusBarHeight: CGFloat = 0
+    public private(set) var fixedBottomSafeInset: CGFloat = 0
     public private(set) var currentKeyboardHeight: CGFloat = 0
 
     // 状态
@@ -44,6 +46,10 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
     private var currentTavernUrl: URL?
 
     public override var prefersStatusBarHidden: Bool {
+        return isTavernActive
+    }
+
+    public override var prefersHomeIndicatorAutoHidden: Bool {
         return isTavernActive
     }
 
@@ -68,9 +74,11 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         if animated {
             UIView.animate(withDuration: 0.25) {
                 self.setNeedsStatusBarAppearanceUpdate()
+                self.setNeedsUpdateOfHomeIndicatorAutoHidden()
             }
         } else {
             self.setNeedsStatusBarAppearanceUpdate()
+            self.setNeedsUpdateOfHomeIndicatorAutoHidden()
         }
     }
 
@@ -79,6 +87,7 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         view.backgroundColor = UIColor(red: 15/255.0, green: 17/255.0, blue: 23/255.0, alpha: 1.0)
         setupTavernWebView()
         setupTopScrimBar()
+        setupBottomScrimBar()
 
         // 注册键盘位置变化与系统内存警告通知
         NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardNotification(_:)), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
@@ -138,14 +147,32 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         topScrimBar.addGestureRecognizer(tap)
     }
 
+    private func setupBottomScrimBar() {
+        bottomScrimBar.alpha = 0.0
+        bottomScrimBar.isHidden = true
+        bottomScrimBar.backgroundColor = UIColor(red: 19/255.0, green: 21/255.0, blue: 27/255.0, alpha: 1.0)
+        view.addSubview(bottomScrimBar)
+    }
+
     public func updateTavernWebViewLayout() {
-        let height = max(0, view.bounds.height - fixedStatusBarHeight - currentKeyboardHeight)
+        let bottomInset = currentKeyboardHeight > 0 ? currentKeyboardHeight : fixedBottomSafeInset
+        let height = max(0, view.bounds.height - fixedStatusBarHeight - bottomInset)
         tavernWebView?.frame = CGRect(
             x: 0,
             y: fixedStatusBarHeight,
             width: view.bounds.width,
             height: height
         )
+
+        // 底部变色龙同色安全区衬垫：软键盘弹起时隐藏，键盘收起且在沉浸态时显示
+        bottomScrimBar.frame = CGRect(
+            x: 0,
+            y: view.bounds.height - fixedBottomSafeInset,
+            width: view.bounds.width,
+            height: fixedBottomSafeInset
+        )
+        bottomScrimBar.alpha = (isTavernActive && currentKeyboardHeight == 0) ? 1.0 : 0.0
+        bottomScrimBar.isHidden = !isTavernActive || (currentKeyboardHeight > 0)
     }
 
     public override func viewDidLayoutSubviews() {
@@ -161,10 +188,28 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
             fixedStatusBarHeight = screenH >= 852.0 ? 54.0 : (screenH >= 812.0 ? 47.0 : 20.0)
         }
 
+        // 测定并持久化底部物理安全区高度 (全面屏 iPhone 通常为 34pt，旧款非全面屏为 0pt)
+        let rawSafeBottom = view.safeAreaInsets.bottom
+        if rawSafeBottom > 0 {
+            fixedBottomSafeInset = max(fixedBottomSafeInset, rawSafeBottom)
+        }
+        if fixedBottomSafeInset <= 0 {
+            let screenH = max(view.bounds.height, view.bounds.width)
+            fixedBottomSafeInset = screenH >= 812.0 ? 34.0 : 0.0
+        }
+
         // 2. 原生变色龙顶条带排布于屏幕顶端 [0, 0, width, fixedStatusBarHeight]
         topScrimBar.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: fixedStatusBarHeight)
 
-        // 3. 酒馆 WebView 下移 fixedStatusBarHeight 并自动避让输入法软键盘
+        // 底部变色龙同色衬垫条排布于屏幕底端 [0, height - fixedBottomSafeInset, width, fixedBottomSafeInset]
+        bottomScrimBar.frame = CGRect(
+            x: 0,
+            y: view.bounds.height - fixedBottomSafeInset,
+            width: view.bounds.width,
+            height: fixedBottomSafeInset
+        )
+
+        // 3. 酒馆 WebView 下移 fixedStatusBarHeight 并自动避让底部小白条与输入法软键盘
         updateTavernWebViewLayout()
 
         // 4. 布局流光指引：通过硬件雷达计算在灵动岛左侧安全翼区居中
@@ -174,6 +219,7 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         }
 
         view.bringSubviewToFront(topScrimBar)
+        view.bringSubviewToFront(bottomScrimBar)
         if let hint = shimmerHint {
             view.bringSubviewToFront(hint)
         }
@@ -213,15 +259,18 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
 
         wv.isHidden = false
         topScrimBar.isHidden = false
+        bottomScrimBar.isHidden = false
 
         view.setNeedsLayout()
         view.layoutIfNeeded()
 
-        // 优雅隐藏系统状态栏并淡入酒馆
+        // 优雅隐藏系统状态栏与小白条并淡入酒馆
         UIView.animate(withDuration: 0.25, animations: {
             self.setNeedsStatusBarAppearanceUpdate()
+            self.setNeedsUpdateOfHomeIndicatorAutoHidden()
             wv.alpha = 1.0
             self.topScrimBar.alpha = 1.0
+            self.bottomScrimBar.alpha = 1.0
             self.consoleWebView?.alpha = 0.0
         }) { _ in
             self.consoleWebView?.isHidden = true
@@ -247,12 +296,15 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
 
         UIView.animate(withDuration: 0.25, animations: {
             self.setNeedsStatusBarAppearanceUpdate()
+            self.setNeedsUpdateOfHomeIndicatorAutoHidden()
             self.consoleWebView?.alpha = 1.0
             self.tavernWebView?.alpha = 0.0
             self.topScrimBar.alpha = 0.0
+            self.bottomScrimBar.alpha = 0.0
         }) { _ in
             self.tavernWebView?.isHidden = true
             self.topScrimBar.isHidden = true
+            self.bottomScrimBar.isHidden = true
         }
     }
 
@@ -275,6 +327,8 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         chameleonEngine?.startPolling { [weak self] color, isDark in
             guard let self = self else { return }
             self.topScrimBar.setColor(color)
+            self.bottomScrimBar.backgroundColor = color
+            self.view.backgroundColor = color
             self.shimmerHint?.updateTone(isDarkScrim: isDark)
         }
     }
@@ -286,6 +340,10 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
         self.chameleonEngine?.sample { [weak self] color, isDark in
             guard let self = self else { return }
             self.topScrimBar.setColor(color, animated: true)
+            UIView.animate(withDuration: 0.25) {
+                self.bottomScrimBar.backgroundColor = color
+                self.view.backgroundColor = color
+            }
             self.shimmerHint?.updateTone(isDarkScrim: isDark)
         }
     }
@@ -398,6 +456,8 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
             self?.chameleonEngine?.sample { color, isDark in
                 guard let self = self else { return }
                 self.topScrimBar.setColor(color)
+                self.bottomScrimBar.backgroundColor = color
+                self.view.backgroundColor = color
                 self.shimmerHint?.updateTone(isDarkScrim: isDark)
             }
         }

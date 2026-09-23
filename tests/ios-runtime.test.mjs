@@ -326,21 +326,23 @@ test('multi-instance ID normalization sanitizes characters safely', () => {
     assert.equal(normalizeInstanceId('inst:test?'), 'insttest');
 });
 
-test('keyboard avoidance layout shrinks viewport height precisely by keyboard frame overlap', () => {
+test('Home Indicator avoidance and keyboard avoidance layout bounds match hardware specs', () => {
     const screenHeight = 852.0; // iPhone 16 Pro height
     const fixedStatusBarHeight = 54.0;
+    const fixedBottomSafeInset = 34.0;
     const currentKeyboardHeight = 336.0;
 
-    // Normal full screen immersive layout:
-    const normalHeight = screenHeight - fixedStatusBarHeight;
-    assert.equal(normalHeight, 798.0);
+    // 1. Full screen immersive layout with Home Indicator bottom safe area avoidance:
+    const normalAvoidanceHeight = Math.max(0, screenHeight - fixedStatusBarHeight - fixedBottomSafeInset);
+    assert.equal(normalAvoidanceHeight, 764.0);
 
-    // Keyboard presented layout:
-    const keyboardLayoutHeight = Math.max(0, screenHeight - fixedStatusBarHeight - currentKeyboardHeight);
+    // 2. Keyboard presented layout (bottomInset transitions to currentKeyboardHeight):
+    const bottomInsetWithKeyboard = currentKeyboardHeight > 0 ? currentKeyboardHeight : fixedBottomSafeInset;
+    const keyboardLayoutHeight = Math.max(0, screenHeight - fixedStatusBarHeight - bottomInsetWithKeyboard);
     assert.equal(keyboardLayoutHeight, 462.0);
 
-    // Assert the difference matches keyboard overlap exactly
-    assert.equal(normalHeight - keyboardLayoutHeight, currentKeyboardHeight);
+    // 3. Difference between keyboard up and keyboard down:
+    assert.equal(normalAvoidanceHeight - keyboardLayoutHeight, currentKeyboardHeight - fixedBottomSafeInset);
 });
 
 test('NodeRunner and ios-loader expose and respond to garbage collection signal', () => {
@@ -354,4 +356,20 @@ test('NodeRunner and ios-loader expose and respond to garbage collection signal'
     // ios-loader must listen for trigger-node-gc.sig and invoke globalThis.gc()
     assert.ok(iosLoader.includes('trigger-node-gc.sig'), 'ios-loader must check trigger-node-gc.sig');
     assert.ok(iosLoader.includes('globalThis.gc()'), 'ios-loader must invoke globalThis.gc()');
+});
+
+test('TavernViewController and AppDelegate define prefersHomeIndicatorAutoHidden and bottom safe area support', () => {
+    const tavernVCSwift = fs.readFileSync(path.join(root, 'native-src', 'TavernViewController.swift'), 'utf8');
+    const appDelegateSwift = fs.readFileSync(path.join(root, 'native-src', 'AppDelegate.swift'), 'utf8');
+
+    // TavernViewController must override prefersHomeIndicatorAutoHidden
+    assert.ok(tavernVCSwift.includes('override var prefersHomeIndicatorAutoHidden: Bool'), 'TavernViewController must override prefersHomeIndicatorAutoHidden');
+    assert.ok(tavernVCSwift.includes('setNeedsUpdateOfHomeIndicatorAutoHidden()'), 'TavernViewController must trigger auto-hide update');
+
+    // TavernViewController must define bottom safe area tracking and bottomScrimBar
+    assert.ok(tavernVCSwift.includes('fixedBottomSafeInset'), 'TavernViewController must define fixedBottomSafeInset');
+    assert.ok(tavernVCSwift.includes('bottomScrimBar'), 'TavernViewController must define bottomScrimBar');
+
+    // AppDelegate SillyBridgeViewController must forward prefersHomeIndicatorAutoHidden
+    assert.ok(appDelegateSwift.includes('override var prefersHomeIndicatorAutoHidden: Bool'), 'AppDelegate must forward prefersHomeIndicatorAutoHidden');
 });

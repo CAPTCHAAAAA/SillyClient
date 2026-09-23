@@ -15,6 +15,10 @@ class SillyBridgeViewController: CAPBridgeViewController {
         return TavernViewController.shared.prefersStatusBarHidden
     }
 
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        return TavernViewController.shared.prefersHomeIndicatorAutoHidden
+    }
+
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
@@ -24,6 +28,10 @@ class SillyBridgeViewController: CAPBridgeViewController {
     }
 
     override var childForStatusBarStyle: UIViewController? {
+        return nil
+    }
+
+    override var childForHomeIndicatorAutoHidden: UIViewController? {
         return nil
     }
 }
