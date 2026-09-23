@@ -119,8 +119,13 @@ test('the prepared server starts without WASM and serves verified frontend asset
         assert.doesNotMatch(log, /Runtime must not import webpack|Compiling frontend libraries/);
         t.diagnostic(`HTTP 200 for the homepage and ${manifest.assets.length} hash-verified assets; startup ${Date.now() - startedAt}ms.`);
     } finally {
-        if (child.exitCode === null) child.kill();
-        await exit;
+        if (child.exitCode === null) {
+            try { child.kill('SIGKILL'); } catch (_) {}
+        }
+        await Promise.race([
+            exit,
+            new Promise(resolve => setTimeout(resolve, 1000))
+        ]);
         if (process.env.SILLYCLIENT_TEST_LOG) {
             fs.writeFileSync(process.env.SILLYCLIENT_TEST_LOG, log);
         }

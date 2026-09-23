@@ -185,8 +185,11 @@ test('loader reports startup failure promptly and does not synthesize WASM', asy
         assert.equal(JSON.parse(fs.readFileSync(failureFile, 'utf8')).message, 'expected startup failure');
         assert.equal(fs.existsSync(path.join(f.directory, 'server-ready.txt')), false);
     } finally {
-        child.kill();
-        await exit;
+        try { child.kill('SIGKILL'); } catch (_) {}
+        await Promise.race([
+            exit,
+            new Promise(resolve => setTimeout(resolve, 1000))
+        ]);
     }
 });
 
