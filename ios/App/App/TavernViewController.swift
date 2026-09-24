@@ -237,31 +237,49 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
      */
     public func enterImmersive(url: URL, showGestureHint: Bool = true) {
         guard let wv = tavernWebView else { return }
+        let isAlreadyOnUrl = (currentTavernUrl == url && (wv.url == url || wv.url?.absoluteString == url.absoluteString))
+        let isAlreadyLoadingSameUrl = (currentTavernUrl == url && wv.isLoading)
         currentTavernUrl = url
         isTavernActive = true
 
-        if url.scheme == "data" {
-            let fullStr = url.absoluteString
-            if let commaIndex = fullStr.range(of: ",")?.upperBound {
-                let payload = String(fullStr[commaIndex...])
-                if fullStr.contains(";base64,") {
-                    if let data = Data(base64Encoded: payload), let html = String(data: data, encoding: .utf8) {
-                        wv.loadHTMLString(html, baseURL: nil)
-                    } else {
-                        wv.load(URLRequest(url: url))
+        if isAlreadyOnUrl {
+            // 已在目标页面，检查 DOM ready 状态，若已就绪直接产生信号并执行取色
+            wv.evaluateJavaScript("document.readyState") { [weak self] result, _ in
+                guard let self = self else { return }
+                if let state = result as? String, (state == "interactive" || state == "complete") {
+                    let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                    let loadedFile = docsUrl.appendingPathComponent("tavern-rendered.txt")
+                    try? "loaded".write(to: loadedFile, atomically: true, encoding: .utf8)
+                    self.chameleonEngine?.sample { color, isDark in
+                        self.topScrimBar.setColor(color, animated: false)
+                        self.shimmerHint?.updateTone(isDarkScrim: isDark)
                     }
-                } else {
-                    let html = payload.removingPercentEncoding ?? payload
-                    wv.loadHTMLString(html, baseURL: nil)
                 }
-            } else if let decoded = fullStr.removingPercentEncoding {
-                let html = decoded.replacingOccurrences(of: "data:text/html;charset=utf-8,", with: "")
-                wv.loadHTMLString(html, baseURL: nil)
+            }
+        } else if !isAlreadyLoadingSameUrl {
+            if url.scheme == "data" {
+                let fullStr = url.absoluteString
+                if let commaIndex = fullStr.range(of: ",")?.upperBound {
+                    let payload = String(fullStr[commaIndex...])
+                    if fullStr.contains(";base64,") {
+                        if let data = Data(base64Encoded: payload), let html = String(data: data, encoding: .utf8) {
+                            wv.loadHTMLString(html, baseURL: nil)
+                        } else {
+                            wv.load(URLRequest(url: url))
+                        }
+                    } else {
+                        let html = payload.removingPercentEncoding ?? payload
+                        wv.loadHTMLString(html, baseURL: nil)
+                    }
+                } else if let decoded = fullStr.removingPercentEncoding {
+                    let html = decoded.replacingOccurrences(of: "data:text/html;charset=utf-8,", with: "")
+                    wv.loadHTMLString(html, baseURL: nil)
+                } else {
+                    wv.load(URLRequest(url: url))
+                }
             } else {
                 wv.load(URLRequest(url: url))
             }
-        } else {
-            wv.load(URLRequest(url: url))
         }
 
         wv.isHidden = false
@@ -569,18 +587,29 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
     // MARK: - WKNavigationDelegate
     public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("[TavernViewController] didFailProvisionalNavigation: %@", error.localizedDescription)
+        let nsErr = error as NSError
+        // 若为主动取消 (如连续调用 load 导致的 -999 NSURLErrorCancelled)，切勿重新调度 retry，防止无限重载风暴
+        if nsErr.domain == NSURLErrorDomain && nsErr.code == NSURLErrorCancelled {
+            return
+        }
         // 若因本地服务正在拉起连接被拒，1 秒后自动重试加载
         if isTavernActive, let url = currentTavernUrl {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 guard let self = self, self.isTavernActive else { return }
-                NSLog("[TavernViewController] Retrying loading SillyTavern URL: %@", url.absoluteString)
-                self.tavernWebView?.load(URLRequest(url: url))
+                if self.tavernWebView?.isLoading == false {
+                    NSLog("[TavernViewController] Retrying loading SillyTavern URL: %@", url.absoluteString)
+                    self.tavernWebView?.load(URLRequest(url: url))
+                }
             }
         }
     }
 
     public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         NSLog("[TavernViewController] didFail navigation: %@", error.localizedDescription)
+        let nsErr = error as NSError
+        if nsErr.domain == NSURLErrorDomain && nsErr.code == NSURLErrorCancelled {
+            return
+        }
     }
 
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
