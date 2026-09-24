@@ -528,6 +528,30 @@ public class TarvenEnvPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDeleg
     }
 
     @objc func sendCommand(_ call: CAPPluginCall) {
+        let text = call.getString("text") ?? ""
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            let lower = trimmed.lowercased()
+            if lower == "gc" {
+                NodeRunner.shared.triggerGarbageCollection()
+                let msg = "[Console] 已触发 V8 垃圾回收 (Garbage Collection)"
+                NodeRunner.shared.appendLog(msg)
+                notifyListeners("log", data: ["message": msg, "level": "info"])
+            } else if lower == "status" {
+                let status = NodeRunner.shared.isRunning ? "运行中 (Port: 8000)" : "已停止"
+                let msg = "[Console] iOS NodeMobile 运行状态: \(status)"
+                NodeRunner.shared.appendLog(msg)
+                notifyListeners("log", data: ["message": msg, "level": "info"])
+            } else if lower == "help" {
+                let msg = "[Console] iOS 沙盒可用指令: status (查看状态), gc (主动垃圾回收)"
+                NodeRunner.shared.appendLog(msg)
+                notifyListeners("log", data: ["message": msg, "level": "info"])
+            } else {
+                let msg = "[Console] \(trimmed)"
+                NodeRunner.shared.appendLog(msg)
+                notifyListeners("log", data: ["message": msg, "level": "info"])
+            }
+        }
         call.resolve(["success": true])
     }
 
