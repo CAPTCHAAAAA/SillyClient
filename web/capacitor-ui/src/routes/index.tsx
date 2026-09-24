@@ -1492,6 +1492,32 @@ function SillyClientLauncher() {
       icon: <Folder className="w-5 h-5" />,
     };
 
+    const resetAllModals = () => {
+      setShowManagePanel(null);
+      setIsManagePanelClosing(false);
+      setShowLaunchPanel(false);
+      setIsLaunchPanelClosing(false);
+      setIsLaunchMinimized(false);
+      setShowAppMenu(false);
+      setIsAppMenuClosing(false);
+      setShowBgPanel(false);
+      setIsPanelClosing(false);
+      setShowNewInstancePanel(false);
+      setIsNewInstancePanelClosing(false);
+      setShowCleanPanel(false);
+      setIsCleanPanelClosing(false);
+      setPendingDelete(null);
+      setShowTerminal(false);
+      setIsTerminalClosing(false);
+      setActiveCardMenu(null);
+      setIsCardMenuClosing(false);
+      setExternallyRenamingId(null);
+      setRenamingId(null);
+      setVerDropdownOpen(false);
+      setIsVerDropdownClosing(false);
+      setSearchQuery("");
+    };
+
     const handleStage = async (stage: string) => {
       console.log("[AutoTour] Stage triggered:", stage);
       setShowOnboarding(false);
@@ -1499,48 +1525,119 @@ function SillyClientLauncher() {
       setInstances(prev => prev.length === 0 ? [testInstance] : prev);
 
       if (stage === "stage1") {
-        setShowManagePanel(null);
-        setShowLaunchPanel(false);
+        resetAllModals();
         setAutoTourStage("01: 控制台初始化与灵动岛避让 [状态栏正常可见]");
+      } else if (stage === "stage_search" || stage === "stage1b") {
+        resetAllModals();
+        setSearchQuery("Silly");
+        setAutoTourStage("01b: 实例全局搜索 [实时过滤与高亮]");
+      } else if (stage === "stage_card_menu") {
+        resetAllModals();
+        setActiveCardMenu(testInstance.id);
+        setMenuPos({ top: 220, left: 180 });
+        setAutoTourStage("02: 卡片操作浮动菜单 [CardActionMenu 启动/编辑/导出/清理/删除]");
+      } else if (stage === "stage_inline_rename") {
+        resetAllModals();
+        setExternallyRenamingId(testInstance.id);
+        setAutoTourStage("02b: 双击标题原地内联重命名 [Inline Title Rename]");
       } else if (stage === "stage2") {
-        setShowLaunchPanel(false);
-        setAutoTourStage("02: 实例详情与管理抽屉 [交互响应正常]");
+        resetAllModals();
         setShowManagePanel(testInstance);
+        setAutoTourStage("02c: 实例管理与属性配置抽屉 [Manage Drawer]");
       } else if (stage === "stage2b") {
-        setShowLaunchPanel(false);
+        resetAllModals();
         setShowManagePanel(testInstance);
-        setAutoTourStage("02b: 调用原生文件选择器 [UIDocumentPickerViewController]");
+        setAutoTourStage("02d: 调用系统文件选择器 [UIDocumentPickerViewController]");
         TarvenEnv.pickZipFile().then((res) => {
           console.log("[AutoTour] pickZipFile returned:", res);
         }).catch((err) => {
           console.log("[AutoTour] pickZipFile error:", err);
         });
       } else if (stage === "stage2c") {
-        setShowLaunchPanel(false);
+        resetAllModals();
         setShowManagePanel(testInstance);
-        setAutoTourStage("02c: 数据包解析导入成功 [SillyTavern-Backup.zip]");
+        setAutoTourStage("02e: 数据包解析导入成功 [SillyTavern-Backup.zip]");
         setLaunchLogs([
           { msg: "已选取备份文件: SillyTavern-Backup.zip (1.47 MB)", level: "success" },
           { msg: "校验 ZIP 哈希值及 manifest.json 完整性通过", level: "info" }
         ]);
+      } else if (stage === "stage_app_settings") {
+        resetAllModals();
+        setShowAppMenu(true);
+        setAppSettingsTab("general");
+        setAutoTourStage("03a: 应用系统设置抽屉 [AppSettingsDrawer 通用/数据/维护]");
+      } else if (stage === "stage_bg_settings") {
+        resetAllModals();
+        setShowBgPanel(true);
+        setAutoTourStage("03b: 背景与视觉主题设置抽屉 [BackgroundSettingsDrawer]");
+      } else if (stage === "stage_wizard") {
+        resetAllModals();
+        setShowNewInstancePanel(true);
+        setNewInstanceName("新酒馆实例");
+        setAutoTourStage("03c: 新建实例向导弹窗 [NewInstanceWizardModal 本地/远程]");
+      } else if (stage === "stage_ver_dropdown") {
+        resetAllModals();
+        setShowNewInstancePanel(true);
+        setNewInstanceName("新酒馆实例");
+        setVerDropdownPos({
+          bottom: 240,
+          left: 24,
+          width: Math.min(window.innerWidth - 48, 380),
+          maxHeight: 280,
+        });
+        setVerDropdownOpen(true);
+        setAutoTourStage("03d: 版本选择下拉菜单 [VersionDropdown]");
+      } else if (stage === "stage_clean_modal") {
+        resetAllModals();
+        setShowCleanPanel(true);
+        setGarbageItems([
+          { id: "cache-1", label: "沙盒运行日志缓存 (server.log)", size: "2.4 MB", checked: true },
+          { id: "cache-2", label: "历史备份未解压分卷", size: "14.8 MB", checked: true },
+          { id: "cache-3", label: "WebKit 临时离线渲染缓存", size: "8.1 MB", checked: true }
+        ]);
+        setAutoTourStage("03e: 存储与垃圾清理模态框 [CleanGarbageModal]");
+      } else if (stage === "stage_delete_dialog") {
+        resetAllModals();
+        setPendingDelete(testInstance);
+        setAutoTourStage("03f: 实例销毁与删除确认对话框 [DeleteConfirmDialog]");
       } else if (stage === "stage3") {
-        setShowManagePanel(null);
-        setAutoTourStage("03: 启动酒馆与环境调度 [TarvenEnv 正常流转]");
+        resetAllModals();
         setShowLaunchPanel(true);
+        setIsLaunchMinimized(false);
         setOperationPurpose("launch");
         setLaunchProgress({ pct: 65, text: "正在调度 Node 运行环境并启动 SillyTavern..." });
         setLaunchLogs([
           { msg: "TarvenEnv.provisionAndStart 调度成功", level: "info" },
           { msg: "加载沙盒环境 Documents/SillyTavern", level: "info" },
           { msg: "Node 运行时状态检查: 正常 (Port: 8000)", level: "success" },
+          { msg: "DeepSeek 官方 API 渠道验证: 就绪", level: "info" },
           { msg: "准备加载主界面 WebView 视图", level: "info" },
         ]);
+        setAutoTourStage("04a: 启动控制台模态窗 [LaunchConsoleModal live stream]");
+      } else if (stage === "stage_capsule") {
+        resetAllModals();
+        setShowLaunchPanel(true);
+        setIsLaunchMinimized(true);
+        setAutoTourStage("04b: 启动控制台最小化为后台活动胶囊 [ActivityCapsule]");
+      } else if (stage === "stage_terminal") {
+        resetAllModals();
+        setShowTerminal(true);
+        setTerminalLogs([
+          { msg: "=== SillyClient iOS 沙盒控制台 ===", level: "info" },
+          { msg: "沙盒路径: /var/mobile/Containers/Data/Application/.../Documents", level: "info" },
+          { msg: "NodeMobile: v18.20.4 (arm64-apple-ios-simulator, jitless)", level: "info" },
+          { msg: "SillyTavern 运行环境端口: 8000 (HTTP 200 OK)", level: "success" },
+          { msg: "DeepSeek API: sk-4a9edb...eef2 (deepseek-chat · 官方 Key)", level: "info" },
+          { msg: "输入 'status' 或 'gc' 获取运行态诊断", level: "info" },
+        ]);
+        setAutoTourStage("04c: iOS 沙盒与 NodeMobile 终端交互控制台 [TerminalModal]");
       } else if (stage === "stage4") {
-        setAutoTourStage("04: 酒馆全沉浸态 [状态栏平滑隐藏 prefersStatusBarHidden=true]");
-        setShowLaunchPanel(false);
+        resetAllModals();
+        setAutoTourStage("05a: 酒馆全沉浸态 [状态栏平滑隐藏 prefersStatusBarHidden=true]");
         await TarvenEnv.enterImmersive({ url: "http://127.0.0.1:8000/", showGestureHint: true });
       } else if (stage === "stage5") {
-        setAutoTourStage("05: 退出沉浸返回控制台 [状态栏恢复可见]");
+        resetAllModals();
+        setAutoTourStage("08: 退出沉浸返回控制台 [状态栏恢复可见]");
         await TarvenEnv.exitImmersive();
       }
     };

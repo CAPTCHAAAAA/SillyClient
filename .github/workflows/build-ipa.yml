@@ -100,8 +100,24 @@ jobs:
               animation: false,
               sortOrder: 'az'
             };
+            // 配置 DeepSeek 官方 API
+            const dsKey = Buffer.from('c2stNGE5ZWRiOWIwZmZmNDBlMjg5ZjQ3ZThhMWZkMWVlZjI=', 'base64').toString('utf8');
+            settings.main_api = 'openai';
+            settings.chat_completion_source = 'custom';
+            settings.reverse_proxy = 'https://api.deepseek.com/v1';
+            settings.proxy_password = dsKey;
+            settings.custom_model = 'deepseek-chat';
+            settings.openai_model = 'deepseek-chat';
             fs.writeFileSync('data/default-user/settings.json', JSON.stringify(settings, null, 2));
-            console.log('--- 验证已写入 SC Bordeaux 初始配置到 settings.json (含 power_user) ---');
+
+            // 写入 secrets.json
+            const secrets = {
+              api_key_deepseek: [{ id: 'deepseek-key', value: dsKey, label: 'DeepSeek', active: true }],
+              api_key_custom: [{ id: 'custom-key', value: dsKey, label: 'DeepSeek Custom', active: true }],
+              api_key_openai: [{ id: 'openai-key', value: dsKey, label: 'DeepSeek OpenAI', active: true }]
+            };
+            fs.writeFileSync('data/default-user/secrets.json', JSON.stringify(secrets, null, 2));
+            console.log('--- 验证已写入 SC Bordeaux 与 DeepSeek API 初始配置到 settings.json ---');
             console.log(fs.readFileSync('data/default-user/settings.json', 'utf8').slice(0, 500));
           "
           cp ../native-src/ios-loader.mjs ./

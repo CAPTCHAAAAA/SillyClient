@@ -760,4 +760,39 @@ public class TavernViewController: UIViewController, WKNavigationDelegate, WKUID
             try? "tavern_picker".write(to: marker, atomically: true, encoding: .utf8)
         }
     }
+
+    public func presentExportSheetForTesting() {
+        let tempDir = FileManager.default.temporaryDirectory
+        let exportUrl = tempDir.appendingPathComponent("SillyTavern-Export-Chat.json")
+        let jsonSample = """
+        {
+          "character": "Seraphina",
+          "exportDate": "2026-09-24",
+          "model": "deepseek-chat",
+          "mes": [
+            { "user": "User", "text": "你好！" },
+            { "character": "Seraphina", "text": "你好，旅行者！欢迎来到酒馆。" }
+          ]
+        }
+        """
+        try? jsonSample.write(to: exportUrl, atomically: true, encoding: .utf8)
+        let activityVC = UIActivityViewController(activityItems: [exportUrl], applicationActivities: nil)
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = self.view
+            popover.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 0, height: 0)
+        }
+        let presenter = self.presentedViewController ?? self
+        presenter.present(activityVC, animated: true) {
+            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let marker = docsUrl.appendingPathComponent("native-export-presented.txt")
+            try? "export_sheet_presented".write(to: marker, atomically: true, encoding: .utf8)
+        }
+    }
+
+    public func dismissActiveExportSheet() {
+        let presenter = self.presentedViewController ?? self
+        if let act = presenter as? UIActivityViewController ?? presenter.presentedViewController as? UIActivityViewController {
+            act.dismiss(animated: true, completion: nil)
+        }
+    }
 }
