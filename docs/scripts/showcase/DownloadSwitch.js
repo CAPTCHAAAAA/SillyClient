@@ -7,8 +7,10 @@
   const releasesUrl = 'https://github.com/CAPTCHAAAAA/SillyClient/releases';
   const latestUrl = 'https://api.github.com/repos/CAPTCHAAAAA/SillyClient/releases/latest';
   const wide = matchMedia('(min-aspect-ratio: 1 / 1)');
-  const platforms = { windows: 'Windows', android: 'Android' };
-  let platform = wide.matches ? 'windows' : 'android';
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const platforms = { windows: 'Windows', android: 'Android', ios: 'iOS' };
+  const platformOrder = ['windows', 'android', 'ios'];
+  let platform = wide.matches ? 'windows' : (isIOS ? 'ios' : 'android');
   let busy = false;
   let pendingPlatform;
   let status = '';
@@ -26,6 +28,10 @@
         <label class="sc-platform-choice">
           <input type="radio" name="sc-download-platform" value="android">
           <span>Android</span>
+        </label>
+        <label class="sc-platform-choice">
+          <input type="radio" name="sc-download-platform" value="ios">
+          <span>iOS</span>
         </label>
       </div>
       <button class="sc-download-button" type="button">
@@ -46,7 +52,8 @@
   function render() {
     const language = document.documentElement.lang.startsWith('en') ? 'en' : 'zh';
     const text = copy[language].downloadControl;
-    control.style.setProperty('--sc-platform-index', platform === 'windows' ? 0 : 1);
+    const index = Math.max(0, platformOrder.indexOf(platform));
+    control.style.setProperty('--sc-platform-index', index);
     group.setAttribute('aria-label', text.platform);
     radios.forEach(radio => {
       radio.checked = radio.value === platform;
@@ -68,7 +75,7 @@
     render();
   }));
   wide.addEventListener('change', () => {
-    const next = wide.matches ? 'windows' : 'android';
+    const next = wide.matches ? 'windows' : (isIOS ? 'ios' : 'android');
     if (busy) pendingPlatform = next;
     else {
       platform = next;
@@ -84,6 +91,8 @@
     if (release.draft || release.prerelease || !Array.isArray(release.assets)) return null;
     const pattern = target === 'windows'
       ? /^SillyClient-Windows(?:-|_).*\.exe$/i
+      : target === 'ios'
+      ? /^SillyClient-iOS(?:-|_).*\.ipa$/i
       : /^SillyClient-Android(?:-|_).*\.apk$/i;
     return release.assets.find(asset => {
       if (!pattern.test(asset.name || '') || (asset.state && asset.state !== 'uploaded')) return false;
