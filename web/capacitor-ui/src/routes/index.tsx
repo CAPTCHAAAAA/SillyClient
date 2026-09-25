@@ -265,8 +265,8 @@ function SillyClientLauncher() {
   const terminalTitle = isWindows ? "Windows 控制台" : "Android 终端";
   const terminalPrompt = isWindows ? "C:\\>" : "~ $";
   const terminalBanner = isWindows
-    ? "SillyClient 1.9.1 · Windows · cmd.exe"
-    : "SillyClient 1.9.1 · Android shell";
+    ? "SillyClient 1.9.2 · Windows · cmd.exe"
+    : "SillyClient 1.9.2 · Android shell";
   const terminalPlaceholder = isWindows ? "输入 Windows 命令" : "输入 Android shell 命令";
   const [showOnboarding, setShowOnboarding] = useState(
     () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
