@@ -72,10 +72,72 @@ export interface NewInstanceWizardModalProps {
   addTerminalLog: (msg: string, level?: string) => void;
 }
 
+interface InfoBadgeButtonProps {
+  isOpen: boolean;
+  onToggle: () => void;
+  hasBeenRead?: boolean;
+  isLight: boolean;
+  title?: string;
+  readTitle?: string;
+}
+
+function InfoBadgeButton({
+  isOpen,
+  onToggle,
+  hasBeenRead = false,
+  isLight,
+  title,
+  readTitle,
+}: InfoBadgeButtonProps) {
+  const isUnread = !hasBeenRead && !isOpen;
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={
+        isOpen
+          ? "收起说明"
+          : isUnread
+          ? title || "重要提示：点击查看说明"
+          : readTitle || "点击查看说明"
+      }
+      className={cn(
+        "motion-control relative w-4 h-4 rounded-full flex items-center justify-center transition-all duration-300",
+        isUnread
+          ? isLight
+            ? "bg-rose-500/10 border border-rose-500/40 text-rose-600 hover:bg-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.22)]"
+            : "bg-rose-500/15 border border-rose-500/40 text-rose-400 hover:bg-rose-500/25 shadow-[0_0_8px_rgba(244,63,94,0.30)]"
+          : isOpen
+          ? isLight
+            ? "bg-black/10 text-[#1a1625]"
+            : "bg-white/15 text-white"
+          : isLight
+          ? "text-[#1a1625]/30 hover:text-[#1a1625]/70 hover:bg-black/5"
+          : "text-white/30 hover:text-white/70 hover:bg-white/5"
+      )}
+    >
+      {isUnread ? (
+        <span
+          className={cn(
+            "text-[10px] font-bold font-mono leading-none select-none",
+            isLight ? "text-rose-600" : "text-rose-400"
+          )}
+        >
+          !
+        </span>
+      ) : (
+        <Info className="w-2.5 h-2.5" />
+      )}
+    </button>
+  );
+}
+
 function NewInstanceField({
   label,
   desc,
   info,
+  unreadAlert = false,
   rightAction,
   isLight,
   children,
@@ -83,11 +145,18 @@ function NewInstanceField({
   label: string;
   desc?: string;
   info?: string | React.ReactNode;
+  unreadAlert?: boolean;
   rightAction?: React.ReactNode;
   isLight: boolean;
   children: React.ReactNode;
 }) {
   const [showInfo, setShowInfo] = useState(false);
+  const [hasBeenRead, setHasBeenRead] = useState(false);
+
+  const handleToggle = () => {
+    if (!hasBeenRead) setHasBeenRead(true);
+    setShowInfo(!showInfo);
+  };
 
   return (
     <div>
@@ -102,23 +171,12 @@ function NewInstanceField({
             {label}
           </span>
           {info && (
-            <button
-              type="button"
-              onClick={() => setShowInfo(!showInfo)}
-              title={showInfo ? "收起说明" : "点击查看说明"}
-              className={cn(
-                "motion-control w-4 h-4 rounded-full flex items-center justify-center transition-colors",
-                showInfo
-                  ? isLight
-                    ? "bg-black/10 text-[#1a1625]"
-                    : "bg-white/15 text-white"
-                  : isLight
-                  ? "text-[#1a1625]/30 hover:text-[#1a1625]/70 hover:bg-black/5"
-                  : "text-white/30 hover:text-white/70 hover:bg-white/5"
-              )}
-            >
-              <Info className="w-2.5 h-2.5" />
-            </button>
+            <InfoBadgeButton
+              isOpen={showInfo}
+              onToggle={handleToggle}
+              hasBeenRead={unreadAlert ? hasBeenRead : true}
+              isLight={isLight}
+            />
           )}
         </div>
         {rightAction}
@@ -225,7 +283,9 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   const wizardImportRef = useRef<HTMLDivElement>(null);
   const [wizardHeight, setWizardHeight] = useState<number | null>(null);
   const [showPreflightInfo, setShowPreflightInfo] = useState(false);
+  const [hasReadPreflight, setHasReadPreflight] = useState(false);
   const [showSecretsInfo, setShowSecretsInfo] = useState(false);
+  const [hasReadSecrets, setHasReadSecrets] = useState(false);
 
   // 动态测量激活模式的高度以实现白天黑夜级平滑伸缩
   useEffect(() => {
@@ -262,7 +322,9 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     discoveredTaverns,
     migrationPreflight,
     showPreflightInfo,
+    hasReadPreflight,
     showSecretsInfo,
+    hasReadSecrets,
     isOpen,
   ]);
 
@@ -708,6 +770,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             {/* 1. 接入方式 */}
             <NewInstanceField
               label="接入方式"
+              unreadAlert={true}
               info={
                 <div className="space-y-1">
                   <div>
@@ -763,6 +826,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             {/* 2. 旧酒馆来源 */}
             <NewInstanceField
               label="旧酒馆来源"
+              unreadAlert={true}
               info="支持选择包含 server.js 或 data/ 目录的本地文件夹，或包含旧酒馆备份的 .zip 文件。点击右侧「自动扫描」可快速检索系统常见安装位置的历史酒馆。"
               rightAction={
                 <button
@@ -884,7 +948,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               </div>
             </NewInstanceField>
 
-            {/* 3. 预检卡片 (若已识别来源，默认单行展示版本与 (i) 符号，点击展开详细检测明细) */}
+            {/* 3. 预检卡片 (若已识别来源，默认单行展示版本与 (i) 符号，未读时显示醒目红色感叹号，点击展开详细检测明细) */}
             {migrationSourcePath && (
               <div
                 className={cn(
@@ -904,23 +968,17 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                     >
                       数据预检
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowPreflightInfo(!showPreflightInfo)}
-                      title={showPreflightInfo ? "收起预检详情" : "点击查看预检详情"}
-                      className={cn(
-                        "motion-control w-4 h-4 rounded-full flex items-center justify-center transition-colors",
-                        showPreflightInfo
-                          ? isLight
-                            ? "bg-black/10 text-[#1a1625]"
-                            : "bg-white/15 text-white"
-                          : isLight
-                          ? "text-[#1a1625]/30 hover:text-[#1a1625]/70 hover:bg-black/5"
-                          : "text-white/30 hover:text-white/70 hover:bg-white/5"
-                      )}
-                    >
-                      <Info className="w-2.5 h-2.5" />
-                    </button>
+                    <InfoBadgeButton
+                      isOpen={showPreflightInfo}
+                      onToggle={() => {
+                        if (!hasReadPreflight) setHasReadPreflight(true);
+                        setShowPreflightInfo(!showPreflightInfo);
+                      }}
+                      hasBeenRead={hasReadPreflight}
+                      isLight={isLight}
+                      title="重要提示：点击查看预检详情"
+                      readTitle="点击查看预检详情"
+                    />
                   </div>
                   <span
                     className={cn(
@@ -964,7 +1022,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               </div>
             )}
 
-            {/* 4. 敏感凭据脱敏选项 (采用统一的 ios-toggle，点击 (i) 展开安全说明) */}
+            {/* 4. 敏感凭据脱敏选项 (采用统一的 ios-toggle，未读时显示醒目红色感叹号，点击 (i) 展开安全说明) */}
             <div className="py-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -976,23 +1034,17 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                   >
                     包含敏感凭据 (secrets.json)
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowSecretsInfo(!showSecretsInfo)}
-                    title={showSecretsInfo ? "收起说明" : "点击查看说明"}
-                    className={cn(
-                      "motion-control w-4 h-4 rounded-full flex items-center justify-center transition-colors",
-                      showSecretsInfo
-                        ? isLight
-                          ? "bg-black/10 text-[#1a1625]"
-                          : "bg-white/15 text-white"
-                        : isLight
-                        ? "text-[#1a1625]/30 hover:text-[#1a1625]/70 hover:bg-black/5"
-                        : "text-white/30 hover:text-white/70 hover:bg-white/5"
-                    )}
-                  >
-                    <Info className="w-2.5 h-2.5" />
-                  </button>
+                  <InfoBadgeButton
+                    isOpen={showSecretsInfo}
+                    onToggle={() => {
+                      if (!hasReadSecrets) setHasReadSecrets(true);
+                      setShowSecretsInfo(!showSecretsInfo);
+                    }}
+                    hasBeenRead={hasReadSecrets}
+                    isLight={isLight}
+                    title="安全提示：点击查看敏感凭据说明"
+                    readTitle="点击查看说明"
+                  />
                 </div>
                 <button
                   type="button"
@@ -1045,6 +1097,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             {migrationAccessMode === "copy" && (
               <NewInstanceField
                 label="目标保存路径"
+                unreadAlert={true}
                 info="受管实例的本地独立存储路径。数据将完整复制至此，与原物理酒馆隔离运行。"
                 isLight={isLight}
               >
