@@ -5,6 +5,14 @@ import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { ToggleSwitch } from "../common/ToggleSwitch";
 
+export type WizardMode = "local" | "remote" | "import";
+
+export interface DiscoveredTavern {
+  name: string;
+  version: string;
+  path: string;
+}
+
 export interface NewInstanceWizardModalProps {
   isOpen: boolean;
   isClosing?: boolean;
@@ -14,8 +22,8 @@ export interface NewInstanceWizardModalProps {
   isWindows: boolean;
   newInstanceName: string;
   setNewInstanceName: (v: string) => void;
-  newInstanceMode: "local" | "remote";
-  switchInstanceMode: (mode: "local" | "remote") => void;
+  newInstanceMode: WizardMode;
+  switchInstanceMode: (mode: WizardMode) => void;
   newInstanceDir: string;
   setNewInstanceDir: (v: string) => void;
   newInstanceVersion: string;
@@ -32,6 +40,24 @@ export interface NewInstanceWizardModalProps {
   setNewRemoteAuthUsername: (v: string) => void;
   newRemoteAuthPassword: string;
   setNewRemoteAuthPassword: (v: string) => void;
+  // 数据迁移配置
+  migrationAccessMode?: "copy" | "takeover";
+  setMigrationAccessMode?: (m: "copy" | "takeover") => void;
+  migrationSourcePath?: string;
+  setMigrationSourcePath?: (p: string) => void;
+  migrationIncludeSecrets?: boolean;
+  setMigrationIncludeSecrets?: (inc: boolean) => void;
+  migrationCustomDest?: string;
+  setMigrationCustomDest?: (dest: string) => void;
+  discoveredTaverns?: DiscoveredTavern[];
+  isScanningTaverns?: boolean;
+  onScanTaverns?: () => void;
+  onPickSourceFolder?: () => void;
+  onPickSourceZip?: () => void;
+  migrationPreflight?: {
+    version?: string;
+    nativePlugins?: string[];
+  } | null;
   newInstanceError: string | null;
   isCreatingInstance: boolean;
   createInstance: () => void;
@@ -115,6 +141,20 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   setNewRemoteAuthUsername,
   newRemoteAuthPassword,
   setNewRemoteAuthPassword,
+  migrationAccessMode = "copy",
+  setMigrationAccessMode = () => {},
+  migrationSourcePath = "",
+  setMigrationSourcePath = () => {},
+  migrationIncludeSecrets = false,
+  setMigrationIncludeSecrets = () => {},
+  migrationCustomDest = "",
+  setMigrationCustomDest = () => {},
+  discoveredTaverns = [],
+  isScanningTaverns = false,
+  onScanTaverns = () => {},
+  onPickSourceFolder = () => {},
+  onPickSourceZip = () => {},
+  migrationPreflight = null,
   newInstanceError,
   isCreatingInstance,
   createInstance,
@@ -130,6 +170,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
 }) => {
   const wizardLocalRef = useRef<HTMLDivElement>(null);
   const wizardRemoteRef = useRef<HTMLDivElement>(null);
+  const wizardImportRef = useRef<HTMLDivElement>(null);
   const [wizardHeight, setWizardHeight] = useState<number | null>(null);
 
   // 动态测量激活模式的高度以实现白天黑夜级平滑伸缩
@@ -137,7 +178,9 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     const targetEl =
       newInstanceMode === "local"
         ? wizardLocalRef.current
-        : wizardRemoteRef.current;
+        : newInstanceMode === "remote"
+        ? wizardRemoteRef.current
+        : wizardImportRef.current;
     if (!targetEl) return;
 
     const updateHeight = () => {
@@ -160,6 +203,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     newInstanceMode,
     newInstanceCompanionPresetEnabled,
     newRemoteAuthEnabled,
+    migrationAccessMode,
+    migrationSourcePath,
+    discoveredTaverns,
+    migrationPreflight,
     isOpen,
   ]);
 
@@ -273,6 +320,22 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               )}
             >
               远程连接
+            </button>
+            <button
+              onClick={() => switchInstanceMode("import")}
+              aria-pressed={newInstanceMode === "import"}
+              className={cn(
+                "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                newInstanceMode === "import"
+                  ? isLight
+                    ? "bg-[#1a1625]/8 border-[#1a1625]/15 text-[#1a1625]"
+                    : "bg-white/10 border-white/15 text-white"
+                  : isLight
+                  ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:border-black/12 hover:text-[#1a1625]/55"
+                  : "bg-transparent border-white/[0.06] text-white/35 hover:border-white/12 hover:text-white/55"
+              )}
+            >
+              数据迁移
             </button>
           </div>
         </div>
@@ -574,6 +637,260 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* 数据迁移模式配置 */}
+          <div
+            ref={wizardImportRef}
+            className={cn(
+              "w-full space-y-4 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              newInstanceMode === "import"
+                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+            )}
+            aria-hidden={newInstanceMode !== "import"}
+          >
+            {/* 1. 接入方式 */}
+            <NewInstanceField
+              label="接入方式"
+              desc={
+                migrationAccessMode === "takeover"
+                  ? "原地接管：直接共用原目录启动，不复制文件。移除实例仅解除登记，绝不删除原文件。"
+                  : "复制迁移（推荐）：将旧数据完整克隆到受管目录，原目录保持不变。首次启动由 Node 22 重构依赖。"
+              }
+              isLight={isLight}
+            >
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMigrationAccessMode("copy")}
+                  aria-pressed={migrationAccessMode === "copy"}
+                  className={cn(
+                    "ios-choice-control motion-control flex-1 h-8 rounded-xl text-xs font-medium border transition-colors duration-300",
+                    migrationAccessMode === "copy"
+                      ? isLight
+                        ? "bg-[#1a1625]/8 border-[#1a1625]/15 text-[#1a1625]"
+                        : "bg-white/10 border-white/15 text-white"
+                      : isLight
+                      ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:text-[#1a1625]/55"
+                      : "bg-transparent border-white/[0.06] text-white/35 hover:text-white/55"
+                  )}
+                >
+                  复制迁移 (推荐)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMigrationAccessMode("takeover")}
+                  aria-pressed={migrationAccessMode === "takeover"}
+                  className={cn(
+                    "ios-choice-control motion-control flex-1 h-8 rounded-xl text-xs font-medium border transition-colors duration-300",
+                    migrationAccessMode === "takeover"
+                      ? isLight
+                        ? "bg-[#1a1625]/8 border-[#1a1625]/15 text-[#1a1625]"
+                        : "bg-white/10 border-white/15 text-white"
+                      : isLight
+                      ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:text-[#1a1625]/55"
+                      : "bg-transparent border-white/[0.06] text-white/35 hover:text-white/55"
+                  )}
+                >
+                  原地接管 (高级)
+                </button>
+              </div>
+            </NewInstanceField>
+
+            {/* 2. 旧酒馆来源 */}
+            <NewInstanceField
+              label="旧酒馆来源"
+              desc="支持包含 server.js 或 data/ 的本地文件夹，或完整的 .zip 备份包"
+              isLight={isLight}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 w-full">
+                  <input
+                    type="text"
+                    value={migrationSourcePath}
+                    onChange={(e) => setMigrationSourcePath(e.target.value)}
+                    placeholder="选择文件夹或 ZIP 文件路径"
+                    className={cn(
+                      "flex-1 h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
+                      isLight
+                        ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                        : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={onPickSourceFolder}
+                    className={cn(
+                      "motion-control h-9 px-2.5 rounded-xl text-[11px] font-medium border flex-shrink-0 transition-colors",
+                      isLight
+                        ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/[0.04]"
+                        : "border-white/[0.08] text-white/60 hover:bg-white/[0.04]"
+                    )}
+                  >
+                    文件夹
+                  </button>
+                  {migrationAccessMode === "copy" && (
+                    <button
+                      type="button"
+                      onClick={onPickSourceZip}
+                      className={cn(
+                        "motion-control h-9 px-2.5 rounded-xl text-[11px] font-medium border flex-shrink-0 transition-colors",
+                        isLight
+                          ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/[0.04]"
+                          : "border-white/[0.08] text-white/60 hover:bg-white/[0.04]"
+                      )}
+                    >
+                      ZIP 包
+                    </button>
+                  )}
+                </div>
+
+                {/* 快速扫描按钮与探测结果 */}
+                <div className="flex items-center justify-between pt-0.5">
+                  <button
+                    type="button"
+                    disabled={isScanningTaverns}
+                    onClick={onScanTaverns}
+                    className={cn(
+                      "text-[11px] font-medium flex items-center gap-1 transition-colors",
+                      isLight
+                        ? "text-[#1a1625]/50 hover:text-[#1a1625]/80"
+                        : "text-white/50 hover:text-white/80"
+                    )}
+                  >
+                    {isScanningTaverns ? (
+                      <>
+                        <LoaderCircle className="w-3 h-3 animate-spin" />
+                        <span>正在全盘扫描常用路径...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🔍 自动扫描现存酒馆</span>
+                      </>
+                    )}
+                  </button>
+
+                  {discoveredTaverns && discoveredTaverns.length > 0 && (
+                    <span className={cn("text-[10px]", isLight ? "text-[#1a1625]/40" : "text-white/40")}>
+                      找到 {discoveredTaverns.length} 个候选
+                    </span>
+                  )}
+                </div>
+
+                {discoveredTaverns && discoveredTaverns.length > 0 && (
+                  <div
+                    className={cn(
+                      "rounded-xl border p-2 space-y-1.5 text-xs max-h-32 overflow-y-auto scrollbar-subtle",
+                      isLight ? "bg-black/[0.02] border-black/[0.06]" : "bg-white/[0.02] border-white/[0.06]"
+                    )}
+                  >
+                    <div className={cn("text-[10px] font-medium px-1", isLight ? "text-[#1a1625]/40" : "text-white/40")}>
+                      点击一键选用探测到的酒馆：
+                    </div>
+                    {discoveredTaverns.map((t, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setMigrationSourcePath(t.path);
+                          if (!newInstanceName.trim()) setNewInstanceName(t.name);
+                        }}
+                        className={cn(
+                          "w-full text-left p-1.5 rounded-lg flex items-center justify-between transition-colors",
+                          migrationSourcePath === t.path
+                            ? isLight
+                              ? "bg-black/[0.06] text-[#1a1625]"
+                              : "bg-white/[0.10] text-white"
+                            : isLight
+                            ? "hover:bg-black/[0.04] text-[#1a1625]/70"
+                            : "hover:bg-white/[0.04] text-white/70"
+                        )}
+                      >
+                        <span className="font-medium truncate max-w-[200px]">{t.name} (v{t.version})</span>
+                        <span className={cn("text-[10px] truncate max-w-[140px]", isLight ? "text-[#1a1625]/30" : "text-white/30")}>
+                          {t.path}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </NewInstanceField>
+
+            {/* 3. 预检卡片 (若已识别来源) */}
+            {migrationSourcePath && (
+              <div
+                className={cn(
+                  "rounded-xl border p-3 space-y-2 text-xs",
+                  isLight ? "bg-black/[0.02] border-black/[0.06]" : "bg-white/[0.02] border-white/[0.06]"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={cn("font-medium", isLight ? "text-[#1a1625]/80" : "text-white/80")}>
+                    数据完整性预检
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono">
+                    {migrationPreflight?.version ? `SillyTavern v${migrationPreflight.version}` : "已识别有效酒馆"}
+                  </span>
+                </div>
+                <div className={cn("text-[11px] leading-relaxed", isLight ? "text-[#1a1625]/50" : "text-white/50")}>
+                  包含角色、聊天记录、世界书、预设与扩展插件。已自动排除 .git 与旧 node_modules 缓存。
+                </div>
+                {migrationPreflight?.nativePlugins && migrationPreflight.nativePlugins.length > 0 && (
+                  <div className="text-[10px] text-amber-400/80 bg-amber-500/5 border border-amber-500/10 rounded-lg p-1.5">
+                    检测到原生模块 ({migrationPreflight.nativePlugins.join(", ")})，首次启动将由 Node 22 自动重构编译。
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. 敏感凭据脱敏选项 */}
+            <div
+              className={cn(
+                "flex items-start gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer select-none",
+                isLight ? "border-black/[0.06] bg-black/[0.02]" : "border-white/[0.06] bg-white/[0.02]"
+              )}
+              onClick={() => setMigrationIncludeSecrets(!migrationIncludeSecrets)}
+            >
+              <input
+                type="checkbox"
+                checked={migrationIncludeSecrets}
+                onChange={(e) => setMigrationIncludeSecrets(e.target.checked)}
+                className="mt-0.5 rounded border-white/20 bg-transparent text-white focus:ring-0"
+              />
+              <div className="flex-1">
+                <div className={cn("font-medium text-xs", isLight ? "text-[#1a1625]/80" : "text-white/80")}>
+                  包含敏感凭据 (secrets.json)
+                </div>
+                <div className={cn("text-[10px] leading-relaxed mt-0.5", isLight ? "text-[#1a1625]/40" : "text-white/40")}>
+                  默认不包含以防 API Key 泄露。若确需随同导入已配置密钥，请勾选此项。
+                </div>
+              </div>
+            </div>
+
+            {/* 5. 目标路径 (仅复制迁移下展示) */}
+            {migrationAccessMode === "copy" && (
+              <NewInstanceField
+                label="目标保存路径"
+                desc="受管实例的本地独立存储路径"
+                isLight={isLight}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <input
+                    type="text"
+                    value={migrationCustomDest || `%LOCALAPPDATA%/SillyClient/tarven/servers/${newInstanceName.trim() || "imported"}`}
+                    readOnly
+                    className={cn(
+                      "flex-1 h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 opacity-80 cursor-default",
+                      isLight
+                        ? "bg-black/[0.02] border-black/[0.06] text-[#1a1625]/70"
+                        : "bg-white/[0.02] border-white/[0.06] text-white/70"
+                    )}
+                  />
+                </div>
+              </NewInstanceField>
+            )}
+          </div>
         </div>
       </div>
 
@@ -630,7 +947,13 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             {isCreatingInstance
               ? newInstanceMode === "remote"
                 ? "验证连接"
+                : newInstanceMode === "import"
+                ? "正在启动迁移..."
                 : "获取当前版本"
+              : newInstanceMode === "import"
+              ? migrationAccessMode === "takeover"
+                ? "确认原地接管"
+                : "开始复制迁移"
               : "创建"}
           </button>
         </div>
