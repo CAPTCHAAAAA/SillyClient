@@ -2704,12 +2704,15 @@ function SillyClientLauncher() {
         />
       )}
 
-      {/* 底部悬浮调试板 (仅在开发或Web预览环境可见，固定于右下角，不遮挡任何主视觉) */}
+      {/* 【视觉与动效测试专用】底部悬浮调试板：仅在开发或 Web 走查环境可见，用于设计验收与过渡动效测试（打开向导/模拟过渡/模拟完成态），不属于生产业务逻辑，在 Windows/Android 原生正式运行时完全不渲染 */}
       {(import.meta.env.DEV || isWeb) && (
-        <div className="fixed bottom-4 right-4 z-[99] flex flex-wrap items-center gap-1.5 p-1.5 rounded-full border backdrop-blur-[32px] saturate-180 shadow-[0_8px_32px_rgba(0,0,0,0.4)] select-none text-[11px] transition-all bg-[#14101e]/85 border-white/10">
+        <div
+          title="【视觉测试专用】仅用于本地开发、设计走查与过渡动效测试，正式生产原生端不包含"
+          className="fixed bottom-4 right-4 z-[99] flex flex-wrap items-center gap-1.5 p-1.5 rounded-full border backdrop-blur-[32px] saturate-180 shadow-[0_8px_32px_rgba(0,0,0,0.4)] select-none text-[11px] transition-all bg-[#14101e]/85 border-white/10"
+        >
           <div className="flex items-center gap-1.5 pl-2.5 pr-1 text-white/50 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
-            <span>调试板</span>
+            <span>调试板 (视觉测试专用)</span>
           </div>
           <button
             onClick={() => {
