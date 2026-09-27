@@ -528,6 +528,28 @@ function SillyClientLauncher() {
     }
   }, []);
 
+  // 支持通过 URL 参数直接唤起向导指定面板 (例如 ?wizard=import 方便本地走查)
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const wizardParam = params.get("wizard") || params.get("mode") || params.get("tab");
+        if (wizardParam === "import" || wizardParam === "migration") {
+          setNewInstanceMode("import");
+          setShowNewInstancePanel(true);
+        } else if (wizardParam === "1" || wizardParam === "local") {
+          setNewInstanceMode("local");
+          setShowNewInstancePanel(true);
+        } else if (wizardParam === "remote") {
+          setNewInstanceMode("remote");
+          setShowNewInstancePanel(true);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     if (isShowcase) return;
     try {
