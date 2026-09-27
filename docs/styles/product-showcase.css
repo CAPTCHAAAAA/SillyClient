@@ -117,7 +117,7 @@
 .sc-mobile-paged .mobile-source { align-content: safe center; }
 
 .sc-download {
-  width: 280px; max-width: 100%; min-width: 0;
+  width: 320px; max-width: 100%; min-width: 0;
   font-family: inherit; letter-spacing: 0;
 }
 .sc-download * { box-sizing: border-box; letter-spacing: 0; }
@@ -125,14 +125,14 @@
   display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 8px;
 }
 .sc-platform-toggle {
-  position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   min-width: 0; height: 44px; padding: 3px; border-radius: 999px;
   background: rgba(255, 255, 255, .06);
   box-shadow: inset 0 0 0 1px var(--product-line-strong);
 }
 .sc-platform-thumb {
   position: absolute; top: 3px; bottom: 3px; left: 3px;
-  width: calc((100% - 6px) / 2); border-radius: inherit;
+  width: calc((100% - 6px) / 3); border-radius: inherit;
   background: linear-gradient(135deg, var(--product-rose-bright), var(--product-wine-mid));
   box-shadow: inset 0 1px rgba(255, 255, 255, .16);
   transform: translateX(calc(var(--sc-platform-index, 0) * 100%));
