@@ -152,13 +152,11 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
   return (
     <div
       data-card-index={String(index + 1)}
-      onMouseEnter={() => !isRunning && setHoveredCard(instance.id)}
-      onMouseLeave={() => !isRunning && setHoveredCard(null)}
       className={cn(
-        "motion-instance-card ios-task-surface flex-shrink-0 w-60 h-[320px] rounded-2xl snap-center relative overflow-hidden transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] border select-none",
+        "motion-instance-card flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative overflow-hidden border select-none",
         isRunning
           ? cn(
-              "z-20 cursor-default select-text",
+              "ios-task-surface z-20 cursor-default select-text",
               isLight
                 ? "bg-[#f5f6f9] border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]"
                 : "bg-[#15101d] border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
@@ -170,12 +168,12 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
               isLight
                 ? cn(
                     "border-black/[0.08]",
-                    isExpanded && "border-black/15 z-20 shadow-[0_20px_50px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)]",
+                    isExpanded && "border-black/15 z-20",
                     isMenuOpen && "border-black/25 ring-1 ring-black/10 z-30"
                   )
                 : cn(
                     "border-white/[0.06]",
-                    isExpanded && "border-white/15 z-20 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)]",
+                    isExpanded && "border-white/15 z-20",
                     isMenuOpen && "border-white/25 ring-1 ring-white/10 z-30"
                   )
             )
@@ -186,56 +184,14 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
         setHoveredCard(isExpanded ? null : instance.id);
       }}
     >
-      {/* 停止态封面背景与遮罩层（同位驻留，白天黑夜级平滑溶变） */}
-      <div
-        className={cn(
-          "absolute inset-0 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          !isRunning
-            ? "opacity-100 filter-none pointer-events-none"
-            : "opacity-0 blur-[3px] pointer-events-none"
-        )}
-      >
-        <div className="absolute inset-0 overflow-hidden rounded-2xl">
-          <img
-            src={instance.cover || "./tavern-logo.png"}
-            alt=""
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: isLight
-                ? "linear-gradient(135deg, oklch(1 0 0 / 0.40) 0%, oklch(1 0 0 / 0.25) 100%)"
-                : "oklch(0 0 0 / 0.5)",
-            }}
-          />
-        </div>
-
-        <div
-          className={cn(
-            "absolute inset-0 rounded-2xl transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-            isLight
-              ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
-              : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
-            isExpanded ? "opacity-0" : "opacity-100"
-          )}
-        />
-        <div
-          className={cn(
-            "absolute inset-0 rounded-2xl bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-            isExpanded ? "opacity-100" : "opacity-0"
-          )}
-        />
-      </div>
-
       {/* 运行态控制台内容（同位驻留，白天黑夜级平滑溶变） */}
       <div
         className={cn(
-          "absolute inset-0 flex flex-col justify-between p-3.5 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "absolute inset-0 flex flex-col justify-between p-3.5 rounded-[18px] transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
           isRunning
-            ? "opacity-100 translate-y-0 filter-none pointer-events-auto"
-            : "opacity-0 -translate-y-1.5 blur-[3px] pointer-events-none select-none"
+            ? "z-10 opacity-100 translate-y-0 filter-none pointer-events-auto"
+            : "z-0 opacity-0 -translate-y-1.5 blur-[3px] pointer-events-none select-none",
+          isLight ? "bg-[#f5f6f9]" : "bg-[#15101d]"
         )}
         aria-hidden={!isRunning}
       >
@@ -393,17 +349,52 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
         </div>
       </div>
 
-      {/* 停止态前景业务内容（同位驻留，白天黑夜级平滑溶变） */}
+      {/* 停止态完整卡片面（同位驻留，白天黑夜级平滑溶变） */}
       <div
         className={cn(
-          "absolute inset-0 flex flex-col p-3.5 overflow-hidden rounded-2xl transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "absolute inset-0 rounded-[18px] overflow-hidden transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
           !isRunning
-            ? "opacity-100 translate-y-0 filter-none pointer-events-auto"
-            : "opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+            ? "z-10 opacity-100 translate-y-0 filter-none pointer-events-auto"
+            : "z-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
         )}
         aria-hidden={isRunning}
       >
-        {/* 版本胶囊 */}
+        {/* 封面与遮罩 */}
+        <div className="absolute inset-0 rounded-[18px] overflow-hidden">
+          <img
+            src={instance.cover || "./tavern-logo.png"}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background: isLight
+                ? "linear-gradient(135deg, oklch(1 0 0 / 0.40) 0%, oklch(1 0 0 / 0.25) 100%)"
+                : "oklch(0 0 0 / 0.5)",
+            }}
+          />
+        </div>
+
+        <div
+          className={cn(
+            "absolute inset-0 rounded-[18px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            isLight
+              ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
+              : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
+            isExpanded ? "opacity-0" : "opacity-100"
+          )}
+        />
+        <div
+          className={cn(
+            "absolute inset-0 rounded-[18px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            isExpanded ? "opacity-100" : "opacity-0"
+          )}
+        />
+
+        <div className="relative h-full flex flex-col p-3.5 overflow-hidden rounded-[18px]">
+          {/* 版本胶囊 */}
         <span
           className={cn(
             "self-start px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border w-fit",
@@ -604,6 +595,7 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
