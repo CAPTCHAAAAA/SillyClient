@@ -20,7 +20,7 @@ export interface RunningConsoleCardProps {
  * 运行态控制台卡片组件 (RunningConsoleCard)
  * 高内聚：完全对齐 LaunchConsoleModal 纯正实色轻拟物风格，负责终端日志展示、命令交互投递与就地状态操作
  */
-export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
+const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
   instance,
   index,
   isLight,
@@ -84,6 +84,7 @@ export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
           : "bg-[#15101d] border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
         isLight && "is-light"
       )}
+      style={{ contain: "layout paint" }}
     >
       {/* 上方：实例名和版本标签（上下间距对称，严格左右对齐，无多余状态灯） */}
       <div className="flex items-center justify-between mb-2.5 flex-shrink-0">
@@ -235,3 +236,5 @@ export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
     </div>
   );
 };
+RunningConsoleCardComponent.displayName = "RunningConsoleCard";
+export const RunningConsoleCard = React.memo(RunningConsoleCardComponent);

@@ -41,7 +41,7 @@ export interface InstanceCarouselProps {
  * - 搭载精确的物理视口中心对齐与无频闪（Zero Flicker）平滑插值引擎；
  * - 杜绝 CSS Scroll-Snap 与平滑滚动互斥冲突，消灭指示器与翻页键频闪。
  */
-export const InstanceCarousel = forwardRef<InstanceCarouselRef, InstanceCarouselProps>(({
+const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarouselProps>(({
   instances,
   isLight,
   glassBg,
@@ -85,10 +85,9 @@ export const InstanceCarousel = forwardRef<InstanceCarouselRef, InstanceCarousel
   const isProgrammaticScrollingRef = useRef(false);
   const activeSlideRef = useRef(0);
   activeSlideRef.current = activeSlide;
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const animationFrameIdRef = useRef<number | null>(null);
-
-  // 平滑滚动至指定索引卡片（基于精确物理中心对齐 + RAF 柔性无频闪曲线）
+  // 原生硬件加速平滑滚动至指定索引卡片（居中对齐）
   const goToSlide = useCallback((targetIndex: number) => {
     const el = carouselRef.current;
     if (!el) return;
@@ -102,52 +101,18 @@ export const InstanceCarousel = forwardRef<InstanceCarouselRef, InstanceCarousel
     isProgrammaticScrollingRef.current = true;
     setActiveSlide(clampedIndex);
 
-    // 取消正在进行的滚动动画
-    if (animationFrameIdRef.current !== null) {
-      cancelAnimationFrame(animationFrameIdRef.current);
-      animationFrameIdRef.current = null;
-    }
+    const cardWidth = target.offsetWidth || 240;
+    const containerWidth = el.clientWidth;
+    const targetScroll = Math.max(0, target.offsetLeft - (containerWidth - cardWidth) / 2);
 
-    const startScroll = el.scrollLeft;
-    const targetCenter = target.getBoundingClientRect().left + target.offsetWidth / 2;
-    const containerCenter = el.getBoundingClientRect().left + el.clientWidth / 2;
-    const distanceToCenter = targetCenter - containerCenter;
-    const targetScroll = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, startScroll + distanceToCenter));
+    // 原生由渲染合成器硬件加速驱动平滑滚动，0 JS 逐帧计算开销
+    el.scrollTo({ left: targetScroll, behavior: "smooth" });
 
-    // 如果已经在目标位置，直接释放锁定
-    if (Math.abs(targetScroll - startScroll) < 1) {
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
       isProgrammaticScrollingRef.current = false;
-      return;
-    }
-
-    // 动画期间临时解开 CSS 强制吸附，杜绝 Blink 引擎逐帧抢占抽搐
-    el.style.scrollSnapType = "none";
-
-    const duration = 280; // ms
-    const startTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      // easeOutCubic: 1 - (1 - t)^3
-      const ease = 1 - Math.pow(1 - progress, 3);
-      el.scrollLeft = startScroll + (targetScroll - startScroll) * ease;
-
-      if (progress < 1) {
-        animationFrameIdRef.current = requestAnimationFrame(animate);
-      } else {
-        el.scrollLeft = targetScroll;
-        el.style.scrollSnapType = "x mandatory";
-        animationFrameIdRef.current = null;
-        // 微小延迟释放锁定，确保滚动惯性完全静止
-        setTimeout(() => {
-          isProgrammaticScrollingRef.current = false;
-        }, 30);
-      }
-    };
-
-    animationFrameIdRef.current = requestAnimationFrame(animate);
-  }, [totalSlides]);
+    }, 320);
+  }, [totalSlides, setActiveSlide]);
 
   useImperativeHandle(ref, () => ({
     goToSlide,
@@ -196,96 +161,78 @@ export const InstanceCarousel = forwardRef<InstanceCarouselRef, InstanceCarousel
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goToSlide]);
 
-  // 拖拽手势与原生滚动指示器联动
+  // 桌面端鼠标拖拽支持（移动端原生全权交给 Chromium 合成器以获得 120Hz 极限跟手顺滑）
   const dragState = useRef<{ isDown: boolean; startX: number; scrollLeft: number }>({ isDown: false, startX: 0, scrollLeft: 0 });
 
   useEffect(() => {
     const el = carouselRef.current;
     if (!el) return;
 
-    const onDown = (e: MouseEvent | TouchEvent) => {
+    const onMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && target.closest("input, textarea, select, [contenteditable='true']")) {
         return;
       }
-      const x = "touches" in e ? e.touches[0].pageX : e.pageX;
-      dragState.current = { isDown: true, startX: x - el.offsetLeft, scrollLeft: el.scrollLeft };
+      dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft };
       el.style.cursor = "grabbing";
-      el.style.scrollSnapType = "none";
     };
 
-    const onMove = (e: MouseEvent | TouchEvent) => {
+    const onMouseMove = (e: MouseEvent) => {
       if (!dragState.current.isDown) return;
-      if ("touches" in e) return; // 触屏交给原生滚动以保证跟手流畅
       e.preventDefault();
       const x = e.pageX;
       const walk = x - el.offsetLeft - dragState.current.startX;
       el.scrollLeft = dragState.current.scrollLeft - walk;
     };
 
-    const onUp = () => {
+    const onMouseUp = () => {
       if (!dragState.current.isDown) return;
       dragState.current.isDown = false;
       el.style.cursor = "grab";
-      el.style.scrollSnapType = "x mandatory";
     };
 
-    const onLeave = () => {
-      if (dragState.current.isDown) onUp();
-    };
-
-    // 滚动时更新指示器 (仅在非程序化滚动时依据物理中心距离更新)
+    // 滚动时防抖更新指示器：基于 offsetLeft 零重排零回流计算，不打断高刷惯性
     const updateIndicatorOnScroll = () => {
       if (isProgrammaticScrollingRef.current) return;
-      const containerCenter = el.getBoundingClientRect().left + el.clientWidth / 2;
+      const containerCenter = el.scrollLeft + el.clientWidth / 2;
       const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-card-index")) as HTMLElement[];
       let closestIdx = 0;
       let closestDist = Infinity;
-      cards.forEach((card) => {
-        const cardCenter = card.getBoundingClientRect().left + card.offsetWidth / 2;
-        const dist = Math.abs(cardCenter - containerCenter);
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const center = card.offsetLeft + card.offsetWidth / 2;
+        const dist = Math.abs(center - containerCenter);
         if (dist < closestDist) {
           closestDist = dist;
-          closestIdx = parseInt(card.dataset.cardIndex || "0", 10);
+          closestIdx = i;
         }
-      });
+      }
       if (closestIdx !== activeSlideRef.current) {
+        activeSlideRef.current = closestIdx;
         setActiveSlide(closestIdx);
       }
     };
 
-    let ticking = false;
+    let scrollDebounceTimer: NodeJS.Timeout | null = null;
     const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          updateIndicatorOnScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
+      if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
+      scrollDebounceTimer = setTimeout(updateIndicatorOnScroll, 50);
     };
 
     el.style.cursor = "grab";
-    el.addEventListener("mousedown", onDown);
-    el.addEventListener("mousemove", onMove);
-    el.addEventListener("mouseup", onUp);
-    el.addEventListener("mouseleave", onLeave);
-    el.addEventListener("touchstart", onDown, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: true });
-    el.addEventListener("touchend", onUp, { passive: true });
-    el.addEventListener("scroll", onScroll);
+    el.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    el.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
-      el.removeEventListener("mousedown", onDown);
-      el.removeEventListener("mousemove", onMove);
-      el.removeEventListener("mouseup", onUp);
-      el.removeEventListener("mouseleave", onLeave);
-      el.removeEventListener("touchstart", onDown);
-      el.removeEventListener("touchmove", onMove);
-      el.removeEventListener("touchend", onUp);
+      if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
+      el.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
       el.removeEventListener("scroll", onScroll);
     };
-  }, []);
+  }, [setActiveSlide]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6 md:px-8">
@@ -422,4 +369,5 @@ export const InstanceCarousel = forwardRef<InstanceCarouselRef, InstanceCarousel
     </div>
   );
 });
-InstanceCarousel.displayName = "InstanceCarousel";
+InstanceCarouselComponent.displayName = "InstanceCarousel";
+export const InstanceCarousel = React.memo(InstanceCarouselComponent);

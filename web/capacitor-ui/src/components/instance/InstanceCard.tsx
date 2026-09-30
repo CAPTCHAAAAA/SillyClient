@@ -33,7 +33,7 @@ export interface InstanceCardProps {
  * - 运行态控制台归口于 RunningConsoleCard (实色轻拟物控制台、终端日志流、实时命令交互、就地操作按钮)；
  * - 两者彼此解耦，通过轻量级 300ms 纯透明度平滑溶变过渡，互不干扰 DOM 与交互事件。
  */
-export const InstanceCard: React.FC<InstanceCardProps> = (props) => {
+export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   const isRunning = props.instance.status === "running";
   const isExpanded = props.hoveredCard === props.instance.id;
   const isMenuOpen = props.activeCardMenu === props.instance.id;
@@ -42,15 +42,21 @@ export const InstanceCard: React.FC<InstanceCardProps> = (props) => {
     <div
       data-card-index={String(props.index + 1)}
       className="flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative"
+      style={{ contain: "layout paint" }}
     >
-      {/* 停止态普通卡片面 */}
-      <div
-        className={cn(
-          "absolute inset-0 transition-opacity duration-300 ease-out",
-          isRunning ? "opacity-0 pointer-events-none select-none" : "opacity-100 pointer-events-auto"
-        )}
-        aria-hidden={isRunning}
-      >
+      {isRunning ? (
+        <RunningConsoleCard
+          instance={props.instance}
+          index={props.index}
+          isLight={props.isLight}
+          onReturnToTavern={props.onReturnToTavern}
+          onStopInstance={props.onStopInstance}
+          onOpenMenu={props.onOpenMenu}
+          terminalLogs={props.terminalLogs}
+          setTerminalLogs={props.setTerminalLogs}
+          isWindows={props.isWindows}
+        />
+      ) : (
         <InstanceStoppedCard
           instance={props.instance}
           index={props.index}
@@ -66,28 +72,8 @@ export const InstanceCard: React.FC<InstanceCardProps> = (props) => {
           isExternallyRenaming={props.isExternallyRenaming}
           onClearExternalRenaming={props.onClearExternalRenaming}
         />
-      </div>
-
-      {/* 运行态控制台卡片面 */}
-      <div
-        className={cn(
-          "absolute inset-0 transition-opacity duration-300 ease-out",
-          isRunning ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none select-none"
-        )}
-        aria-hidden={!isRunning}
-      >
-        <RunningConsoleCard
-          instance={props.instance}
-          index={props.index}
-          isLight={props.isLight}
-          onReturnToTavern={props.onReturnToTavern}
-          onStopInstance={props.onStopInstance}
-          onOpenMenu={props.onOpenMenu}
-          terminalLogs={props.terminalLogs}
-          setTerminalLogs={props.setTerminalLogs}
-          isWindows={props.isWindows}
-        />
-      </div>
+      )}
     </div>
   );
-};
+});
+InstanceCard.displayName = "InstanceCard";
