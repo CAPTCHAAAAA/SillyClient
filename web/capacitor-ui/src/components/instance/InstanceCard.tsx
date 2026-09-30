@@ -153,17 +153,17 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
     <div
       data-card-index={String(index + 1)}
       className={cn(
-        "motion-instance-card flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative overflow-hidden border select-none",
+        "motion-instance-card flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative border transition-colors duration-300",
         isRunning
           ? cn(
-              "ios-task-surface z-20 cursor-default select-text",
+              "ios-task-surface cursor-default select-text",
               isLight
                 ? "bg-[#f5f6f9] border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]"
                 : "bg-[#15101d] border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
               isLight && "is-light"
             )
           : cn(
-              "cursor-pointer group",
+              "group cursor-pointer",
               isExpanded && "is-expanded",
               isLight
                 ? cn(
@@ -187,10 +187,10 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
       {/* 运行态控制台内容（同位驻留，白天黑夜级平滑溶变） */}
       <div
         className={cn(
-          "absolute inset-0 flex flex-col justify-between p-3.5 rounded-[18px] transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "absolute inset-0 flex flex-col justify-between p-3.5 rounded-[18px] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           isRunning
             ? "z-10 opacity-100 translate-y-0 filter-none pointer-events-auto"
-            : "z-0 opacity-0 -translate-y-1.5 blur-[3px] pointer-events-none select-none",
+            : "z-0 opacity-0 -translate-y-2 pointer-events-none select-none",
           isLight ? "bg-[#f5f6f9]" : "bg-[#15101d]"
         )}
         aria-hidden={!isRunning}
@@ -352,10 +352,10 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
       {/* 停止态完整卡片面（同位驻留，白天黑夜级平滑溶变） */}
       <div
         className={cn(
-          "absolute inset-0 rounded-[18px] overflow-hidden transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "absolute inset-0 rounded-[18px] overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           !isRunning
             ? "z-10 opacity-100 translate-y-0 filter-none pointer-events-auto"
-            : "z-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+            : "z-0 opacity-0 translate-y-2 pointer-events-none select-none"
         )}
         aria-hidden={isRunning}
       >
@@ -379,7 +379,7 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
 
         <div
           className={cn(
-            "absolute inset-0 rounded-[18px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "absolute inset-0 rounded-[18px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
             isLight
               ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
               : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
@@ -388,7 +388,7 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
         />
         <div
           className={cn(
-            "absolute inset-0 rounded-[18px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "absolute inset-0 rounded-[18px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
             isExpanded ? "opacity-100" : "opacity-0"
           )}
         />
