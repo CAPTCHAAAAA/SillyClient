@@ -1417,34 +1417,32 @@ function SillyClientLauncher() {
         setLaunchProgress({ pct: 20, text: "正在预检旧酒馆目录结构与数据完整性..." });
         setLaunchLogs([
           { msg: `【数据迁移】开始${migrationAccessMode === "takeover" ? "原地接管" : "复制迁移"}: ${migrationSourcePath}`, level: "info" },
-          { msg: "已检测到 data/、public/ 与 plugins/ 目录", level: "info" },
         ]);
-        await new Promise(r => setTimeout(r, 600));
-        setLaunchProgress({ pct: 50, text: "正在排除 .git、旧 node_modules 与废弃二进制..." });
-        setLaunchLogs(prev => [
-          ...prev,
-          { msg: "已过滤排除 .git 版本控制及旧 node_modules 缓存 (已节省 ~420MB)", level: "info" },
-          { msg: migrationIncludeSecrets ? "secrets.json 已按要求保留迁入" : "secrets.json 已安全隔离脱敏 (默认不复制)", level: "info" },
-        ]);
-        await new Promise(r => setTimeout(r, 700));
-        setLaunchProgress({ pct: 85, text: "正在将数据完整写入受管目录..." });
-        setLaunchLogs(prev => [
-          ...prev,
-          { msg: "历史会话、角色卡、世界书与扩展插件同步完成", level: "info" },
-          { msg: "检测到插件原生模块，已标记首次启动自动重构", level: "info" },
-        ]);
-        await new Promise(r => setTimeout(r, 600));
-        setLaunchProgress({ pct: 100, text: "数据迁移完成，实例已注册" });
-        setLaunchLogs(prev => [
-          ...prev,
-          { msg: "【成功】旧酒馆平滑接入完成！可随时启动运行。", level: "success" },
-        ]);
-        setInstances(prev => [instance, ...prev]);
-        setNewInstanceName("");
-        setMigrationSourcePath("");
-        setIsCreatingInstance(false);
-        setLaunchingId(null);
-        return;
+        try {
+          await TarvenEnv.migrateInstance({
+            sourcePath: migrationSourcePath,
+            instanceId: instance.id,
+            mode: migrationAccessMode,
+            includeSecrets: migrationIncludeSecrets,
+          });
+          setLaunchProgress({ pct: 100, text: "数据迁移完成，实例已注册" });
+          setLaunchLogs(prev => [
+            ...prev,
+            { msg: "【成功】旧酒馆数据平滑迁入完成！可随时启动运行。", level: "success" },
+          ]);
+          setInstances(prev => [instance, ...prev]);
+          setNewInstanceName("");
+          setMigrationSourcePath("");
+          setIsCreatingInstance(false);
+          setLaunchingId(null);
+          return;
+        } catch (migErr: any) {
+          console.error("Migration failed:", migErr);
+          setLaunchError(migErr.message || "数据迁移失败，请检查来源文件是否完整或损坏");
+          setIsCreatingInstance(false);
+          setLaunchingId(null);
+          return;
+        }
       }
 
       await provisionCreatedInstance(instance);

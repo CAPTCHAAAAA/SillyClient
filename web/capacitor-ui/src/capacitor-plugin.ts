@@ -176,6 +176,14 @@ export interface TarvenEnvPlugin {
   /** 删除指定垃圾项(按 path)。 */
   deleteGarbageItem(options: { path: string }): Promise<{ success: boolean }>
 
+  /** 数据迁移：将旧酒馆目录或 ZIP 压缩包迁入新实例 */
+  migrateInstance(options: {
+    sourcePath: string
+    instanceId: string
+    mode?: 'copy' | 'takeover'
+    includeSecrets?: boolean
+  }): Promise<{ success: boolean; instanceId: string }>
+
   addListener(
     eventName: 'log' | 'progress' | 'ready' | 'mode' | 'error',
     listenerFunc: (data: any) => void,
