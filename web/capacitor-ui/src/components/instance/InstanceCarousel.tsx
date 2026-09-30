@@ -81,6 +81,34 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   }, [activeSlideProp]);
   const totalSlides = instances.length + 1; // 0: 新建实例, 1..N: 实例卡片
 
+  // 底部 Apple 流体果冻弹簧滑动条状态与物理过冲参数
+  const PILL_REST_WIDTH = 18;
+  const [pillWidth, setPillWidth] = useState(PILL_REST_WIDTH);
+  const prevSlideRef = useRef(activeSlide);
+  const stretchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const prev = prevSlideRef.current;
+    const distance = Math.abs(activeSlide - prev);
+    prevSlideRef.current = activeSlide;
+
+    if (distance > 0) {
+      if (stretchTimeoutRef.current) clearTimeout(stretchTimeoutRef.current);
+      // 动态计算瞬时果冻延展宽度（距离越大延展越明显，最大 38px）
+      const stretchWidth = PILL_REST_WIDTH + Math.min(20, distance * 8);
+      setPillWidth(stretchWidth);
+
+      // 160ms 处于弹簧过冲峰值区，平滑回缩至静态宽度，营造极具弹性与质感的果冻反馈
+      stretchTimeoutRef.current = setTimeout(() => {
+        setPillWidth(PILL_REST_WIDTH);
+      }, 160);
+    }
+
+    return () => {
+      if (stretchTimeoutRef.current) clearTimeout(stretchTimeoutRef.current);
+    };
+  }, [activeSlide]);
+
   // 程序化滚动状态锁定，防止滚动中间帧触发指示器闪烁
   const isProgrammaticScrollingRef = useRef(false);
   const activeSlideRef = useRef(0);
@@ -326,26 +354,46 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalSlides }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => goToSlide(i)}
-                aria-label={`切换到第 ${i + 1} 张卡片`}
-                aria-current={i === activeSlide ? "true" : undefined}
-                className="motion-control group flex h-7 w-5 items-center justify-center rounded-full cursor-pointer focus:outline-none"
-              >
-                <span
-                  className={cn(
-                    "block h-1.5 w-4 rounded-full transition-[transform,background-color,opacity] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                    i === activeSlide
-                      ? isLight ? "scale-x-100 bg-[#1a1625]/60" : "scale-x-100 bg-white/70"
-                      : isLight ? "scale-x-[0.375] bg-[#1a1625]/15 group-hover:bg-[#1a1625]/30" : "scale-x-[0.375] bg-white/20 group-hover:bg-white/40"
-                  )}
-                />
-              </button>
-            ))}
+          {/* 无外边框流体指示器轨道：零胶囊边框、零多余背景、纯净槽位与动态流体滑块 */}
+          <div className="relative flex items-center h-7 select-none">
+            {/* 槽位圆点列表 (每个槽位宽 22px，热区舒适) */}
+            <div className="flex items-center">
+              {Array.from({ length: totalSlides }).map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goToSlide(i)}
+                  aria-label={`切换到第 ${i + 1} 张卡片`}
+                  aria-current={i === activeSlide ? "true" : undefined}
+                  className="motion-control group flex h-7 w-[22px] items-center justify-center cursor-pointer focus:outline-none"
+                >
+                  <span
+                    className={cn(
+                      "block h-1.5 w-1.5 rounded-full transition-opacity duration-200",
+                      isLight
+                        ? "bg-[#1a1625]/20 group-hover:bg-[#1a1625]/40"
+                        : "bg-white/20 group-hover:bg-white/40"
+                    )}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* 绝对定位 Apple 流体果冻滑动胶囊 (Spring Pill) */}
+            <div
+              aria-hidden="true"
+              className={cn(
+                "absolute rounded-full pointer-events-none h-1.5 left-0 shadow-[0_1px_3px_rgba(0,0,0,0.25)]",
+                isLight ? "bg-[#1a1625]/75" : "bg-white/90"
+              )}
+              style={{
+                top: "calc(50% - 3px)",
+                width: `${pillWidth}px`,
+                transform: `translate3d(${activeSlide * 22 + 2}px, 0, 0)`,
+                transition:
+                  "transform 320ms cubic-bezier(0.34, 1.45, 0.64, 1), width 260ms cubic-bezier(0.25, 1, 0.5, 1), background-color 200ms ease",
+              }}
+            />
           </div>
 
           <button
