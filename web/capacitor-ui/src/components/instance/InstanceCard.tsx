@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Play, MoreVertical, Edit2 } from "lucide-react";
+import React from "react";
 import { cn } from "../../lib/utils";
-import { TarvenEnv } from "../../capacitor-plugin";
 import type { TavernInstance } from "../../types";
+import { InstanceStoppedCard } from "./InstanceStoppedCard";
+import { RunningConsoleCard } from "./RunningConsoleCard";
 
 export interface InstanceCardProps {
   instance: TavernInstance;
@@ -25,579 +25,68 @@ export interface InstanceCardProps {
   isWindows?: boolean;
 }
 
-function getStatusText(status: TavernInstance["status"]) {
-  switch (status) {
-    case "running":
-      return "运行中";
-    case "online":
-      return "在线";
-    case "offline":
-      return "离线";
-    case "error":
-      return "异常";
-    default:
-      return "已停止";
-  }
-}
-
 /**
- * 实例卡片组件 (InstanceCard)
- * 1. 静止态：扁平拟物材质与毛玻璃悬浮展开；
- * 2. 运行态：像向导风格的轻拟物实色卡片，上方是控制台 terminal（无多余标题栏，可交互），下方是向导风格的实色返回和关闭按钮；
- * 3. 操作内联化：标题支持双击就地内联编辑（双击直接改名，Enter 保存，Esc 取消）。
+ * 实例轮播槽位卡片 (InstanceCard)
+ * 职责：纯净卡片槽位与状态流体过渡调度。
+ * 高内聚低耦合：
+ * - 停止态普通卡片归口于 InstanceStoppedCard (扁平拟物材质、封面、标题内联编辑、点击详情抽屉)；
+ * - 运行态控制台归口于 RunningConsoleCard (实色轻拟物控制台、终端日志流、实时命令交互、就地操作按钮)；
+ * - 两者彼此解耦，通过轻量级 300ms 纯透明度平滑溶变过渡，互不干扰 DOM 与交互事件。
  */
-export const InstanceCard: React.FC<InstanceCardProps> = ({
-  instance,
-  index,
-  isLight,
-  glassBg,
-  hoveredCard,
-  setHoveredCard,
-  activeCardMenu,
-  launchingId,
-  onLaunch,
-  onReturnToTavern,
-  onStopInstance,
-  onOpenMenu,
-  onRenameSave,
-  isExternallyRenaming = false,
-  onClearExternalRenaming,
-  terminalLogs,
-  setTerminalLogs,
-  isWindows = false,
-}) => {
-  const [isEditingInline, setIsEditingInline] = useState(false);
-  const [editName, setEditName] = useState(instance.name);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // 运行态内置终端状态与引用
-  const [terminalInput, setTerminalInput] = useState("");
-  const logsEndRef = useRef<HTMLDivElement>(null);
-  const terminalInputRef = useRef<HTMLInputElement>(null);
-
-  const isRunning = instance.status === "running";
-  const isMenuOpen = activeCardMenu === instance.id;
-
-  const terminalDisplayPrompt = isWindows
-    ? `${instance.installDir || instance.id}>`
-    : "~ $";
-  const terminalPlaceholder = isWindows
-    ? "输入 Windows 命令..."
-    : "输入 shell 命令...";
-
-  useEffect(() => {
-    if (isRunning) {
-      logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [terminalLogs, isRunning]);
-
-  const handleTerminalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter" || !terminalInput.trim()) return;
-    const command = terminalInput.trim();
-    const instanceId = instance.installDir || instance.id;
-    setTerminalLogs?.((previous) => [
-      ...previous,
-      {
-        msg: `${terminalDisplayPrompt} ${command}`,
-        level: "info",
-      },
-    ]);
-    TarvenEnv.sendCommand({
-      text: command,
-      instanceId,
-    }).catch(() => {});
-    setTerminalInput("");
-  };
-
-  useEffect(() => {
-    if (isExternallyRenaming) {
-      setIsEditingInline(true);
-      setEditName(instance.subtitle || instance.name);
-      onClearExternalRenaming?.();
-    }
-  }, [isExternallyRenaming, instance.name, instance.subtitle, onClearExternalRenaming]);
-
-  useEffect(() => {
-    if (isEditingInline) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }
-  }, [isEditingInline]);
-
-  const handleSave = () => {
-    const trimmed = editName.trim();
-    if (trimmed && trimmed !== (instance.subtitle || instance.name)) {
-      onRenameSave(instance.id, trimmed);
-    }
-    setIsEditingInline(false);
-  };
-
-  const handleCancel = () => {
-    setEditName(instance.subtitle || instance.name);
-    setIsEditingInline(false);
-  };
-
-  // 运行态内置日志与状态计算
-  const displayLogs =
-    terminalLogs && terminalLogs.length > 0 && terminalLogs[0].msg !== "就绪，选择实例启动"
-      ? terminalLogs
-      : [
-          { msg: `SillyTavern ${instance.version || "1.12.4"}`, level: "success" },
-          { msg: `127.0.0.1:${instance.port || 8000}`, level: "info" },
-          { msg: `Daemon active on background`, level: "info" },
-        ];
-
-  const isExpanded = hoveredCard === instance.id;
+export const InstanceCard: React.FC<InstanceCardProps> = (props) => {
+  const isRunning = props.instance.status === "running";
+  const isExpanded = props.hoveredCard === props.instance.id;
+  const isMenuOpen = props.activeCardMenu === props.instance.id;
 
   return (
     <div
-      data-card-index={String(index + 1)}
-      className={cn(
-        "motion-instance-card flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative border transition-colors duration-300",
-        isRunning
-          ? cn(
-              "ios-task-surface cursor-default select-text",
-              isLight
-                ? "bg-[#f5f6f9] border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]"
-                : "bg-[#15101d] border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
-              isLight && "is-light"
-            )
-          : cn(
-              "group cursor-pointer",
-              isExpanded && "is-expanded",
-              isLight
-                ? cn(
-                    "border-black/[0.08]",
-                    isExpanded && "border-black/15 z-20",
-                    isMenuOpen && "border-black/25 ring-1 ring-black/10 z-30"
-                  )
-                : cn(
-                    "border-white/[0.06]",
-                    isExpanded && "border-white/15 z-20",
-                    isMenuOpen && "border-white/25 ring-1 ring-white/10 z-30"
-                  )
-            )
-      )}
-      onClick={(e) => {
-        if (isRunning) return;
-        if ((e.target as HTMLElement).closest("button")) return;
-        setHoveredCard(isExpanded ? null : instance.id);
-      }}
+      data-card-index={String(props.index + 1)}
+      className="flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative"
     >
-      {/* 运行态控制台内容（同位驻留，白天黑夜级平滑溶变） */}
+      {/* 停止态普通卡片面 */}
       <div
         className={cn(
-          "absolute inset-0 flex flex-col justify-between p-3.5 rounded-[18px] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          isRunning
-            ? "z-10 opacity-100 translate-y-0 filter-none pointer-events-auto"
-            : "z-0 opacity-0 -translate-y-2 pointer-events-none select-none",
-          isLight ? "bg-[#f5f6f9]" : "bg-[#15101d]"
-        )}
-        aria-hidden={!isRunning}
-      >
-        {/* 上方：实例名和版本标签（上下间距对称，严格左右对齐，无多余状态灯） */}
-        <div className="flex items-center justify-between mb-2.5 flex-shrink-0">
-          <span
-            className={cn(
-              "text-[13px] font-bold tracking-tight truncate",
-              isLight ? "text-[#1a1625]" : "text-white"
-            )}
-          >
-            {instance.subtitle || instance.name}
-          </span>
-          <span
-            className={cn(
-              "px-2 py-0.5 rounded-full text-[10px] font-mono tracking-tight border flex-shrink-0",
-              isLight
-                ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625]/60"
-                : "bg-white/[0.06] border-white/[0.08] text-white/50"
-            )}
-          >
-            {instance.version ? `v${instance.version}` : "v1.12.4"}
-          </span>
-        </div>
-
-        {/* 控制台内部设计：对齐 LaunchConsoleModal 色差内凹效果，内部 r 角更小更方（rounded-lg），边框完全对齐 */}
-        <div
-          onClick={() => terminalInputRef.current?.focus()}
-          className={cn(
-            "flex-1 min-h-0 mb-3 rounded-lg p-2.5 flex flex-col cursor-text select-text overflow-hidden font-mono text-[10.5px] leading-relaxed border transition-colors",
-            "shadow-[inset_0_2px_6px_rgba(0,0,0,0.35),inset_0_0.5px_0_rgba(0,0,0,0.2)]",
-            isLight
-              ? "bg-black/[0.04] border-black/[0.10]"
-              : "bg-black/[0.38] border-white/[0.05]"
-          )}
-          style={{
-            backgroundColor: isLight
-              ? undefined
-              : "var(--sc-console-mask-bg, rgba(0, 0, 0, var(--sc-console-mask-opacity, 0.38)))",
-          }}
-        >
-          {/* 日志流与命令行输入 */}
-          <div className="flex-1 overflow-y-auto space-y-1 scrollbar-subtle pr-1 font-mono text-[10px]">
-            {displayLogs.map((log, logIdx) => (
-              <div
-                key={logIdx}
-                className={cn(
-                  "whitespace-pre-wrap break-words leading-relaxed",
-                  log.level === "error"
-                    ? "text-red-400/90"
-                    : log.level === "success"
-                    ? (isLight ? "text-emerald-700 font-semibold" : "text-white/80")
-                    : (isLight ? "text-[#1a1625]/60" : "text-white/60")
-                )}
-              >
-                {log.msg}
-              </div>
-            ))}
-
-            {/* 命令行输入：紧随日志末尾，纯正终端风格，无分割线 */}
-            <div className="mt-1 flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "select-none font-semibold flex-shrink-0",
-                  isLight ? "text-emerald-700" : "text-emerald-400"
-                )}
-              >
-                {terminalDisplayPrompt}
-              </span>
-              <input
-                ref={terminalInputRef}
-                type="text"
-                value={terminalInput}
-                onChange={(e) => setTerminalInput(e.target.value)}
-                onKeyDown={handleTerminalKeyDown}
-                placeholder={terminalPlaceholder}
-                className={cn(
-                  "min-w-0 flex-1 border-none bg-transparent outline-none font-mono text-[10px]",
-                  isLight
-                    ? "text-[#1a1625] placeholder:text-black/25"
-                    : "text-white/90 placeholder:text-white/25"
-                )}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-              />
-            </div>
-            <div ref={logsEndRef} />
-          </div>
-        </div>
-
-        {/* 底部按钮栏：向导风格实色按钮，与上方元素边框完全垂直对齐 */}
-        <div className="flex items-center justify-between gap-2 flex-shrink-0">
-          {/* 返回酒馆（主动作，实色白色胶囊） */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onReturnToTavern) {
-                onReturnToTavern(instance);
-              } else {
-                onLaunch(instance);
-              }
-            }}
-            className={cn(
-              "motion-control px-4 h-8 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 flex-1 transition-all border active:scale-[0.98]",
-              isLight
-                ? "bg-[#1a1625] border-[#1a1625] text-white hover:bg-[#1a1625]/90 active:bg-[#1a1625]/80 shadow-[0_2px_8px_rgba(0,0,0,0.10)]"
-                : "bg-white border-white text-[#14101e] hover:bg-white/90 active:bg-white/80 shadow-[0_2px_10px_rgba(255,255,255,0.12)]"
-            )}
-          >
-            <Play className="w-3 h-3 fill-current" />
-            返回酒馆
-          </button>
-
-          {/* 关闭（次动作，向导次级实色胶囊，仅文字使用红色字体） */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onStopInstance?.(instance);
-            }}
-            className={cn(
-              "motion-control px-3.5 h-8 rounded-full text-xs font-medium transition-all border active:scale-[0.98]",
-              isLight
-                ? "bg-black/[0.04] border-black/[0.06] text-red-600 hover:bg-black/[0.08]"
-                : "bg-white/[0.08] border-white/[0.06] text-rose-400 hover:bg-white/[0.14] hover:text-rose-300"
-            )}
-          >
-            关闭
-          </button>
-
-          {/* 更多菜单（与向导一致的圆点按钮） */}
-          <button
-            type="button"
-            title="操作菜单"
-            aria-label="操作菜单"
-            onClick={(e) => {
-              e.stopPropagation();
-              const r = e.currentTarget.getBoundingClientRect();
-              onOpenMenu(instance, r);
-            }}
-            className={cn(
-              "motion-control w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border transition-colors",
-              isLight
-                ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]"
-                : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
-            )}
-          >
-            <MoreVertical
-              className={cn(
-                "w-3.5 h-3.5",
-                isLight ? "text-[#1a1625]/60" : "text-white/60"
-              )}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* 停止态完整卡片面（同位驻留，白天黑夜级平滑溶变） */}
-      <div
-        className={cn(
-          "absolute inset-0 rounded-[18px] overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          !isRunning
-            ? "z-10 opacity-100 translate-y-0 filter-none pointer-events-auto"
-            : "z-0 opacity-0 translate-y-2 pointer-events-none select-none"
+          "absolute inset-0 transition-opacity duration-300 ease-out",
+          isRunning ? "opacity-0 pointer-events-none select-none" : "opacity-100 pointer-events-auto"
         )}
         aria-hidden={isRunning}
       >
-        {/* 封面与遮罩 */}
-        <div className="absolute inset-0 rounded-[18px] overflow-hidden">
-          <img
-            src={instance.cover || "./tavern-logo.png"}
-            alt=""
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: isLight
-                ? "linear-gradient(135deg, oklch(1 0 0 / 0.40) 0%, oklch(1 0 0 / 0.25) 100%)"
-                : "oklch(0 0 0 / 0.5)",
-            }}
-          />
-        </div>
-
-        <div
-          className={cn(
-            "absolute inset-0 rounded-[18px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
-            isLight
-              ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
-              : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
-            isExpanded ? "opacity-0" : "opacity-100"
-          )}
+        <InstanceStoppedCard
+          instance={props.instance}
+          index={props.index}
+          isLight={props.isLight}
+          glassBg={props.glassBg}
+          isExpanded={isExpanded}
+          isMenuOpen={isMenuOpen}
+          launchingId={props.launchingId}
+          onToggleExpand={() => props.setHoveredCard(isExpanded ? null : props.instance.id)}
+          onLaunch={props.onLaunch}
+          onOpenMenu={props.onOpenMenu}
+          onRenameSave={props.onRenameSave}
+          isExternallyRenaming={props.isExternallyRenaming}
+          onClearExternalRenaming={props.onClearExternalRenaming}
         />
-        <div
-          className={cn(
-            "absolute inset-0 rounded-[18px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
-            isExpanded ? "opacity-100" : "opacity-0"
-          )}
-        />
+      </div>
 
-        <div className="relative h-full flex flex-col p-3.5 overflow-hidden rounded-[18px]">
-          {/* 版本胶囊 */}
-        <span
-          className={cn(
-            "self-start px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border w-fit",
-            isLight
-              ? "bg-black/[0.06] text-[#1a1625]/55 border-black/[0.08]"
-              : "bg-white/[0.08] text-white/50 border-white/[0.08]"
-          )}
-        >
-          {instance.version || "—"}
-        </span>
-
-        <div className="flex-1" />
-
-        {/* 标题（支持双击就地内联编辑） */}
-        {isEditingInline ? (
-          <div className="mb-2" onClick={(e) => e.stopPropagation()}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSave();
-                if (e.key === "Escape") handleCancel();
-              }}
-              className={cn(
-                "w-full h-7 px-2 rounded-lg border text-sm font-medium leading-snug transition-colors outline-none",
-                isLight
-                  ? "bg-white/90 border-black/20 text-[#1a1625]"
-                  : "bg-black/80 border-white/25 text-white"
-              )}
-            />
-          </div>
-        ) : (
-          <div
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setIsEditingInline(true);
-              setEditName(instance.subtitle || instance.name);
-            }}
-            title="双击直接内联重命名"
-            className={cn(
-              "text-sm font-medium leading-snug mb-2 flex items-center justify-between group/title",
-              isLight ? "text-[#1a1625]/75" : "text-white/80"
-            )}
-          >
-            <span className="truncate">{instance.subtitle || instance.name}</span>
-            <Edit2 className="w-3 h-3 opacity-0 group-hover/title:opacity-40 transition-opacity flex-shrink-0 ml-1" />
-          </div>
+      {/* 运行态控制台卡片面 */}
+      <div
+        className={cn(
+          "absolute inset-0 transition-opacity duration-300 ease-out",
+          isRunning ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none select-none"
         )}
-
-        {/* 类型与状态指示 */}
-        <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={cn(
-                "flex items-center justify-center shrink-0 scale-[0.72]",
-                isLight ? "text-[#1a1625]/50" : "text-white"
-              )}
-            >
-              {instance.icon}
-            </span>
-            <span
-              className={cn(
-                "text-[10px] font-medium",
-                isLight ? "text-[#1a1625]/45" : "text-white/55"
-              )}
-            >
-              {instance.type === "local" ? "本地" : "远程"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div
-              className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                instance.type === "local"
-                  ? isLight
-                    ? "bg-[#1a1625]/45"
-                    : "bg-white/50"
-                  : instance.status === "online"
-                  ? isLight
-                    ? "bg-[#1a1625]/45"
-                    : "bg-white/50"
-                  : "bg-red-400/50"
-              )}
-            />
-            <span
-              className={cn(
-                "text-[10px] font-medium",
-                isLight ? "text-[#1a1625]/60" : "text-white/60"
-              )}
-            >
-              {instance.type === "local"
-                ? "本地"
-                : getStatusText(instance.status)}
-            </span>
-          </div>
-        </div>
-
-        {/* 鼠标悬浮展开的详情抽屉 */}
-        <div
-          className={cn("motion-accordion", isExpanded && "is-open")}
-          aria-hidden={!isExpanded}
-        >
-          <div className="motion-accordion-inner">
-            <div className="pt-2 space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span
-                  className={cn(
-                    isLight ? "text-[#1a1625]/35" : "text-white/40"
-                  )}
-                >
-                  创建时间
-                </span>
-                <span
-                  className={cn(
-                    "font-medium tabular-nums",
-                    isLight ? "text-[#1a1625]/60" : "text-white/70"
-                  )}
-                >
-                  {instance.createdAt || "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span
-                  className={cn(
-                    isLight ? "text-[#1a1625]/35" : "text-white/40"
-                  )}
-                >
-                  上次使用
-                </span>
-                <span
-                  className={cn(
-                    "font-medium tabular-nums",
-                    isLight ? "text-[#1a1625]/60" : "text-white/70"
-                  )}
-                >
-                  {instance.lastUsed || "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span
-                  className={cn(
-                    isLight ? "text-[#1a1625]/35" : "text-white/40"
-                  )}
-                >
-                  累计使用
-                </span>
-                <span
-                  className={cn(
-                    "font-medium tabular-nums",
-                    isLight ? "text-[#1a1625]/60" : "text-white/70"
-                  )}
-                >
-                  {instance.totalUsage || "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-1.5">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onLaunch(instance);
-                  }}
-                  disabled={launchingId === instance.id}
-                  className={cn(
-                    "motion-control h-7 px-4 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1 disabled:opacity-50",
-                    isLight
-                      ? "bg-black/[0.07] text-[#1a1625] hover:bg-black/[0.14]"
-                      : "bg-white/15 text-white hover:bg-white/25"
-                  )}
-                >
-                  <Play className="w-2.5 h-2.5" />{" "}
-                  {launchingId === instance.id ? "启动中" : "启动"}
-                </button>
-                <button
-                  type="button"
-                  title="操作菜单"
-                  aria-label="操作菜单"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const r = e.currentTarget.getBoundingClientRect();
-                    onOpenMenu(instance, r);
-                  }}
-                  className={cn(
-                    "motion-control w-7 h-7 rounded-full flex items-center justify-center",
-                    isLight
-                      ? "bg-black/[0.07] hover:bg-black/[0.14]"
-                      : "bg-white/15 hover:bg-white/25"
-                  )}
-                >
-                  <MoreVertical
-                    className={cn(
-                      "w-3 h-3",
-                      isLight ? "text-[#1a1625]" : "text-white"
-                    )}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
+        aria-hidden={!isRunning}
+      >
+        <RunningConsoleCard
+          instance={props.instance}
+          index={props.index}
+          isLight={props.isLight}
+          onReturnToTavern={props.onReturnToTavern}
+          onStopInstance={props.onStopInstance}
+          onOpenMenu={props.onOpenMenu}
+          terminalLogs={props.terminalLogs}
+          setTerminalLogs={props.setTerminalLogs}
+          isWindows={props.isWindows}
+        />
       </div>
     </div>
   );
