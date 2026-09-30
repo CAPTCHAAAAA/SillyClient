@@ -580,6 +580,18 @@ function SillyClientLauncher() {
     setActiveSlide(index);
   }, []);
 
+  // 当存在运行中实例时，自动聚焦居中显示该运行中卡片
+  useEffect(() => {
+    const runningIdx = instances.findIndex(i => i.status === "running");
+    if (runningIdx >= 0) {
+      const slideIdx = runningIdx + 1;
+      const timer = window.setTimeout(() => {
+        scrollToSlide(slideIdx);
+      }, 250);
+      return () => window.clearTimeout(timer);
+    }
+  }, [instances, scrollToSlide]);
+
   // 轮播拖拽 + 滚动指示器联动
   const dragState = useRef<{ isDown: boolean; startX: number; scrollLeft: number }>({ isDown: false, startX: 0, scrollLeft: 0 });
 
@@ -1301,6 +1313,28 @@ function SillyClientLauncher() {
       setLaunchingId(null);
     }
   }, [launchingId, doLaunch, openRemoteInstance]);
+
+  // 返回酒馆会话（无缝唤醒后台保活的酒馆 WebView）
+  const handleReturnToTavern = useCallback(async (instance: TavernInstance) => {
+    try {
+      await TarvenEnv.returnToTavern();
+    } catch {
+      // 容错或浏览器环境 fallback
+      await launchTavern(instance);
+    }
+  }, [launchTavern]);
+
+  // 直接停止/关闭实例（就地停止进程并解除运行态）
+  const handleStopInstance = useCallback(async (instance: TavernInstance) => {
+    try {
+      await TarvenEnv.closeTavern();
+    } catch {}
+    setInstances(prev => prev.map(t => t.id === instance.id ? { ...t, status: "stopped" } : t));
+    if (launchingId === instance.id) {
+      setLaunchingId(null);
+    }
+    setIsLaunchMinimized(false);
+  }, [launchingId]);
 
   const provisionCreatedInstance = useCallback(async (instance: TavernInstance) => {
     if (isWeb) {
@@ -2380,6 +2414,8 @@ function SillyClientLauncher() {
                   activeCardMenu={activeCardMenu}
                   launchingId={launchingId}
                   onLaunch={launchTavern}
+                  onReturnToTavern={handleReturnToTavern}
+                  onStopInstance={handleStopInstance}
                   onOpenMenu={(inst, rect) => {
                     setMenuPos({
                       top: Math.min(rect.bottom + 6, window.innerHeight - 200),
@@ -2394,6 +2430,10 @@ function SillyClientLauncher() {
                   }}
                   isExternallyRenaming={externallyRenamingId === instance.id}
                   onClearExternalRenaming={() => setExternallyRenamingId(null)}
+                  terminalLogs={terminalLogs}
+                  setTerminalLogs={setTerminalLogs}
+                  isWindows={isWindows}
+                  glassBg={glassBg}
                 />
               ))}
 
@@ -2661,24 +2701,6 @@ function SillyClientLauncher() {
           await launchTavern(params || lastLaunchParams);
         }}
       />
-
-      {/* 操作内联化: 底部常驻活动胶囊 (Activity Capsule) */}
-      {isLaunchMinimized && (launchingId || launchProgress) && (
-        <ActivityCapsule
-          instanceName={lastLaunchParams?.name || (launchingId ? instances.find(i => i.id === launchingId)?.name : "") || "实例"}
-          statusText={launchError ? "启动失败" : (launchProgress?.text || "正在启动...")}
-          pct={launchProgress?.pct || 0}
-          hasError={!!launchError}
-          isComplete={launchProgress?.pct === 100}
-          onExpand={() => {
-            setIsLaunchMinimized(false);
-            setShowLaunchPanel(true);
-            setIsLaunchPanelClosing(false);
-          }}
-          isLight={isLight}
-          glassBg={glassBg}
-        />
-      )}
 
       {/* 解耦业务组件: 清理垃圾弹窗 */}
       <CleanGarbageModal
