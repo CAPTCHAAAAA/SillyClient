@@ -32,7 +32,7 @@ export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
   isWindows = false,
 }) => {
   const [terminalInput, setTerminalInput] = useState("");
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
   const terminalInputRef = useRef<HTMLInputElement>(null);
 
   const terminalDisplayPrompt = isWindows
@@ -43,7 +43,9 @@ export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
     : "输入 shell 命令...";
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
   }, [terminalLogs]);
 
   const handleTerminalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -122,7 +124,7 @@ export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
         }}
       >
         {/* 日志流与命令行输入 */}
-        <div className="flex-1 overflow-y-auto space-y-1 scrollbar-subtle pr-1 font-mono text-[10px]">
+        <div ref={logsContainerRef} className="flex-1 overflow-y-auto space-y-1 scrollbar-subtle pr-1 font-mono text-[10px]">
           {displayLogs.map((log, logIdx) => (
             <div
               key={logIdx}
@@ -167,7 +169,6 @@ export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
               spellCheck={false}
             />
           </div>
-          <div ref={logsEndRef} />
         </div>
       </div>
 

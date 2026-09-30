@@ -22,9 +22,7 @@ import OnboardingGuide from "@/components/onboarding/OnboardingGuide";
 import { LAYERS } from "@/constants/layers";
 import { useLayerStack } from "@/hooks/useLayerStack";
 import { LayerBackdrop } from "@/components/common/LayerBackdrop";
-import { ActivityCapsule } from "@/components/common/ActivityCapsule";
-import { InstanceCard } from "@/components/instance/InstanceCard";
-import { LaunchConsoleModal } from "@/components/modals/LaunchConsoleModal";
+import { InstanceCarousel, type InstanceCarouselRef } from "@/components/instance/InstanceCarousel";
 import { NewInstanceWizardModal } from "@/components/modals/NewInstanceWizardModal";
 import { ManageInstanceModal } from "@/components/modals/ManageInstanceModal";
 import { BackgroundSettingsDrawer } from "@/components/modals/BackgroundSettingsDrawer";
@@ -35,6 +33,7 @@ import { DeleteConfirmDialog } from "@/components/modals/DeleteConfirmDialog";
 import { RenameModal } from "@/components/modals/RenameModal";
 import { VersionDropdownMenu } from "@/components/modals/VersionDropdownMenu";
 import { CardActionMenu } from "@/components/modals/CardActionMenu";
+import { LaunchConsoleModal } from "@/components/modals/LaunchConsoleModal";
 import type { TavernInstance, ManageTab, InstanceSnapshot, BgMode, ThemeStyle, OperationPurpose } from "@/types";
 
 export const Route = createFileRoute("/")({
@@ -382,8 +381,8 @@ function SillyClientLauncher() {
   const [verDropdownOpen, setVerDropdownOpen] = useState(false);
   const [isVerDropdownClosing, setIsVerDropdownClosing] = useState(false);
   const [verDropdownPos, setVerDropdownPos] = useState({ bottom: 0, left: 0, width: 0, maxHeight: 360 });
-  const carouselRef = useRef<HTMLDivElement>(null);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<InstanceCarouselRef>(null);
   const terminalBtnRef = useRef<HTMLButtonElement>(null);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const cardMenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -566,142 +565,7 @@ function SillyClientLauncher() {
       ? "bg-[#1c1420]/70 border-white/10 shadow-[0_16px_60px_rgba(0,0,0,0.30)]"
       : "bg-[#1a1625]/70 border-white/10 shadow-[0_16px_60px_rgba(0,0,0,0.35)]";
 
-  // 轮播滚动到指定卡片（居中）
-  const scrollToSlide = useCallback((index: number) => {
-    const el = carouselRef.current;
-    if (!el) return;
-    const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute('data-card-index')) as HTMLElement[];
-    const target = cards[index];
-    if (!target) return;
-    const targetCenter = target.getBoundingClientRect().left + target.offsetWidth / 2;
-    const containerCenter = el.getBoundingClientRect().left + el.clientWidth / 2;
-    const diff = targetCenter - containerCenter;
-    el.scrollTo({ left: el.scrollLeft + diff, behavior: 'smooth' });
-    setActiveSlide(index);
-  }, []);
 
-  // 当存在运行中实例时，自动聚焦居中显示该运行中卡片
-  useEffect(() => {
-    const runningIdx = instances.findIndex(i => i.status === "running");
-    if (runningIdx >= 0) {
-      const slideIdx = runningIdx + 1;
-      const timer = window.setTimeout(() => {
-        scrollToSlide(slideIdx);
-      }, 250);
-      return () => window.clearTimeout(timer);
-    }
-  }, [instances, scrollToSlide]);
-
-  // 键盘左右箭头支持快捷翻页
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable ||
-          target.closest('[role="dialog"]') ||
-          target.closest('.modal-backdrop'))
-      ) {
-        return;
-      }
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        scrollToSlide(Math.max(0, activeSlide - 1));
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        scrollToSlide(Math.min(instances.length, activeSlide + 1));
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeSlide, instances.length, scrollToSlide]);
-
-  // 轮播拖拽 + 滚动指示器联动
-  const dragState = useRef<{ isDown: boolean; startX: number; scrollLeft: number }>({ isDown: false, startX: 0, scrollLeft: 0 });
-
-  useEffect(() => {
-    const el = carouselRef.current;
-    if (!el) return;
-
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && target.closest('input, textarea, select, [contenteditable="true"]')) {
-        return;
-      }
-      const x = 'touches' in e ? e.touches[0].pageX : e.pageX;
-      dragState.current = { isDown: true, startX: x - el.offsetLeft, scrollLeft: el.scrollLeft };
-      el.style.cursor = 'grabbing';
-      el.style.scrollSnapType = 'none';
-    };
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      if (!dragState.current.isDown) return;
-      // 仅鼠标桌面端手动跟随(1:1);触屏交给原生滚动以保证跟手流畅
-      if ('touches' in e) return;
-      e.preventDefault();
-      const x = e.pageX;
-      const walk = (x - el.offsetLeft - dragState.current.startX);
-      el.scrollLeft = dragState.current.scrollLeft - walk;
-    };
-    const onUp = () => {
-      dragState.current.isDown = false;
-      el.style.cursor = 'grab';
-      el.style.scrollSnapType = 'x mandatory';
-    };
-    const onLeave = () => {
-      if (dragState.current.isDown) onUp();
-    };
-
-    // 滚动时更新指示器 (基于精确物理视口中心距离计算)
-    const updateIndicator = () => {
-      const containerCenter = el.getBoundingClientRect().left + el.clientWidth / 2;
-      const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute('data-card-index')) as HTMLElement[];
-      let closestIdx = 0;
-      let closestDist = Infinity;
-      cards.forEach((card) => {
-        const cardCenter = card.getBoundingClientRect().left + card.offsetWidth / 2;
-        const dist = Math.abs(cardCenter - containerCenter);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestIdx = parseInt(card.dataset.cardIndex || '0', 10);
-        }
-      });
-      setActiveSlide(closestIdx);
-    };
-
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          updateIndicator();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    el.style.cursor = 'grab';
-    el.addEventListener('mousedown', onDown);
-    el.addEventListener('mousemove', onMove);
-    el.addEventListener('mouseup', onUp);
-    el.addEventListener('mouseleave', onLeave);
-    el.addEventListener('touchstart', onDown, { passive: true });
-    el.addEventListener('touchmove', onMove, { passive: true });
-    el.addEventListener('touchend', onUp, { passive: true });
-    el.addEventListener('scroll', onScroll);
-
-    return () => {
-      el.removeEventListener('mousedown', onDown);
-      el.removeEventListener('mousemove', onMove);
-      el.removeEventListener('mouseup', onUp);
-      el.removeEventListener('mouseleave', onLeave);
-      el.removeEventListener('touchstart', onDown);
-      el.removeEventListener('touchmove', onMove);
-      el.removeEventListener('touchend', onUp);
-      el.removeEventListener('scroll', onScroll);
-    };
-  }, []);
 
   // 自检:启动时扫描本地已存在的酒馆实例,自动添加卡片
   useEffect(() => {
@@ -2357,7 +2221,7 @@ function SillyClientLauncher() {
                 const match = instances.find(t => (t.subtitle || t.name).toLowerCase().includes(searchQuery.toLowerCase()));
                 if (match) {
                   const idx = instances.indexOf(match) + 1;
-                  scrollToSlide(idx);
+                  carouselRef.current?.goToSlide(idx);
                 }
               }
             }}
@@ -2374,7 +2238,7 @@ function SillyClientLauncher() {
                   key={t.id}
                   onClick={() => {
                     const idx = instances.indexOf(t) + 1;
-                    scrollToSlide(idx);
+                    carouselRef.current?.goToSlide(idx);
                     setSearchQuery("");
                   }}
                   className={cn(
@@ -2394,146 +2258,59 @@ function SillyClientLauncher() {
           )}
         </div>
 
-        {/* 实例卡片轮播 */}
-        <div className="w-full max-w-6xl mx-auto px-6 md:px-8">
-          <div className="relative">
-            <div
-              ref={carouselRef}
-              className="carousel-scrollbar-hidden flex gap-5 overflow-x-auto snap-x snap-mandatory px-3 py-4 -mx-2"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', scrollPaddingInline: '1px' }}
-            >
-              <div className="flex-shrink-0 w-[calc(50%-120px)]" aria-hidden />
-
-              {/* 新建实例卡片 */}
-              <button
-                onClick={() => {
-                  if (isWeb && !isShowcase && !import.meta.env.DEV) { window.open('https://github.com/CAPTCHAAAAA/SillyClient/releases/latest', '_blank'); return; }
-                  setNewInstanceMode("local");
-                  setNewInstanceName("");
-                  setNewInstanceDir("");
-                  setNewInstanceUrl("http://");
-                  setNewRemoteAuthEnabled(false);
-                  setNewRemoteAuthUsername("");
-                  setNewRemoteAuthPassword("");
-                  setNewInstanceVersion("stable");
-                  setNewInstanceCompanionPresetEnabled(false);
-                  setNewInstanceLocalZip(null);
-                  setNewInstanceError(null);
-                  setShowNewInstancePanel(true);
-                }}
-                className={cn(
-                  "motion-instance-card flex-shrink-0 w-60 h-[320px] rounded-[18px] overflow-hidden snap-center group relative",
-                  isLight ? "bg-black/[0.03] border border-black/[0.08] hover:border-black/15" : "bg-white/[0.04] border border-white/[0.06] hover:border-white/15"
-                )}
-                data-card-index="0"
-              >
-                <div className="relative h-full flex flex-col justify-between p-3.5">
-                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center transition-[background-color,box-shadow,filter] duration-200", isLight ? "bg-black/[0.06]" : "bg-white/[0.08]")}>
-                    <Play className={cn("w-3.5 h-3.5", isLight ? "text-[#1a1625]/40" : "text-white/40")} />
-                  </div>
-                  <div>
-                    <div className={cn("text-base font-semibold mb-0.5", isLight ? "text-[#1a1625]" : "text-white")}>{isWeb && !isShowcase && !import.meta.env.DEV ? "下载 APK" : "新建实例"}</div>
-                    <div className={cn("text-xs", isLight ? "text-[#1a1625]/40" : "text-white/40")}>{isWeb && !isShowcase && !import.meta.env.DEV ? "获取最新版本" : "设置新的酒馆环境"}</div>
-                  </div>
-                </div>
-              </button>
-
-              {/* 解耦后的实例卡片列表 (支持双击原地内联重命名) */}
-              {instances.map((instance, index) => (
-                <InstanceCard
-                  key={instance.id}
-                  instance={instance}
-                  index={index}
-                  isLight={isLight}
-                  hoveredCard={hoveredCard}
-                  setHoveredCard={setHoveredCard}
-                  activeCardMenu={activeCardMenu}
-                  launchingId={launchingId}
-                  onLaunch={launchTavern}
-                  onReturnToTavern={handleReturnToTavern}
-                  onStopInstance={handleStopInstance}
-                  onOpenMenu={(inst, rect) => {
-                    setMenuPos({
-                      top: Math.min(rect.bottom + 6, window.innerHeight - 200),
-                      left: Math.max(12, Math.min(rect.left - 60, window.innerWidth - 160)),
-                    });
-                    setActiveCardMenu(inst.id);
-                    setIsCardMenuClosing(false);
-                  }}
-                  onRenameSave={(instanceId, newName) => {
-                    setInstances(prev => prev.map(inst => inst.id === instanceId ? { ...inst, name: newName, subtitle: newName } : inst));
-                    setExternallyRenamingId(null);
-                  }}
-                  isExternallyRenaming={externallyRenamingId === instance.id}
-                  onClearExternalRenaming={() => setExternallyRenamingId(null)}
-                  terminalLogs={terminalLogs}
-                  setTerminalLogs={setTerminalLogs}
-                  isWindows={isWindows}
-                  glassBg={glassBg}
-                />
-              ))}
-
-              <div className="flex-shrink-0 w-[calc(50%-120px)]" aria-hidden />
-            </div>
-
-            {/* 指示器 + 方向键 */}
-            <div className="flex items-center justify-center gap-3 mt-4 select-none">
-              <button
-                type="button"
-                onClick={() => scrollToSlide(Math.max(0, activeSlide - 1))}
-                disabled={activeSlide === 0}
-                aria-label="上一页"
-                className={cn(
-                  "motion-control w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                  activeSlide === 0
-                    ? isLight ? "text-[#1a1625]/15 cursor-default opacity-40" : "text-white/15 cursor-default opacity-40"
-                    : isLight
-                      ? "text-[#1a1625]/60 hover:text-[#1a1625] hover:bg-[#1a1625]/8 active:scale-95 cursor-pointer"
-                      : "text-white/60 hover:text-white hover:bg-white/10 active:scale-95 cursor-pointer"
-                )}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: instances.length + 1 }).map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => scrollToSlide(i)}
-                    aria-label={`切换到第 ${i + 1} 张卡片`}
-                    aria-current={i === activeSlide ? "true" : undefined}
-                    className="motion-control group flex h-7 w-5 items-center justify-center rounded-full cursor-pointer focus:outline-none"
-                  >
-                    <span className={cn(
-                      "block h-1.5 w-4 rounded-full transition-[transform,background-color,opacity] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      i === activeSlide
-                        ? isLight ? "scale-x-100 bg-[#1a1625]/60" : "scale-x-100 bg-white/70"
-                        : isLight ? "scale-x-[0.375] bg-[#1a1625]/15 group-hover:bg-[#1a1625]/30" : "scale-x-[0.375] bg-white/20 group-hover:bg-white/40"
-                    )} />
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => scrollToSlide(Math.min(instances.length, activeSlide + 1))}
-                disabled={activeSlide === instances.length}
-                aria-label="下一页"
-                className={cn(
-                  "motion-control w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                  activeSlide === instances.length
-                    ? isLight ? "text-[#1a1625]/15 cursor-default opacity-40" : "text-white/15 cursor-default opacity-40"
-                    : isLight
-                      ? "text-[#1a1625]/60 hover:text-[#1a1625] hover:bg-[#1a1625]/8 active:scale-95 cursor-pointer"
-                      : "text-white/60 hover:text-white hover:bg-white/10 active:scale-95 cursor-pointer"
-                )}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* 实例卡片轮播 (高内聚低耦合组件调度) */}
+        <InstanceCarousel
+          ref={carouselRef}
+          instances={instances}
+          isLight={isLight}
+          glassBg={glassBg}
+          hoveredCard={hoveredCard}
+          setHoveredCard={setHoveredCard}
+          activeCardMenu={activeCardMenu}
+          launchingId={launchingId}
+          onLaunch={launchTavern}
+          onReturnToTavern={handleReturnToTavern}
+          onStopInstance={handleStopInstance}
+          onOpenMenu={(inst, rect) => {
+            setMenuPos({
+              top: Math.min(rect.bottom + 6, window.innerHeight - 200),
+              left: Math.max(12, Math.min(rect.left - 60, window.innerWidth - 160)),
+            });
+            setActiveCardMenu(inst.id);
+            setIsCardMenuClosing(false);
+          }}
+          onRenameSave={(instanceId, newName) => {
+            setInstances(prev => prev.map(inst => inst.id === instanceId ? { ...inst, name: newName, subtitle: newName } : inst));
+            setExternallyRenamingId(null);
+          }}
+          externallyRenamingId={externallyRenamingId}
+          onClearExternalRenaming={() => setExternallyRenamingId(null)}
+          terminalLogs={terminalLogs}
+          setTerminalLogs={setTerminalLogs}
+          isWindows={isWindows}
+          isWeb={isWeb}
+          isShowcase={isShowcase}
+          onNewInstance={() => {
+            if (isWeb && !isShowcase && !import.meta.env.DEV) {
+              window.open("https://github.com/CAPTCHAAAAA/SillyClient/releases/latest", "_blank");
+              return;
+            }
+            setNewInstanceMode("local");
+            setNewInstanceName("");
+            setNewInstanceDir("");
+            setNewInstanceUrl("http://");
+            setNewRemoteAuthEnabled(false);
+            setNewRemoteAuthUsername("");
+            setNewRemoteAuthPassword("");
+            setNewInstanceVersion("stable");
+            setNewInstanceCompanionPresetEnabled(false);
+            setNewInstanceLocalZip(null);
+            setNewInstanceError(null);
+            setShowNewInstancePanel(true);
+          }}
+          activeSlide={activeSlide}
+          onActiveSlideChange={setActiveSlide}
+        />
       </main>
 
       {/* 解耦业务组件: 卡片操作菜单 */}
@@ -2744,7 +2521,7 @@ function SillyClientLauncher() {
             setIsLaunchMinimized(true);
           }, PANEL_EXIT_MS);
         }}
-        onEnterTavern={async (params) => {
+        onEnterTavern={async (params: any) => {
           await launchTavern(params || lastLaunchParams);
         }}
       />
