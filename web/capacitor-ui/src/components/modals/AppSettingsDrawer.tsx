@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, ChevronRight } from "lucide-react";
+import { X, ChevronRight, Folder, Cloud } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv } from "../../capacitor-plugin";
 import type { ContentOpenMode, AppUpdateInfo } from "../../capacitor-plugin";
@@ -271,7 +271,29 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
               >
                 <div className="app-settings-actions">
                   <AppSettingsAction
-                    onClick={() => importInputRef.current?.click()}
+                    onClick={async () => {
+                      if (Capacitor.isNativePlatform()) {
+                        try {
+                          const res = await TarvenEnv.readTextFile({ mimeType: "application/json" });
+                          if (!res?.content) return;
+                          const parsed = JSON.parse(res.content);
+                          const incoming = (parsed.instances || []) as TavernInstance[];
+                          setInstances(prev => {
+                            const map = new Map(prev.map(t => [t.id, t]));
+                            for (const item of incoming) {
+                              const icon = item.type === "local" ? <Folder className="w-5 h-5" /> : <Cloud className="w-5 h-5" />;
+                              map.set(item.id, { ...item, pendingTavernGestureHint: undefined, icon });
+                            }
+                            return Array.from(map.values());
+                          });
+                          onClose();
+                        } catch {
+                          /* 用户取消或读取失败 */
+                        }
+                      } else {
+                        importInputRef.current?.click();
+                      }
+                    }}
                   >
                     导入
                   </AppSettingsAction>

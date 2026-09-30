@@ -264,8 +264,8 @@ function SillyClientLauncher() {
   const terminalTitle = isWindows ? "Windows 控制台" : "Android 终端";
   const terminalPrompt = isWindows ? "C:\\>" : "~ $";
   const terminalBanner = isWindows
-    ? "SillyClient 1.9.2 · Windows · cmd.exe"
-    : "SillyClient 1.9.2 · Android shell";
+    ? "SillyClient 2.0.0 · Windows · cmd.exe"
+    : "SillyClient 2.0.0 · Android shell";
   const terminalPlaceholder = isWindows ? "输入 Windows 命令" : "输入 Android shell 命令";
   const [showOnboarding, setShowOnboarding] = useState(
     () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
@@ -342,8 +342,6 @@ function SillyClientLauncher() {
   const [migrationSourcePath, setMigrationSourcePath] = useState("");
   const [migrationIncludeSecrets, setMigrationIncludeSecrets] = useState(false);
   const [migrationCustomDest, setMigrationCustomDest] = useState("");
-  const [discoveredTaverns, setDiscoveredTaverns] = useState<Array<{ name: string; version: string; path: string }>>([]);
-  const [isScanningTaverns, setIsScanningTaverns] = useState(false);
   const [newInstanceVersion, setNewInstanceVersion] = useState("stable");
   const [newInstanceCompanionPresetEnabled, setNewInstanceCompanionPresetEnabled] = useState(false);
   const [newInstanceLocalZip, setNewInstanceLocalZip] = useState<string | null>(null);
@@ -752,30 +750,19 @@ function SillyClientLauncher() {
     themeSmoothingTimer.current = window.setTimeout(() => setThemeSmoothing(false), 800);
   }, [newInstanceMode]);
 
-  const handleScanTaverns = useCallback(async () => {
-    setIsScanningTaverns(true);
+  const handlePickTargetFolder = useCallback(async () => {
     try {
-      if (typeof (window as any).migrationDebug?.discover === "function") {
-        const list = await (window as any).migrationDebug.discover();
-        if (Array.isArray(list) && list.length > 0) {
-          setDiscoveredTaverns(list.map((item: any) => ({
-            name: item.name || "SillyTavern",
-            version: item.version || "未知",
-            path: item.path,
-          })));
+      if (typeof (window as any).migrationDebug?.choose === "function") {
+        const selected = await (window as any).migrationDebug.choose("target");
+        if (selected) {
+          setMigrationCustomDest(selected);
           return;
         }
       }
-      // Web / 走查环境模拟扫描
-      await new Promise(r => setTimeout(r, 600));
-      setDiscoveredTaverns([
-        { name: "SillyTavern-main", version: "1.12.8", path: "D:\\Tavern\\SillyTavern-1.12.8" },
-        { name: "SillyTavern-prod", version: "1.12.6", path: "C:\\Users\\User\\Desktop\\SillyTavern" },
-      ]);
-    } catch (err) {
-      console.warn("扫描失败", err);
-    } finally {
-      setIsScanningTaverns(false);
+      const { path } = await TarvenEnv.pickDirectory();
+      if (path) setMigrationCustomDest(path);
+    } catch {
+      /* 用户取消 */
     }
   }, []);
 
@@ -791,7 +778,7 @@ function SillyClientLauncher() {
       const { path } = await TarvenEnv.pickDirectory();
       if (path) setMigrationSourcePath(path);
     } catch {
-      setMigrationSourcePath("D:\\Backup\\SillyTavern-1.12.8");
+      /* 用户取消 */
     }
   }, []);
 
@@ -811,9 +798,8 @@ function SillyClientLauncher() {
           return;
         }
       }
-      setMigrationSourcePath("D:\\Backup\\SillyTavern_Backup_2026.zip");
     } catch {
-      setMigrationSourcePath("D:\\Backup\\SillyTavern_Backup_2026.zip");
+      /* 用户取消 */
     }
   }, []);
 
@@ -1378,7 +1364,9 @@ function SillyClientLauncher() {
           : {
               port,
               installDir,
-              installPath: newInstanceMode === "import" && migrationAccessMode === "takeover" ? migrationSourcePath : installPath,
+              installPath: newInstanceMode === "import"
+                ? (migrationAccessMode === "takeover" ? migrationSourcePath : (migrationCustomDest.trim() || installPath))
+                : installPath,
               zipballUrl: selectedZipballUrl,
               localZipPath: newInstanceLocalZip || undefined,
               companionPreset: newInstanceCompanionPresetEnabled ? SC_BORDEAUX_PRESET : undefined,
@@ -1421,6 +1409,7 @@ function SillyClientLauncher() {
         try {
           await TarvenEnv.migrateInstance({
             sourcePath: migrationSourcePath,
+            targetPath: migrationAccessMode === "copy" ? (migrationCustomDest.trim() || undefined) : undefined,
             instanceId: instance.id,
             mode: migrationAccessMode,
             includeSecrets: migrationIncludeSecrets,
@@ -1428,11 +1417,12 @@ function SillyClientLauncher() {
           setLaunchProgress({ pct: 100, text: "数据迁移完成，实例已注册" });
           setLaunchLogs(prev => [
             ...prev,
-            { msg: "【成功】旧酒馆数据平滑迁入完成！可随时启动运行。", level: "success" },
+            { msg: `【成功】${migrationAccessMode === "takeover" ? "已原地接管目录" : "旧酒馆数据复制迁移完成"}！可随时启动运行。`, level: "success" },
           ]);
           setInstances(prev => [instance, ...prev]);
           setNewInstanceName("");
           setMigrationSourcePath("");
+          setMigrationCustomDest("");
           setIsCreatingInstance(false);
           setLaunchingId(null);
           return;
@@ -2040,7 +2030,7 @@ function SillyClientLauncher() {
       )}
 
       <input ref={wallpaperInputRef} type="file" accept="image/*" className="hidden" onChange={handleWallpaperUpload} />
-      <input ref={importInputRef} type="file" accept=".json" className="hidden" onChange={(e) => {
+      <input ref={importInputRef} type="file" accept=".json,application/json,text/plain" className="hidden" onChange={(e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
@@ -2590,11 +2580,9 @@ function SillyClientLauncher() {
         setMigrationIncludeSecrets={setMigrationIncludeSecrets}
         migrationCustomDest={migrationCustomDest}
         setMigrationCustomDest={setMigrationCustomDest}
-        discoveredTaverns={discoveredTaverns}
-        isScanningTaverns={isScanningTaverns}
-        onScanTaverns={handleScanTaverns}
         onPickSourceFolder={handlePickSourceFolder}
         onPickSourceZip={handlePickSourceZip}
+        onPickTargetFolder={handlePickTargetFolder}
         migrationPreflight={
           migrationSourcePath
             ? {

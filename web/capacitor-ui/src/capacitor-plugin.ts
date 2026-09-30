@@ -119,6 +119,9 @@ export interface TarvenEnvPlugin {
   /** 调用系统保存位置选择器,写入文本/JSON 文件。 */
   saveTextFile(options: { fileName: string; mimeType: string; content: string }): Promise<void>
 
+  /** 调用系统文件选择器,读取小型文本/JSON 文件内容。 */
+  readTextFile(options?: { mimeType?: string }): Promise<{ content: string; fileName: string }>
+
   /** 自检:扫描本地已存在的酒馆实例目录。 */
   scanInstances(): Promise<{ instances: ScannedInstance[] }>
 
@@ -179,6 +182,7 @@ export interface TarvenEnvPlugin {
   /** 数据迁移：将旧酒馆目录或 ZIP 压缩包迁入新实例 */
   migrateInstance(options: {
     sourcePath: string
+    targetPath?: string
     instanceId: string
     mode?: 'copy' | 'takeover'
     includeSecrets?: boolean

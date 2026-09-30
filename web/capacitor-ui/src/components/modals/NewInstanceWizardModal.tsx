@@ -49,11 +49,9 @@ export interface NewInstanceWizardModalProps {
   setMigrationIncludeSecrets?: (inc: boolean) => void;
   migrationCustomDest?: string;
   setMigrationCustomDest?: (dest: string) => void;
-  discoveredTaverns?: DiscoveredTavern[];
-  isScanningTaverns?: boolean;
-  onScanTaverns?: () => void;
   onPickSourceFolder?: () => void;
   onPickSourceZip?: () => void;
+  onPickTargetFolder?: () => void;
   migrationPreflight?: {
     version?: string;
     nativePlugins?: string[];
@@ -259,11 +257,9 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   setMigrationIncludeSecrets = () => {},
   migrationCustomDest = "",
   setMigrationCustomDest = () => {},
-  discoveredTaverns = [],
-  isScanningTaverns = false,
-  onScanTaverns = () => {},
   onPickSourceFolder = () => {},
   onPickSourceZip = () => {},
+  onPickTargetFolder = () => {},
   migrationPreflight = null,
   newInstanceError,
   isCreatingInstance,
@@ -281,11 +277,16 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   const wizardLocalRef = useRef<HTMLDivElement>(null);
   const wizardRemoteRef = useRef<HTMLDivElement>(null);
   const wizardImportRef = useRef<HTMLDivElement>(null);
+  const importCopyRef = useRef<HTMLDivElement>(null);
+  const importTakeoverRef = useRef<HTMLDivElement>(null);
   const [wizardHeight, setWizardHeight] = useState<number | null>(null);
+  const [importSubHeight, setImportSubHeight] = useState<number | null>(null);
   const [showPreflightInfo, setShowPreflightInfo] = useState(false);
   const [hasReadPreflight, setHasReadPreflight] = useState(false);
   const [showSecretsInfo, setShowSecretsInfo] = useState(false);
   const [hasReadSecrets, setHasReadSecrets] = useState(false);
+  const [showAccessModeInfo, setShowAccessModeInfo] = useState(false);
+  const [hasReadAccessMode, setHasReadAccessMode] = useState(false);
 
   // 动态测量激活模式的高度以实现白天黑夜级平滑伸缩
   useEffect(() => {
@@ -319,12 +320,51 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     newRemoteAuthEnabled,
     migrationAccessMode,
     migrationSourcePath,
-    discoveredTaverns,
+    migrationCustomDest,
     migrationPreflight,
     showPreflightInfo,
     hasReadPreflight,
     showSecretsInfo,
     hasReadSecrets,
+    showAccessModeInfo,
+    importSubHeight,
+    isOpen,
+  ]);
+
+  // 测量数据迁移子模式（复制迁移 / 原地接管）的高度以实现与主模式一致的同位平滑过渡
+  useEffect(() => {
+    if (newInstanceMode !== "import") return;
+    const targetSubEl =
+      migrationAccessMode === "copy"
+        ? importCopyRef.current
+        : importTakeoverRef.current;
+    if (!targetSubEl) return;
+
+    const updateSubHeight = () => {
+      if (targetSubEl) {
+        const h = targetSubEl.getBoundingClientRect().height;
+        if (h > 0) setImportSubHeight(Math.round(h));
+      }
+    };
+
+    updateSubHeight();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(() => {
+        updateSubHeight();
+      });
+      ro.observe(targetSubEl);
+      return () => ro.disconnect();
+    }
+  }, [
+    newInstanceMode,
+    migrationAccessMode,
+    migrationSourcePath,
+    migrationCustomDest,
+    migrationPreflight,
+    showPreflightInfo,
+    showSecretsInfo,
+    migrationIncludeSecrets,
     isOpen,
   ]);
 
@@ -768,110 +808,147 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             aria-hidden={newInstanceMode !== "import"}
           >
             {/* 1. 接入方式 */}
-            <NewInstanceField
-              label="接入方式"
-              unreadAlert={true}
-              info={
-                <div className="space-y-1">
-                  <div>
-                    <span className="font-medium text-white/85">复制迁移（推荐）：</span>
-                    将旧酒馆数据（聊天、角色、预设、世界书、插件）完整复制到受管存储，原酒馆目录完全保持不变。首次启动由内置 Node 22 自动重建依赖。
-                  </div>
-                  <div className="pt-1">
-                    <span className="font-medium text-white/85">原地接管（高级）：</span>
-                    直接指向原酒馆物理目录启动，注册为受管实例，不复制任何文件。移除实例仅解除登记，绝不修改或删除原物理文件。
-                  </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "text-xs font-medium",
+                      isLight ? "text-[#1a1625]/70" : "text-white/70"
+                    )}
+                  >
+                    接入方式
+                  </span>
+                  <InfoBadgeButton
+                    isOpen={showAccessModeInfo}
+                    onToggle={() => {
+                      if (!hasReadAccessMode) setHasReadAccessMode(true);
+                      setShowAccessModeInfo(!showAccessModeInfo);
+                    }}
+                    hasBeenRead={hasReadAccessMode}
+                    isLight={isLight}
+                    title="重要提示：点击查看运行机制与文件处理说明"
+                    readTitle="点击查看说明"
+                  />
                 </div>
-              }
-              isLight={isLight}
-            >
+              </div>
+
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setMigrationAccessMode("copy")}
                   aria-pressed={migrationAccessMode === "copy"}
                   className={cn(
-                    "ios-choice-control motion-control flex-1 h-8 rounded-xl text-xs font-medium border transition-colors duration-300",
+                    "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                     migrationAccessMode === "copy"
                       ? isLight
                         ? "bg-[#1a1625]/8 border-[#1a1625]/15 text-[#1a1625]"
                         : "bg-white/10 border-white/15 text-white"
                       : isLight
-                      ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:text-[#1a1625]/55"
-                      : "bg-transparent border-white/[0.06] text-white/35 hover:text-white/55"
+                      ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:border-black/12 hover:text-[#1a1625]/55"
+                      : "bg-transparent border-white/[0.06] text-white/35 hover:border-white/12 hover:text-white/55"
                   )}
                 >
-                  复制迁移 (推荐)
+                  复制迁移
                 </button>
                 <button
                   type="button"
                   onClick={() => setMigrationAccessMode("takeover")}
                   aria-pressed={migrationAccessMode === "takeover"}
                   className={cn(
-                    "ios-choice-control motion-control flex-1 h-8 rounded-xl text-xs font-medium border transition-colors duration-300",
+                    "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                     migrationAccessMode === "takeover"
                       ? isLight
                         ? "bg-[#1a1625]/8 border-[#1a1625]/15 text-[#1a1625]"
                         : "bg-white/10 border-white/15 text-white"
                       : isLight
-                      ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:text-[#1a1625]/55"
-                      : "bg-transparent border-white/[0.06] text-white/35 hover:text-white/55"
+                      ? "bg-transparent border-black/[0.06] text-[#1a1625]/35 hover:border-black/12 hover:text-[#1a1625]/55"
+                      : "bg-transparent border-white/[0.06] text-white/35 hover:border-white/12 hover:text-white/55"
                   )}
                 >
-                  原地接管 (高级)
+                  原地接管
                 </button>
               </div>
-            </NewInstanceField>
 
-            {/* 2. 旧酒馆来源 */}
-            <NewInstanceField
-              label="旧酒馆来源"
-              unreadAlert={true}
-              info="支持选择包含 server.js 或 data/ 目录的本地文件夹，或包含旧酒馆备份的 .zip 文件。点击右侧「自动扫描」可快速检索系统常见安装位置的历史酒馆。"
-              rightAction={
-                <button
-                  type="button"
-                  disabled={isScanningTaverns}
-                  onClick={onScanTaverns}
-                  className={cn(
-                    "motion-control text-[11px] font-normal transition-colors",
-                    isLight
-                      ? "text-[#1a1625]/45 hover:text-[#1a1625]/80"
-                      : "text-white/45 hover:text-white/80"
-                  )}
-                >
-                  {isScanningTaverns ? "扫描中..." : "自动扫描"}
-                </button>
-              }
-              isLight={isLight}
-            >
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 w-full">
-                  <input
-                    type="text"
-                    value={migrationSourcePath}
-                    onChange={(e) => setMigrationSourcePath(e.target.value)}
-                    placeholder="选择文件夹或 ZIP 文件路径"
+              {/* 红色感叹号展开说明 */}
+              <div
+                className={cn("motion-accordion", showAccessModeInfo && "is-open")}
+                aria-hidden={!showAccessModeInfo}
+              >
+                <div className="motion-accordion-inner">
+                  <div
                     className={cn(
-                      "flex-1 h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
+                      "mt-2 p-2.5 rounded-xl border text-[11px] leading-relaxed space-y-1 transition-colors",
                       isLight
-                        ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                        : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                    )}
-                  />
-                  <button
-                    type="button"
-                    onClick={onPickSourceFolder}
-                    className={cn(
-                      "motion-control px-3 h-9 rounded-xl text-xs font-medium border flex-shrink-0 transition-colors",
-                      isLight
-                        ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/[0.04]"
-                        : "border-white/[0.08] text-white/60 hover:bg-white/[0.04]"
+                        ? "bg-black/[0.02] border-black/[0.05] text-[#1a1625]/65"
+                        : "bg-white/[0.02] border-white/[0.05] text-white/65"
                     )}
                   >
-                    浏览
-                  </button>
-                  {migrationAccessMode === "copy" && (
+                    {migrationAccessMode === "copy" ? (
+                      <>
+                        <div>• <strong>运行机制</strong>：将数据完整复制到目标目录，作为独立的新实例运行。</div>
+                        <div>• <strong>来源文件</strong>：来源路径下的原有文件不会被做任何修改、移动或删除。</div>
+                        <div>• <strong>用户决策</strong>：复制完成后新旧相互独立。原目录是由您继续保留作为备份，还是在确认无误后自行手动删除，均由您自行决定。</div>
+                      </>
+                    ) : (
+                      <>
+                        <div>• <strong>运行机制</strong>：直接复用原目录作为运行路径，不产生额外文件副本。</div>
+                        <div>• <strong>来源文件</strong>：后续运行时将直接读写该目录。</div>
+                        <div>• <strong>用户决策</strong>：若后续在 SillyClient 中移除该实例，仅解除客户端对该目录的登记关联，绝不会删除原目录中的任何物理文件；如需彻底清理数据，需由您自行在系统文件管理器中删除。</div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 子模式配置切换容器（平滑高度跟随 + 交叉溶变） */}
+            <div
+              className="relative transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+              style={{ height: importSubHeight ? `${importSubHeight}px` : undefined }}
+            >
+              {/* 复制迁移子面板 */}
+              <div
+                ref={importCopyRef}
+                className={cn(
+                  "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  migrationAccessMode === "copy"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={migrationAccessMode !== "copy"}
+              >
+                {/* 2. 旧酒馆来源 */}
+                <NewInstanceField
+                  label="旧酒馆来源位置"
+                  desc="支持选择文件夹或 ZIP 备份文件"
+                  isLight={isLight}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="text"
+                      value={migrationSourcePath}
+                      onChange={(e) => setMigrationSourcePath(e.target.value)}
+                      placeholder="选择文件夹或 ZIP 文件路径"
+                      className={cn(
+                        "flex-1 h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
+                        isLight
+                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={onPickSourceFolder}
+                      className={cn(
+                        "motion-control px-3 h-9 rounded-xl text-xs font-medium border flex-shrink-0 transition-colors",
+                        isLight
+                          ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/[0.04]"
+                          : "border-white/[0.08] text-white/60 hover:bg-white/[0.04]"
+                      )}
+                    >
+                      浏览
+                    </button>
                     <button
                       type="button"
                       onClick={onPickSourceZip}
@@ -882,243 +959,403 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                           : "border-white/[0.08] text-white/60 hover:bg-white/[0.04]"
                       )}
                     >
-                      ZIP
+                      ZIP包
                     </button>
-                  )}
-                </div>
+                  </div>
+                </NewInstanceField>
 
-                {/* 候选列表 (点击切换) */}
-                {discoveredTaverns && discoveredTaverns.length > 0 && (
-                  <div className="space-y-1 pt-1">
-                    <div
+                {/* 3. 目标保存路径 */}
+                <NewInstanceField
+                  label="目标保存位置"
+                  desc="新实例数据的独立存放目录"
+                  rightAction={
+                    migrationCustomDest ? (
+                      <button
+                        type="button"
+                        onClick={() => setMigrationCustomDest("")}
+                        className={cn(
+                          "motion-control text-[11px] font-normal transition-colors",
+                          isLight
+                            ? "text-[#1a1625]/45 hover:text-[#1a1625]/80"
+                            : "text-white/45 hover:text-white/80"
+                        )}
+                      >
+                        恢复默认受管路径
+                      </button>
+                    ) : undefined
+                  }
+                  isLight={isLight}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="text"
+                      value={
+                        migrationCustomDest ||
+                        `%LOCALAPPDATA%/SillyClient/tarven/servers/${
+                          newInstanceName.trim() || "imported"
+                        }`
+                      }
+                      onChange={(e) => setMigrationCustomDest(e.target.value)}
+                      placeholder="指定目标文件夹路径"
                       className={cn(
-                        "text-[10px] px-1",
-                        isLight ? "text-[#1a1625]/35" : "text-white/35"
+                        "flex-1 h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
+                        isLight
+                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={onPickTargetFolder}
+                      className={cn(
+                        "motion-control px-3 h-9 rounded-xl text-xs font-medium border flex-shrink-0 transition-colors",
+                        isLight
+                          ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/[0.04]"
+                          : "border-white/[0.08] text-white/60 hover:bg-white/[0.04]"
                       )}
                     >
-                      已发现 {discoveredTaverns.length} 个候选（点击选用）
+                      浏览
+                    </button>
+                  </div>
+                </NewInstanceField>
+
+                {/* 4. 私有凭据处理 (secrets.json) */}
+                <div className="py-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          isLight ? "text-[#1a1625]/75" : "text-white/75"
+                        )}
+                      >
+                        包含私有凭据 (secrets.json)
+                      </span>
+                      <InfoBadgeButton
+                        isOpen={showSecretsInfo}
+                        onToggle={() => {
+                          if (!hasReadSecrets) setHasReadSecrets(true);
+                          setShowSecretsInfo(!showSecretsInfo);
+                        }}
+                        hasBeenRead={hasReadSecrets}
+                        isLight={isLight}
+                        title="重要提示：点击查看私有凭据说明"
+                        readTitle="点击查看说明"
+                      />
                     </div>
-                    <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-subtle">
-                      {discoveredTaverns.map((t, idx) => {
-                        const isSelected = migrationSourcePath === t.path;
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setMigrationSourcePath(t.path);
-                              if (!newInstanceName.trim()) setNewInstanceName(t.name);
-                            }}
-                            className={cn(
-                              "motion-control w-full text-left px-2.5 py-1.5 rounded-lg border flex items-center justify-between transition-colors",
-                              isSelected
-                                ? isLight
-                                  ? "bg-[#1a1625]/8 border-[#1a1625]/20 text-[#1a1625]"
-                                  : "bg-white/10 border-white/20 text-white"
-                                : isLight
-                                ? "bg-black/[0.02] border-black/[0.05] text-[#1a1625]/70 hover:border-black/10"
-                                : "bg-white/[0.02] border-white/[0.05] text-white/70 hover:border-white/10"
-                            )}
-                          >
-                            <div className="truncate mr-2">
-                              <span className="text-xs font-medium">{t.name}</span>
-                              <span
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMigrationIncludeSecrets(!migrationIncludeSecrets)
+                      }
+                      className="ios-toggle flex-shrink-0 ml-3"
+                      aria-label="包含敏感凭据"
+                    >
+                      <div
+                        className={cn(
+                          "ios-toggle-track",
+                          migrationIncludeSecrets && "ios-toggle-track-active"
+                        )}
+                      >
+                        <div className="ios-toggle-icons">
+                          <span className="ios-toggle-icon-off">○</span>
+                          <span className="ios-toggle-icon-on">│</span>
+                        </div>
+                        <div
+                          className={cn(
+                            "ios-toggle-thumb",
+                            migrationIncludeSecrets && "ios-toggle-thumb-active"
+                          )}
+                        />
+                      </div>
+                    </button>
+                  </div>
+
+                  <div
+                    className={cn("motion-accordion", showSecretsInfo && "is-open")}
+                    aria-hidden={!showSecretsInfo}
+                  >
+                    <div className="motion-accordion-inner">
+                      <div
+                        className={cn(
+                          "mt-2 p-2.5 rounded-xl border text-[11px] leading-relaxed",
+                          isLight
+                            ? "bg-black/[0.03] border-black/[0.06] text-[#1a1625]/65"
+                            : "bg-white/[0.03] border-white/[0.06] text-white/65"
+                        )}
+                      >
+                        为安全起见默认排除 secrets.json，以防止历史 API Key 或第三方密钥意外泄露；开启后将随同导入已有密钥与私有认证配置。
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. 数据检测结果 */}
+                {migrationSourcePath && (
+                  <div
+                    className={cn(
+                      "rounded-xl border px-3 py-2 text-xs transition-colors",
+                      isLight
+                        ? "bg-black/[0.02] border-black/[0.06]"
+                        : "bg-white/[0.02] border-white/[0.06]"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "font-medium text-xs",
+                            isLight ? "text-[#1a1625]/75" : "text-white/75"
+                          )}
+                        >
+                          数据检测结果
+                        </span>
+                        <InfoBadgeButton
+                          isOpen={showPreflightInfo}
+                          onToggle={() => {
+                            if (!hasReadPreflight) setHasReadPreflight(true);
+                            setShowPreflightInfo(!showPreflightInfo);
+                          }}
+                          hasBeenRead={hasReadPreflight}
+                          isLight={isLight}
+                          title="点击查看检测详情"
+                          readTitle="点击收起详情"
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          "font-mono text-[11px]",
+                          isLight ? "text-[#1a1625]/45" : "text-white/45"
+                        )}
+                      >
+                        SillyTavern v{migrationPreflight?.version || "1.12.8"}
+                      </span>
+                    </div>
+
+                    <div
+                      className={cn("motion-accordion", showPreflightInfo && "is-open")}
+                      aria-hidden={!showPreflightInfo}
+                    >
+                      <div className="motion-accordion-inner">
+                        <div
+                          className={cn(
+                            "pt-2 mt-2 border-t text-[11px] leading-relaxed space-y-1",
+                            isLight
+                              ? "border-black/[0.04] text-[#1a1625]/60"
+                              : "border-white/[0.04] text-white/60"
+                          )}
+                        >
+                          <div>• 待迁移项目：聊天记录、角色预设、世界书与扩展插件。</div>
+                          <div>• 自动排除项：.git 版本历史与 node_modules 依赖缓存将自动排除，由内置运行时按需适配。</div>
+                          {migrationPreflight?.nativePlugins &&
+                            migrationPreflight.nativePlugins.length > 0 && (
+                              <div
                                 className={cn(
-                                  "ml-2 text-[10px] font-mono",
-                                  isLight ? "text-[#1a1625]/40" : "text-white/40"
+                                  "pt-0.5",
+                                  isLight ? "text-[#1a1625]/45" : "text-white/45"
                                 )}
                               >
-                                v{t.version}
-                              </span>
-                            </div>
-                            <span
-                              className={cn(
-                                "text-[10px] font-mono truncate max-w-[150px]",
-                                isLight ? "text-[#1a1625]/30" : "text-white/30"
-                              )}
-                            >
-                              {t.path}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </NewInstanceField>
-
-            {/* 3. 预检卡片 (若已识别来源，默认单行展示版本与 (i) 符号，未读时显示醒目红色感叹号，点击展开详细检测明细) */}
-            {migrationSourcePath && (
-              <div
-                className={cn(
-                  "rounded-xl border px-3 py-2 text-xs transition-colors",
-                  isLight
-                    ? "bg-black/[0.02] border-black/[0.06]"
-                    : "bg-white/[0.02] border-white/[0.06]"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={cn(
-                        "font-medium text-xs",
-                        isLight ? "text-[#1a1625]/75" : "text-white/75"
-                      )}
-                    >
-                      数据预检
-                    </span>
-                    <InfoBadgeButton
-                      isOpen={showPreflightInfo}
-                      onToggle={() => {
-                        if (!hasReadPreflight) setHasReadPreflight(true);
-                        setShowPreflightInfo(!showPreflightInfo);
-                      }}
-                      hasBeenRead={hasReadPreflight}
-                      isLight={isLight}
-                      title="重要提示：点击查看预检详情"
-                      readTitle="点击查看预检详情"
-                    />
-                  </div>
-                  <span
-                    className={cn(
-                      "font-mono text-[11px]",
-                      isLight ? "text-[#1a1625]/45" : "text-white/45"
-                    )}
-                  >
-                    SillyTavern v{migrationPreflight?.version || "1.12.8"}
-                  </span>
-                </div>
-
-                <div
-                  className={cn("motion-accordion", showPreflightInfo && "is-open")}
-                  aria-hidden={!showPreflightInfo}
-                >
-                  <div className="motion-accordion-inner">
-                    <div
-                      className={cn(
-                        "pt-2 mt-2 border-t text-[11px] leading-relaxed space-y-1",
-                        isLight
-                          ? "border-black/[0.04] text-[#1a1625]/60"
-                          : "border-white/[0.04] text-white/60"
-                      )}
-                    >
-                      <div>完整度检测：包含聊天记录、角色预设、世界书与扩展插件。</div>
-                      <div>环境隔离策略：自动排除 .git 版本库与旧依赖缓存。</div>
-                      {migrationPreflight?.nativePlugins &&
-                        migrationPreflight.nativePlugins.length > 0 && (
-                          <div
-                            className={cn(
-                              "pt-0.5",
-                              isLight ? "text-[#1a1625]/45" : "text-white/45"
+                                检测到原生模块 ({migrationPreflight.nativePlugins.join(", ")})，首次启动将自动重构。
+                              </div>
                             )}
-                          >
-                            检测到原生模块 ({migrationPreflight.nativePlugins.join(", ")})，首次启动将自动重构。
-                          </div>
-                        )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
-            )}
 
-            {/* 4. 敏感凭据脱敏选项 (采用统一的 ios-toggle，未读时显示醒目红色感叹号，点击 (i) 展开安全说明) */}
-            <div className="py-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      isLight ? "text-[#1a1625]/75" : "text-white/75"
-                    )}
-                  >
-                    包含敏感凭据 (secrets.json)
-                  </span>
-                  <InfoBadgeButton
-                    isOpen={showSecretsInfo}
-                    onToggle={() => {
-                      if (!hasReadSecrets) setHasReadSecrets(true);
-                      setShowSecretsInfo(!showSecretsInfo);
-                    }}
-                    hasBeenRead={hasReadSecrets}
-                    isLight={isLight}
-                    title="安全提示：点击查看敏感凭据说明"
-                    readTitle="点击查看说明"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setMigrationIncludeSecrets(!migrationIncludeSecrets)
-                  }
-                  className="ios-toggle flex-shrink-0 ml-3"
-                  aria-label="包含敏感凭据"
+              {/* 原地接管子面板 */}
+              <div
+                ref={importTakeoverRef}
+                className={cn(
+                  "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  migrationAccessMode === "takeover"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={migrationAccessMode !== "takeover"}
+              >
+                {/* 2. 旧酒馆来源 */}
+                <NewInstanceField
+                  label="旧酒馆来源位置"
+                  desc="选择包含旧酒馆的本地文件夹"
+                  isLight={isLight}
                 >
-                  <div
-                    className={cn(
-                      "ios-toggle-track",
-                      migrationIncludeSecrets && "ios-toggle-track-active"
-                    )}
-                  >
-                    <div className="ios-toggle-icons">
-                      <span className="ios-toggle-icon-off">○</span>
-                      <span className="ios-toggle-icon-on">│</span>
-                    </div>
-                    <div
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="text"
+                      value={migrationSourcePath}
+                      onChange={(e) => setMigrationSourcePath(e.target.value)}
+                      placeholder="选择旧酒馆本地目录"
                       className={cn(
-                        "ios-toggle-thumb",
-                        migrationIncludeSecrets && "ios-toggle-thumb-active"
+                        "flex-1 h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
+                        isLight
+                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
                       )}
                     />
+                    <button
+                      type="button"
+                      onClick={onPickSourceFolder}
+                      className={cn(
+                        "motion-control px-3 h-9 rounded-xl text-xs font-medium border flex-shrink-0 transition-colors",
+                        isLight
+                          ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/[0.04]"
+                          : "border-white/[0.08] text-white/60 hover:bg-white/[0.04]"
+                      )}
+                    >
+                      浏览
+                    </button>
                   </div>
-                </button>
-              </div>
+                </NewInstanceField>
 
-              <div
-                className={cn("motion-accordion", showSecretsInfo && "is-open")}
-                aria-hidden={!showSecretsInfo}
-              >
-                <div className="motion-accordion-inner">
+                {/* 3. 私有凭据处理 (secrets.json) */}
+                <div className="py-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          isLight ? "text-[#1a1625]/75" : "text-white/75"
+                        )}
+                      >
+                        包含私有凭据 (secrets.json)
+                      </span>
+                      <InfoBadgeButton
+                        isOpen={showSecretsInfo}
+                        onToggle={() => {
+                          if (!hasReadSecrets) setHasReadSecrets(true);
+                          setShowSecretsInfo(!showSecretsInfo);
+                        }}
+                        hasBeenRead={hasReadSecrets}
+                        isLight={isLight}
+                        title="重要提示：点击查看私有凭据说明"
+                        readTitle="点击查看说明"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMigrationIncludeSecrets(!migrationIncludeSecrets)
+                      }
+                      className="ios-toggle flex-shrink-0 ml-3"
+                      aria-label="包含敏感凭据"
+                    >
+                      <div
+                        className={cn(
+                          "ios-toggle-track",
+                          migrationIncludeSecrets && "ios-toggle-track-active"
+                        )}
+                      >
+                        <div className="ios-toggle-icons">
+                          <span className="ios-toggle-icon-off">○</span>
+                          <span className="ios-toggle-icon-on">│</span>
+                        </div>
+                        <div
+                          className={cn(
+                            "ios-toggle-thumb",
+                            migrationIncludeSecrets && "ios-toggle-thumb-active"
+                          )}
+                        />
+                      </div>
+                    </button>
+                  </div>
+
                   <div
-                    className={cn(
-                      "mt-2 p-2.5 rounded-xl border text-[11px] leading-relaxed",
-                      isLight
-                        ? "bg-black/[0.03] border-black/[0.06] text-[#1a1625]/65"
-                        : "bg-white/[0.03] border-white/[0.06] text-white/65"
-                    )}
+                    className={cn("motion-accordion", showSecretsInfo && "is-open")}
+                    aria-hidden={!showSecretsInfo}
                   >
-                    为安全起见默认排除 secrets.json，以防止历史 API Key 或第三方密钥意外泄露；开启后将随同导入已有密钥与私有认证配置。
+                    <div className="motion-accordion-inner">
+                      <div
+                        className={cn(
+                          "mt-2 p-2.5 rounded-xl border text-[11px] leading-relaxed",
+                          isLight
+                            ? "bg-black/[0.03] border-black/[0.06] text-[#1a1625]/65"
+                            : "bg-white/[0.03] border-white/[0.06] text-white/65"
+                        )}
+                      >
+                        为安全起见默认排除 secrets.json，以防止历史 API Key 或第三方密钥意外泄露；开启后将随同导入已有密钥与私有认证配置。
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* 4. 数据检测结果 */}
+                {migrationSourcePath && (
+                  <div
+                    className={cn(
+                      "rounded-xl border px-3 py-2 text-xs transition-colors",
+                      isLight
+                        ? "bg-black/[0.02] border-black/[0.06]"
+                        : "bg-white/[0.02] border-white/[0.06]"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "font-medium text-xs",
+                            isLight ? "text-[#1a1625]/75" : "text-white/75"
+                          )}
+                        >
+                          数据检测结果
+                        </span>
+                        <InfoBadgeButton
+                          isOpen={showPreflightInfo}
+                          onToggle={() => {
+                            if (!hasReadPreflight) setHasReadPreflight(true);
+                            setShowPreflightInfo(!showPreflightInfo);
+                          }}
+                          hasBeenRead={hasReadPreflight}
+                          isLight={isLight}
+                          title="点击查看检测详情"
+                          readTitle="点击收起详情"
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          "font-mono text-[11px]",
+                          isLight ? "text-[#1a1625]/45" : "text-white/45"
+                        )}
+                      >
+                        SillyTavern v{migrationPreflight?.version || "1.12.8"}
+                      </span>
+                    </div>
+
+                    <div
+                      className={cn("motion-accordion", showPreflightInfo && "is-open")}
+                      aria-hidden={!showPreflightInfo}
+                    >
+                      <div className="motion-accordion-inner">
+                        <div
+                          className={cn(
+                            "pt-2 mt-2 border-t text-[11px] leading-relaxed space-y-1",
+                            isLight
+                              ? "border-black/[0.04] text-[#1a1625]/60"
+                              : "border-white/[0.04] text-white/60"
+                          )}
+                        >
+                          <div>• 待迁移项目：聊天记录、角色预设、世界书与扩展插件。</div>
+                          <div>• 自动排除项：.git 版本历史与 node_modules 依赖缓存将自动排除，由内置运行时按需适配。</div>
+                          {migrationPreflight?.nativePlugins &&
+                            migrationPreflight.nativePlugins.length > 0 && (
+                              <div
+                                className={cn(
+                                  "pt-0.5",
+                                  isLight ? "text-[#1a1625]/45" : "text-white/45"
+                                )}
+                              >
+                                检测到原生模块 ({migrationPreflight.nativePlugins.join(", ")})，首次启动将自动重构。
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* 5. 目标路径 (仅复制迁移下展示) */}
-            {migrationAccessMode === "copy" && (
-              <NewInstanceField
-                label="目标保存路径"
-                unreadAlert={true}
-                info="受管实例的本地独立存储路径。数据将完整复制至此，与原物理酒馆隔离运行。"
-                isLight={isLight}
-              >
-                <input
-                  type="text"
-                  value={
-                    migrationCustomDest ||
-                    `%LOCALAPPDATA%/SillyClient/tarven/servers/${
-                      newInstanceName.trim() || "imported"
-                    }`
-                  }
-                  readOnly
-                  className={cn(
-                    "w-full h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 opacity-80 cursor-default",
-                    isLight
-                      ? "bg-black/[0.02] border-black/[0.06] text-[#1a1625]/70"
-                      : "bg-white/[0.02] border-white/[0.06] text-white/70"
-                  )}
-                />
-              </NewInstanceField>
-            )}
           </div>
         </div>
       </div>
@@ -1181,8 +1418,8 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 : "获取当前版本"
               : newInstanceMode === "import"
               ? migrationAccessMode === "takeover"
-                ? "确认原地接管"
-                : "开始复制迁移"
+                ? "开始接管"
+                : "开始复制"
               : "创建"}
           </button>
         </div>
