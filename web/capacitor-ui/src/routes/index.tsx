@@ -1064,8 +1064,8 @@ function SillyClientLauncher() {
         });
         modeHandle = await TarvenEnv.addListener("mode", (d: { mode: string; tavernRunning?: boolean; instanceId?: string; lastUsedAt?: string; totalUsageMs?: number }) => {
           if (d.mode === "launcher" && d.tavernRunning === true && d.instanceId) {
-            setInstances(prev => prev.map(instance => instance.id === d.instanceId
-              ? { ...instance, pendingTavernGestureHint: undefined }
+            setInstances(prev => prev.map(instance => (instance.id === d.instanceId || instance.installDir === d.instanceId)
+              ? { ...instance, status: "running", pendingTavernGestureHint: undefined }
               : instance));
           }
           // 只有 tavernRunning=false（实例真正关闭）时才置 stopped
