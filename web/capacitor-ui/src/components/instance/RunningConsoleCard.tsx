@@ -75,7 +75,6 @@ export const RunningConsoleCard: React.FC<RunningConsoleCardProps> = ({
 
   return (
     <div
-      data-card-index={String(index + 1)}
       className={cn(
         "motion-instance-card ios-task-surface w-full h-full rounded-[18px] relative flex flex-col justify-between p-3.5 overflow-hidden border cursor-default select-text",
         isLight

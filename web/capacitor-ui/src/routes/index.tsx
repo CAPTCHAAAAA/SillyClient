@@ -570,13 +570,13 @@ function SillyClientLauncher() {
   const scrollToSlide = useCallback((index: number) => {
     const el = carouselRef.current;
     if (!el) return;
-    const cards = el.querySelectorAll('[data-card-index]');
-    const target = cards[index] as HTMLElement | undefined;
+    const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute('data-card-index')) as HTMLElement[];
+    const target = cards[index];
     if (!target) return;
-    const cardWidth = 240;
-    const containerWidth = el.clientWidth;
-    const scrollLeft = target.offsetLeft - (containerWidth - cardWidth) / 2;
-    el.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    const targetCenter = target.getBoundingClientRect().left + target.offsetWidth / 2;
+    const containerCenter = el.getBoundingClientRect().left + el.clientWidth / 2;
+    const diff = targetCenter - containerCenter;
+    el.scrollTo({ left: el.scrollLeft + diff, behavior: 'smooth' });
     setActiveSlide(index);
   }, []);
 
@@ -592,6 +592,32 @@ function SillyClientLauncher() {
     }
   }, [instances, scrollToSlide]);
 
+  // 键盘左右箭头支持快捷翻页
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.closest('[role="dialog"]') ||
+          target.closest('.modal-backdrop'))
+      ) {
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        scrollToSlide(Math.max(0, activeSlide - 1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        scrollToSlide(Math.min(instances.length, activeSlide + 1));
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeSlide, instances.length, scrollToSlide]);
+
   // 轮播拖拽 + 滚动指示器联动
   const dragState = useRef<{ isDown: boolean; startX: number; scrollLeft: number }>({ isDown: false, startX: 0, scrollLeft: 0 });
 
@@ -600,6 +626,10 @@ function SillyClientLauncher() {
     if (!el) return;
 
     const onDown = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
       const x = 'touches' in e ? e.touches[0].pageX : e.pageX;
       dragState.current = { isDown: true, startX: x - el.offsetLeft, scrollLeft: el.scrollLeft };
       el.style.cursor = 'grabbing';
@@ -623,26 +653,33 @@ function SillyClientLauncher() {
       if (dragState.current.isDown) onUp();
     };
 
-    // 滚动时更新指示器
+    // 滚动时更新指示器 (基于精确物理视口中心距离计算)
     const updateIndicator = () => {
-      const containerWidth = el.clientWidth;
-      const containerCenter = el.scrollLeft + containerWidth / 2;
-      const cards = el.querySelectorAll('[data-card-index]');
+      const containerCenter = el.getBoundingClientRect().left + el.clientWidth / 2;
+      const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute('data-card-index')) as HTMLElement[];
       let closestIdx = 0;
       let closestDist = Infinity;
       cards.forEach((card) => {
-        const center = (card as HTMLElement).offsetLeft + 120;
-        const dist = Math.abs(center - containerCenter);
+        const cardCenter = card.getBoundingClientRect().left + card.offsetWidth / 2;
+        const dist = Math.abs(cardCenter - containerCenter);
         if (dist < closestDist) {
           closestDist = dist;
-          closestIdx = parseInt((card as HTMLElement).dataset.cardIndex || '0');
+          closestIdx = parseInt(card.dataset.cardIndex || '0', 10);
         }
       });
       setActiveSlide(closestIdx);
     };
 
-    let scrollTimer: ReturnType<typeof setTimeout>;
-    const onScroll = () => { clearTimeout(scrollTimer); scrollTimer = setTimeout(updateIndicator, 80); };
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateIndicator();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
 
     el.style.cursor = 'grab';
     el.addEventListener('mousedown', onDown);
@@ -655,7 +692,6 @@ function SillyClientLauncher() {
     el.addEventListener('scroll', onScroll);
 
     return () => {
-      clearTimeout(scrollTimer);
       el.removeEventListener('mousedown', onDown);
       el.removeEventListener('mousemove', onMove);
       el.removeEventListener('mouseup', onUp);
@@ -2441,48 +2477,59 @@ function SillyClientLauncher() {
             </div>
 
             {/* 指示器 + 方向键 */}
-            <div className="flex items-center justify-center gap-3 mt-4">
+            <div className="flex items-center justify-center gap-3 mt-4 select-none">
               <button
+                type="button"
                 onClick={() => scrollToSlide(Math.max(0, activeSlide - 1))}
                 disabled={activeSlide === 0}
+                aria-label="上一页"
                 className={cn(
-                  "motion-control w-7 h-7 rounded-full flex items-center justify-center",
+                  "motion-control w-8 h-8 rounded-full flex items-center justify-center transition-all",
                   activeSlide === 0
-                    ? isLight ? "text-[#1a1625]/15 cursor-default" : "text-white/15 cursor-default"
-                    : isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/70 hover:bg-[#1a1625]/8" : "text-white/40 hover:text-white/70 hover:bg-white/10"
+                    ? isLight ? "text-[#1a1625]/15 cursor-default opacity-40" : "text-white/15 cursor-default opacity-40"
+                    : isLight
+                      ? "text-[#1a1625]/60 hover:text-[#1a1625] hover:bg-[#1a1625]/8 active:scale-95 cursor-pointer"
+                      : "text-white/60 hover:text-white hover:bg-white/10 active:scale-95 cursor-pointer"
                 )}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
 
-              {Array.from({ length: instances.length + 1 }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => scrollToSlide(i)}
-                  aria-label={`切换到第 ${i + 1} 张卡片`}
-                  aria-current={i === activeSlide ? "true" : undefined}
-                  className="motion-control group flex h-4 w-4 items-center justify-center rounded-full"
-                >
-                  <span className={cn(
-                    "block h-1.5 w-4 rounded-full transition-[transform,background-color,opacity] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                    i === activeSlide
-                      ? isLight ? "scale-x-100 bg-[#1a1625]/45" : "scale-x-100 bg-white/50"
-                      : isLight ? "scale-x-[0.375] bg-[#1a1625]/12 group-hover:bg-[#1a1625]/20" : "scale-x-[0.375] bg-white/15 group-hover:bg-white/25"
-                  )} />
-                </button>
-              ))}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: instances.length + 1 }).map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => scrollToSlide(i)}
+                    aria-label={`切换到第 ${i + 1} 张卡片`}
+                    aria-current={i === activeSlide ? "true" : undefined}
+                    className="motion-control group flex h-7 w-5 items-center justify-center rounded-full cursor-pointer focus:outline-none"
+                  >
+                    <span className={cn(
+                      "block h-1.5 w-4 rounded-full transition-[transform,background-color,opacity] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      i === activeSlide
+                        ? isLight ? "scale-x-100 bg-[#1a1625]/60" : "scale-x-100 bg-white/70"
+                        : isLight ? "scale-x-[0.375] bg-[#1a1625]/15 group-hover:bg-[#1a1625]/30" : "scale-x-[0.375] bg-white/20 group-hover:bg-white/40"
+                    )} />
+                  </button>
+                ))}
+              </div>
 
               <button
+                type="button"
                 onClick={() => scrollToSlide(Math.min(instances.length, activeSlide + 1))}
                 disabled={activeSlide === instances.length}
+                aria-label="下一页"
                 className={cn(
-                  "motion-control w-7 h-7 rounded-full flex items-center justify-center",
+                  "motion-control w-8 h-8 rounded-full flex items-center justify-center transition-all",
                   activeSlide === instances.length
-                    ? isLight ? "text-[#1a1625]/15 cursor-default" : "text-white/15 cursor-default"
-                    : isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/70 hover:bg-[#1a1625]/8" : "text-white/40 hover:text-white/70 hover:bg-white/10"
+                    ? isLight ? "text-[#1a1625]/15 cursor-default opacity-40" : "text-white/15 cursor-default opacity-40"
+                    : isLight
+                      ? "text-[#1a1625]/60 hover:text-[#1a1625] hover:bg-[#1a1625]/8 active:scale-95 cursor-pointer"
+                      : "text-white/60 hover:text-white hover:bg-white/10 active:scale-95 cursor-pointer"
                 )}
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>

@@ -86,7 +86,6 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
 
   return (
     <div
-      data-card-index={String(index + 1)}
       className={cn(
         "motion-instance-card w-full h-full rounded-[18px] relative group border cursor-pointer",
         isExpanded && "is-expanded",
