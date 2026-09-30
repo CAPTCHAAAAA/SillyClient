@@ -29,6 +29,7 @@ export interface AppSettingsDrawerProps {
   checkForAppUpdate: () => Promise<any>;
   openProjectPage: () => void;
   onOpenCleanGarbage: () => void;
+  onOpenWhatsNew?: () => void;
 }
 
 function AppSettingsRow({
@@ -133,6 +134,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
   checkForAppUpdate,
   openProjectPage,
   onOpenCleanGarbage,
+  onOpenWhatsNew,
 }) => {
   const [appSettingsTab, setAppSettingsTab] = useState<
     "general" | "data" | "maintenance"
@@ -402,6 +404,14 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                     )}
                 </div>
               </AppSettingsRow>
+              <AppSettingsLinkRow
+                label="2.0.0 主要更新"
+                desc="查看本次版本新增功能与核心改进"
+                onClick={() => {
+                  onClose();
+                  onOpenWhatsNew?.();
+                }}
+              />
               <AppSettingsRow
                 label="临时文件"
                 desc="扫描可以安全移除的缓存"

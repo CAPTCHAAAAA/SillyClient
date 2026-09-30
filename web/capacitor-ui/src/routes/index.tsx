@@ -19,6 +19,7 @@ import { TarvenEnv, DEFAULT_CONFIG } from "@/capacitor-plugin";
 import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, GithubRelease } from "@/capacitor-plugin";
 import frontendPackage from "../../package.json";
 import OnboardingGuide from "@/components/onboarding/OnboardingGuide";
+import { WhatsNewModal } from "@/components/modals/WhatsNewModal";
 import { LAYERS } from "@/constants/layers";
 import { useLayerStack } from "@/hooks/useLayerStack";
 import { LayerBackdrop } from "@/components/common/LayerBackdrop";
@@ -47,6 +48,8 @@ const INSTANCES_KEY = "sillyclient.instances";
 const INSTANCES_VERSION_KEY = "sillyclient.instances.version";
 const ONBOARDING_KEY = "sillyclient.onboarding.version";
 const ONBOARDING_VERSION = "3";
+const WHATS_NEW_KEY = "sillyclient.whatsnew.version";
+const WHATS_NEW_VERSION = "2.0.0";
 const CURRENT_VERSION = 2;
 const BACKGROUND_PANEL_EXIT_MS = 300;
 const PANEL_EXIT_MS = 300;
@@ -270,6 +273,10 @@ function SillyClientLauncher() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
   );
+  const [showWhatsNew, setShowWhatsNew] = useState(
+    () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) === ONBOARDING_VERSION && localStorage.getItem(WHATS_NEW_KEY) !== WHATS_NEW_VERSION,
+  );
+  const [isWhatsNewClosing, setIsWhatsNewClosing] = useState(false);
   const [instances, setInstances] = useState<TavernInstance[]>(() => {
     if (isShowcase) return [];
     const loaded = loadInstances();
@@ -1875,7 +1882,27 @@ function SillyClientLauncher() {
   const dismissOnboarding = useCallback(() => {
     localStorage.setItem(ONBOARDING_KEY, ONBOARDING_VERSION);
     setShowOnboarding(false);
+    if (localStorage.getItem(WHATS_NEW_KEY) !== WHATS_NEW_VERSION) {
+      setTimeout(() => setShowWhatsNew(true), 150);
+    }
   }, []);
+
+  const dismissWhatsNew = useCallback(() => {
+    localStorage.setItem(WHATS_NEW_KEY, WHATS_NEW_VERSION);
+    setIsWhatsNewClosing(true);
+    setTimeout(() => {
+      setShowWhatsNew(false);
+      setIsWhatsNewClosing(false);
+    }, PANEL_EXIT_MS);
+  }, []);
+
+  const openWhatsNew = useCallback(() => {
+    closeAppMenu();
+    setTimeout(() => {
+      setShowWhatsNew(true);
+      setIsWhatsNewClosing(false);
+    }, PANEL_EXIT_MS + 20);
+  }, [closeAppMenu]);
 
   // 管理面板打开时初始化本地配置或远程认证状态。
   useEffect(() => {
@@ -2412,6 +2439,7 @@ function SillyClientLauncher() {
         appUpdateInfo={appUpdateInfo}
         checkForAppUpdate={checkForAppUpdate}
         openProjectPage={openProjectPage}
+        onOpenWhatsNew={openWhatsNew}
         onOpenCleanGarbage={async () => {
           closeAppMenu();
           setCleaningGarbage(true);
@@ -2700,6 +2728,15 @@ function SillyClientLauncher() {
         />
       )}
 
+      {/* 版本主要更新画布 (全屏虚化) */}
+      <WhatsNewModal
+        isOpen={showWhatsNew}
+        isClosing={isWhatsNewClosing}
+        onClose={dismissWhatsNew}
+        isLight={isLight}
+        glassBg={glassBg}
+      />
+
       {/* 【视觉与动效测试专用】底部悬浮调试板：仅在本地开发走查环境可见，用于设计验收与过渡动效测试，在任何正式生产构建（Windows/Android/Pages）中自动剔除 */}
       {import.meta.env.DEV && (
         <div
@@ -2710,6 +2747,15 @@ function SillyClientLauncher() {
             <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
             <span>调试板 (视觉测试专用)</span>
           </div>
+          <button
+            onClick={() => {
+              setShowWhatsNew(true);
+              setIsWhatsNewClosing(false);
+            }}
+            className="motion-control h-7 px-3 rounded-full border border-white/10 bg-white/10 text-white/90 hover:bg-white/20 active:bg-white/25 font-medium transition-all"
+          >
+            更新画布
+          </button>
           <button
             onClick={() => {
               setShowLaunchPanel(false);
