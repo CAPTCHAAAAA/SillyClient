@@ -2185,8 +2185,10 @@ function SillyClientLauncher() {
         className="pb-12 px-6 min-h-screen flex flex-col items-center"
         style={{
           paddingTop: `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 68px)`,
-          transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
+          transform: pullDistance > 0 ? `translate3d(0, ${pullDistance}px, 0)` : undefined,
           transition: isPulling.current || isRefreshing ? 'none' : 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: pullDistance > 0 ? 'transform' : 'auto',
+          contain: 'layout style',
         }}
       >
         {/* Logo */}

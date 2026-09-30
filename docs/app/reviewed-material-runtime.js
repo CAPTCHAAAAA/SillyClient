@@ -19,6 +19,12 @@
         const TUNING_PANEL_LONG_PRESS_MS = 500;
         const TUNING_PANEL_LONG_PRESS_MOVE_PX = 8;
         let tuningPanelConcealed = true;
+        const isTouchOrMobile = typeof window !== "undefined" && (
+          window.matchMedia?.("(max-width: 768px)").matches ||
+          window.matchMedia?.("(pointer: coarse)").matches ||
+          ("ontouchstart" in window) ||
+          (navigator.maxTouchPoints > 0)
+        );
 
         const materialCss = `
           :root {
@@ -1763,6 +1769,7 @@
         const EDGE_BLUR_STRENGTH = 1.2;
 
         const buildEdgeBlurDivs = (doc, position) => {
+          if (isTouchOrMobile) return [];
           const direction = position === "left" ? "to left" : "to right";
           const increment = 100 / EDGE_BLUR_DIVS;
           const divs = [];
@@ -1788,6 +1795,13 @@
         };
 
         const ensureEdgeBlurs = (doc) => {
+          if (isTouchOrMobile) {
+            for (const side of ["left", "right"]) {
+              const strip = doc.getElementById(`preview-edge-blur-${side}`);
+              if (strip) strip.remove();
+            }
+            return;
+          }
           const carousel = doc.querySelector(".carousel-scrollbar-hidden");
           const rect = carousel ? carousel.getBoundingClientRect() : null;
           for (const side of ["left", "right"]) {
@@ -1814,7 +1828,7 @@
         let edgeBlurScrollDoc = null;
         let edgeBlurRaf = 0;
         const scheduleEdgeBlurs = (doc) => {
-          if (edgeBlurRaf) return;
+          if (isTouchOrMobile || edgeBlurRaf) return;
           const view = doc.defaultView;
           if (!view || typeof view.requestAnimationFrame !== "function") {
             ensureEdgeBlurs(doc);
@@ -1828,6 +1842,7 @@
           });
         };
         const installEdgeBlurScrollSync = (doc) => {
+          if (isTouchOrMobile) return;
           if (edgeBlurScrollDoc === doc) return;
           const root = doc.querySelector("#root > div");
           const view = doc.defaultView;
@@ -1893,6 +1908,7 @@
           );
 
         const ensureCardNoise = (doc) => {
+          if (isTouchOrMobile) return;
           // 样式恒定，仅在创建时写一次；React 替换卡片后新节点无噪声层则重建。
           // 不能每轮重复写 cssText：主题切换过渡期间 annotate 高频触发，
           // 重复拼接与写入对每张卡都是不必要的开销。
@@ -1977,6 +1993,7 @@
         };
 
         const wireCardTilt = (doc) => {
+          if (isTouchOrMobile) return;
           if (tiltWiredDoc === doc) return;
           const view = doc.defaultView;
           if (!view) return;
@@ -3403,13 +3420,15 @@
           annotatePreview(doc);
           // observer 已覆盖主题属性与 DOM 变化；低频轮询只处理极端重挂载兜底。
           if (previewPollTimer) window.clearInterval(previewPollTimer);
-          previewPollTimer = window.setInterval(() => {
-            const currentDoc = frame.contentDocument;
-            if (currentDoc) {
-              installMutationObserver();
-              annotatePreview(currentDoc);
-            }
-          }, 4000);
+          if (!isTouchOrMobile) {
+            previewPollTimer = window.setInterval(() => {
+              const currentDoc = frame.contentDocument;
+              if (currentDoc) {
+                installMutationObserver();
+                annotatePreview(currentDoc);
+              }
+            }, 4000);
+          }
         };
 
         frame.addEventListener("load", () => {

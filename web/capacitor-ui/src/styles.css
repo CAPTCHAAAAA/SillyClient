@@ -252,6 +252,9 @@ select:focus-visible {
   filter: blur(40px);
   mix-blend-mode: screen;
   will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
 /* 流光 1 - 左上区域大光斑 */
@@ -339,43 +342,43 @@ select:focus-visible {
   animation: screensaver-drift-5 26s ease-in-out infinite;
 }
 
-/* 纯流动动画 - 大幅位移覆盖全屏 */
+/* 纯流动动画 - 大幅位移覆盖全屏 (translate3d 驱动 GPU 合成器) */
 @keyframes screensaver-drift-1 {
-  0%   { transform: translate(0, 0); }
-  25%  { transform: translate(25vw, 18vh); }
-  50%  { transform: translate(10vw, 35vh); }
-  75%  { transform: translate(-15vw, 20vh); }
-  100% { transform: translate(0, 0); }
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(25vw, 18vh, 0); }
+  50%  { transform: translate3d(10vw, 35vh, 0); }
+  75%  { transform: translate3d(-15vw, 20vh, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes screensaver-drift-2 {
-  0%   { transform: translate(0, 0); }
-  25%  { transform: translate(-22vw, -15vh); }
-  50%  { transform: translate(-35vw, -28vh); }
-  75%  { transform: translate(-15vw, -30vh); }
-  100% { transform: translate(0, 0); }
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(-22vw, -15vh, 0); }
+  50%  { transform: translate3d(-35vw, -28vh, 0); }
+  75%  { transform: translate3d(-15vw, -30vh, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes screensaver-drift-3 {
-  0%   { transform: translate(0, 0); }
-  33%  { transform: translate(-20vw, 25vh); }
-  66%  { transform: translate(22vw, -12vh); }
-  100% { transform: translate(0, 0); }
+  0%   { transform: translate3d(0, 0, 0); }
+  33%  { transform: translate3d(-20vw, 25vh, 0); }
+  66%  { transform: translate3d(22vw, -12vh, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes screensaver-drift-4 {
-  0%   { transform: translate(0, 0); }
-  25%  { transform: translate(20vw, -22vh); }
-  50%  { transform: translate(30vw, 10vh); }
-  75%  { transform: translate(10vw, 28vh); }
-  100% { transform: translate(0, 0); }
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(20vw, -22vh, 0); }
+  50%  { transform: translate3d(30vw, 10vh, 0); }
+  75%  { transform: translate3d(10vw, 28vh, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes screensaver-drift-5 {
-  0%   { transform: translate(0, 0); }
-  33%  { transform: translate(-25vw, 22vh); }
-  66%  { transform: translate(15vw, 30vh); }
-  100% { transform: translate(0, 0); }
+  0%   { transform: translate3d(0, 0, 0); }
+  33%  { transform: translate3d(-25vw, 22vh, 0); }
+  66%  { transform: translate3d(15vw, 30vh, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 /* 背景设置面板弹出动画 */
@@ -411,6 +414,8 @@ select:focus-visible {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  contain: strict;
+  will-change: transform;
 }
 
 .ambient-paused .ambient-glow {
@@ -773,7 +778,7 @@ header span[class*="truncate"] {
   pointer-events: none;
 }
 
-/* 实例卡片仅通过材质变化表达状态，避免 transform 改变固定菜单的定位基准。 */
+/* 实例卡片材质与硬件加速合成层 */
 .motion-instance-card {
   isolation: isolate;
   background-clip: padding-box;
@@ -784,10 +789,13 @@ header span[class*="truncate"] {
     inset 0 -1px 0 rgba(0, 0, 0, 0.06),
     0 0 12px rgba(7, 5, 10, 0.08),
     0 2px 5px rgba(7, 5, 10, 0.055);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
   transition:
     border-color var(--motion-fast) ease,
     box-shadow var(--motion-layout) var(--motion-ease-out),
-    filter var(--motion-fast) ease;
+    opacity var(--motion-fast) ease;
 }
 
 .motion-instance-card img {
@@ -803,7 +811,8 @@ header span[class*="truncate"] {
 }
 
 .motion-instance-card:active {
-  filter: brightness(0.97);
+  opacity: 0.95;
+  transform: scale(0.985) translate3d(0, 0, 0);
   transition-duration: var(--motion-press);
 }
 

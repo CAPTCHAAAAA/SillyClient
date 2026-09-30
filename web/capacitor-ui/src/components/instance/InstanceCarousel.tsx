@@ -269,7 +269,15 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         <div
           ref={carouselRef}
           className="carousel-scrollbar-hidden flex gap-5 overflow-x-auto snap-x snap-mandatory px-3 py-4 -mx-2"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingInline: "1px" }}
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            scrollPaddingInline: "1px",
+            WebkitOverflowScrolling: "touch",
+            touchAction: "pan-x",
+            willChange: "scroll-position",
+            contain: "layout paint",
+          }}
         >
           {/* 左侧视口居中弹性垫片 */}
           <div className="flex-shrink-0 w-[calc(50%-120px)]" aria-hidden />
@@ -355,7 +363,10 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
           </button>
 
           {/* 无外边框流体指示器轨道：零胶囊边框、零多余背景、纯净槽位与动态流体滑块 */}
-          <div className="relative flex items-center h-7 select-none">
+          <div
+            className="relative flex items-center h-7 select-none"
+            style={{ contain: "layout paint style" }}
+          >
             {/* 槽位圆点列表 (每个槽位宽 22px，热区舒适) */}
             <div className="flex items-center">
               {Array.from({ length: totalSlides }).map((_, i) => (
@@ -390,6 +401,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                 top: "calc(50% - 3px)",
                 width: `${pillWidth}px`,
                 transform: `translate3d(${activeSlide * 22 + 2}px, 0, 0)`,
+                willChange: "transform, width",
                 transition:
                   "transform 320ms cubic-bezier(0.34, 1.45, 0.64, 1), width 260ms cubic-bezier(0.25, 1, 0.5, 1), background-color 200ms ease",
               }}
