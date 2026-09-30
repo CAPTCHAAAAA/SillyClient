@@ -137,27 +137,107 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
     setIsEditingInline(false);
   };
 
-  // 运行态：完全对齐“创建实例进度控制台（LaunchConsoleModal）”的纯正实色轻拟物风格
-  if (isRunning) {
-    const displayLogs =
-      terminalLogs && terminalLogs.length > 0 && terminalLogs[0].msg !== "就绪，选择实例启动"
-        ? terminalLogs
-        : [
-            { msg: `SillyTavern ${instance.version || "1.12.4"}`, level: "success" },
-            { msg: `127.0.0.1:${instance.port || 8000}`, level: "info" },
-            { msg: `Daemon active on background`, level: "info" },
-          ];
+  // 运行态内置日志与状态计算
+  const displayLogs =
+    terminalLogs && terminalLogs.length > 0 && terminalLogs[0].msg !== "就绪，选择实例启动"
+      ? terminalLogs
+      : [
+          { msg: `SillyTavern ${instance.version || "1.12.4"}`, level: "success" },
+          { msg: `127.0.0.1:${instance.port || 8000}`, level: "info" },
+          { msg: `Daemon active on background`, level: "info" },
+        ];
 
-    return (
+  const isExpanded = hoveredCard === instance.id;
+
+  return (
+    <div
+      data-card-index={String(index + 1)}
+      onMouseEnter={() => !isRunning && setHoveredCard(instance.id)}
+      onMouseLeave={() => !isRunning && setHoveredCard(null)}
+      className={cn(
+        "motion-instance-card ios-task-surface flex-shrink-0 w-60 h-[320px] rounded-2xl snap-center relative overflow-hidden transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] border select-none",
+        isRunning
+          ? cn(
+              "z-20 cursor-default select-text",
+              isLight
+                ? "bg-[#f5f6f9] border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                : "bg-[#15101d] border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
+              isLight && "is-light"
+            )
+          : cn(
+              "cursor-pointer group",
+              isExpanded && "is-expanded",
+              isLight
+                ? cn(
+                    "border-black/[0.08]",
+                    isExpanded && "border-black/15 z-20 shadow-[0_20px_50px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)]",
+                    isMenuOpen && "border-black/25 ring-1 ring-black/10 z-30"
+                  )
+                : cn(
+                    "border-white/[0.06]",
+                    isExpanded && "border-white/15 z-20 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)]",
+                    isMenuOpen && "border-white/25 ring-1 ring-white/10 z-30"
+                  )
+            )
+      )}
+      onClick={(e) => {
+        if (isRunning) return;
+        if ((e.target as HTMLElement).closest("button")) return;
+        setHoveredCard(isExpanded ? null : instance.id);
+      }}
+    >
+      {/* 停止态封面背景与遮罩层（同位驻留，白天黑夜级平滑溶变） */}
       <div
-        data-card-index={String(index + 1)}
         className={cn(
-          "motion-instance-card ios-task-surface flex-shrink-0 w-60 h-[320px] rounded-2xl snap-center relative flex flex-col justify-between p-3.5 overflow-hidden transition-all duration-300 border",
-          isLight
-            ? "bg-[#f5f6f9] border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]"
-            : "bg-[#15101d] border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
-          isLight && "is-light"
+          "absolute inset-0 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !isRunning
+            ? "opacity-100 filter-none pointer-events-none"
+            : "opacity-0 blur-[3px] pointer-events-none"
         )}
+      >
+        <div className="absolute inset-0 overflow-hidden rounded-2xl">
+          <img
+            src={instance.cover || "./tavern-logo.png"}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background: isLight
+                ? "linear-gradient(135deg, oklch(1 0 0 / 0.40) 0%, oklch(1 0 0 / 0.25) 100%)"
+                : "oklch(0 0 0 / 0.5)",
+            }}
+          />
+        </div>
+
+        <div
+          className={cn(
+            "absolute inset-0 rounded-2xl transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            isLight
+              ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
+              : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
+            isExpanded ? "opacity-0" : "opacity-100"
+          )}
+        />
+        <div
+          className={cn(
+            "absolute inset-0 rounded-2xl bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            isExpanded ? "opacity-100" : "opacity-0"
+          )}
+        />
+      </div>
+
+      {/* 运行态控制台内容（同位驻留，白天黑夜级平滑溶变） */}
+      <div
+        className={cn(
+          "absolute inset-0 flex flex-col justify-between p-3.5 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          isRunning
+            ? "opacity-100 translate-y-0 filter-none pointer-events-auto"
+            : "opacity-0 -translate-y-1.5 blur-[3px] pointer-events-none select-none"
+        )}
+        aria-hidden={!isRunning}
       >
         {/* 上方：实例名和版本标签（上下间距对称，严格左右对齐，无多余状态灯） */}
         <div className="flex items-center justify-between mb-2.5 flex-shrink-0">
@@ -312,70 +392,17 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
           </button>
         </div>
       </div>
-    );
-  }
 
-  // 默认停止态卡片
-  const isExpanded = hoveredCard === instance.id;
-
-  return (
-    <div
-      data-card-index={String(index + 1)}
-      className={cn(
-        "motion-instance-card flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative group border",
-        isExpanded && "is-expanded",
-        isLight
-          ? cn(
-              "border-black/[0.08]",
-              isExpanded && "border-black/15 z-20",
-              isMenuOpen && "border-black/25 ring-1 ring-black/10 z-30"
-            )
-          : cn(
-              "border-white/[0.06]",
-              isExpanded && "border-white/15 z-20",
-              isMenuOpen && "border-white/25 ring-1 ring-white/10 z-30"
-            )
-      )}
-      onClick={(e) => {
-        if ((e.target as HTMLElement).closest("button")) return;
-        setHoveredCard(isExpanded ? null : instance.id);
-      }}
-    >
-      {/* 封面与遮罩 */}
-      <div className="absolute inset-0 rounded-[18px] overflow-hidden">
-        <img
-          src={instance.cover || "./tavern-logo.png"}
-          alt=""
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: isLight
-              ? "linear-gradient(135deg, oklch(1 0 0 / 0.40) 0%, oklch(1 0 0 / 0.25) 100%)"
-              : "oklch(0 0 0 / 0.5)",
-          }}
-        />
-      </div>
-
+      {/* 停止态前景业务内容（同位驻留，白天黑夜级平滑溶变） */}
       <div
         className={cn(
-          "absolute inset-0 rounded-[18px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-          isLight
-            ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
-            : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
-          isExpanded ? "opacity-0" : "opacity-100"
+          "absolute inset-0 flex flex-col p-3.5 overflow-hidden rounded-2xl transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !isRunning
+            ? "opacity-100 translate-y-0 filter-none pointer-events-auto"
+            : "opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
         )}
-      />
-      <div
-        className={cn(
-          "absolute inset-0 rounded-[18px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-          isExpanded ? "opacity-100" : "opacity-0"
-        )}
-      />
-
-      <div className="relative h-full flex flex-col p-3.5 overflow-hidden rounded-[18px]">
+        aria-hidden={isRunning}
+      >
         {/* 版本胶囊 */}
         <span
           className={cn(
