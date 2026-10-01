@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { X, ChevronRight, Folder, Cloud } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv } from "../../capacitor-plugin";
@@ -73,7 +73,7 @@ function AppSettingsLinkRow({
     <button
       type="button"
       onClick={onClick}
-      className="app-settings-row is-interactive motion-control"
+      className="app-settings-row app-settings-link-row is-interactive motion-control"
     >
       <div className="app-settings-copy">
         <div className="app-settings-label">{label}</div>
@@ -112,6 +112,7 @@ function AppSettingsAction({
 /**
  * APP 全局设置抽屉面板 (AppSettingsDrawer)
  * 涵盖：通用设置、数据备份导出、应用维护与更新。
+ * 全域接入向导级同位驻留 DOM、微位移升降与高斯模糊虚化交叉溶变动效。
  */
 export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
   isOpen,
@@ -139,6 +140,48 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
   const [appSettingsTab, setAppSettingsTab] = useState<
     "general" | "data" | "maintenance"
   >("general");
+
+  const generalRef = useRef<HTMLDivElement>(null);
+  const dataRef = useRef<HTMLDivElement>(null);
+  const maintenanceRef = useRef<HTMLDivElement>(null);
+  const [tabContentHeight, setTabContentHeight] = useState<number | null>(null);
+
+  // 动态测量当前激活 Tab 面板高度，实现向导级白天黑夜级平滑伸缩过渡
+  useEffect(() => {
+    if (!isOpen) return;
+    const targetEl =
+      appSettingsTab === "general"
+        ? generalRef.current
+        : appSettingsTab === "data"
+        ? dataRef.current
+        : maintenanceRef.current;
+    if (!targetEl) return;
+
+    const updateHeight = () => {
+      if (targetEl) {
+        const h = targetEl.getBoundingClientRect().height;
+        if (h > 0) setTabContentHeight(Math.round(h));
+      }
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(() => {
+        updateHeight();
+      });
+      ro.observe(targetEl);
+      return () => ro.disconnect();
+    }
+  }, [
+    appSettingsTab,
+    isOpen,
+    pullToRefresh,
+    contentOpenMode,
+    instances.length,
+    appUpdateState,
+    appUpdateInfo,
+  ]);
 
   if (!isOpen && !isClosing) return null;
 
@@ -190,8 +233,9 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
       </div>
 
       <div className="app-settings-body flex-1 overflow-y-auto p-5 scrollbar-subtle">
+        {/* 顶部胶囊切换栏 */}
         <div
-          className="app-settings-tabs flex gap-2"
+          className="app-settings-tabs flex gap-2 mb-4"
           role="group"
           aria-label="设置分类"
         >
@@ -206,7 +250,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
               key={tab.id}
               type="button"
               aria-pressed={appSettingsTab === tab.id}
-              className="app-settings-tab ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border"
+              className="app-settings-tab ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
               onClick={() => setAppSettingsTab(tab.id)}
             >
               {tab.label}
@@ -214,14 +258,25 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
           ))}
         </div>
 
+        {/* 模式切换容器（向导级平滑高度自适应 + 同位驻留高斯模糊交叉溶变） */}
         <div
-          key={appSettingsTab}
-          id={`app-settings-panel-${appSettingsTab}`}
-          className="app-settings-tab-panel motion-tab-content"
-          aria-live="polite"
+          className="relative transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+          style={{
+            height: tabContentHeight ? `${tabContentHeight}px` : undefined,
+          }}
         >
-          {appSettingsTab === "general" && (
-            <div className="app-settings-list">
+          {/* 通用设置面板 */}
+          <div
+            ref={generalRef}
+            className={cn(
+              "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              appSettingsTab === "general"
+                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+            )}
+            aria-hidden={appSettingsTab !== "general"}
+          >
+            <div className="app-settings-list space-y-1">
               <AppSettingsRow
                 label="下拉刷新"
                 desc="在酒馆界面顶部下拉即可刷新"
@@ -263,10 +318,20 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
               />
               <AppSettingsPlaceholder />
             </div>
-          )}
+          </div>
 
-          {appSettingsTab === "data" && (
-            <div className="app-settings-list">
+          {/* 数据设置面板 */}
+          <div
+            ref={dataRef}
+            className={cn(
+              "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              appSettingsTab === "data"
+                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+            )}
+            aria-hidden={appSettingsTab !== "data"}
+          >
+            <div className="app-settings-list space-y-1">
               <AppSettingsRow
                 label="实例备份"
                 desc="迁移实例列表与应用设置"
@@ -360,10 +425,20 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
               </AppSettingsRow>
               <AppSettingsPlaceholder />
             </div>
-          )}
+          </div>
 
-          {appSettingsTab === "maintenance" && (
-            <div className="app-settings-list">
+          {/* 维护设置面板 */}
+          <div
+            ref={maintenanceRef}
+            className={cn(
+              "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              appSettingsTab === "maintenance"
+                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+            )}
+            aria-hidden={appSettingsTab !== "maintenance"}
+          >
+            <div className="app-settings-list space-y-1">
               <AppSettingsRow
                 label="检查新版本"
                 desc={
@@ -405,7 +480,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                 </div>
               </AppSettingsRow>
               <AppSettingsLinkRow
-                label="2.0.0 主要更新"
+                label="2.0.1 主要更新"
                 desc="查看本次版本新增功能与核心改进"
                 onClick={() => {
                   onClose();
@@ -452,7 +527,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
               />
               <AppSettingsPlaceholder />
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

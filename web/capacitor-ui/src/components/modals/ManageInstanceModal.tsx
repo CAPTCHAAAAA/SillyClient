@@ -1,12 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   X,
   Search,
-  SlidersHorizontal,
-  History,
-  HardDrive,
-  Terminal,
-  Info,
   Eraser,
   Play,
   MoreHorizontal,
@@ -199,6 +194,51 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const [manageFilter, setManageFilter] = useState<"all" | "local" | "remote">("all");
   const [manageMoreOpen, setManageMoreOpen] = useState(false);
   const [terminalInput, setTerminalInput] = useState("");
+
+  const launchRef = useRef<HTMLDivElement>(null);
+  const snapshotsRef = useRef<HTMLDivElement>(null);
+  const storageRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const [manageTabHeight, setManageTabHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const targetEl =
+      manageTab === "launch"
+        ? launchRef.current
+        : manageTab === "snapshots"
+        ? snapshotsRef.current
+        : manageTab === "storage"
+        ? storageRef.current
+        : manageTab === "terminal"
+        ? terminalRef.current
+        : aboutRef.current;
+    if (!targetEl) return;
+
+    const updateHeight = () => {
+      if (targetEl) {
+        const h = targetEl.getBoundingClientRect().height;
+        if (h > 0) setManageTabHeight(Math.round(h));
+      }
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(() => {
+        updateHeight();
+      });
+      ro.observe(targetEl);
+      return () => ro.disconnect();
+    }
+  }, [
+    manageTab,
+    isOpen,
+    instance?.id,
+    snapshots[instance?.id || ""]?.length,
+    terminalLogs.length,
+  ]);
 
   if (!instance || (!isOpen && !isClosing)) return null;
 
@@ -447,37 +487,17 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         <section className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div
             className={cn(
-              "flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b px-4 py-2 scrollbar-subtle",
+              "flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b px-4 py-2 scrollbar-subtle",
               isLight ? "border-black/[0.06]" : "border-white/[0.06]"
             )}
           >
             {(
               [
-                {
-                  id: "launch",
-                  label: "启动参数",
-                  icon: <SlidersHorizontal className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "snapshots",
-                  label: "快照",
-                  icon: <History className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "storage",
-                  label: "存储",
-                  icon: <HardDrive className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "terminal",
-                  label: "终端",
-                  icon: <Terminal className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "about",
-                  label: "关于",
-                  icon: <Info className="h-3.5 w-3.5" />,
-                },
+                { id: "launch", label: "启动参数" },
+                { id: "snapshots", label: "配置快照" },
+                { id: "storage", label: "存储路径" },
+                { id: "terminal", label: "实例终端" },
+                { id: "about", label: "关于实例" },
               ] as const
             ).map((tab) => (
               <button
@@ -489,7 +509,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                   setManageMoreOpen(false);
                 }}
                 className={cn(
-                  "ios-choice-control motion-control flex h-8 flex-shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-medium",
+                  "ios-choice-control motion-control flex h-8 flex-shrink-0 items-center rounded-lg px-3 text-[11px] font-medium border transition-colors",
                   manageTab === tab.id
                     ? isLight
                       ? "bg-black/[0.07] text-[#1a1625]/80"
@@ -499,19 +519,30 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     : "text-white/35 hover:text-white/60"
                 )}
               >
-                {tab.icon}
                 {tab.label}
               </button>
             ))}
           </div>
 
-          {/* Tab 内容区 */}
+          {/* Tab 内容区（向导级平滑高度自适应 + 同位驻留高斯模糊交叉溶变） */}
           <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-subtle">
             <div
-              key={`${mp.id}-${manageTab}`}
-              className="motion-tab-content space-y-4"
+              className="relative transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+              style={{
+                height: manageTabHeight ? `${manageTabHeight}px` : undefined,
+              }}
             >
-              {manageTab === "launch" && (
+              {/* 启动与配置 */}
+              <div
+                ref={launchRef}
+                className={cn(
+                  "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  manageTab === "launch"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={manageTab !== "launch"}
+              >
                 <>
                   {mp.type === "local" ? (
                     <>
@@ -696,9 +727,19 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     </div>
                   )}
                 </>
-              )}
+              </div>
 
-              {manageTab === "snapshots" && (
+              {/* 快照 */}
+              <div
+                ref={snapshotsRef}
+                className={cn(
+                  "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  manageTab === "snapshots"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={manageTab !== "snapshots"}
+              >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -826,9 +867,19 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {manageTab === "storage" && (
+              {/* 存储 */}
+              <div
+                ref={storageRef}
+                className={cn(
+                  "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  manageTab === "storage"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={manageTab !== "storage"}
+              >
                 <div className="space-y-4">
                   <div
                     className={cn(
@@ -897,10 +948,20 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {manageTab === "terminal" &&
-                (mp.type === "remote" ? (
+              {/* 终端 */}
+              <div
+                ref={terminalRef}
+                className={cn(
+                  "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  manageTab === "terminal"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={manageTab !== "terminal"}
+              >
+                {mp.type === "remote" ? (
                   <div
                     className={cn(
                       "rounded-xl px-4 py-8 text-center text-xs",
@@ -982,9 +1043,20 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       </div>
                     </div>
                   </div>
-                ))}
+                )}
+              </div>
 
-              {manageTab === "about" && (
+              {/* 关于 */}
+              <div
+                ref={aboutRef}
+                className={cn(
+                  "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  manageTab === "about"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                )}
+                aria-hidden={manageTab !== "about"}
+              >
                 <div
                   className={cn(
                     "rounded-xl px-4",
@@ -1038,7 +1110,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     />
                   )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </section>

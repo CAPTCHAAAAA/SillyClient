@@ -1745,6 +1745,12 @@ select option {
   width: 100%;
   cursor: pointer;
   text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  transition: border-color 0.2s ease;
+}
+
+.ios-task-surface.is-light .app-settings-link-row {
+  border-bottom: 1px solid rgba(26, 22, 37, 0.055);
 }
 
 .app-settings-link-row .app-settings-copy,
@@ -1760,6 +1766,14 @@ select option {
 
   .ios-task-surface.is-light .app-settings-link-row:hover .app-settings-label {
     color: rgba(26, 22, 37, 0.9);
+  }
+
+  .app-settings-link-row:hover {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .ios-task-surface.is-light .app-settings-link-row:hover {
+    border-bottom-color: rgba(26, 22, 37, 0.12);
   }
 
   .app-settings-action:hover {
