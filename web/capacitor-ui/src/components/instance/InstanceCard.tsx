@@ -17,7 +17,7 @@ export interface InstanceCardProps {
   onReturnToTavern?: (instance: TavernInstance) => void;
   onStopInstance?: (instance: TavernInstance) => void;
   onOpenMenu: (instance: TavernInstance, rect: DOMRect) => void;
-  onRenameSave: (instanceId: string, newName: string) => void;
+  onRenameSave?: (instanceId: string, newName: string) => void;
   isExternallyRenaming?: boolean;
   onClearExternalRenaming?: () => void;
   terminalLogs?: { msg: string; level?: string }[];
@@ -29,9 +29,9 @@ export interface InstanceCardProps {
  * 实例轮播槽位卡片 (InstanceCard)
  * 职责：纯净卡片槽位与状态流体过渡调度。
  * 高内聚低耦合：
- * - 停止态普通卡片归口于 InstanceStoppedCard (扁平拟物材质、封面、标题内联编辑、点击详情抽屉)；
- * - 运行态控制台归口于 RunningConsoleCard (实色轻拟物控制台、终端日志流、实时命令交互、就地操作按钮)；
- * - 两者彼此解耦，通过轻量级 300ms 纯透明度平滑溶变过渡，互不干扰 DOM 与交互事件。
+ * - 停止态卡片 100% 保持 1.9.1 原始无缝单层卡片与纯粹拟物动效结构；
+ * - 运行态卡片归口于 RunningConsoleCard (实色轻拟物控制台、终端日志流、实时命令交互、就地操作按钮)；
+ * - 两者彼此解耦，互不干扰 DOM 与交互事件。
  */
 export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   const isRunning = props.instance.status === "running";
@@ -41,22 +41,22 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   return (
     <div
       data-card-index={String(props.index + 1)}
+      data-card-running={isRunning ? "true" : "false"}
       className="flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative"
-      style={{ contain: "layout paint" }}
+      style={{
+        transformStyle: "preserve-3d",
+      }}
     >
-      {isRunning ? (
-        <RunningConsoleCard
-          instance={props.instance}
-          index={props.index}
-          isLight={props.isLight}
-          onReturnToTavern={props.onReturnToTavern}
-          onStopInstance={props.onStopInstance}
-          onOpenMenu={props.onOpenMenu}
-          terminalLogs={props.terminalLogs}
-          setTerminalLogs={props.setTerminalLogs}
-          isWindows={props.isWindows}
-        />
-      ) : (
+      {/* 停止态普通卡片面（同位驻留，统一 500ms 高斯模糊与位移交叉溶变，和设置页/主题切换 100% 对齐） */}
+      <div
+        className={cn(
+          "w-full h-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !isRunning
+            ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
+            : "absolute inset-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
+        )}
+        aria-hidden={isRunning}
+      >
         <InstanceStoppedCard
           instance={props.instance}
           index={props.index}
@@ -68,11 +68,35 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           onToggleExpand={() => props.setHoveredCard(isExpanded ? null : props.instance.id)}
           onLaunch={props.onLaunch}
           onOpenMenu={props.onOpenMenu}
-          onRenameSave={props.onRenameSave}
+          onRenameSave={props.onRenameSave || (() => {})}
           isExternallyRenaming={props.isExternallyRenaming}
           onClearExternalRenaming={props.onClearExternalRenaming}
         />
-      )}
+      </div>
+
+      {/* 运行态控制台卡片面 (RunningConsoleCard, 统一 500ms 高斯模糊与位移交叉溶变) */}
+      <div
+        className={cn(
+          "w-full h-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          isRunning
+            ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
+            : "absolute inset-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
+        )}
+        aria-hidden={!isRunning}
+      >
+        <RunningConsoleCard
+          instance={props.instance}
+          index={props.index}
+          isLight={props.isLight}
+          glassBg={props.glassBg}
+          onReturnToTavern={props.onReturnToTavern}
+          onStopInstance={props.onStopInstance}
+          onOpenMenu={props.onOpenMenu}
+          terminalLogs={props.terminalLogs}
+          setTerminalLogs={props.setTerminalLogs}
+          isWindows={props.isWindows}
+        />
+      </div>
     </div>
   );
 });

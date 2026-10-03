@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Play, MoreVertical } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { cn, formatDisplayVersion } from "../../lib/utils";
 import { TarvenEnv } from "../../capacitor-plugin";
 import type { TavernInstance } from "../../types";
 
@@ -8,6 +8,7 @@ export interface RunningConsoleCardProps {
   instance: TavernInstance;
   index: number;
   isLight: boolean;
+  glassBg?: string;
   onReturnToTavern?: (instance: TavernInstance) => void;
   onStopInstance?: (instance: TavernInstance) => void;
   onOpenMenu: (instance: TavernInstance, rect: DOMRect) => void;
@@ -15,6 +16,8 @@ export interface RunningConsoleCardProps {
   setTerminalLogs?: React.Dispatch<React.SetStateAction<{ msg: string; level?: string }[]>>;
   isWindows?: boolean;
 }
+
+export { formatDisplayVersion };
 
 /**
  * 运行态控制台卡片组件 (RunningConsoleCard)
@@ -24,6 +27,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
   instance,
   index,
   isLight,
+  glassBg,
   onReturnToTavern,
   onStopInstance,
   onOpenMenu,
@@ -70,7 +74,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
     terminalLogs && terminalLogs.length > 0 && terminalLogs[0].msg !== "就绪，选择实例启动"
       ? terminalLogs
       : [
-          { msg: `SillyTavern ${instance.version || "1.12.4"}`, level: "success" },
+          { msg: `SillyTavern ${formatDisplayVersion(instance.version)}`, level: "success" },
           { msg: `127.0.0.1:${instance.port || 8000}`, level: "info" },
           { msg: `Daemon active on background`, level: "info" },
         ];
@@ -78,13 +82,14 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
   return (
     <div
       className={cn(
-        "motion-instance-card ios-task-surface w-full h-full rounded-[18px] relative flex flex-col justify-between p-3.5 overflow-hidden border cursor-default select-text",
-        isLight
-          ? "bg-[#f5f6f9] border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]"
-          : "bg-[#15101d] border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
+        "ios-task-surface w-full h-full rounded-[18px] relative flex flex-col justify-between p-3.5 overflow-hidden border backdrop-blur-[40px] saturate-180 cursor-default select-text",
+        glassBg
+          ? glassBg
+          : isLight
+            ? "bg-white/70 border-black/5 shadow-[0_16px_60px_rgba(0,0,0,0.10)]"
+            : "bg-[#1a1625]/70 border-white/10 shadow-[0_16px_60px_rgba(0,0,0,0.35)]",
         isLight && "is-light"
       )}
-      style={{ contain: "layout paint" }}
     >
       {/* 上方：实例名和版本标签（上下间距对称，严格左右对齐，无多余状态灯） */}
       <div className="flex items-center justify-between mb-2.5 flex-shrink-0">
@@ -98,13 +103,13 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
         </span>
         <span
           className={cn(
-            "px-2 py-0.5 rounded-full text-[10px] font-mono tracking-tight border flex-shrink-0",
+            "px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border flex-shrink-0",
             isLight
-              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625]/60"
-              : "bg-white/[0.06] border-white/[0.08] text-white/50"
+              ? "bg-black/[0.06] text-[#1a1625]/55 border-black/[0.08]"
+              : "bg-white/[0.08] text-white/50 border-white/[0.08]"
           )}
         >
-          {instance.version ? `v${instance.version}` : "v1.12.4"}
+          {formatDisplayVersion(instance.version)}
         </span>
       </div>
 

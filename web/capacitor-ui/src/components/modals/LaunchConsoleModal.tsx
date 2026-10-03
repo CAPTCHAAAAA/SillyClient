@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, LoaderCircle, Minimize2, X } from "lucide-react";
+import { Play, LoaderCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 
@@ -81,51 +81,16 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
               : "启动中"}
           </h3>
 
-          <div className="flex items-center gap-2">
-            {launchProgress && !launchError && (
-              <span
-                className={cn(
-                  "text-[14px] font-medium tabular-nums tracking-tight",
-                  isLight ? "text-[#8b3a52]" : "text-[#c4788e]"
-                )}
-              >
-                {launchProgress.pct}%
-              </span>
-            )}
-
-            {/* 操作内联化：最小化按钮 */}
-            {onMinimize && !launchError && launchProgress?.pct !== 100 && (
-              <button
-                type="button"
-                onClick={onMinimize}
-                title="缩小至后台活动胶囊"
-                aria-label="缩小至后台活动胶囊"
-                className={cn(
-                  "motion-control p-1 rounded-lg transition-colors",
-                  isLight
-                    ? "hover:bg-black/5 text-[#1a1625]/40 hover:text-[#1a1625]/70"
-                    : "hover:bg-white/5 text-white/40 hover:text-white/70"
-                )}
-              >
-                <Minimize2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={onClose}
-              title="关闭"
-              aria-label="关闭启动面板"
+          {launchProgress && !launchError && (
+            <span
               className={cn(
-                "motion-control p-1 rounded-lg transition-colors",
-                isLight
-                  ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-                  : "hover:bg-white/5 text-white/30 hover:text-white/60"
+                "text-[14px] font-medium tabular-nums tracking-tight",
+                isLight ? "text-[#8b3a52]" : "text-[#c4788e]"
               )}
             >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+              {launchProgress.pct}%
+            </span>
+          )}
         </div>
 
         <p

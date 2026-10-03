@@ -189,8 +189,24 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goToSlide]);
 
-  // 桌面端鼠标拖拽支持（移动端原生全权交给 Chromium 合成器以获得 120Hz 极限跟手顺滑）
-  const dragState = useRef<{ isDown: boolean; startX: number; scrollLeft: number }>({ isDown: false, startX: 0, scrollLeft: 0 });
+  // 桌面端鼠标拖拽支持（零延迟硬件加速平滑滚动与自然惯性吸附）
+  const dragState = useRef<{
+    isDown: boolean;
+    startX: number;
+    scrollLeft: number;
+    hasDragged: boolean;
+    lastX: number;
+    lastTime: number;
+    velocityX: number;
+  }>({
+    isDown: false,
+    startX: 0,
+    scrollLeft: 0,
+    hasDragged: false,
+    lastX: 0,
+    lastTime: 0,
+    velocityX: 0,
+  });
 
   useEffect(() => {
     const el = carouselRef.current;
@@ -198,28 +214,93 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
 
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && target.closest("input, textarea, select, [contenteditable='true']")) {
+      if (
+        target &&
+        target.closest("button, input, textarea, select, [contenteditable='true'], .ios-task-surface")
+      ) {
         return;
       }
-      dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft };
+      dragState.current = {
+        isDown: true,
+        startX: e.pageX,
+        scrollLeft: el.scrollLeft,
+        hasDragged: false,
+        lastX: e.pageX,
+        lastTime: performance.now(),
+        velocityX: 0,
+      };
+      // 拖拽开始：临时禁用 CSS scroll-snap 与平滑滚动，杜绝浏览器在拖拽过程中强行重吸附导致的生硬卡顿
+      el.style.scrollSnapType = "none";
+      el.style.scrollBehavior = "auto";
       el.style.cursor = "grabbing";
     };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!dragState.current.isDown) return;
-      e.preventDefault();
       const x = e.pageX;
-      const walk = x - el.offsetLeft - dragState.current.startX;
-      el.scrollLeft = dragState.current.scrollLeft - walk;
+      const walk = x - dragState.current.startX;
+      if (Math.abs(walk) > 4) {
+        dragState.current.hasDragged = true;
+      }
+      if (dragState.current.hasDragged) {
+        e.preventDefault();
+        const now = performance.now();
+        const dt = now - dragState.current.lastTime;
+        if (dt > 8) {
+          dragState.current.velocityX = (x - dragState.current.lastX) / dt;
+          dragState.current.lastX = x;
+          dragState.current.lastTime = now;
+        }
+        el.scrollLeft = dragState.current.scrollLeft - walk;
+      }
     };
 
     const onMouseUp = () => {
       if (!dragState.current.isDown) return;
       dragState.current.isDown = false;
       el.style.cursor = "grab";
+      // 恢复原生 snap
+      el.style.scrollSnapType = "";
+      el.style.scrollBehavior = "";
+
+      if (dragState.current.hasDragged) {
+        // 拖拽释放：根据释放瞬时速度或视口中心平滑吸附到对应卡片
+        const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-card-index")) as HTMLElement[];
+        if (cards.length > 0) {
+          const containerCenter = el.scrollLeft + el.clientWidth / 2;
+          let closestIdx = 0;
+          let closestDist = Infinity;
+          for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            const center = card.offsetLeft + card.offsetWidth / 2;
+            const dist = Math.abs(center - containerCenter);
+            if (dist < closestDist) {
+              closestDist = dist;
+              closestIdx = i;
+            }
+          }
+          const v = dragState.current.velocityX;
+          if (v < -0.35 && closestIdx < cards.length - 1) {
+            goToSlide(Math.min(cards.length - 1, closestIdx + 1));
+          } else if (v > 0.35 && closestIdx > 0) {
+            goToSlide(Math.max(0, closestIdx - 1));
+          } else {
+            goToSlide(closestIdx);
+          }
+        }
+      }
     };
 
-    // 滚动时防抖更新指示器：基于 offsetLeft 零重排零回流计算，不打断高刷惯性
+    // 拖拽完成拦截点击穿透，防止松开鼠标时意外触发展开或激活按钮
+    const onClickCapture = (e: MouseEvent) => {
+      if (dragState.current.hasDragged) {
+        e.preventDefault();
+        e.stopPropagation();
+        dragState.current.hasDragged = false;
+      }
+    };
+
+    // 滚动时更新指示器：基于 offsetLeft 零重排零回流计算，采用 requestAnimationFrame 保证 120Hz 顺滑
     const updateIndicatorOnScroll = () => {
       if (isProgrammaticScrollingRef.current) return;
       const containerCenter = el.scrollLeft + el.clientWidth / 2;
@@ -241,26 +322,32 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       }
     };
 
-    let scrollDebounceTimer: NodeJS.Timeout | null = null;
+    let ticking = false;
     const onScroll = () => {
-      if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
-      scrollDebounceTimer = setTimeout(updateIndicatorOnScroll, 50);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateIndicatorOnScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     el.style.cursor = "grab";
     el.addEventListener("mousedown", onMouseDown);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    el.addEventListener("click", onClickCapture, true);
     el.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
-      if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
       el.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      el.removeEventListener("click", onClickCapture, true);
       el.removeEventListener("scroll", onScroll);
     };
-  }, [setActiveSlide]);
+  }, [goToSlide, setActiveSlide]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6 md:px-8">
@@ -276,13 +363,12 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
             WebkitOverflowScrolling: "touch",
             touchAction: "pan-x",
             willChange: "scroll-position",
-            contain: "layout paint",
           }}
         >
           {/* 左侧视口居中弹性垫片 */}
           <div className="flex-shrink-0 w-[calc(50%-120px)]" aria-hidden />
 
-          {/* 新建实例卡片 */}
+          {/* 新建实例卡片（完全对齐普通实例卡片的轻拟物微光与物理回弹动效体系） */}
           <button
             type="button"
             onClick={onNewInstance}
@@ -294,14 +380,14 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
             )}
             data-card-index="0"
           >
-            <div className="relative h-full flex flex-col justify-between p-3.5">
+            <div className="relative h-full flex flex-col justify-between p-3.5 pointer-events-none">
               <div
                 className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center transition-[background-color,box-shadow,filter] duration-200",
+                  "w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200",
                   isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
                 )}
               >
-                <Play className={cn("w-3.5 h-3.5", isLight ? "text-[#1a1625]/40" : "text-white/40")} />
+                <Play className={cn("w-3.5 h-3.5 fill-current", isLight ? "text-[#1a1625]/40" : "text-white/40")} />
               </div>
               <div>
                 <div className={cn("text-base font-semibold mb-0.5", isLight ? "text-[#1a1625]" : "text-white")}>

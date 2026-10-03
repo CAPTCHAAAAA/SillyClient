@@ -19,12 +19,6 @@
         const TUNING_PANEL_LONG_PRESS_MS = 500;
         const TUNING_PANEL_LONG_PRESS_MOVE_PX = 8;
         let tuningPanelConcealed = true;
-        const isTouchOrMobile = typeof window !== "undefined" && (
-          window.matchMedia?.("(max-width: 768px)").matches ||
-          window.matchMedia?.("(pointer: coarse)").matches ||
-          ("ontouchstart" in window) ||
-          (navigator.maxTouchPoints > 0)
-        );
 
         const materialCss = `
           :root {
@@ -1292,7 +1286,8 @@
 
           /* 收起/展开遮罩各自独立成固定合成层，只交叉淡入淡出；
              遮罩不再参与详情内容的弹性位移。 */
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative {
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col {
             --card-reveal-ease: cubic-bezier(0.2, 0, 0, 1);
             --card-focus-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
             --card-fade-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -1302,7 +1297,9 @@
           }
 
           .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after {
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::before,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::after {
             content: "";
             position: absolute;
             z-index: 0;
@@ -1313,7 +1310,8 @@
             will-change: opacity;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before {
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::before {
             opacity: 1;
             transition: opacity 460ms var(--card-fade-ease);
             background: linear-gradient(
@@ -1325,7 +1323,8 @@
             );
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after {
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::after {
             opacity: 0;
             transition: opacity 460ms var(--card-fade-ease);
             background: linear-gradient(
@@ -1337,21 +1336,25 @@
             );
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative > * {
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative > *,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col > * {
             position: relative;
             z-index: 1;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded > .relative::before {
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded > .relative::before,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .relative.h-full.flex-col::before {
             opacity: 0;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded > .relative::after {
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded > .relative::after,
+          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .relative.h-full.flex-col::after {
             opacity: 1;
           }
 
           /* 浅色模式沿用独立浅色参数，只替换两张遮罩层的填充。 */
-          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before {
+          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before,
+          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::before {
             background: linear-gradient(
               to top,
               rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-bc, 0.92)) 0%,
@@ -1362,7 +1365,8 @@
             );
           }
 
-          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after {
+          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after,
+          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::after {
             background: linear-gradient(
               to top,
               rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-be, 0.96)) 0%,
@@ -1769,7 +1773,6 @@
         const EDGE_BLUR_STRENGTH = 1.2;
 
         const buildEdgeBlurDivs = (doc, position) => {
-          if (isTouchOrMobile) return [];
           const direction = position === "left" ? "to left" : "to right";
           const increment = 100 / EDGE_BLUR_DIVS;
           const divs = [];
@@ -1795,13 +1798,6 @@
         };
 
         const ensureEdgeBlurs = (doc) => {
-          if (isTouchOrMobile) {
-            for (const side of ["left", "right"]) {
-              const strip = doc.getElementById(`preview-edge-blur-${side}`);
-              if (strip) strip.remove();
-            }
-            return;
-          }
           const carousel = doc.querySelector(".carousel-scrollbar-hidden");
           const rect = carousel ? carousel.getBoundingClientRect() : null;
           for (const side of ["left", "right"]) {
@@ -1828,7 +1824,7 @@
         let edgeBlurScrollDoc = null;
         let edgeBlurRaf = 0;
         const scheduleEdgeBlurs = (doc) => {
-          if (isTouchOrMobile || edgeBlurRaf) return;
+          if (edgeBlurRaf) return;
           const view = doc.defaultView;
           if (!view || typeof view.requestAnimationFrame !== "function") {
             ensureEdgeBlurs(doc);
@@ -1842,7 +1838,6 @@
           });
         };
         const installEdgeBlurScrollSync = (doc) => {
-          if (isTouchOrMobile) return;
           if (edgeBlurScrollDoc === doc) return;
           const root = doc.querySelector("#root > div");
           const view = doc.defaultView;
@@ -1908,7 +1903,6 @@
           );
 
         const ensureCardNoise = (doc) => {
-          if (isTouchOrMobile) return;
           // 样式恒定，仅在创建时写一次；React 替换卡片后新节点无噪声层则重建。
           // 不能每轮重复写 cssText：主题切换过渡期间 annotate 高频触发，
           // 重复拼接与写入对每张卡都是不必要的开销。
@@ -1938,7 +1932,7 @@
               node.classList.contains('relative') &&
               node.classList.contains('h-full') &&
               node.classList.contains('flex-col')
-            );
+            ) || card.querySelector('.relative.h-full.flex-col');
             if (!content) return;
 
             const accordion = content.querySelector(':scope > .motion-accordion');
@@ -1993,12 +1987,25 @@
         };
 
         const wireCardTilt = (doc) => {
-          if (isTouchOrMobile) return;
           if (tiltWiredDoc === doc) return;
           const view = doc.defaultView;
           if (!view) return;
           if (view.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
           tiltWiredDoc = doc;
+
+          const getTargetTrackAndCard = (node) => {
+            if (!node || !node.closest) return null;
+            const track = node.closest('.carousel-scrollbar-hidden');
+            if (!track) return null;
+            let curr = node;
+            while (curr && curr.parentElement !== track) {
+              curr = curr.parentElement;
+            }
+            if (!curr || (!curr.classList?.contains('motion-instance-card') && !curr.hasAttribute?.('data-card-index'))) {
+              return null;
+            }
+            return { track, card: curr };
+          };
 
           const setTilt = (card, tilt) => {
             if (tiltCard && tiltCard !== card && tiltCard.isConnected) {
@@ -2010,7 +2017,7 @@
             // 倾斜期间临时关闭轨道 scroll-snap：旋转会改变卡片的 snap
             // 区域，Chrome 的 snap-mandatory 会立刻重吸附，把整条轨道
             // 平移 1px——邻卡"跟着晃"的直接元凶。回正后立即恢复 snap。
-            const track = tilt && card ? card.parentElement : tiltTrack;
+            const track = tilt && card ? (card.closest('.carousel-scrollbar-hidden') || card.parentElement) : tiltTrack;
             if (tilt && track) {
               tiltTrack = track;
               track.style.scrollSnapType = "none";
@@ -2034,8 +2041,7 @@
           // 关键修复：倾斜归一化与出界判断都必须基于"未旋转"的 rect——
           // 若用 getBoundingClientRect（含旋转），卡片一转 rect 就偏，
           // 鼠标坐标被反馈进旋转角，形成自激振荡（乱晃）。
-          const getFlatRect = (card) => {
-            const track = card.parentElement;
+          const getFlatRect = (track, card) => {
             const tr = track.getBoundingClientRect();
             const left = tr.left + card.offsetLeft - track.scrollLeft;
             const top = tr.top + card.offsetTop - track.scrollTop;
@@ -2047,10 +2053,17 @@
           doc.addEventListener("pointermove", (e) => {
             // 倾斜是鼠标悬停视效；触摸/笔拖动轮播时不触发。
             if (e.pointerType && e.pointerType !== "mouse") return;
-            const card = e.target && e.target.closest ? e.target.closest(".motion-instance-card") : null;
-            if (!card) return;
-            const f = getFlatRect(card);
-            if (e.clientX < f.left || e.clientX > f.right || e.clientY < f.top || e.clientY > f.bottom) return;
+            const target = getTargetTrackAndCard(e.target);
+            if (!target) {
+              if (tiltCard) setTilt(tiltCard, "");
+              return;
+            }
+            const { track, card } = target;
+            const f = getFlatRect(track, card);
+            if (e.clientX < f.left || e.clientX > f.right || e.clientY < f.top || e.clientY > f.bottom) {
+              if (tiltCard === card) setTilt(card, "");
+              return;
+            }
             // 每张卡片自带独立透视空间（工作框架），不动轨道任何共享样式。
             const x = (e.clientX - f.left) / f.width - 0.5;
             const y = (e.clientY - f.top) / f.height - 0.5;
@@ -2062,12 +2075,14 @@
           }, { passive: true });
 
           doc.addEventListener("pointerout", (e) => {
-            const card = e.target && e.target.closest ? e.target.closest(".motion-instance-card") : null;
+            const target = getTargetTrackAndCard(e.target);
+            if (!target) return;
+            const { track, card } = target;
             if (!card || card.contains(e.relatedTarget)) return;
             // 旋转会把卡片边缘从光标下挪走，触发假性 pointerout；
             // 光标仍在平面 rect 内时忽略，只有真正离开才回正。
             if (e.relatedTarget) {
-              const f = getFlatRect(card);
+              const f = getFlatRect(track, card);
               if (e.clientX >= f.left && e.clientX <= f.right && e.clientY >= f.top && e.clientY <= f.bottom) return;
             }
             setTilt(card, "");
@@ -3420,15 +3435,13 @@
           annotatePreview(doc);
           // observer 已覆盖主题属性与 DOM 变化；低频轮询只处理极端重挂载兜底。
           if (previewPollTimer) window.clearInterval(previewPollTimer);
-          if (!isTouchOrMobile) {
-            previewPollTimer = window.setInterval(() => {
-              const currentDoc = frame.contentDocument;
-              if (currentDoc) {
-                installMutationObserver();
-                annotatePreview(currentDoc);
-              }
-            }, 4000);
-          }
+          previewPollTimer = window.setInterval(() => {
+            const currentDoc = frame.contentDocument;
+            if (currentDoc) {
+              installMutationObserver();
+              annotatePreview(currentDoc);
+            }
+          }, 4000);
         };
 
         frame.addEventListener("load", () => {

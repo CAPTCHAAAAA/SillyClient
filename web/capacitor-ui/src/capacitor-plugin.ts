@@ -186,7 +186,7 @@ export interface TarvenEnvPlugin {
     instanceId: string
     mode?: 'copy' | 'takeover'
     includeSecrets?: boolean
-  }): Promise<{ success: boolean; instanceId: string }>
+  }): Promise<{ success: boolean; instanceId: string; targetPath?: string }>
 
   addListener(
     eventName: 'log' | 'progress' | 'ready' | 'mode' | 'error',

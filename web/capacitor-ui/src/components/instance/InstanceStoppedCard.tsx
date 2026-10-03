@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Play, MoreVertical, Edit2 } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { cn, formatDisplayVersion } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
 
 export interface InstanceStoppedCardProps {
@@ -38,7 +38,7 @@ function getStatusText(status: TavernInstance["status"]) {
  * 停止态实例卡片组件 (InstanceStoppedCard)
  * 高内聚：专注表达静止态扁平拟物材质、封面、标题（支持双击就地内联重命名）及点击展开详情抽屉
  */
-export const InstanceStoppedCard = React.memo<InstanceStoppedCardProps>(({
+export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
   instance,
   index,
   isLight,
@@ -86,6 +86,7 @@ export const InstanceStoppedCard = React.memo<InstanceStoppedCardProps>(({
 
   return (
     <div
+      data-card-index={String(index + 1)}
       className={cn(
         "motion-instance-card w-full h-full rounded-[18px] relative group border cursor-pointer",
         isExpanded && "is-expanded",
@@ -101,7 +102,6 @@ export const InstanceStoppedCard = React.memo<InstanceStoppedCardProps>(({
               isMenuOpen && "border-white/25 ring-1 ring-white/10 z-30"
             )
       )}
-      style={{ contain: "layout paint" }}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest("button")) return;
         onToggleExpand();
@@ -114,7 +114,6 @@ export const InstanceStoppedCard = React.memo<InstanceStoppedCardProps>(({
           alt=""
           className="w-full h-full object-cover"
           loading="lazy"
-          decoding="async"
         />
         <div
           className="absolute inset-0"
@@ -126,15 +125,19 @@ export const InstanceStoppedCard = React.memo<InstanceStoppedCardProps>(({
         />
       </div>
 
-      {/* 单一轻量级自适应渐变层 */}
       <div
         className={cn(
-          "absolute inset-0 rounded-[18px] transition-all duration-[220ms] ease-out pointer-events-none",
-          isExpanded
-            ? "bg-gradient-to-t from-black/80 via-black/50 to-black/20"
-            : isLight
+          "absolute inset-0 rounded-[18px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
+          isLight
             ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
-            : "bg-gradient-to-t from-black/75 via-black/40 to-black/10"
+            : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
+          isExpanded ? "opacity-0" : "opacity-100"
+        )}
+      />
+      <div
+        className={cn(
+          "absolute inset-0 rounded-[18px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
+          isExpanded ? "opacity-100" : "opacity-0"
         )}
       />
 
@@ -148,7 +151,7 @@ export const InstanceStoppedCard = React.memo<InstanceStoppedCardProps>(({
               : "bg-white/[0.08] text-white/50 border-white/[0.08]"
           )}
         >
-          {instance.version || "—"}
+          {formatDisplayVersion(instance.version)}
         </span>
 
         <div className="flex-1" />
@@ -345,5 +348,4 @@ export const InstanceStoppedCard = React.memo<InstanceStoppedCardProps>(({
       </div>
     </div>
   );
-});
-InstanceStoppedCard.displayName = "InstanceStoppedCard";
+};

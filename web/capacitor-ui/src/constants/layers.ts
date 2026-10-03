@@ -16,26 +16,26 @@ export const LAYERS = {
   CONTENT: 10,
   STICKY_HEADER: 20,
   
-  // 1. HUD 悬浮层 (40)
-  HUD: 40,
-  ACTIVITY_CAPSULE: 45,
+  // 1. HUD 悬浮层 (50) — 顶部控制栏及活动胶囊
+  HUD: 50,
+  ACTIVITY_CAPSULE: 52,
 
-  // 2. 抽屉层 (50)
-  DRAWER_BACKDROP: 48,
-  DRAWER: 50,
+  // 2. 抽屉层 (58)
+  DRAWER_BACKDROP: 56,
+  DRAWER: 58,
 
-  // 3. 模态窗口层 (60)
-  MODAL_BACKDROP: 58,
-  MODAL: 60,
-  MODAL_SURFACE: 62,
+  // 3. 模态窗口层 (64)
+  MODAL_BACKDROP: 62,
+  MODAL: 64,
+  MODAL_SURFACE: 66,
 
-  // 4. 阻断确认对话框 (70)
-  DIALOG_BACKDROP: 68,
-  DIALOG: 70,
-  DIALOG_SURFACE: 72,
+  // 4. 阻断确认对话框 (72)
+  DIALOG_BACKDROP: 70,
+  DIALOG: 72,
+  DIALOG_SURFACE: 74,
 
-  // 5. 悬浮菜单 (75)
-  POPOVER_MENU: 75,
+  // 5. 悬浮菜单 (80)
+  POPOVER_MENU: 80,
 } as const;
 
 export type LayerLevel = keyof typeof LAYERS;

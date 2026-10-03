@@ -1,9 +1,8 @@
-import React, { useRef, useEffect, useState } from "react";
-import { X, ChevronDown, AlertTriangle, LoaderCircle, Info } from "lucide-react";
+import React, { useState, useRef, useLayoutEffect } from "react";
+import { ChevronDown, AlertTriangle, LoaderCircle, Info } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
-import { ToggleSwitch } from "../common/ToggleSwitch";
 
 export type WizardMode = "local" | "remote" | "import";
 
@@ -274,13 +273,14 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   closeVersionDropdown,
   addTerminalLog,
 }) => {
+  const wizardContainerRef = useRef<HTMLDivElement>(null);
   const wizardLocalRef = useRef<HTMLDivElement>(null);
   const wizardRemoteRef = useRef<HTMLDivElement>(null);
   const wizardImportRef = useRef<HTMLDivElement>(null);
   const importCopyRef = useRef<HTMLDivElement>(null);
   const importTakeoverRef = useRef<HTMLDivElement>(null);
   const [wizardHeight, setWizardHeight] = useState<number | null>(null);
-  const [importSubHeight, setImportSubHeight] = useState<number | null>(null);
+
   const [showPreflightInfo, setShowPreflightInfo] = useState(false);
   const [hasReadPreflight, setHasReadPreflight] = useState(false);
   const [showSecretsInfo, setShowSecretsInfo] = useState(false);
@@ -288,8 +288,8 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   const [showAccessModeInfo, setShowAccessModeInfo] = useState(false);
   const [hasReadAccessMode, setHasReadAccessMode] = useState(false);
 
-  // 动态测量激活模式的高度以实现白天黑夜级平滑伸缩
-  useEffect(() => {
+  // 同步测量当前激活模式的实际高度，在同一浏览器渲染帧提交以保证无闪烁、无空白跳跃的平滑流体溶变
+  useLayoutEffect(() => {
     const targetEl =
       newInstanceMode === "local"
         ? wizardLocalRef.current
@@ -298,18 +298,18 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
         : wizardImportRef.current;
     if (!targetEl) return;
 
-    const updateHeight = () => {
-      if (targetEl) {
-        const h = targetEl.getBoundingClientRect().height;
-        if (h > 0) setWizardHeight(Math.round(h));
+    const measureHeight = () => {
+      const h = targetEl.getBoundingClientRect().height;
+      if (h > 0) {
+        setWizardHeight(Math.round(h));
       }
     };
 
-    updateHeight();
+    measureHeight();
 
     if (typeof ResizeObserver !== "undefined") {
       const ro = new ResizeObserver(() => {
-        updateHeight();
+        measureHeight();
       });
       ro.observe(targetEl);
       return () => ro.disconnect();
@@ -323,50 +323,19 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     migrationCustomDest,
     migrationPreflight,
     showPreflightInfo,
-    hasReadPreflight,
     showSecretsInfo,
-    hasReadSecrets,
     showAccessModeInfo,
-    importSubHeight,
-    isOpen,
-  ]);
-
-  // 测量数据迁移子模式（复制迁移 / 原地接管）的高度以实现与主模式一致的同位平滑过渡
-  useEffect(() => {
-    if (newInstanceMode !== "import") return;
-    const targetSubEl =
-      migrationAccessMode === "copy"
-        ? importCopyRef.current
-        : importTakeoverRef.current;
-    if (!targetSubEl) return;
-
-    const updateSubHeight = () => {
-      if (targetSubEl) {
-        const h = targetSubEl.getBoundingClientRect().height;
-        if (h > 0) setImportSubHeight(Math.round(h));
-      }
-    };
-
-    updateSubHeight();
-
-    if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(() => {
-        updateSubHeight();
-      });
-      ro.observe(targetSubEl);
-      return () => ro.disconnect();
-    }
-  }, [
-    newInstanceMode,
-    migrationAccessMode,
-    migrationSourcePath,
-    migrationCustomDest,
-    migrationPreflight,
-    showPreflightInfo,
-    showSecretsInfo,
     migrationIncludeSecrets,
     isOpen,
   ]);
+
+  const handleSwitchMode = (mode: WizardMode) => {
+    if (mode === newInstanceMode) return;
+    if (wizardContainerRef.current) {
+      setWizardHeight(wizardContainerRef.current.offsetHeight);
+    }
+    switchInstanceMode(mode);
+  };
 
   if (!isOpen && !isClosing) return null;
 
@@ -390,7 +359,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
       {/* 头部 */}
       <div
         className={cn(
-          "flex items-center justify-between px-5 h-12 flex-shrink-0 border-b",
+          "flex items-center px-5 h-12 flex-shrink-0 border-b",
           isLight ? "border-black/[0.06]" : "border-white/[0.06]"
         )}
       >
@@ -402,21 +371,6 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
         >
           新建实例
         </span>
-        <button
-          disabled={isCreatingInstance}
-          onClick={() => {
-            closeVersionDropdown();
-            onClose();
-          }}
-          className={cn(
-            "motion-control p-1.5 rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30",
-            isLight
-              ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-              : "hover:bg-white/5 text-white/30 hover:text-white/60"
-          )}
-        >
-          <X className="w-4 h-4" />
-        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-subtle">
@@ -448,7 +402,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => switchInstanceMode("local")}
+              onClick={() => handleSwitchMode("local")}
               aria-pressed={newInstanceMode === "local"}
               className={cn(
                 "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -464,7 +418,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               本地实例
             </button>
             <button
-              onClick={() => switchInstanceMode("remote")}
+              onClick={() => handleSwitchMode("remote")}
               aria-pressed={newInstanceMode === "remote"}
               className={cn(
                 "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -480,7 +434,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               远程连接
             </button>
             <button
-              onClick={() => switchInstanceMode("import")}
+              onClick={() => handleSwitchMode("import")}
               aria-pressed={newInstanceMode === "import"}
               className={cn(
                 "ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -498,19 +452,20 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           </div>
         </div>
 
-        {/* 模式配置切换容器（平滑高度过渡 + 白天黑夜级优雅溶变） */}
+        {/* 模式配置切换容器（平滑高度自适应 + 统一 500ms 高斯模糊与位移交叉溶变） */}
         <div
-          className="relative transition-[height] duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+          ref={wizardContainerRef}
+          className="relative transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
           style={{ height: wizardHeight ? `${wizardHeight}px` : undefined }}
         >
           {/* 本地模式配置 */}
           <div
             ref={wizardLocalRef}
             className={cn(
-              "w-full space-y-5 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "w-full space-y-5 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
               newInstanceMode === "local"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
+                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
             )}
             aria-hidden={newInstanceMode !== "local"}
           >
@@ -680,10 +635,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           <div
             ref={wizardRemoteRef}
             className={cn(
-              "w-full space-y-5 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "w-full space-y-5 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
               newInstanceMode === "remote"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
+                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
             )}
             aria-hidden={newInstanceMode !== "remote"}
           >
@@ -729,11 +684,18 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                     用于受 HTTP 基本认证保护的远程地址
                   </div>
                 </div>
-                <ToggleSwitch
-                  on={newRemoteAuthEnabled}
-                  onChange={setNewRemoteAuthEnabled}
-                  isLight={isLight}
-                />
+                <div className={cn("companion-preset flex-shrink-0 ml-3", isLight && "is-light")}>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-label="启用 Basic Auth"
+                    aria-checked={newRemoteAuthEnabled}
+                    onClick={() => setNewRemoteAuthEnabled(!newRemoteAuthEnabled)}
+                    className="companion-preset__switch motion-control"
+                  >
+                    <span className="companion-preset__knob" />
+                  </button>
+                </div>
               </div>
 
               <div
@@ -800,10 +762,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           <div
             ref={wizardImportRef}
             className={cn(
-              "w-full space-y-4 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
               newInstanceMode === "import"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
+                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
             )}
             aria-hidden={newInstanceMode !== "import"}
           >
@@ -902,21 +864,18 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               </div>
             </div>
 
-            {/* 子模式配置切换容器（平滑高度跟随 + 交叉溶变） */}
-            <div
-              className="relative transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
-              style={{ height: importSubHeight ? `${importSubHeight}px` : undefined }}
-            >
-              {/* 复制迁移子面板 */}
+            {/* 子模式流体同位溶变容器 */}
+            <div className="relative">
+              {/* 子模式 1: 复制迁移 */}
               <div
                 ref={importCopyRef}
                 className={cn(
                   "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                  migrationAccessMode === "copy"
-                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                  newInstanceMode === "import" && migrationAccessMode === "copy"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
                 )}
-                aria-hidden={migrationAccessMode !== "copy"}
+                aria-hidden={newInstanceMode !== "import" || migrationAccessMode !== "copy"}
               >
                 {/* 2. 旧酒馆来源 */}
                 <NewInstanceField
@@ -1043,32 +1002,20 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                         readTitle="点击查看说明"
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMigrationIncludeSecrets(!migrationIncludeSecrets)
-                      }
-                      className="ios-toggle flex-shrink-0 ml-3"
-                      aria-label="包含敏感凭据"
-                    >
-                      <div
-                        className={cn(
-                          "ios-toggle-track",
-                          migrationIncludeSecrets && "ios-toggle-track-active"
-                        )}
+                    <div className={cn("companion-preset flex-shrink-0 ml-3", isLight && "is-light")}>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-label="包含敏感凭据"
+                        aria-checked={migrationIncludeSecrets}
+                        onClick={() =>
+                          setMigrationIncludeSecrets(!migrationIncludeSecrets)
+                        }
+                        className="companion-preset__switch motion-control"
                       >
-                        <div className="ios-toggle-icons">
-                          <span className="ios-toggle-icon-off">○</span>
-                          <span className="ios-toggle-icon-on">│</span>
-                        </div>
-                        <div
-                          className={cn(
-                            "ios-toggle-thumb",
-                            migrationIncludeSecrets && "ios-toggle-thumb-active"
-                          )}
-                        />
-                      </div>
-                    </button>
+                        <span className="companion-preset__knob" />
+                      </button>
+                    </div>
                   </div>
 
                   <div
@@ -1165,16 +1112,16 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 )}
               </div>
 
-              {/* 原地接管子面板 */}
+              {/* 子模式 2: 原地接管 */}
               <div
                 ref={importTakeoverRef}
                 className={cn(
                   "w-full space-y-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                  migrationAccessMode === "takeover"
-                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                  newInstanceMode === "import" && migrationAccessMode === "takeover"
+                    ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
+                    : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
                 )}
-                aria-hidden={migrationAccessMode !== "takeover"}
+                aria-hidden={newInstanceMode !== "import" || migrationAccessMode !== "takeover"}
               >
                 {/* 2. 旧酒馆来源 */}
                 <NewInstanceField
@@ -1234,32 +1181,20 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                         readTitle="点击查看说明"
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMigrationIncludeSecrets(!migrationIncludeSecrets)
-                      }
-                      className="ios-toggle flex-shrink-0 ml-3"
-                      aria-label="包含敏感凭据"
-                    >
-                      <div
-                        className={cn(
-                          "ios-toggle-track",
-                          migrationIncludeSecrets && "ios-toggle-track-active"
-                        )}
+                    <div className={cn("companion-preset flex-shrink-0 ml-3", isLight && "is-light")}>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-label="包含敏感凭据"
+                        aria-checked={migrationIncludeSecrets}
+                        onClick={() =>
+                          setMigrationIncludeSecrets(!migrationIncludeSecrets)
+                        }
+                        className="companion-preset__switch motion-control"
                       >
-                        <div className="ios-toggle-icons">
-                          <span className="ios-toggle-icon-off">○</span>
-                          <span className="ios-toggle-icon-on">│</span>
-                        </div>
-                        <div
-                          className={cn(
-                            "ios-toggle-thumb",
-                            migrationIncludeSecrets && "ios-toggle-thumb-active"
-                          )}
-                        />
-                      </div>
-                    </button>
+                        <span className="companion-preset__knob" />
+                      </button>
+                    </div>
                   </div>
 
                   <div

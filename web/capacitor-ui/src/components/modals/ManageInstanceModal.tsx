@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
 import type { InstanceConfig } from "../../capacitor-plugin";
-import { cn } from "../../lib/utils";
+import { cn, formatDisplayVersion } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { ToggleSwitch } from "../common/ToggleSwitch";
 import type { TavernInstance, InstanceSnapshot, ManageTab } from "../../types";
@@ -298,7 +298,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 : "bg-white/[0.06] text-white/35"
             )}
           >
-            {mp.version || "—"}
+            {formatDisplayVersion(mp.version)}
           </span>
         </div>
         <button
@@ -1071,11 +1071,13 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                   <ManageDetailRow
                     label="版本"
                     value={
-                      mp.type === "local" &&
-                      aboutInfo?.version &&
-                      aboutInfo.version !== "unknown"
-                        ? `v${aboutInfo.version}`
-                        : mp.version || "—"
+                      formatDisplayVersion(
+                        mp.type === "local" &&
+                        aboutInfo?.version &&
+                        aboutInfo.version !== "unknown"
+                          ? aboutInfo.version
+                          : mp.version
+                      )
                     }
                     isLight={isLight}
                   />
