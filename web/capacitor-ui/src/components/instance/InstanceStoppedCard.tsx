@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Play, MoreVertical, Edit2 } from "lucide-react";
+import { Play, MoreVertical, Edit2, Lock } from "lucide-react";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
 
@@ -142,17 +142,33 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
       />
 
       <div className="relative h-full flex flex-col p-3.5 overflow-hidden rounded-[18px]">
-        {/* 版本胶囊 */}
-        <span
-          className={cn(
-            "self-start px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border w-fit",
-            isLight
-              ? "bg-black/[0.06] text-[#1a1625]/55 border-black/[0.08]"
-              : "bg-white/[0.08] text-white/50 border-white/[0.08]"
+        {/* 版本胶囊与密码锁标记 */}
+        <div className="self-start flex items-center gap-1.5 w-fit">
+          <span
+            className={cn(
+              "px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border",
+              isLight
+                ? "bg-black/[0.06] text-[#1a1625]/55 border-black/[0.08]"
+                : "bg-white/[0.08] text-white/50 border-white/[0.08]"
+            )}
+          >
+            {formatDisplayVersion(instance.version)}
+          </span>
+          {instance.hasPassword && (
+            <span
+              title="已设置访问密码"
+              className={cn(
+                "px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border inline-flex items-center gap-1",
+                isLight
+                  ? "bg-black/[0.06] text-[#1a1625]/60 border-black/[0.08]"
+                  : "bg-white/[0.08] text-white/60 border-white/[0.08]"
+              )}
+            >
+              <Lock className="w-2.5 h-2.5" />
+              <span>锁定</span>
+            </span>
           )}
-        >
-          {formatDisplayVersion(instance.version)}
-        </span>
+        </div>
 
         <div className="flex-1" />
 

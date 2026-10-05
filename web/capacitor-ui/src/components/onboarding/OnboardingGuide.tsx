@@ -49,7 +49,7 @@ const guideSteps: GuideStep[] = [
         imageClass: "is-panel",
       },
       {
-        label: "主题预设",
+        label: "预设安装",
         description: "创建本地实例时可启用 SC Bordeaux，安装完成后会自动应用主题预设与配套壁纸。",
         image: "./onboarding/theme-preset-open.webp",
         imageAlt: "新建实例面板中的 SC Bordeaux 主题预设",
@@ -70,6 +70,37 @@ const guideSteps: GuideStep[] = [
     ],
   },
   {
+    title: "密码保护",
+    views: [
+      {
+        label: "私密锁定",
+        description: "开启访问密码的实例卡片带有专属保险锁标记，处于受保护状态，防止未授权访问。",
+        image: "./onboarding/instance-card-locked.webp",
+        imageAlt: "带有保险锁标记的私密实例卡片",
+        imageClass: "is-card",
+      },
+      {
+        label: "本地解锁",
+        description: "启动或打开受保护实例时只需输入本地密码即可解锁，纯本地离线校验，无需联网验证。",
+        image: "./onboarding/password-unlock.webp",
+        imageAlt: "本地免联网密码解锁面板",
+        imageClass: "is-panel",
+      },
+    ],
+  },
+  {
+    title: "数据迁移",
+    views: [
+      {
+        label: "无损迁移",
+        description: "支持将实例完整搬迁至新目录或软件默认路径。跨卷迁移完整保留原数据并严格校验，数据零丢失。",
+        image: "./onboarding/storage-migrate.webp",
+        imageAlt: "单实例存储路径无损重定位与迁移面板",
+        imageClass: "is-panel",
+      },
+    ],
+  },
+  {
     title: "控制台",
     views: [
       {
@@ -80,7 +111,7 @@ const guideSteps: GuideStep[] = [
         imageClass: "is-toolbar",
       },
       {
-        label: "展开后",
+        label: "实时日志",
         description: "下载、安装、启动与错误信息会保留在这里，便于确认实例当前所处的阶段。",
         image: "./onboarding/terminal-open.webp",
         imageAlt: "展开后的运行控制台",

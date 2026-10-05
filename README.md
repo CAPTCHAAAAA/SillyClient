@@ -40,6 +40,29 @@ SillyClient 不是 SillyTavern 的分支，不提供模型、API 服务、账户
 - 导入、导出和清理实例数据
 - 在控制台与 SillyTavern 阅读窗口之间切换，不中断后台服务
 
+## 界面实览 / Screenshots
+
+| 主控台全景 (Main Dashboard) | 实例卡片展开 (Card Expanded) |
+| :---: | :---: |
+| <img src="./docs/screenshots/01-main-dashboard.png" width="480" alt="主控台全景"> | <img src="./docs/screenshots/02-instance-card-expanded.png" width="480" alt="实例卡片展开"> |
+
+| 新建实例向导 (Creation Wizard) | 伴生主题预设 (Theme Preset) |
+| :---: | :---: |
+| <img src="./docs/screenshots/03-create-instance-wizard.png" width="480" alt="新建实例向导"> | <img src="./docs/screenshots/04-companion-theme-preset.png" width="480" alt="伴生主题预设"> |
+
+| 私密实例锁定 (Security Lock) | 本地免联网解锁 (Unlock Modal) |
+| :---: | :---: |
+| <img src="./docs/screenshots/05-password-security-lock.png" width="480" alt="私密实例锁定"> | <img src="./docs/screenshots/06-password-unlock-modal.png" width="480" alt="本地免联网解锁"> |
+
+| 存储路径与迁移 (Storage & Migration) | 运行终端控制台 (Terminal Console) |
+| :---: | :---: |
+| <img src="./docs/screenshots/07-instance-management-storage.png" width="480" alt="存储路径与迁移"> | <img src="./docs/screenshots/08-terminal-console.png" width="480" alt="运行终端控制台"> |
+
+| 背景与毛玻璃定制 (Background Settings) | APP 全局设置 (App Settings) |
+| :---: | :---: |
+| <img src="./docs/screenshots/09-background-customization.png" width="480" alt="背景与毛玻璃定制"> | <img src="./docs/screenshots/10-app-settings.png" width="480" alt="APP 全局设置"> |
+
+
 ## 运行结构
 
 React 控制台负责实例配置、状态和日志展示。平台层负责文件系统、下载、解压、进程生命周期、端口检测和窗口管理。

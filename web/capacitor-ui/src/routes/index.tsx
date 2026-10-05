@@ -35,6 +35,7 @@ import { RenameModal } from "@/components/modals/RenameModal";
 import { VersionDropdownMenu } from "@/components/modals/VersionDropdownMenu";
 import { CardActionMenu } from "@/components/modals/CardActionMenu";
 import { LaunchConsoleModal } from "@/components/modals/LaunchConsoleModal";
+import { UnlockInstanceModal } from "@/components/modals/UnlockInstanceModal";
 import type { TavernInstance, ManageTab, InstanceSnapshot, BgMode, ThemeStyle, OperationPurpose } from "@/types";
 
 export const Route = createFileRoute("/")({
@@ -440,6 +441,19 @@ function SillyClientLauncher() {
   const [pendingDelete, setPendingDelete] = useState<TavernInstance | null>(null);
   const [isDeletingInstance, setIsDeletingInstance] = useState(false);
   const [deleteInstanceError, setDeleteInstanceError] = useState<string | null>(null);
+
+  // 实例访问密码解锁状态
+  const [unlockingInstance, setUnlockingInstance] = useState<TavernInstance | null>(null);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
+  const [isUnlockModalClosing, setIsUnlockModalClosing] = useState(false);
+  const closeUnlockModal = useCallback(() => {
+    setIsUnlockModalClosing(true);
+    setTimeout(() => {
+      setIsUnlockModalOpen(false);
+      setIsUnlockModalClosing(false);
+      setUnlockingInstance(null);
+    }, POPOVER_EXIT_MS);
+  }, []);
 
   const isLight = bgMode === "custom" && themeStyle === "light";
   const isDynamic = bgMode === "dynamic";
@@ -910,6 +924,38 @@ function SillyClientLauncher() {
     return () => clearInterval(interval);
   }, [checkRemoteStatus]);
 
+  // 启动时同步各实例密码保护状态
+  useEffect(() => {
+    TarvenEnv.listInstancePasswordStatus().then((status) => {
+      if (status && typeof status === "object") {
+        setInstances((prev) => {
+          let changed = false;
+          const next = prev.map((inst) => {
+            const key = inst.installDir || inst.id;
+            const has = Boolean(status[key] || status[inst.id]);
+            if (inst.hasPassword !== has) {
+              changed = true;
+              return { ...inst, hasPassword: has };
+            }
+            return inst;
+          });
+          return changed ? next : prev;
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleUpdateInstancePasswordStatus = useCallback((instanceId: string, hasPassword: boolean) => {
+    setInstances((prev) =>
+      prev.map((inst) => {
+        if (inst.id === instanceId || inst.installDir === instanceId) {
+          return { ...inst, hasPassword };
+        }
+        return inst;
+      })
+    );
+  }, []);
+
   // 下拉刷新:触发远程状态检测
   const handlePullRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -1174,8 +1220,8 @@ function SillyClientLauncher() {
     setLaunchProgress({ pct: 100, text: "远程实例已打开" });
   }, [contentOpenMode]);
 
-  // 启动实例入口
-  const launchTavern = useCallback(async (instance: TavernInstance) => {
+  // 启动实例直接执行入口 (跳过密码阻断，在已完成密码校验或无密码时调用)
+  const launchTavernDirect = useCallback(async (instance: TavernInstance) => {
     if (launchingId) return;
     setLaunchingId(instance.id);
     if (instance.type === "local") {
@@ -1233,6 +1279,16 @@ function SillyClientLauncher() {
       setLaunchingId(null);
     }
   }, [launchingId, doLaunch, openRemoteInstance]);
+
+  // 启动实例入口 (含访问密码保险开关拦截)
+  const launchTavern = useCallback(async (instance: TavernInstance) => {
+    if (instance.hasPassword && instance.status !== "running" && instance.status !== "online") {
+      setUnlockingInstance(instance);
+      setIsUnlockModalOpen(true);
+      return;
+    }
+    await launchTavernDirect(instance);
+  }, [launchTavernDirect]);
 
   // 返回酒馆会话（无缝唤醒后台保活的酒馆 WebView）
   const handleReturnToTavern = useCallback(async (instance: TavernInstance) => {
@@ -2544,6 +2600,20 @@ function SillyClientLauncher() {
         onConfirm={confirmDeleteInstance}
       />
 
+      {/* 解耦业务组件: 实例访问密码解锁对话框 (本地保险开关) */}
+      <UnlockInstanceModal
+        instance={unlockingInstance}
+        isOpen={isUnlockModalOpen}
+        isClosing={isUnlockModalClosing}
+        onClose={closeUnlockModal}
+        isLight={isLight}
+        glassBg={glassBg}
+        onUnlockSuccess={(inst) => {
+          closeUnlockModal();
+          void launchTavernDirect(inst);
+        }}
+      />
+
       {/* 解耦公共组件: 统一多层遮罩 */}
       <LayerBackdrop
         isOpen={showNewInstancePanel || isNewInstancePanelClosing || showLaunchPanel || isLaunchPanelClosing}
@@ -2762,6 +2832,7 @@ function SillyClientLauncher() {
         setTerminalLogs={setTerminalLogs}
         terminalDisplayPrompt={terminalDisplayPrompt}
         terminalPlaceholder={terminalPlaceholder}
+        onUpdateInstancePasswordStatus={handleUpdateInstancePasswordStatus}
       />
 
       {/* 首次引导 */}

@@ -188,6 +188,42 @@ export interface TarvenEnvPlugin {
     includeSecrets?: boolean
   }): Promise<{ success: boolean; instanceId: string; targetPath?: string }>
 
+  /** 设置或更新实例访问密码（本地安全开关） */
+  setInstancePassword(options: {
+    instanceId: string
+    password?: string
+    oldPassword?: string
+  }): Promise<{
+    success: boolean
+    hasPassword: boolean
+  }>
+
+  /** 校验实例访问密码 */
+  verifyInstancePassword(options: {
+    instanceId: string
+    password: string
+  }): Promise<{
+    valid: boolean
+  }>
+
+  /** 查询实例是否设置了访问密码 */
+  hasInstancePassword(options: {
+    instanceId: string
+  }): Promise<{
+    hasPassword: boolean
+  }>
+
+  /** 解除并清除实例访问密码 */
+  clearInstancePassword(options: {
+    instanceId: string
+    oldPassword?: string
+  }): Promise<{
+    success: boolean
+  }>
+
+  /** 批量获取所有实例的密码保护状态 */
+  listInstancePasswordStatus(): Promise<Record<string, boolean>>
+
   addListener(
     eventName: 'log' | 'progress' | 'ready' | 'mode' | 'error',
     listenerFunc: (data: any) => void,

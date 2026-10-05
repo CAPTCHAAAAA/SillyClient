@@ -40,6 +40,29 @@ Installers are published on the main repository's [Releases](https://github.com/
 - Import, export, and remove instance data
 - Move between the management console and the SillyTavern reader without interrupting the background service
 
+## Screenshots
+
+| Main Dashboard | Card Expanded |
+| :---: | :---: |
+| <img src="./docs/screenshots/01-main-dashboard.png" width="480" alt="Main Dashboard"> | <img src="./docs/screenshots/02-instance-card-expanded.png" width="480" alt="Card Expanded"> |
+
+| Creation Wizard | Theme Preset |
+| :---: | :---: |
+| <img src="./docs/screenshots/03-create-instance-wizard.png" width="480" alt="Creation Wizard"> | <img src="./docs/screenshots/04-companion-theme-preset.png" width="480" alt="Theme Preset"> |
+
+| Instance Security Lock | Local Password Unlock |
+| :---: | :---: |
+| <img src="./docs/screenshots/05-password-security-lock.png" width="480" alt="Security Lock"> | <img src="./docs/screenshots/06-password-unlock-modal.png" width="480" alt="Password Unlock"> |
+
+| Storage & Migration | Terminal Console |
+| :---: | :---: |
+| <img src="./docs/screenshots/07-instance-management-storage.png" width="480" alt="Storage & Migration"> | <img src="./docs/screenshots/08-terminal-console.png" width="480" alt="Terminal Console"> |
+
+| Background Customization | Global App Settings |
+| :---: | :---: |
+| <img src="./docs/screenshots/09-background-customization.png" width="480" alt="Background Customization"> | <img src="./docs/screenshots/10-app-settings.png" width="480" alt="Global App Settings"> |
+
+
 ## Runtime architecture
 
 The shared React console presents instance configuration, state, and logs. Platform code owns the file system, downloads, archive extraction, process lifecycle, port checks, and window management.

@@ -43,6 +43,8 @@ export interface TavernInstance {
   companionPreset?: CompanionPresetSelection;
   /** Android 新建实例首次进入酒馆时显示状态栏返回提示；仅在用户实际滑动返回后清除。 */
   pendingTavernGestureHint?: boolean;
+  /** 是否已开启本地访问密码保护 (本地保险开关) */
+  hasPassword?: boolean;
 }
 
 export type ManageTab = "launch" | "snapshots" | "storage" | "terminal" | "about";

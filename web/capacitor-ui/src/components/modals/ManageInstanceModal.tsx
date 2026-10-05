@@ -55,6 +55,7 @@ export interface ManageInstanceModalProps {
   setTerminalLogs: React.Dispatch<React.SetStateAction<{ msg: string; level?: string }[]>>;
   terminalDisplayPrompt: string;
   terminalPlaceholder: string;
+  onUpdateInstancePasswordStatus?: (instanceId: string, hasPassword: boolean) => void;
 }
 
 function ManageItem({
@@ -188,12 +189,34 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   setTerminalLogs,
   terminalDisplayPrompt,
   terminalPlaceholder,
+  onUpdateInstancePasswordStatus,
 }) => {
   const [manageTab, setManageTab] = useState<ManageTab>("launch");
   const [manageSearchQuery, setManageSearchQuery] = useState("");
   const [manageFilter, setManageFilter] = useState<"all" | "local" | "remote">("all");
   const [manageMoreOpen, setManageMoreOpen] = useState(false);
   const [terminalInput, setTerminalInput] = useState("");
+
+  // 访问密码保护状态
+  const [hasPassword, setHasPassword] = useState(Boolean(instance?.hasPassword));
+  const [isConfiguringPassword, setIsConfiguringPassword] = useState(false);
+  const [passwordMode, setPasswordMode] = useState<"set" | "clear">("set");
+  const [passwordOld, setPasswordOld] = useState("");
+  const [passwordNew, setPasswordNew] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
+  useEffect(() => {
+    setHasPassword(Boolean(instance?.hasPassword));
+    setIsConfiguringPassword(false);
+    setPasswordOld("");
+    setPasswordNew("");
+    setPasswordConfirm("");
+    setPasswordError(null);
+    setPasswordSuccess(null);
+  }, [instance?.id, instance?.hasPassword]);
 
   const launchRef = useRef<HTMLDivElement>(null);
   const snapshotsRef = useRef<HTMLDivElement>(null);
@@ -726,6 +749,252 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* 访问密码保护 */}
+                  <ManageItem
+                    label="访问密码保护"
+                    desc="开启后需在本地输入密码方可启动或连接实例"
+                    isLight={isLight}
+                  >
+                    <div className="flex items-center gap-2">
+                      {hasPassword && !isConfiguringPassword && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsConfiguringPassword(true);
+                            setPasswordMode("set");
+                            setPasswordOld("");
+                            setPasswordNew("");
+                            setPasswordConfirm("");
+                            setPasswordError(null);
+                            setPasswordSuccess(null);
+                          }}
+                          className={cn(
+                            "motion-control text-[10px] font-medium px-2 py-0.5 rounded-md border transition-colors",
+                            isLight
+                              ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625]/70 hover:bg-black/[0.08]"
+                              : "bg-white/[0.06] border-white/[0.08] text-white/70 hover:bg-white/[0.12]"
+                          )}
+                        >
+                          修改密码
+                        </button>
+                      )}
+                      <ToggleSwitch
+                        on={hasPassword || isConfiguringPassword}
+                        onChange={(checked) => {
+                          if (checked) {
+                            setIsConfiguringPassword(true);
+                            setPasswordMode("set");
+                            setPasswordOld("");
+                            setPasswordNew("");
+                            setPasswordConfirm("");
+                            setPasswordError(null);
+                            setPasswordSuccess(null);
+                          } else {
+                            if (hasPassword) {
+                              setIsConfiguringPassword(true);
+                              setPasswordMode("clear");
+                              setPasswordOld("");
+                              setPasswordError(null);
+                              setPasswordSuccess(null);
+                            } else {
+                              setIsConfiguringPassword(false);
+                            }
+                          }
+                        }}
+                        isLight={isLight}
+                      />
+                    </div>
+                  </ManageItem>
+
+                  <div
+                    className={cn(
+                      "motion-accordion",
+                      isConfiguringPassword && "is-open"
+                    )}
+                    aria-hidden={!isConfiguringPassword}
+                    inert={!isConfiguringPassword}
+                  >
+                    <div className="motion-accordion-inner">
+                      <div className="pt-3 space-y-2">
+                        {passwordMode === "set" ? (
+                          <>
+                            {hasPassword && (
+                              <input
+                                type="password"
+                                value={passwordOld}
+                                onChange={(e) => {
+                                  setPasswordOld(e.target.value);
+                                  if (passwordError) setPasswordError(null);
+                                }}
+                                placeholder="原访问密码"
+                                autoComplete="current-password"
+                                className={cn(
+                                  "w-full h-8 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
+                                  isLight
+                                    ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                                    : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
+                                )}
+                              />
+                            )}
+                            <input
+                              type="password"
+                              value={passwordNew}
+                              onChange={(e) => {
+                                setPasswordNew(e.target.value);
+                                if (passwordError) setPasswordError(null);
+                              }}
+                              placeholder={hasPassword ? "新访问密码" : "设置访问密码"}
+                              autoComplete="new-password"
+                              className={cn(
+                                "w-full h-8 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
+                                isLight
+                                  ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                                  : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
+                              )}
+                            />
+                            <input
+                              type="password"
+                              value={passwordConfirm}
+                              onChange={(e) => {
+                                setPasswordConfirm(e.target.value);
+                                if (passwordError) setPasswordError(null);
+                              }}
+                              placeholder="确认访问密码"
+                              autoComplete="new-password"
+                              className={cn(
+                                "w-full h-8 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
+                                isLight
+                                  ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                                  : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
+                              )}
+                            />
+                          </>
+                        ) : (
+                          <input
+                            type="password"
+                            value={passwordOld}
+                            onChange={(e) => {
+                              setPasswordOld(e.target.value);
+                              if (passwordError) setPasswordError(null);
+                            }}
+                            placeholder="输入原密码以解除保护"
+                            autoComplete="current-password"
+                            className={cn(
+                              "w-full h-8 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
+                              isLight
+                                ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                                : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
+                            )}
+                          />
+                        )}
+
+                        {passwordError && (
+                          <p className="text-[11px] text-red-500 font-medium">
+                            {passwordError}
+                          </p>
+                        )}
+                        {passwordSuccess && (
+                          <p className="text-[11px] text-emerald-500 font-medium">
+                            {passwordSuccess}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsConfiguringPassword(false);
+                              setPasswordError(null);
+                              setPasswordSuccess(null);
+                            }}
+                            disabled={passwordSaving}
+                            className={cn(
+                              "motion-control h-7 px-3 rounded-lg text-xs font-medium border transition-colors",
+                              isLight
+                                ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/5"
+                                : "border-white/[0.08] text-white/60 hover:bg-white/5"
+                            )}
+                          >
+                            取消
+                          </button>
+                          <button
+                            type="button"
+                            disabled={passwordSaving}
+                            onClick={async () => {
+                              if (!instance) return;
+                              setPasswordSaving(true);
+                              setPasswordError(null);
+                              setPasswordSuccess(null);
+                              try {
+                                if (passwordMode === "set") {
+                                  const cleanNew = passwordNew.trim();
+                                  if (!cleanNew) {
+                                    setPasswordError("新密码不能为空");
+                                    setPasswordSaving(false);
+                                    return;
+                                  }
+                                  if (cleanNew !== passwordConfirm.trim()) {
+                                    setPasswordError("两次输入的密码不一致");
+                                    setPasswordSaving(false);
+                                    return;
+                                  }
+                                  if (hasPassword && !passwordOld.trim()) {
+                                    setPasswordError("请输入原密码");
+                                    setPasswordSaving(false);
+                                    return;
+                                  }
+                                  const res = await TarvenEnv.setInstancePassword({
+                                    instanceId: instance.installDir || instance.id,
+                                    password: cleanNew,
+                                    oldPassword: hasPassword ? passwordOld.trim() : undefined,
+                                  });
+                                  setHasPassword(res.hasPassword);
+                                  setIsConfiguringPassword(false);
+                                  setPasswordSuccess("密码设置成功");
+                                  onUpdateInstancePasswordStatus?.(instance.id, res.hasPassword);
+                                } else {
+                                  if (!passwordOld.trim()) {
+                                    setPasswordError("请输入原密码");
+                                    setPasswordSaving(false);
+                                    return;
+                                  }
+                                  await TarvenEnv.clearInstancePassword({
+                                    instanceId: instance.installDir || instance.id,
+                                    oldPassword: passwordOld.trim(),
+                                  });
+                                  setHasPassword(false);
+                                  setIsConfiguringPassword(false);
+                                  setPasswordSuccess("已解除密码保护");
+                                  onUpdateInstancePasswordStatus?.(instance.id, false);
+                                }
+                              } catch (err: any) {
+                                setPasswordError(err?.message || "操作失败");
+                              } finally {
+                                setPasswordSaving(false);
+                              }
+                            }}
+                            className={cn(
+                              "motion-control h-7 px-3.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40",
+                              passwordMode === "clear"
+                                ? "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20"
+                                : isLight
+                                  ? "bg-black text-white hover:bg-black/85"
+                                  : "bg-white text-[#14101e] hover:bg-white/90"
+                            )}
+                          >
+                            {passwordSaving
+                              ? "保存中..."
+                              : passwordMode === "clear"
+                                ? "确认解除"
+                                : hasPassword
+                                  ? "保存修改"
+                                  : "启用密码保护"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </>
               </div>
 

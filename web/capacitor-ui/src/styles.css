@@ -1822,3 +1822,14 @@ select option {
     padding-inline: 13px;
   }
 }
+
+/* 弹窗微震动反馈动画 (密码输入错误) */
+@keyframes modal-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.animate-modal-shake {
+  animation: modal-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
