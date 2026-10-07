@@ -5,24 +5,24 @@
 ## 1.11.0 - 2026-10-08
 
 - 实例存放目录改由用户指定（核心数据模型解耦）：
-  - 新建实例、复制迁移、存储迁移三大入口全面重构，创建前必须选择存放文件夹，实例以该文件夹一级子目录创建，移除内置默认路径与恢复默认路径。
-  - 迁移目标文件夹限制仅能通过系统目录选择器指定，严格防呆与前置校验；权限调整为仅在选择目录时按需触发。
+  - 新建实例、复制迁移、存储迁移三大入口通过 `resolveInstanceParent` 统一收口，创建前必须选择存放文件夹，实例以该文件夹一级子目录创建，移除内置默认路径与恢复默认路径。
+  - 迁移目标文件夹限制仅能通过系统目录选择器指定，严格防呆与前置校验；`TarvenEnvPlugin.requestStorageAccess` 权限调整为仅在选择目录时按需触发。
 - Android 稳定性修复与异常容错：
-  - 实例注册表自动向下兼容历史默认存储路径，彻底解决旧版本实例读取失败与迁移崩溃。
-  - 前台保活服务（KeepAliveService）严格保证时限内升格并拦截过早终止，解决后台超时被杀问题。
-  - 完善原生向导中文错误提示；优化窄屏设备下实例管理面板按钮布局排版。
+  - 实例注册表在 `RuntimePaths.legacyDefaults` 中将历史默认路径永久纳入白名单，防范 `allowedRootFor` 越界崩溃与读取失败。
+  - 前台保活服务（`KeepAliveService.promoteToForeground`）严格保证时限内升格并拦截过早终止，解决后台超时被杀问题。
+  - 完善原生向导中文错误提示（`NATIVE_ERROR_HINTS`）；优化窄屏设备下实例管理面板按钮布局排版。
 - Android 性能重构与后台运行强化：
   - 实例根目录自动铺设共享依赖（`node_modules`），后续新实例创建无需重复解压依赖。
-  - 依赖解包升级为多进程并发分组排空机制；首次创建自动预热前端库编译缓存并在后续实例复用。
-  - 实例重命名升级为同父目录文件系统原子移动，删除采用原子解绑与后台异步清理。
+  - 依赖解包升级为 `TarGroupExtractor` 多进程并发分组排空机制；首次创建自动预热前端库编译缓存并在后续实例复用。
+  - 实例重命名升级为同父目录 `Files.move(..., ATOMIC_MOVE)` 文件系统原子移动，删除采用原子解绑与后台异步清理。
   - 长时间数据操作由前台服务与 Doze 白名单保活承载；安装暂存与依赖目录跳过媒体库逐文件扫描。
 - iOS 平台安全架构与真机加固：
-  - 引入 Darwin 沙盒 `/var` 到 `/private/var` 规范化等价校验，彻底修复真机 `Unsafe authorized runtime root`。
-  - 增加沙盒边界守护与 Worker 工作目录校验；实例生命周期接入事务化保护；Native 依赖锁定。
+  - 引入 Darwin 沙盒 `/var` 到 `/private/var` 规范化等价校验（`isSafeRoot` / `canonicalRuntimeRoot`），彻底修复真机 `Unsafe authorized runtime root`。
+  - 优化 `reportRuntimeFailure` 同步落盘时序，杜绝 Worker 事件异步竞争异常；增加沙盒边界守护与 Worker 工作目录校验；Native 依赖锁定。
   - 修复系统文档选择器崩溃、重入启动冲突与 WKWebView 探针就绪超时等问题。
 - Windows 体验优化与依赖诊断：
-  - 跨平台 ZIP 导入自动识别并清理 Android/Termux 残留的失效 `package-lock.json` 与移动端标记文件。
-  - 依赖安装增加 10 秒心跳反馈与 npm 日志智能分级；支持自定义实例存储根目录。
+  - 跨平台 ZIP 导入自动识别并清理 Android/Termux 残留的失效 `package-lock.json` 与移动端标记文件（`RETIRED_MARKERS`）。
+  - 依赖安装增加 10 秒心跳反馈与 npm 日志智能分级；支持自定义实例存储根目录（`setInstancesRoot`）。
 
 ## 2.0.1 - 2026-10-01
 
