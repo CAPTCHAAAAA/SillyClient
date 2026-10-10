@@ -96,18 +96,20 @@ select:focus-visible {
   --glass: oklch(1 0 0 / 0.15);
   --glass-border: oklch(0 0 0 / 0.06);
 
-  /* 动效 */
-  --motion-press: 90ms;
-  --motion-fast: 160ms;
-  --motion-base: 240ms;
-  --motion-layout: 280ms;
+  /* 动效：紧致克制按压与利落回弹，杜绝过冲与果冻颤动，保持沉稳硬朗质感 */
+  --motion-press: 80ms;
+  --motion-release: 150ms;
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-layout: 260ms;
+  --motion-ease-press: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-release: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --transition-fast: var(--motion-fast) var(--motion-ease-out);
   --transition-normal: var(--motion-base) var(--motion-ease-out);
   --transition-spring: var(--motion-layout) var(--motion-ease-in-out);
-
 }
 
 /* 深色模式 - iOS 黑白灰绿 */
@@ -185,6 +187,24 @@ select:focus-visible {
   width: 0;
   height: 0;
 }
+}
+
+/* Keep scrollable surfaces stable when their content crosses the viewport. */
+html,
+body,
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* 玻璃面板 - Liquid Glass */
@@ -527,23 +547,95 @@ select:focus-visible {
 
 button {
   -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--motion-release) var(--motion-ease-release),
+    filter var(--motion-release) ease;
 }
 
-/* 按钮按压反馈：短促压缩，松手后从当前值自然回到原位。 */
+/* 按钮按压反馈：紧致敏捷微触感 */
 button:active:not(:disabled) {
-  filter: brightness(0.96) saturate(0.96);
-  transform: scale(0.985);
-  transition: transform var(--motion-press) var(--motion-ease-out), filter var(--motion-press) ease-out;
+  filter: brightness(0.97) saturate(0.98);
+  transform: scale(0.98);
+  transition:
+    transform var(--motion-press) var(--motion-ease-press),
+    filter var(--motion-press) ease-out;
 }
 
 .motion-control {
   transition-property: transform, filter, color, background-color, border-color, box-shadow, opacity;
-  transition-duration: var(--motion-fast);
-  transition-timing-function: var(--motion-ease-out);
+  transition-duration: var(--motion-release);
+  transition-timing-function: var(--motion-ease-release);
 }
 
 .motion-control:active:not(:disabled) {
-  transform: translateY(0) scale(0.985);
+  transform: translateY(0) scale(0.975);
+  transition-duration: var(--motion-press);
+  transition-timing-function: var(--motion-ease-press);
+}
+
+.carousel-pagination {
+  color: #fff;
+  transition: color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.carousel-pagination.is-light {
+  color: #1a1625;
+}
+
+.carousel-pagination button {
+  transition-property: transform, filter, background-color, border-color, box-shadow, opacity;
+}
+
+.carousel-pagination__dot-coverage,
+.carousel-pagination__dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+}
+
+.carousel-pagination__dot-coverage {
+  transition: none;
+}
+
+.carousel-pagination__dot {
+  background-color: currentColor;
+  border-radius: 999px;
+  opacity: 0.2;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.carousel-pagination__mover {
+  position: absolute;
+  top: calc(50% - 3px);
+  left: 0;
+  width: 18px;
+  height: 6px;
+  pointer-events: none;
+  will-change: transform;
+  transition: none;
+}
+
+.carousel-pagination__capsule {
+  display: block;
+  width: 18px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: currentColor;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  opacity: 0.9;
+  transform-origin: center;
+  will-change: transform;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.carousel-pagination.is-light .carousel-pagination__capsule {
+  opacity: 0.75;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .carousel-pagination button:hover .carousel-pagination__dot {
+    opacity: 0.4;
+  }
 }
 
 /* 搜索栏 — iOS Search Bar 风格 */
@@ -632,7 +724,7 @@ header span[class*="truncate"] {
 
 /* 普通切换：仅在模式变化时临时给整棵树加缓动颜色过渡。 */
 .theme-smoothing,
-.theme-smoothing * {
+.theme-smoothing *:not(.motion-panel-stack):not(.motion-panel-face):not(.carousel-pagination):not(.carousel-pagination *) {
   transition-property: color, background-color, border-color, box-shadow, fill, stroke !important;
   transition-duration: 1000ms !important;
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
@@ -706,6 +798,38 @@ header span[class*="truncate"] {
 
 .animate-clone-panel-exit {
   animation: clone-panel-out 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  pointer-events: none;
+}
+
+/* 阻断对话框轻拟物弹性弹出动画 */
+@keyframes modal-dialog-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-modal-dialog {
+  animation: modal-dialog-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modal-dialog-out {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.96);
+  }
+}
+
+.animate-modal-dialog-exit {
+  animation: modal-dialog-out 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: none;
 }
 
@@ -789,10 +913,11 @@ header span[class*="truncate"] {
     inset 0 -1px 0 rgba(0, 0, 0, 0.06),
     0 0 12px rgba(7, 5, 10, 0.08),
     0 2px 5px rgba(7, 5, 10, 0.055);
-  transform: translate3d(0, 0, 0);
+  transform: scale(1) translate3d(0, 0, 0);
   backface-visibility: hidden;
   will-change: transform;
   transition:
+    transform var(--motion-release) var(--motion-ease-release),
     border-color var(--motion-fast) ease,
     box-shadow var(--motion-layout) var(--motion-ease-out),
     opacity var(--motion-fast) ease;
@@ -821,9 +946,43 @@ header span[class*="truncate"] {
 }
 
 .motion-instance-card:active {
-  opacity: 0.95;
-  transform: scale(0.985) translate3d(0, 0, 0);
-  transition-duration: var(--motion-press);
+  opacity: 0.98;
+  transform: translateY(1px);
+  transition:
+    transform var(--motion-press) var(--motion-ease-press),
+    box-shadow var(--motion-press) var(--motion-ease-press),
+    opacity var(--motion-press) ease;
+}
+
+/* 当卡片位于 FlipCard 容器内时，由外层 FlipCard 统领微动效，内部不再重复变形叠加 */
+.flip-card .motion-instance-card:active {
+  transform: none !important;
+}
+
+.motion-panel-stack {
+  position: relative;
+  overflow: hidden;
+  transition: height 500ms var(--motion-ease-out);
+}
+
+.motion-panel-face {
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+  filter: blur(3px);
+  visibility: hidden;
+  transition:
+    opacity 500ms var(--motion-ease-out),
+    transform 500ms var(--motion-ease-out),
+    filter 500ms var(--motion-ease-out),
+    visibility 0s linear 500ms;
+}
+
+.motion-panel-face.is-active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 /* 高度未知的内容使用 grid 行连续展开，允许中途反向。 */
@@ -1128,10 +1287,7 @@ header span[class*="truncate"] {
 }
 
 .ios-glass-btn:hover {
-  box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 0.35),
-    inset 0 -1px 0 oklch(0 0 0 / 0.06),
-    0 0.5px 0 oklch(1 0 0 / 0.12);
+  /* Keep background and border box calm on hover; font/icon handles highlight */
 }
 
 .ios-glass-btn:active {
@@ -1150,6 +1306,8 @@ header span[class*="truncate"] {
   .animate-popover-exit,
   .animate-clone-panel,
   .animate-clone-panel-exit,
+  .animate-modal-dialog,
+  .animate-modal-dialog-exit,
   .animate-dropdown,
   .animate-dropdown-exit,
   .animate-dropdown-up,
@@ -1169,9 +1327,32 @@ header span[class*="truncate"] {
   .companion-preset__knob,
   .companion-preset__details,
   .theme-smoothing,
-  .theme-smoothing *,
+  .theme-smoothing *:not(.motion-panel-stack):not(.motion-panel-face):not(.carousel-pagination):not(.carousel-pagination *),
   .overlay-backdrop {
     transition-duration: 1ms !important;
+  }
+
+  .motion-panel-stack {
+    transition: none;
+  }
+
+  .motion-panel-face,
+  .motion-panel-face.is-active {
+    transform: none;
+    filter: none;
+    transition:
+      opacity 120ms var(--motion-ease-out),
+      visibility 0s linear 120ms;
+  }
+
+  .motion-panel-face.is-active {
+    transition-delay: 0s;
+  }
+
+  .carousel-pagination,
+  .carousel-pagination__dot,
+  .carousel-pagination__capsule {
+    transition-duration: 120ms;
   }
 
   .motion-instance-card,
@@ -1395,11 +1576,13 @@ select option {
 
 @media (hover: hover) and (pointer: fine) {
   .ios-floating-menu .motion-menu-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .ios-floating-menu.is-light .motion-menu-item:hover {
-    background: rgba(28, 18, 24, 0.045);
+    background: transparent !important;
+    box-shadow: none !important;
   }
 }
 
@@ -1606,16 +1789,12 @@ select option {
 @media (hover: hover) and (pointer: fine) {
   .ios-floating-menu .ios-choice-control[aria-pressed="false"]:hover,
   .ios-task-surface .ios-choice-control[aria-pressed="false"]:hover {
-    background-color: rgba(255, 255, 255, 0.055) !important;
-    box-shadow:
-      inset 0 0.5px 0 rgba(255, 255, 255, 0.085),
-      inset 0 -0.5px 0 rgba(0, 0, 0, 0.1),
-      0 2px 5px rgba(0, 0, 0, 0.055);
+    color: rgba(255, 255, 255, 0.85) !important;
   }
 
   .ios-floating-menu.is-light .ios-choice-control[aria-pressed="false"]:hover,
   .ios-task-surface.is-light .ios-choice-control[aria-pressed="false"]:hover {
-    background-color: rgba(255, 255, 255, 0.46) !important;
+    color: rgba(26, 22, 37, 0.85) !important;
   }
 }
 
@@ -1787,23 +1966,19 @@ select option {
   }
 
   .app-settings-action:hover {
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.68);
+    color: rgba(255, 255, 255, 0.9);
   }
 
   .ios-task-surface.is-light .app-settings-action:hover {
-    background: rgba(0, 0, 0, 0.04);
-    color: rgba(26, 22, 37, 0.68);
+    color: rgba(26, 22, 37, 0.9);
   }
 
   .app-settings-action.is-warning:hover {
-    background: rgba(226, 170, 98, 0.11);
-    color: rgba(244, 194, 124, 0.94);
+    color: rgba(244, 194, 124, 0.98);
   }
 
   .app-settings-action.is-danger:hover {
-    background: rgba(232, 113, 139, 0.11);
-    color: rgba(246, 145, 166, 0.95);
+    color: rgba(246, 145, 166, 0.98);
   }
 }
 
@@ -1833,3 +2008,110 @@ select option {
 .animate-modal-shake {
   animation: modal-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
+
+/* ==========================================================================
+   轻拟物胶囊滑块组件 (Skeuomorphic Capsule Slider)
+   同构官网 .sc-platform-toggle 结构，融合 SillyClient 物理轻拟物光影
+   ========================================================================== */
+.skeuo-capsule-track {
+  position: relative;
+  display: grid;
+  padding: 3px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 0.5px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.35),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.15);
+  user-select: none;
+}
+
+.skeuo-capsule-track.is-light {
+  background: rgba(28, 18, 24, 0.04);
+  border: 0.5px solid rgba(28, 18, 24, 0.06);
+  box-shadow:
+    inset 0 1px 2.5px rgba(28, 18, 24, 0.07),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.7),
+    0 0.5px 1px rgba(255, 255, 255, 0.5);
+}
+
+.skeuo-capsule-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 2px 7px rgba(0, 0, 0, 0.32),
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.22);
+  transform: translateX(calc(var(--active-index, 0) * 100%));
+  transition: transform 280ms cubic-bezier(0.22, 0.68, 0, 1), box-shadow 200ms ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.skeuo-capsule-thumb.is-light {
+  background: #ffffff;
+  box-shadow:
+    0 1.5px 4px rgba(28, 18, 24, 0.09),
+    0 3px 10px rgba(28, 18, 24, 0.045),
+    inset 0 0.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -0.5px 0 rgba(28, 18, 24, 0.06);
+}
+
+.skeuo-capsule-btn {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  transition: color 180ms ease, transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.skeuo-capsule-btn:active {
+  transform: scale(0.97);
+}
+
+.skeuo-capsule-btn[aria-pressed="true"],
+.skeuo-capsule-btn[aria-checked="true"],
+.skeuo-capsule-btn[aria-selected="true"] {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+
+.skeuo-capsule-track.is-light .skeuo-capsule-btn {
+  color: rgba(26, 22, 37, 0.45);
+}
+
+.skeuo-capsule-track.is-light .skeuo-capsule-btn[aria-pressed="true"],
+.skeuo-capsule-track.is-light .skeuo-capsule-btn[aria-checked="true"],
+.skeuo-capsule-track.is-light .skeuo-capsule-btn[aria-selected="true"] {
+  color: #1a1625;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .skeuo-capsule-btn:hover:not([aria-pressed="true"]):not([aria-checked="true"]):not([aria-selected="true"]) {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .skeuo-capsule-track.is-light .skeuo-capsule-btn:hover:not([aria-pressed="true"]):not([aria-checked="true"]):not([aria-selected="true"]) {
+    color: rgba(26, 22, 37, 0.75);
+  }
+}
+

@@ -1,8 +1,9 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useLayoutEffect, useState } from "react";
 import { X, Moon, Sun, Check, Image as ImageIcon } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import type { BgMode, ThemeStyle } from "../../types";
+
 
 export interface BackgroundSettingsDrawerProps {
   isOpen: boolean;
@@ -50,23 +51,22 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
   const [bgContentHeight, setBgContentHeight] = useState<number | null>(null);
 
   // 动态测量模式高度实现白天黑夜级平滑过渡
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!isOpen) return;
     const targetEl =
       bgMode === "dynamic" ? bgDynamicRef.current : bgCustomRef.current;
     if (!targetEl) return;
 
-    const updateHeight = () => {
-      if (targetEl) {
-        const h = targetEl.getBoundingClientRect().height;
-        if (h > 0) setBgContentHeight(Math.round(h));
-      }
+    const updateHeight = (entry?: ResizeObserverEntry) => {
+      const h = entry?.borderBoxSize?.[0]?.blockSize ?? targetEl.offsetHeight;
+      if (h > 0) setBgContentHeight(Math.ceil(h));
     };
 
     updateHeight();
 
     if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(() => {
-        updateHeight();
+      const ro = new ResizeObserver(([entry]) => {
+        updateHeight(entry);
       });
       ro.observe(targetEl);
       return () => ro.disconnect();
@@ -106,8 +106,8 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
             className={cn(
               "p-1 rounded-lg transition-colors",
               isLight
-                ? "hover:bg-black/5 text-[#1a1625]/60"
-                : "hover:bg-white/5 text-white/40"
+                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                : "text-white/40 hover:text-white/85"
             )}
           >
             <X className="w-4 h-4" />
@@ -135,8 +135,8 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
                     ? "bg-black/10 border-black/20 text-[#1a1625]"
                     : "bg-white/10 border-white/20 text-white/90"
                   : isLight
-                  ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:bg-black/10"
-                  : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                  ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:text-[#1a1625]/85"
+                  : "bg-white/5 border-white/10 text-white/60 hover:text-white/85"
               )}
             >
               基础
@@ -151,8 +151,8 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
                     ? "bg-black/10 border-black/20 text-[#1a1625]"
                     : "bg-white/10 border-white/20 text-white/90"
                   : isLight
-                  ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:bg-black/10"
-                  : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                  ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:text-[#1a1625]/85"
+                  : "bg-white/5 border-white/10 text-white/60 hover:text-white/85"
               )}
             >
               自定义
@@ -162,7 +162,7 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
 
         {/* 模式切换容器（平滑高度过渡 + 白天黑夜级优雅溶变） */}
         <div
-          className="relative transition-[height] duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+          className="motion-panel-stack"
           style={{
             height: bgContentHeight ? `${bgContentHeight}px` : undefined,
           }}
@@ -171,12 +171,13 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
           <div
             ref={bgDynamicRef}
             className={cn(
-              "w-full transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "motion-panel-face w-full",
               bgMode === "dynamic"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "is-active relative pointer-events-auto"
+                : "absolute inset-x-0 top-0 pointer-events-none select-none"
             )}
             aria-hidden={bgMode !== "dynamic"}
+            inert={bgMode !== "dynamic"}
           >
             <div className="flex items-center justify-between py-1">
               <span
@@ -217,12 +218,13 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
           <div
             ref={bgCustomRef}
             className={cn(
-              "w-full space-y-3 transition-all duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "motion-panel-face w-full space-y-3",
               bgMode === "custom"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "is-active relative pointer-events-auto"
+                : "absolute inset-x-0 top-0 pointer-events-none select-none"
             )}
             aria-hidden={bgMode !== "custom"}
+            inert={bgMode !== "custom"}
           >
             <div className="space-y-1.5">
               <span
@@ -242,8 +244,8 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
                     themeStyle === "dark"
                       ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
                       : isLight
-                      ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:bg-black/10"
-                      : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                      ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:text-[#1a1625]/85"
+                      : "bg-white/5 border-white/10 text-white/60 hover:text-white/85"
                   )}
                 >
                   <Moon className="w-3.5 h-3.5" /> 暗夜
@@ -258,8 +260,8 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
                         ? "bg-black/10 border-black/20 text-[#1a1625]"
                         : "bg-white/10 border-white/20 text-white/90"
                       : isLight
-                      ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:bg-black/10"
-                      : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                      ? "bg-black/5 border-black/10 text-[#1a1625]/60 hover:text-[#1a1625]/85"
+                      : "bg-white/5 border-white/10 text-white/60 hover:text-white/85"
                   )}
                 >
                   <Sun className="w-3.5 h-3.5" /> 白天
@@ -279,10 +281,10 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
               <button
                 onClick={onSelectWallpaperFile}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all border",
+                  "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors border",
                   isLight
-                    ? "bg-black/5 border-black/10 hover:bg-black/10 text-[#1a1625]"
-                    : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                    ? "bg-black/5 border-black/10 text-[#1a1625]/75 hover:text-[#1a1625]"
+                    : "bg-white/5 border-white/10 text-white/75 hover:text-white"
                 )}
               >
                 <div
@@ -326,10 +328,10 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
                 <button
                   onClick={() => setCustomWallpaperUrl(null)}
                   className={cn(
-                    "w-full px-3 py-2 rounded-lg text-[10px] font-medium transition-all border",
+                    "w-full px-3 py-2 rounded-lg text-[10px] font-medium transition-colors border",
                     isLight
-                      ? "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/15"
-                      : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15"
+                      ? "bg-red-500/10 border-red-500/20 text-red-500/70 hover:text-red-500"
+                      : "bg-red-500/10 border-red-500/20 text-red-400/70 hover:text-red-400"
                   )}
                 >
                   移除壁纸

@@ -1,0 +1,330 @@
+:root {
+  --pointer-x: 50%;
+  --pointer-y: 50%;
+  --pointer-from-center: 0;
+  --pointer-from-top: 0.5;
+  --pointer-from-left: 0.5;
+  --card-opacity: 0;
+}
+
+.flip-card {
+  --fc-w: 240px;
+  --fc-h: 320px;
+  --fc-radius: 26px;
+  --fc-bg: transparent;
+  --fc-ink: #f5f5f5;
+  --fc-border: transparent;
+  --fc-shadow: #000000;
+  --fc-shadow-o: 0.45;
+  --fc-glare: 0.06;
+  --fc-behind-glow: rgba(130, 155, 220, 0.12);
+  --fc-behind-glow-size: 50%;
+
+  position: relative;
+  display: inline-block;
+  width: var(--fc-w);
+  max-width: 100%;
+  height: var(--fc-h);
+  border-radius: var(--fc-radius);
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--motion-release, 150ms) var(--motion-ease-release, cubic-bezier(0.16, 1, 0.3, 1)),
+              filter var(--motion-release, 150ms) ease-out;
+}
+
+/* 1. 普通点击按压（物理 3D 跷跷板式触觉倾斜，彻底杜绝 2D 缩水）：
+   严禁 scale(0.993) 或整体 2D 缩小！外层容器锁定 100% 原始尺寸，
+   3D 倾角与机械深度下沉完全由内层 .flip-card__rotor 二阶物理弹簧驱动；
+   受压侧接触阴影紧致收敛，跷起侧阴影拉长扩散，绝无边框，绝无白边发光 */
+.flip-card:active:not([data-disabled]):not([data-long-pressed]):not([data-reordering]),
+.flip-card[data-pressed="true"]:not([data-disabled]):not([data-long-pressed]):not([data-reordering]) {
+  transform: none !important;
+  filter: brightness(0.985);
+  border: none !important;
+  outline: none !important;
+  transition: filter var(--motion-press, 120ms) ease-out;
+}
+
+.flip-card[data-pressed="true"]:not([data-long-pressed]):not([data-reordering]) .flip-card__rotor {
+  border: none !important;
+  outline: none !important;
+  box-shadow:
+    0 4px 14px -2px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.22)),
+    0 2px 5px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15)),
+    calc((var(--pointer-from-left, 0.5) - 0.5) * 16px)
+    calc((var(--pointer-from-top, 0.5) - 0.5) * 18px + 2px)
+    24px -4px
+    rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.36 * var(--card-opacity, 1))),
+    calc((var(--pointer-from-left, 0.5) - 0.5) * 8px)
+    calc((var(--pointer-from-top, 0.5) - 0.5) * 8px + 1px)
+    8px -1px
+    rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.22 * var(--card-opacity, 1))) !important;
+  transition: box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 2. 长按模式（长按准备拖动重排）：
+   蓄力准备手势，卡片保持实体纯净质感，绝无发光边框或白边轮廓 */
+.flip-card[data-long-pressed="true"]:not([data-disabled]):not([data-reordering]) {
+  transform: scale(0.965) translateY(2px);
+  filter: brightness(0.97);
+  cursor: grab;
+  border: none !important;
+  outline: none !important;
+  transition: transform 220ms cubic-bezier(0.25, 1, 0.5, 1),
+              filter 220ms ease;
+}
+
+.flip-card[data-long-pressed="true"]:not([data-reordering]) .flip-card__rotor {
+  border: none !important;
+  outline: none !important;
+  box-shadow:
+    0 4px 14px -2px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.45)),
+    0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.3));
+}
+
+/* 3. 手机桌面级长按拖拽排序状态（微浮起、柔和悬浮软阴影、绝无任何边框与外轮廓） */
+.flip-card[data-reordering="true"] {
+  z-index: 50 !important;
+  cursor: grabbing !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.flip-card[data-reordering="true"] .flip-card__rotor {
+  transform: scale(1.036) !important;
+  box-shadow:
+    0 24px 50px -8px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.95 + 0.18)),
+    0 12px 24px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.65 + 0.12)) !important;
+  filter: brightness(1.025) !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* 4. 放手落位平滑吸附过渡 */
+.flip-card[data-dropping="true"] {
+  z-index: 50 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.flip-card[data-dropping="true"] .flip-card__rotor {
+  transform: scale(1) !important;
+  box-shadow:
+    0 8px 22px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.25)),
+    0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15)) !important;
+  filter: brightness(1) !important;
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 180ms ease,
+              filter 180ms ease !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* 5. 拖拽重排瞬时提交保护（Zero Flicker）：
+   在 DOM 节点调换物理顺序的初始帧强制关闭所有过渡与位移，杜绝 DOM 物理换位与 CSS 过渡重叠导致的频闪跳跃 */
+.flip-card[data-reorder-committing="true"],
+.flip-card[data-reorder-committing="true"] *,
+[data-carousel-committing="true"] .flip-card,
+[data-carousel-committing="true"] .flip-card * {
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+.flip-card[data-axis='x'] {
+  touch-action: pan-x;
+}
+
+.flip-card[data-draggable] {
+  cursor: grab;
+}
+
+.flip-card[data-dragging] {
+  cursor: grabbing;
+}
+
+.flip-card[data-disabled] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* 背部微光漫反射：极度微弱柔焦的深空环境衬底，仅烘托景深，绝不抢镜，绝不泛白 */
+.flip-card__behind-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: calc(var(--fc-radius) + 6px);
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--pointer-x, 50%) var(--pointer-y, 50%),
+    var(--fc-behind-glow) 0%,
+    transparent var(--fc-behind-glow-size)
+  );
+  filter: blur(52px) saturate(1.02);
+  opacity: calc(0.22 * var(--card-opacity, 0));
+  transition: opacity 220ms ease;
+  will-change: opacity, background;
+}
+
+/* 废除旧式写死底部的独立模糊层，避免被轮播容器裁剪产生分层遮挡 */
+.flip-card__shadow {
+  display: none !important;
+}
+
+/* 真实 ProfileCard 3D 体积光照阴影模型：
+   根据鼠标光源物理弹簧坐标 (--pointer-from-left, --pointer-from-top)，
+   光照在哪个方向，哪个方向的阴影就更加明显立体。
+   整体阴影调至极度清淡通透（淡淡的空气感柔焦），绝无脏黑死块，与二阶物理弹簧同频滞后 */
+.flip-card__rotor {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform-style: preserve-3d;
+  will-change: transform;
+  border-radius: var(--fc-radius);
+  box-shadow:
+    /* 基础淡雅环境光晕（无光标悬停时也自然呼吸，0 分层切边，极淡通透） */
+    0 8px 22px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.25)),
+    0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15)),
+    /* 动态主阶体积光投影：受二阶弹簧惯性滞后平滑驱动，淡淡的 3D 立体漫射柔焦 */
+    calc((var(--pointer-from-left, 0.5) - 0.5) * 12px)
+    calc((var(--pointer-from-top, 0.5) - 0.5) * 14px + 3px)
+    30px -4px
+    rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.32 * var(--card-opacity, 0))),
+    /* 动态次级近距高质感遮蔽层：在受光侧淡淡勾勒材质厚度感 */
+    calc((var(--pointer-from-left, 0.5) - 0.5) * 6px)
+    calc((var(--pointer-from-top, 0.5) - 0.5) * 6px + 1px)
+    12px -2px
+    rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.18 * var(--card-opacity, 0)));
+}
+
+/* 表面层：完全拔除 1px 极细外边框，让封面与材质自然形成圆角轮廓，纯净无白发丝边线 */
+.flip-card__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--fc-radius);
+  box-sizing: border-box;
+  border: none !important;
+  outline: none !important;
+  background: var(--fc-bg, #16131f);
+  color: var(--fc-ink);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat;
+}
+
+/* 强制正反面内部所有子卡片、容器、渐变遮罩与伪元素与 26px 边框绝对同心（26px），彻底消除圆角脱节与发丝缝隙 */
+.flip-card,
+.flip-card .flip-card__rotor,
+.flip-card .flip-card__face,
+.flip-card .flip-card__face > *,
+.flip-card .motion-instance-card,
+.flip-card .motion-instance-card > div,
+.flip-card .motion-instance-card > .relative,
+.flip-card .motion-instance-card .relative.h-full.flex-col,
+.flip-card .preview-card-noise,
+.flip-card .ios-task-surface {
+  border-radius: var(--fc-radius, 26px) !important;
+}
+
+.flip-card .motion-instance-card::before,
+.flip-card .motion-instance-card::after,
+.flip-card .motion-instance-card > .relative::before,
+.flip-card .motion-instance-card > .relative::after,
+.flip-card .motion-instance-card .relative.h-full.flex-col::before,
+.flip-card .motion-instance-card .relative.h-full.flex-col::after {
+  border-radius: var(--fc-radius, 26px) !important;
+}
+
+/* 清除内层卡片多余的外部盒阴影与多余描边，防止边缘产生脏黑分割线与发丝亮边 */
+.flip-card .motion-instance-card,
+.flip-card .ios-task-surface {
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* 避免 FlipCard 内部的子卡片产生二次重复缩放导致的撕裂脱节，由外层 .flip-card 统一承载 3D 阴影一体化按压下沉 */
+.flip-card .motion-instance-card:active {
+  transform: none !important;
+}
+
+.flip-card .motion-instance-card img {
+  border-radius: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: scale(1.015) !important;
+}
+
+.flip-card__face img {
+  -webkit-user-drag: none;
+}
+
+.flip-card__face--front {
+  transform: rotateY(0deg);
+}
+
+.flip-card__face--back {
+  transform: rotateY(180deg);
+}
+
+.flip-card[data-axis='x'] .flip-card__face--back {
+  transform: rotateX(180deg);
+}
+
+/* 表面流光反光层：极弱柔和反光（0.015），只在表面产生极其微弱的物理丝滑微光，绝不冲淡卡片内部细节 */
+.flip-card__glare {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle farthest-side at var(--pointer-x, 50%) var(--pointer-y, 50%),
+    rgba(255, 255, 255, var(--fc-glare, 0.015)) 0%,
+    rgba(255, 255, 255, calc(var(--fc-glare, 0.015) * 0.6)) 18%,
+    rgba(255, 255, 255, calc(var(--fc-glare, 0.015) * 0.25)) 38%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  opacity: var(--fc-sheen, 0);
+  will-change: opacity, background;
+}
+
+/* 离开卡片时绝对禁止在中心残留短暂灯光：非 hover 状态强制平滑淡出归零，绝不向中心溢散 */
+.flip-card:not(:hover) .flip-card__glare {
+  opacity: 0 !important;
+  transition: opacity 140ms ease-out !important;
+}
+
+.flip-card:not(:hover) .flip-card__behind-glow {
+  opacity: 0 !important;
+  transition: opacity 160ms ease-out !important;
+}
+
+.flip-card[data-fade] .flip-card__face {
+  transform: none;
+  opacity: 0;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  transition: opacity 200ms ease;
+}
+
+.flip-card[data-fade='front'] .flip-card__face--front,
+.flip-card[data-fade='back'] .flip-card__face--back {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-card,
+  .flip-card:active:not([data-disabled]) {
+    transform: none !important;
+    transition: none !important;
+  }
+}

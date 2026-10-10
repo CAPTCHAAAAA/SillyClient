@@ -156,8 +156,8 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
               className={cn(
                 "motion-control p-1.5 rounded-lg transition-colors",
                 isLight
-                  ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-                  : "hover:bg-white/5 text-white/30 hover:text-white/60"
+                  ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                  : "text-white/40 hover:text-white/85"
               )}
             >
               <X className="w-4 h-4" />
@@ -251,8 +251,8 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
             className={cn(
               "motion-control h-8 px-3.5 rounded-xl text-xs font-medium border transition-colors",
               isLight
-                ? "border-black/[0.08] text-[#1a1625]/60 hover:bg-black/5"
-                : "border-white/[0.08] text-white/60 hover:bg-white/5"
+                ? "border-black/[0.08] text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "border-white/[0.08] text-white/60 hover:text-white"
             )}
           >
             取消
@@ -263,8 +263,8 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
             className={cn(
               "motion-control h-8 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-40",
               isLight
-                ? "bg-black text-white hover:bg-black/85"
-                : "bg-white text-[#14101e] hover:bg-white/90"
+                ? "bg-black text-white/80 hover:text-white"
+                : "bg-white text-[#14101e]/80 hover:text-[#14101e]"
             )}
           >
             {verifying ? (

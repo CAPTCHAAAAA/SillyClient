@@ -1,7 +1,8 @@
 import React from "react";
-import { Play, LoaderCircle } from "lucide-react";
+import { Play, LoaderCircle, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
+import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 
 export interface LaunchConsoleModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ export interface LaunchConsoleModalProps {
   launchError: string | null;
   launchProgress: { pct: number; text: string } | null;
   lastLaunchParams: any;
-  launchLogs: { msg: string; level?: string }[];
+  logKey: string | null;
   launchingId: string | null;
   onRetry: () => void;
   onClose: () => void;
@@ -35,13 +36,14 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
   launchError,
   launchProgress,
   lastLaunchParams,
-  launchLogs,
+  logKey,
   launchingId,
   onRetry,
   onClose,
   onMinimize,
   onEnterTavern,
 }) => {
+  const launchLogs = useInstanceLogs(logKey, isOpen || isClosing);
   if (!isOpen && !isClosing) return null;
 
   return (
@@ -153,7 +155,7 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
               : "bg-black/[0.32] border-white/[0.03]"
           )}
         >
-          <div className="px-4 py-3 text-[11px] leading-[1.7] space-y-1">
+          <div data-native-log-list className="px-4 py-3 text-[11px] leading-[1.7] space-y-1">
             {launchLogs.map((log, i) => (
               <div
                 key={i}
@@ -185,10 +187,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
               onClick={onRetry}
               disabled={!!launchingId}
               className={cn(
-                "motion-control flex-1 h-9 rounded-full text-xs font-semibold disabled:opacity-50 transition-all border",
+                "motion-control flex-1 h-9 rounded-full text-xs font-semibold disabled:opacity-50 transition-colors border active:scale-[0.98]",
                 isLight
-                  ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625] hover:bg-black/[0.14] active:bg-black/[0.18]"
-                  : "bg-white/15 border-white/10 text-white hover:bg-white/25 active:bg-white/30"
+                  ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/60 hover:text-[#1a1625] active:bg-black/[0.18]"
+                  : "bg-white/15 border-white/10 text-white/60 hover:text-white active:bg-white/30"
               )}
             >
               重试
@@ -196,10 +198,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
             <button
               onClick={onClose}
               className={cn(
-                "motion-control flex-1 h-9 rounded-full text-xs font-medium transition-all border",
+                "motion-control flex-1 h-9 rounded-full text-xs font-medium transition-colors border",
                 isLight
-                  ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]"
-                  : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
+                  ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/50 hover:text-[#1a1625]/85"
+                  : "bg-white/[0.08] border-white/[0.06] text-white/50 hover:text-white/85"
               )}
             >
               关闭
@@ -217,10 +219,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
                   }
                 }}
                 className={cn(
-                  "motion-control flex-1 h-9 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border",
+                  "motion-control flex-1 h-9 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border active:scale-[0.98]",
                   isLight
-                    ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625] hover:bg-black/[0.14] active:bg-black/[0.18]"
-                    : "bg-white/20 border-white/15 text-white hover:bg-white/30 active:bg-white/35"
+                    ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625] active:bg-black/[0.18]"
+                    : "bg-white/20 border-white/15 text-white/70 hover:text-white active:bg-white/35"
                 )}
               >
                 <Play className="w-3 h-3 fill-current" />
@@ -229,10 +231,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
               <button
                 onClick={onClose}
                 className={cn(
-                  "motion-control px-4 h-9 rounded-full text-xs font-medium transition-all border",
+                  "motion-control px-4 h-9 rounded-full text-xs font-medium transition-colors border",
                   isLight
-                    ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]"
-                    : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
+                    ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/50 hover:text-[#1a1625]/85"
+                    : "bg-white/[0.08] border-white/[0.06] text-white/50 hover:text-white/85"
                 )}
               >
                 稍后
@@ -249,16 +251,26 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
             >
               <LoaderCircle className="h-4 w-4 animate-spin text-current" />
               <span>完成前请保持应用打开</span>
+              <button
+                type="button"
+                onClick={onClose}
+                title="取消创建"
+                aria-label="取消创建"
+                className="motion-control flex h-8 flex-shrink-0 items-center gap-1.5 rounded-full px-3"
+              >
+                <X className="h-3 w-3" />
+                <span>取消</span>
+              </button>
             </div>
           )
         ) : (
           <button
             onClick={onMinimize || onClose}
             className={cn(
-              "motion-control w-full h-10 rounded-xl text-[13px] font-semibold",
+              "motion-control w-full h-10 rounded-xl text-[13px] font-semibold transition-colors",
               isLight
-                ? "bg-black/[0.05] text-[#1a1625]/40 hover:bg-black/[0.08]"
-                : "bg-white/[0.08] text-white/40 hover:bg-white/[0.12]"
+                ? "bg-black/[0.05] text-[#1a1625]/50 hover:text-[#1a1625]/85"
+                : "bg-white/[0.08] text-white/50 hover:text-white/85"
             )}
           >
             隐藏

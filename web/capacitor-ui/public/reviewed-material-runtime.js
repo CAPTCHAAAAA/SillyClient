@@ -14,7 +14,6 @@
         };
         let wallpaperBlur = 7;
         let previewStarted = false;
-        let previewPollTimer = 0;
         let previewGeneration = 0;
         const TUNING_PANEL_LONG_PRESS_MS = 500;
         const TUNING_PANEL_LONG_PRESS_MOVE_PX = 8;
@@ -1170,7 +1169,7 @@
           /* 5 — 实例卡片：保持原透明玻璃底 + 轻微柔焦边缘。
              全部可调项走 CSS 变量，由右侧调试面板实时驱动（初值=v6）。
              圆角率 22px + background-clip: border-box 保证真圆角渲染。 */
-          .motion-instance-card {
+          .motion-instance-card:not(.flip-card__face *) {
             border-radius: var(--sf-radius, 22px) !important;
             background-clip: border-box !important;
             background-color: rgba(var(--sf-fog-rgb, 255 250 252) / var(--sf-fog, 0)) !important;
@@ -1181,6 +1180,27 @@
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 196 120 142) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 7 5 10) / var(--sf-sh-a, 0.075)) !important;
             transition: box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+          }
+
+          .flip-card__face .motion-instance-card,
+          .flip-card__face .motion-instance-card > div,
+          .flip-card__face .motion-instance-card > .relative,
+          .flip-card__face .motion-instance-card .relative.h-full.flex-col,
+          .flip-card__face .preview-card-noise,
+          .flip-card__face .ios-task-surface {
+            border-radius: 26px !important;
+            box-shadow: none !important;
+            border: none !important;
+            outline: none !important;
+          }
+
+          .flip-card__face .motion-instance-card::before,
+          .flip-card__face .motion-instance-card::after,
+          .flip-card__face .motion-instance-card > .relative::before,
+          .flip-card__face .motion-instance-card > .relative::after,
+          .flip-card__face .motion-instance-card .relative.h-full.flex-col::before,
+          .flip-card__face .motion-instance-card .relative.h-full.flex-col::after {
+            border-radius: 26px !important;
           }
 
           /* 噪点层：强度由 --sf-noise 驱动（调试面板） */
@@ -1223,8 +1243,16 @@
             /* transform 过渡只用于离开卡片时的回正（400ms 平滑归零）；
                指针在卡上时 JS 把 --tilt-dur 切到 0ms 实现即时跟随，
                避免缓动滞后带来的"整排晃动"观感。 */
-            transition: box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1),
-              transform var(--tilt-dur, 400ms) cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+            transition: box-shadow 200ms ease,
+              transform var(--tilt-dur, 150ms) cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
+
+          .carousel-scrollbar-hidden:not([data-carousel-committing]) > [data-card-motion-managed]:not(.motion-instance-card):not([data-reordering]):not([data-dropping]):not([data-reorder-committing]) {
+            transition: transform var(--tilt-dur, 150ms) cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
+
+          [data-card-motion-managed][data-card-pressure] > [aria-hidden="false"] > .ios-task-surface {
+            opacity: 0.95;
           }
 
           /* 卡片倾斜的"工作框架"：透视不再放在轮播轨道（共享空间），
@@ -1236,7 +1264,8 @@
              scroll anchoring 会"补偿"scrollLeft，把整排卡片平移 1px
              ——这就是邻卡跟着晃的真凶。轨道与卡片都关闭。 */
           .carousel-scrollbar-hidden,
-          .motion-instance-card {
+          .motion-instance-card,
+          .carousel-scrollbar-hidden > [data-card-motion-managed] {
             overflow-anchor: none !important;
           }
 
@@ -1941,8 +1970,13 @@
             if (!accordion || accordionIndex < 2) return;
 
             const subtitle = contentChildren[accordionIndex - 2];
-            subtitle.classList.add('preview-card-subtitle');
-            contentChildren[accordionIndex - 1].classList.add('preview-card-status');
+            if (!subtitle.classList.contains('preview-card-subtitle')) {
+              subtitle.classList.add('preview-card-subtitle');
+            }
+            const status = contentChildren[accordionIndex - 1];
+            if (!status.classList.contains('preview-card-status')) {
+              status.classList.add('preview-card-status');
+            }
 
             const detailList = accordion.querySelector('.motion-accordion-inner > div');
             if (!detailList) return;
@@ -1957,9 +1991,9 @@
               content.style.setProperty('--card-title-lift', titleLiftValue);
             }
 
-            if (accordion.classList.contains('is-open')) {
+            if (accordion.classList.contains('is-open') && accordion.hasAttribute('inert')) {
               accordion.removeAttribute('inert');
-            } else {
+            } else if (!accordion.classList.contains('is-open') && !accordion.hasAttribute('inert')) {
               accordion.setAttribute('inert', '');
             }
           });
@@ -1973,25 +2007,43 @@
         // 共享 3D 空间会在悬停切换时让所有带 transform 的卡片投影跳变。
         const TILT_MAX_DEG = 6;
         let tiltWiredDoc = null;
-        let tiltCard = null;
-        let tiltTrack = null;
+        let tiltController = null;
 
-        // React 重渲染会整节点替换被倾斜的卡片（transform 随节点消亡），
-        // 但轨道的 snap 关闭状态会残留——每次标注时做健康检查。
         const tiltHealthCheck = () => {
-          if (tiltCard && !tiltCard.isConnected && tiltTrack) {
-            tiltTrack.style.scrollSnapType = "";
-            tiltTrack = null;
-            tiltCard = null;
-          }
+          tiltController?.health();
         };
 
         const wireCardTilt = (doc) => {
+          doc.querySelectorAll(".carousel-scrollbar-hidden > [data-card-index]").forEach((card) => {
+            if (card.dataset.cardMotionManaged !== "true") card.dataset.cardMotionManaged = "true";
+          });
           if (tiltWiredDoc === doc) return;
           const view = doc.defaultView;
           if (!view) return;
-          if (view.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+          tiltController?.dispose();
           tiltWiredDoc = doc;
+          const motionQuery = view.matchMedia?.("(prefers-reduced-motion: reduce)");
+          let reduced = !!motionQuery?.matches;
+          const states = new Map();
+          const pointerIds = new Set();
+          const blockedPointers = new Set();
+          let hovered = null;
+          let held = null;
+          let springFrame = 0;
+          const listeners = [];
+          const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+          const listen = (target, type, callback) => {
+            target.addEventListener(type, callback, { passive: true });
+            listeners.push(() => target.removeEventListener(type, callback));
+          };
+          const snap = (state, owner, locked) => {
+            const key = owner === "pressure" ? "pressureLock" : "tiltLock";
+            if (state[key] === locked) return;
+            state[key] = locked;
+            const trackLocked = Array.from(states.values()).some((other) =>
+              other.track === state.track && other[key]);
+            window.SillyClientCarouselSnap.set(state.track, owner, trackLocked);
+          };
 
           const getTargetTrackAndCard = (node) => {
             if (!node || !node.closest) return null;
@@ -2001,92 +2053,360 @@
             while (curr && curr.parentElement !== track) {
               curr = curr.parentElement;
             }
-            if (!curr || (!curr.classList?.contains('motion-instance-card') && !curr.hasAttribute?.('data-card-index'))) {
+            if (!curr?.hasAttribute?.("data-card-index") || curr?.classList?.contains("flip-card")) {
               return null;
             }
             return { track, card: curr };
           };
 
-          const setTilt = (card, tilt) => {
-            if (tiltCard && tiltCard !== card && tiltCard.isConnected) {
-              tiltCard.style.setProperty("--tilt-dur", "400ms");
-              tiltCard.style.removeProperty("--preview-tilt");
-              tiltCard.style.transform = "";
-            }
-            tiltCard = tilt ? card : null;
-            // 倾斜期间临时关闭轨道 scroll-snap：旋转会改变卡片的 snap
-            // 区域，Chrome 的 snap-mandatory 会立刻重吸附，把整条轨道
-            // 平移 1px——邻卡"跟着晃"的直接元凶。回正后立即恢复 snap。
-            const track = tilt && card ? (card.closest('.carousel-scrollbar-hidden') || card.parentElement) : tiltTrack;
-            if (tilt && track) {
-              tiltTrack = track;
-              track.style.scrollSnapType = "none";
-            } else if (tiltTrack) {
-              tiltTrack.style.scrollSnapType = "";
-              tiltTrack = null;
-            }
-            if (!card) return;
-            if (tilt) {
-              card.style.setProperty("--tilt-dur", "0ms");
-              card.style.setProperty("--preview-tilt", tilt);
-              card.style.transform = tilt;
-            } else {
-              card.style.setProperty("--tilt-dur", "400ms");
-              card.style.removeProperty("--preview-tilt");
-              card.style.transform = "";
-            }
-          };
-
-          // 平面几何（不含 transform）：用 offset 系 + 轨道 rect 计算。
-          // 关键修复：倾斜归一化与出界判断都必须基于"未旋转"的 rect——
-          // 若用 getBoundingClientRect（含旋转），卡片一转 rect 就偏，
-          // 鼠标坐标被反馈进旋转角，形成自激振荡（乱晃）。
+          // Untransformed slot geometry avoids feeding its own rotation back into the pointer.
           const getFlatRect = (track, card) => {
-            const tr = track.getBoundingClientRect();
-            const left = tr.left + card.offsetLeft - track.scrollLeft;
-            const top = tr.top + card.offsetTop - track.scrollTop;
+            const parent = card.offsetParent;
+            const rect = parent?.getBoundingClientRect() || { left: 0, top: 0 };
+            let left = rect.left + (parent?.clientLeft || 0) + card.offsetLeft;
+            let top = rect.top + (parent?.clientTop || 0) + card.offsetTop;
+            for (let ancestor = card.parentElement; ancestor; ancestor = ancestor.parentElement) {
+              left -= ancestor.scrollLeft;
+              top -= ancestor.scrollTop;
+              if (ancestor === parent) break;
+            }
             const w = card.offsetWidth;
             const h = card.offsetHeight;
             return { left, top, width: w, height: h, right: left + w, bottom: top + h };
           };
 
-          doc.addEventListener("pointermove", (e) => {
-            // 倾斜是鼠标悬停视效；触摸/笔拖动轮播时不触发。
-            if (e.pointerType && e.pointerType !== "mouse") return;
-            const target = getTargetTrackAndCard(e.target);
-            if (!target) {
-              if (tiltCard) setTilt(tiltCard, "");
-              return;
+          const point = (target, event) => {
+            const rect = getFlatRect(target.track, target.card);
+            if (!rect.width || !rect.height) return null;
+            return {
+              u: clamp((event.clientX - rect.left) / rect.width * 2 - 1, -1, 1),
+              v: clamp((event.clientY - rect.top) / rect.height * 2 - 1, -1, 1),
+              inside: event.clientX >= rect.left && event.clientX <= rect.right
+                && event.clientY >= rect.top && event.clientY <= rect.bottom,
+            };
+          };
+          const excluded = (node, card) => {
+            const control = node?.closest?.(
+              "button, input, textarea, select, a, [contenteditable]:not([contenteditable='false']), " +
+              "[data-native-log-list], .cursor-text"
+            );
+            return !!control && control !== card && card.contains(control);
+          };
+          const editing = (card) => {
+            const focused = doc.activeElement;
+            const selection = doc.getSelection?.();
+            return (focused && card.contains(focused) && focused.matches?.(
+              "input, textarea, select, [contenteditable]:not([contenteditable='false'])"
+            )) || (selection && !selection.isCollapsed
+              && (card.contains(selection.anchorNode) || card.contains(selection.focusNode)));
+          };
+          const solveCubicBezier = (p1x, p1y, p2x, p2y) => {
+            return (t) => {
+              if (t <= 0) return 0;
+              if (t >= 1) return 1;
+              let u = t;
+              for (let i = 0; i < 6; i++) {
+                const f = 3 * (1 - u) * (1 - u) * u * p1x + 3 * (1 - u) * u * u * p2x + u * u * u - t;
+                const df = 3 * (1 - u) * (1 - u) * p1x + 6 * (1 - u) * u * (p2x - p1x) + 3 * u * u * (1 - p2x);
+                if (Math.abs(f) < 1e-4) break;
+                u -= f / (df || 1);
+              }
+              return 3 * (1 - u) * (1 - u) * u * p1y + 3 * (1 - u) * u * u * p2y + u * u * u;
+            };
+          };
+
+          // 紧致敏捷的微触感按压与利落回弹（杜绝过冲与果冻晃动）
+          const bezierPress = solveCubicBezier(0.2, 0, 0, 1);
+          const bezierRelease = solveCubicBezier(0.16, 1, 0.3, 1);
+          const PRESS_DUR_MS = 80;
+          const RELEASE_DUR_MS = 150;
+
+          const stateFor = ({ card, track }) => {
+            let state = states.get(card);
+            if (!state) {
+              state = {
+                card, track, hoverU: 0, hoverV: 0, hover: false, hoverReturn: null,
+                channels: Array.from({ length: 3 }, () => ({ value: 0, velocity: 0, target: 0 })),
+                lastTime: view.performance.now(), pressureLock: false, tiltLock: false,
+                pressPhase: "idle", pressStart: 0, pressStartDepth: 0,
+                releaseStart: 0, releaseStartDepth: 0, depth: 0, pressMoving: false,
+              };
+              states.set(card, state);
             }
-            const { track, card } = target;
-            const f = getFlatRect(track, card);
-            if (e.clientX < f.left || e.clientX > f.right || e.clientY < f.top || e.clientY > f.bottom) {
-              if (tiltCard === card) setTilt(card, "");
-              return;
-            }
-            // 每张卡片自带独立透视空间（工作框架），不动轨道任何共享样式。
-            const x = (e.clientX - f.left) / f.width - 0.5;
-            const y = (e.clientY - f.top) / f.height - 0.5;
-            // 幅度实时读调试面板写入的 --sf-tilt-max（0 也有效，用于关闭倾斜）
+            card.dataset.cardMotionManaged = "true";
+            return state;
+          };
+          const pressMoving = (state) => !!state.pressMoving;
+          const render = (state) => {
             const rawDeg = parseFloat(doc.documentElement.style.getPropertyValue("--sf-tilt-max"));
             const deg = Number.isFinite(rawDeg) ? rawDeg : TILT_MAX_DEG;
-            const tilt = `perspective(900px) rotateY(${(x * deg).toFixed(2)}deg) rotateX(${(-y * deg).toFixed(2)}deg)`;
-            setTilt(card, tilt);
-          }, { passive: true });
-
-          doc.addEventListener("pointerout", (e) => {
-            const target = getTargetTrackAndCard(e.target);
-            if (!target) return;
-            const { track, card } = target;
-            if (!card || card.contains(e.relatedTarget)) return;
-            // 旋转会把卡片边缘从光标下挪走，触发假性 pointerout；
-            // 光标仍在平面 rect 内时忽略，只有真正离开才回正。
-            if (e.relatedTarget) {
-              const f = getFlatRect(track, card);
-              if (e.clientX >= f.left && e.clientX <= f.right && e.clientY >= f.top && e.clientY <= f.bottom) return;
+            const depth = state.depth || 0;
+            const angleY = state.hoverU * deg / 2;
+            const angleX = -state.hoverV * deg / 2;
+            const currentScale = Math.max(0.993, 1 - depth * 0.007);
+            const currentZ = clamp(-depth * 2, -2, 0.3);
+            const tilt = `perspective(900px) rotateY(${angleY.toFixed(3)}deg) rotateX(${angleX.toFixed(3)}deg) ` +
+              `translateZ(${currentZ.toFixed(3)}px) scale(${currentScale.toFixed(5)})`;
+            state.card.style.transform = tilt;
+          };
+          const neutral = (state, immediate = false) => {
+            state.card.style.setProperty("--tilt-dur", immediate ? "0ms" : "150ms");
+            state.card.style.removeProperty("--preview-tilt");
+            state.card.style.transform = immediate ? "none" : "";
+            state.pressPhase = "idle";
+            state.pressMoving = false;
+            state.depth = 0;
+            snap(state, "pressure", false);
+            snap(state, "tilt", false);
+            states.delete(state.card);
+          };
+          const interruptState = (state) => {
+            state.card.style.setProperty("--tilt-dur", "0ms");
+            state.card.style.transform = "none";
+            state.card.removeAttribute("data-card-pressure");
+            state.hover = false;
+            state.hoverReturn = null;
+            state.hoverU = state.hoverV = 0;
+            state.depth = 0;
+            state.pressPhase = "idle";
+            state.pressMoving = false;
+            if (hovered === state) hovered = null;
+            if (held?.state === state) {
+              blockedPointers.add(held.id);
+              held = null;
             }
-            setTilt(card, "");
-          }, { passive: true });
+            neutral(state, true);
+            if (springFrame && !Array.from(states.values()).some((other) =>
+              pressMoving(other) || other.hoverReturn)) {
+              view.cancelAnimationFrame(springFrame);
+              springFrame = 0;
+            }
+          };
+          const interrupt = () => {
+            if (springFrame) view.cancelAnimationFrame(springFrame);
+            springFrame = 0;
+            for (const state of states.values()) interruptState(state);
+            pointerIds.clear();
+            blockedPointers.clear();
+            held = hovered = null;
+          };
+
+          // 优雅贝塞尔曲线驱动物理按压与回弹
+          const advance = (state, now) => {
+            state.lastTime = now;
+            const down = held?.state === state;
+
+            if (down) {
+              if (state.pressPhase !== "down") {
+                state.pressPhase = "down";
+                state.pressStart = now;
+                state.pressStartDepth = state.depth || 0;
+              }
+              const p = clamp((now - state.pressStart) / PRESS_DUR_MS, 0, 1);
+              const eased = bezierPress(p);
+              state.depth = state.pressStartDepth + (1 - state.pressStartDepth) * eased;
+              state.pressMoving = p < 1;
+            } else {
+              if (state.pressPhase === "down") {
+                state.pressPhase = "up";
+                state.releaseStart = now;
+                state.releaseStartDepth = state.depth || 0;
+              }
+              if (state.pressPhase === "up") {
+                const p = clamp((now - state.releaseStart) / RELEASE_DUR_MS, 0, 1);
+                // 贝塞尔回弹曲线：随着 p 变化，bezierRelease(p) 达到 ~1.038 微超调，实现极致温润灵动的微果冻回弹
+                const easedOut = bezierRelease(p);
+                state.depth = state.releaseStartDepth * (1 - easedOut);
+                state.pressMoving = p < 1;
+                if (p >= 1) {
+                  state.pressPhase = "idle";
+                  state.depth = 0;
+                  state.pressMoving = false;
+                }
+              } else {
+                state.depth = 0;
+                state.pressMoving = false;
+              }
+            }
+
+            if (state.hoverReturn) {
+              const progress = clamp((now - state.hoverReturn.start) / 420, 0, 1);
+              const amount = Math.pow(1 - progress, 4);
+              state.hoverU = state.hoverReturn.u * amount;
+              state.hoverV = state.hoverV * amount;
+              if (progress === 1) state.hoverReturn = null;
+            }
+          };
+          const schedule = () => {
+            if (springFrame || reduced) return;
+            springFrame = view.requestAnimationFrame((now) => {
+              springFrame = 0;
+              let moving = false;
+              for (const state of states.values()) {
+                if (!state.card.isConnected || !state.track.isConnected || editing(state.card)) {
+                  interruptState(state);
+                  continue;
+                }
+                advance(state, now);
+                const pressure = held?.state === state || pressMoving(state);
+                snap(state, "pressure", pressure);
+                snap(state, "tilt", state.hover || !!state.hoverReturn);
+                if (!pressure && !state.hover && !state.hoverReturn) {
+                  neutral(state);
+                  continue;
+                }
+                render(state);
+                if (pressMoving(state) || state.hoverReturn) moving = true;
+              }
+              if (moving) schedule();
+            });
+          };
+          const leaveHover = (state) => {
+            if (!state || !state.hover) return;
+            if (window.SillyClientCarouselSnap.has(state.track, "drag")) {
+              interruptState(state);
+              return;
+            }
+            state.hover = false;
+            if (hovered === state) hovered = null;
+            state.hoverReturn = { u: state.hoverU, v: state.hoverV, start: view.performance.now() };
+            state.card.style.setProperty("--tilt-dur", "0ms");
+            schedule();
+          };
+          const setHover = (target, position) => {
+            const state = stateFor(target);
+            if (hovered && hovered !== state) leaveHover(hovered);
+            hovered = state;
+            state.hover = true;
+            state.hoverReturn = null;
+            state.hoverU = position.u;
+            state.hoverV = position.v;
+            state.card.style.setProperty("--tilt-dur", "0ms");
+            snap(state, "tilt", true);
+            render(state);
+            return state;
+          };
+          const targetPressure = (state, position) => {
+            const radius = Math.max(1, Math.hypot(position.u, position.v));
+            const targets = [position.u / radius, position.v / radius, 1];
+            state.channels.forEach((channel, index) => { channel.target = targets[index]; });
+            state.card.style.setProperty("--tilt-dur", "0ms");
+            snap(state, "pressure", true);
+            schedule();
+          };
+
+          listen(doc, "pointerdown", (event) => {
+            pointerIds.add(event.pointerId);
+            if (!event.isPrimary || event.button !== 0 || pointerIds.size > 1) {
+              if (held) interruptState(held.state);
+              return;
+            }
+            const target = getTargetTrackAndCard(event.target);
+            if (!target || excluded(event.target, target.card) || editing(target.card)) {
+              if (hovered) interruptState(hovered);
+              return;
+            }
+            const position = point(target, event);
+            if (!position?.inside || blockedPointers.has(event.pointerId)) return;
+            let state = stateFor(target);
+            advance(state, view.performance.now());
+            if (!reduced && event.pointerType === "mouse") state = setHover(target, position);
+            if (held && held.state !== state) interruptState(held.state);
+            held = { state, id: event.pointerId, type: event.pointerType, x: event.clientX, y: event.clientY };
+            state.lastTime = view.performance.now();
+            state.card.dataset.cardPressure = "true";
+            if (!reduced) targetPressure(state, position);
+          });
+          listen(doc, "pointermove", (event) => {
+            if (held?.id === event.pointerId) {
+              const state = held.state;
+              if (Math.hypot(event.clientX - held.x, event.clientY - held.y) > 4
+                || excluded(event.target, state.card) || editing(state.card)) {
+                interruptState(state);
+                return;
+              }
+              const position = point(state, event);
+              if (!position?.inside) {
+                interruptState(state);
+                return;
+              }
+              if (!reduced) targetPressure(state, position);
+              return;
+            }
+            if (reduced || (event.pointerType && event.pointerType !== "mouse")
+              || blockedPointers.has(event.pointerId)) return;
+            const target = getTargetTrackAndCard(event.target);
+            if (!target || excluded(event.target, target.card) || editing(target.card)) {
+              leaveHover(hovered);
+              return;
+            }
+            if (event.buttons || window.SillyClientCarouselSnap.has(target.track, "drag")) {
+              if (hovered) interruptState(hovered);
+              return;
+            }
+            const position = point(target, event);
+            if (position?.inside) setHover(target, position);
+            else leaveHover(hovered);
+          });
+          const release = (event) => {
+            pointerIds.delete(event.pointerId);
+            blockedPointers.delete(event.pointerId);
+            if (held?.id !== event.pointerId) return;
+            const state = held.state;
+            advance(state, view.performance.now());
+            held = null;
+            state.card.removeAttribute("data-card-pressure");
+            state.channels.forEach((channel) => { channel.target = 0; });
+            if (reduced) neutral(state);
+            else schedule();
+          };
+          listen(view, "pointerup", release);
+          listen(view, "pointercancel", (event) => {
+            pointerIds.delete(event.pointerId);
+            if (held?.id === event.pointerId) interruptState(held.state);
+            blockedPointers.delete(event.pointerId);
+          });
+          listen(doc, "pointerout", (event) => {
+            const target = getTargetTrackAndCard(event.target);
+            if (!target || target.card.contains(event.relatedTarget)) return;
+            if (event.relatedTarget && point(target, event)?.inside) return;
+            const state = states.get(target.card);
+            if (!state) return;
+            if (held?.state === state) interruptState(state);
+            else leaveHover(state);
+          });
+          listen(doc, "focusin", (event) => {
+            const target = getTargetTrackAndCard(event.target);
+            const state = target && states.get(target.card);
+            if (state && editing(target.card)) interruptState(state);
+          });
+          listen(doc, "selectionchange", () => {
+            for (const state of states.values()) if (editing(state.card)) interruptState(state);
+          });
+          listen(view, "blur", interrupt);
+          listen(doc, "visibilitychange", () => { if (doc.hidden) interrupt(); });
+          const onMotionChange = () => {
+            interrupt();
+            reduced = !!motionQuery?.matches;
+          };
+          motionQuery?.addEventListener?.("change", onMotionChange);
+          tiltController = {
+            health() {
+              for (const state of states.values()) {
+                if (!state.card.isConnected || !state.track.isConnected) interruptState(state);
+              }
+              if (springFrame && !Array.from(states.values()).some((state) => pressMoving(state) || state.hoverReturn)) {
+                view.cancelAnimationFrame(springFrame);
+                springFrame = 0;
+              }
+            },
+            interrupt,
+            dispose() {
+              interrupt();
+              listeners.forEach((remove) => remove());
+              motionQuery?.removeEventListener?.("change", onMotionChange);
+            },
+          };
         };
 
         const syncTuningPanelVisibility = (doc, panel) => {
@@ -3393,6 +3713,21 @@
           }
         };
 
+        const isProductMutation = (mutation) => {
+          const target = mutation.target.nodeType === 1 ? mutation.target : mutation.target.parentElement;
+          if (target?.closest?.("[data-native-log-list], .preview-tuning-panel")) return false;
+          if (mutation.type === "attributes") {
+            const productClasses = (value) => (value || "").split(/\s+/)
+              .filter((name) => name && !name.startsWith("preview-")).sort().join(" ");
+            return productClasses(mutation.oldValue) !== productClasses(target?.getAttribute?.("class"));
+          }
+          const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+          return nodes.some((node) => node.nodeType !== 1 || !(
+            node.id?.startsWith("preview-") ||
+            Array.from(node.classList || []).some((name) => name.startsWith("preview-"))
+          ));
+        };
+
         const installMutationObserver = () => {
           const d = frame.contentDocument;
           const view = frame.contentWindow;
@@ -3404,12 +3739,13 @@
             const currentDoc = frame.contentDocument;
             if (!currentDoc) return;
             handleWallpaperRemovals(mutations, currentDoc);
-            annotatePreview(currentDoc);
+            if (mutations.some(isProductMutation)) annotatePreview(currentDoc);
           });
           mo.observe(d.body, {
             childList: true,
             subtree: true,
             attributes: true,
+            attributeOldValue: true,
             attributeFilter: ["class"],
           });
           activeObserver = mo;
@@ -3433,18 +3769,11 @@
           previewStarted = true;
 
           annotatePreview(doc);
-          // observer 已覆盖主题属性与 DOM 变化；低频轮询只处理极端重挂载兜底。
-          if (previewPollTimer) window.clearInterval(previewPollTimer);
-          previewPollTimer = window.setInterval(() => {
-            const currentDoc = frame.contentDocument;
-            if (currentDoc) {
-              installMutationObserver();
-              annotatePreview(currentDoc);
-            }
-          }, 4000);
+          doc.fonts?.ready.then(() => annotatePreview(doc));
         };
 
         frame.addEventListener("load", () => {
+          tiltController?.interrupt();
           previewGeneration += 1;
           previewStarted = false;
           sfHeavyDoc = null;

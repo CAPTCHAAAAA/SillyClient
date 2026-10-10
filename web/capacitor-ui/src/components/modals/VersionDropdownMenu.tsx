@@ -90,9 +90,7 @@ export const VersionDropdownMenu: React.FC<VersionDropdownMenuProps> = ({
                 ? isLight
                   ? "bg-[#1a1625]/8"
                   : "bg-white/10"
-                : isLight
-                ? "hover:bg-black/[0.04]"
-                : "hover:bg-white/[0.06]"
+                : "bg-transparent"
             )}
             style={{
               animationDelay: `${
@@ -109,8 +107,8 @@ export const VersionDropdownMenu: React.FC<VersionDropdownMenuProps> = ({
                       ? "text-[#1a1625]"
                       : "text-white"
                     : isLight
-                    ? "text-[#1a1625]/80"
-                    : "text-white/80"
+                    ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                    : "text-white/60 hover:text-white"
                 )}
               >
                 {opt.label}

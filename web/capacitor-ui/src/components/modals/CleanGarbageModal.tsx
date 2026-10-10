@@ -4,6 +4,8 @@ import { TarvenEnv } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { LayerBackdrop } from "../common/LayerBackdrop";
+import type { GarbageItem } from "../../capacitor-plugin";
+import { executeGarbagePlan } from "../../lib/garbage-plan";
 
 export interface CleanGarbageModalProps {
   isOpen: boolean;
@@ -13,8 +15,10 @@ export interface CleanGarbageModalProps {
   glassBg: string;
   cleaningGarbage: boolean;
   setCleaningGarbage: (v: boolean) => void;
-  garbageItems: { path: string; description: string; type: string; sizeBytes: number }[];
-  setGarbageItems: React.Dispatch<React.SetStateAction<{ path: string; description: string; type: string; sizeBytes: number }[]>>;
+  garbageItems: GarbageItem[];
+  setGarbageItems: React.Dispatch<React.SetStateAction<GarbageItem[]>>;
+  error: string | null;
+  setError: (value: string | null) => void;
 }
 
 /**
@@ -31,6 +35,8 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
   setCleaningGarbage,
   garbageItems,
   setGarbageItems,
+  error,
+  setError,
 }) => {
   if (!isOpen && !isClosing) return null;
 
@@ -81,8 +87,8 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
             className={cn(
               "p-1.5 rounded-lg transition-colors",
               isLight
-                ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-                : "hover:bg-white/5 text-white/30 hover:text-white/60"
+                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                : "text-white/40 hover:text-white/85"
             )}
           >
             <X className="w-4 h-4" />
@@ -90,6 +96,7 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 scrollbar-subtle">
+          {error && <div role="alert" className="mb-3 text-xs text-red-400 whitespace-pre-wrap break-words">{error}</div>}
           {cleaningGarbage && garbageItems.length === 0 ? (
             <div
               className={cn(
@@ -106,7 +113,7 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
                 isLight ? "text-[#1a1625]/40" : "text-white/40"
               )}
             >
-              未发现垃圾文件
+              {error ? "扫描未完成" : "未发现垃圾文件"}
             </div>
           ) : (
             <div className="space-y-2">
@@ -170,10 +177,10 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
             onClick={onClose}
             disabled={cleaningGarbage}
             className={cn(
-              "motion-control px-4 h-8 rounded-xl text-[11px] font-medium disabled:opacity-50",
+              "motion-control px-4 h-8 rounded-xl text-[11px] font-medium transition-colors disabled:opacity-50",
               isLight
-                ? "bg-black/[0.05] text-[#1a1625]/45 hover:bg-black/[0.08]"
-                : "bg-white/[0.06] text-white/45 hover:bg-white/10"
+                ? "bg-black/[0.05] text-[#1a1625]/50 hover:text-[#1a1625]/85"
+                : "bg-white/[0.06] text-white/50 hover:text-white/85"
             )}
           >
             取消
@@ -181,25 +188,24 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
           <button
             onClick={async () => {
               setCleaningGarbage(true);
+              setError(null);
               try {
-                for (const item of garbageItems) {
-                  try {
-                    await TarvenEnv.deleteGarbageItem({ path: item.path });
-                  } catch {}
-                }
-                setGarbageItems([]);
-                onClose();
+                const result = await executeGarbagePlan(garbageItems, options => TarvenEnv.deleteGarbageItem(options));
+                setGarbageItems(result.failed);
+                if (result.errors.length) setError(result.errors.join("\n"));
+                else onClose();
               } catch (e) {
-                console.error(e);
+                setError(e instanceof Error ? e.message : String(e));
+              } finally {
+                setCleaningGarbage(false);
               }
-              setCleaningGarbage(false);
             }}
             disabled={cleaningGarbage || garbageItems.length === 0}
             className={cn(
-              "motion-control px-4 h-8 rounded-xl text-[11px] font-semibold disabled:opacity-50",
+              "motion-control px-4 h-8 rounded-xl text-[11px] font-semibold transition-colors disabled:opacity-50",
               isLight
-                ? "bg-[#1a1625] text-[#f5f3ef] hover:bg-[#1a1625]/90"
-                : "bg-white/90 text-[#1a1625] hover:bg-white"
+                ? "bg-[#1a1625] text-[#f5f3ef]/80 hover:text-[#f5f3ef]"
+                : "bg-white/90 text-[#1a1625]/80 hover:text-[#1a1625]"
             )}
           >
             全部清理

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { X, ChevronRight, Folder, Cloud } from "lucide-react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { X, ChevronRight } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv } from "../../capacitor-plugin";
 import type { ContentOpenMode, AppUpdateInfo } from "../../capacitor-plugin";
@@ -7,6 +7,10 @@ import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { ToggleSwitch } from "../common/ToggleSwitch";
 import type { TavernInstance } from "../../types";
+import { createInstanceBackup } from "../../lib/instance-persistence";
+import { openExternalUrl } from "../../lib/external-links";
+import { APP_VERSION } from "../../constants/app-version";
+
 
 export interface AppSettingsDrawerProps {
   isOpen: boolean;
@@ -23,6 +27,7 @@ export interface AppSettingsDrawerProps {
   replayOnboarding: () => void;
   instances: TavernInstance[];
   setInstances: React.Dispatch<React.SetStateAction<TavernInstance[]>>;
+  onImportBackup: (content: string) => void;
   importInputRef: React.RefObject<HTMLInputElement | null>;
   appUpdateState: "idle" | "checking" | "current" | "available" | "error";
   appUpdateInfo: AppUpdateInfo | null;
@@ -129,6 +134,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
   replayOnboarding,
   instances,
   setInstances,
+  onImportBackup,
   importInputRef,
   appUpdateState,
   appUpdateInfo,
@@ -141,13 +147,54 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
     "general" | "data" | "maintenance"
   >("general");
 
+  // 默认实例存储路径：实例始终是该根的直接子目录；仅影响之后创建的实例。
+  const [instancesRoot, setInstancesRoot] = useState<string | null>(null);
+  const [configuredInstancesRoot, setConfiguredInstancesRoot] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isOpen || instancesRoot !== null) return;
+    TarvenEnv.getAppSettings()
+      .then(settings => {
+        setInstancesRoot(settings.instancesRoot);
+        setConfiguredInstancesRoot(settings.configuredInstancesRoot ?? null);
+      })
+      .catch(() => setInstancesRoot(""));
+  }, [isOpen, instancesRoot]);
+
+  const chooseInstancesRoot = async () => {
+    try {
+      const picked = await TarvenEnv.pickDirectory({ purpose: "installation" });
+      if (!picked?.path) return;
+      const result = await TarvenEnv.setInstancesRoot({ path: picked.path });
+      setInstancesRoot(result.instancesRoot);
+      setConfiguredInstancesRoot(result.configured ? result.instancesRoot : null);
+    } catch {
+      /* 用户取消或授权中断：保持现有路径不变 */
+    }
+  };
+
+  const resetInstancesRoot = async () => {
+    try {
+      const result = await TarvenEnv.setInstancesRoot({});
+      setInstancesRoot(result.instancesRoot);
+      setConfiguredInstancesRoot(null);
+    } catch {
+      /* 保持现有路径不变 */
+    }
+  };
+
+  const displayInstancesRoot = instancesRoot === null
+    ? "读取中…"
+    : instancesRoot === ""
+      ? "暂不可用"
+      : instancesRoot;
+
   const generalRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef<HTMLDivElement>(null);
   const maintenanceRef = useRef<HTMLDivElement>(null);
   const [tabContentHeight, setTabContentHeight] = useState<number | null>(null);
 
   // 动态测量当前激活 Tab 面板高度，实现向导级白天黑夜级平滑伸缩过渡
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen) return;
     const targetEl =
       appSettingsTab === "general"
@@ -157,18 +204,16 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
         : maintenanceRef.current;
     if (!targetEl) return;
 
-    const updateHeight = () => {
-      if (targetEl) {
-        const h = targetEl.getBoundingClientRect().height;
-        if (h > 0) setTabContentHeight(Math.round(h));
-      }
+    const updateHeight = (entry?: ResizeObserverEntry) => {
+      const h = entry?.borderBoxSize?.[0]?.blockSize ?? targetEl.offsetHeight;
+      if (h > 0) setTabContentHeight(Math.ceil(h));
     };
 
     updateHeight();
 
     if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(() => {
-        updateHeight();
+      const ro = new ResizeObserver(([entry]) => {
+        updateHeight(entry);
       });
       ro.observe(targetEl);
       return () => ro.disconnect();
@@ -223,8 +268,8 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
             className={cn(
               "motion-control p-1.5 rounded-lg transition-colors",
               isLight
-                ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-                : "hover:bg-white/5 text-white/30 hover:text-white/60"
+                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                : "text-white/40 hover:text-white/85"
             )}
           >
             <X className="w-4 h-4" />
@@ -260,7 +305,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
 
         {/* 模式切换容器（向导级平滑高度自适应 + 同位驻留高斯模糊交叉溶变） */}
         <div
-          className="relative transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
+          className="motion-panel-stack"
           style={{
             height: tabContentHeight ? `${tabContentHeight}px` : undefined,
           }}
@@ -269,12 +314,13 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
           <div
             ref={generalRef}
             className={cn(
-              "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "motion-panel-face w-full",
               appSettingsTab === "general"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "is-active relative pointer-events-auto"
+                : "absolute inset-x-0 top-0 pointer-events-none select-none"
             )}
             aria-hidden={appSettingsTab !== "general"}
+            inert={appSettingsTab !== "general"}
           >
             <div className="app-settings-list space-y-1">
               <AppSettingsRow
@@ -324,14 +370,34 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
           <div
             ref={dataRef}
             className={cn(
-              "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "motion-panel-face w-full",
               appSettingsTab === "data"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "is-active relative pointer-events-auto"
+                : "absolute inset-x-0 top-0 pointer-events-none select-none"
             )}
             aria-hidden={appSettingsTab !== "data"}
+            inert={appSettingsTab !== "data"}
           >
             <div className="app-settings-list space-y-1">
+              <AppSettingsRow
+                label="默认实例存储路径"
+                desc={`${displayInstancesRoot} · 实例以此处一级子目录存放`}
+              >
+                <div className="app-settings-actions">
+                  <AppSettingsAction
+                    onClick={() => { void chooseInstancesRoot(); }}
+                  >
+                    更改
+                  </AppSettingsAction>
+                  {configuredInstancesRoot !== null && (
+                    <AppSettingsAction
+                      onClick={() => { void resetInstancesRoot(); }}
+                    >
+                      默认
+                    </AppSettingsAction>
+                  )}
+                </div>
+              </AppSettingsRow>
               <AppSettingsRow
                 label="实例备份"
                 desc="迁移实例列表与应用设置"
@@ -343,16 +409,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                         try {
                           const res = await TarvenEnv.readTextFile({ mimeType: "application/json" });
                           if (!res?.content) return;
-                          const parsed = JSON.parse(res.content);
-                          const incoming = (parsed.instances || []) as TavernInstance[];
-                          setInstances(prev => {
-                            const map = new Map(prev.map(t => [t.id, t]));
-                            for (const item of incoming) {
-                              const icon = item.type === "local" ? <Folder className="w-5 h-5" /> : <Cloud className="w-5 h-5" />;
-                              map.set(item.id, { ...item, pendingTavernGestureHint: undefined, icon });
-                            }
-                            return Array.from(map.values());
-                          });
+                          onImportBackup(res.content);
                           onClose();
                         } catch {
                           /* 用户取消或读取失败 */
@@ -366,21 +423,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                   </AppSettingsAction>
                   <AppSettingsAction
                     onClick={async () => {
-                      const data = JSON.stringify(
-                        {
-                          version: 2,
-                          instances: instances.map(
-                            ({
-                              icon: _icon,
-                              pendingTavernGestureHint: _pendingHint,
-                              ...rest
-                            }) => rest
-                          ),
-                          exportedAt: new Date().toISOString(),
-                        },
-                        null,
-                        2
-                      );
+                      const data = createInstanceBackup(instances);
                       const fileName = `sillyclient-backup-${new Date()
                         .toISOString()
                         .slice(0, 10)}.json`;
@@ -431,12 +474,13 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
           <div
             ref={maintenanceRef}
             className={cn(
-              "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "motion-panel-face w-full",
               appSettingsTab === "maintenance"
-                ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto"
-                : "absolute inset-x-0 top-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none"
+                ? "is-active relative pointer-events-auto"
+                : "absolute inset-x-0 top-0 pointer-events-none select-none"
             )}
             aria-hidden={appSettingsTab !== "maintenance"}
+            inert={appSettingsTab !== "maintenance"}
           >
             <div className="app-settings-list space-y-1">
               <AppSettingsRow
@@ -467,11 +511,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                         onClick={() => {
                           const url = appUpdateInfo.releaseUrl!;
                           onClose();
-                          if (isWeb) {
-                            window.open(url, "_blank", "noopener,noreferrer");
-                          } else {
-                            TarvenEnv.enterImmersive({ url }).catch(() => {});
-                          }
+                          void openExternalUrl(url).catch(() => {});
                         }}
                       >
                         查看
@@ -480,7 +520,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                 </div>
               </AppSettingsRow>
               <AppSettingsLinkRow
-                label="2.0.1 主要更新"
+                label={`${APP_VERSION} 主要更新`}
                 desc="查看本次版本新增功能与核心改进"
                 onClick={() => {
                   onClose();

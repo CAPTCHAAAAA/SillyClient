@@ -88,31 +88,20 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
     <div
       data-card-index={String(index + 1)}
       className={cn(
-        "motion-instance-card w-full h-full rounded-[18px] relative group border cursor-pointer",
-        isExpanded && "is-expanded",
-        isLight
-          ? cn(
-              "border-black/[0.08]",
-              isExpanded && "border-black/15 z-20",
-              isMenuOpen && "border-black/25 ring-1 ring-black/10 z-30"
-            )
-          : cn(
-              "border-white/[0.06]",
-              isExpanded && "border-white/15 z-20",
-              isMenuOpen && "border-white/25 ring-1 ring-white/10 z-30"
-            )
+        "motion-instance-card w-full h-full rounded-[26px] relative group cursor-pointer overflow-hidden",
+        isExpanded && "is-expanded"
       )}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest("button")) return;
         onToggleExpand();
       }}
     >
-      {/* 封面与遮罩 */}
-      <div className="absolute inset-0 rounded-[18px] overflow-hidden">
+      {/* 封面与遮罩：100% 饱满贴合圆角内壁，彻底消除边缘漏边 */}
+      <div className="absolute inset-0 overflow-hidden">
         <img
           src={instance.cover || "./tavern-logo.png"}
           alt=""
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover scale-[1.015]"
           loading="lazy"
         />
         <div
@@ -127,7 +116,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
 
       <div
         className={cn(
-          "absolute inset-0 rounded-[18px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
+          "absolute inset-0 rounded-[26px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
           isLight
             ? "bg-gradient-to-t from-white/70 via-white/35 to-white/5"
             : "bg-gradient-to-t from-black/75 via-black/40 to-black/10",
@@ -136,12 +125,12 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
       />
       <div
         className={cn(
-          "absolute inset-0 rounded-[18px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
+          "absolute inset-0 rounded-[26px] bg-gradient-to-t from-black/80 via-black/50 to-black/20 transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
           isExpanded ? "opacity-100" : "opacity-0"
         )}
       />
 
-      <div className="relative h-full flex flex-col p-3.5 overflow-hidden rounded-[18px]">
+      <div className="relative h-full flex flex-col p-3.5 overflow-hidden rounded-[26px]">
         {/* 版本胶囊与密码锁标记 */}
         <div className="self-start flex items-center gap-1.5 w-fit">
           <span
@@ -325,10 +314,10 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
                   }}
                   disabled={launchingId === instance.id}
                   className={cn(
-                    "motion-control h-7 px-4 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1 disabled:opacity-50",
+                    "motion-control h-7 px-4 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors disabled:opacity-50",
                     isLight
-                      ? "bg-black/[0.07] text-[#1a1625] hover:bg-black/[0.14]"
-                      : "bg-white/15 text-white hover:bg-white/25"
+                      ? "bg-black/[0.07] text-[#1a1625]/60 hover:text-[#1a1625]"
+                      : "bg-white/15 text-white/60 hover:text-white"
                   )}
                 >
                   <Play className="w-2.5 h-2.5" />{" "}
@@ -344,18 +333,13 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
                     onOpenMenu(instance, r);
                   }}
                   className={cn(
-                    "motion-control w-7 h-7 rounded-full flex items-center justify-center",
+                    "motion-control w-7 h-7 rounded-full flex items-center justify-center transition-colors",
                     isLight
-                      ? "bg-black/[0.07] hover:bg-black/[0.14]"
-                      : "bg-white/15 hover:bg-white/25"
+                      ? "bg-black/[0.07] text-[#1a1625]/50 hover:text-[#1a1625]"
+                      : "bg-white/15 text-white/50 hover:text-white"
                   )}
                 >
-                  <MoreVertical
-                    className={cn(
-                      "w-3 h-3",
-                      isLight ? "text-[#1a1625]" : "text-white"
-                    )}
-                  />
+                  <MoreVertical className="w-3 h-3 text-current transition-colors" />
                 </button>
               </div>
             </div>

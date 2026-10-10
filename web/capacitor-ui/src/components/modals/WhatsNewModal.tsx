@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { LayerBackdrop } from "../common/LayerBackdrop";
+import { APP_VERSION } from "../../constants/app-version";
 
 export interface WhatsNewModalProps {
   isOpen: boolean;
@@ -73,7 +74,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                   : "bg-white/[0.06] text-white/60"
               )}
             >
-              v2.0.1
+              v{APP_VERSION}
             </span>
             <span className={cn("text-sm font-semibold tracking-tight", isLight ? "text-[#1a1625]" : "text-white")}>
               版本主要更新
@@ -84,8 +85,8 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             className={cn(
               "p-1.5 rounded-full transition-colors",
               isLight
-                ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-                : "hover:bg-white/5 text-white/30 hover:text-white/60"
+                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                : "text-white/40 hover:text-white/85"
             )}
             aria-label="关闭"
           >
@@ -105,14 +106,14 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn("text-[13px] font-semibold tracking-tight", isLight ? "text-[#1a1625]/90" : "text-white/90")}>
-                新功能：跨平台数据迁移与原地接管
+                新功能：实例维护与隔离恢复
               </span>
               <span className={cn("text-[10px] font-mono", isLight ? "text-[#1a1625]/35" : "text-white/30")}>
                 01
               </span>
             </div>
             <div className={cn("text-[11.5px] leading-relaxed", isLight ? "text-[#1a1625]/65" : "text-white/65")}>
-              支持直接导入已有酒馆数据。“原地接管”零额外占用存储，移除实例时仅解除登记、绝不误删原文件；也可按需选择“复制迁移”沙盒化运行。
+              按实例扫描疑似未完成扩展、失效禁用记录及归属已核验的下载缓存。疑似扩展默认不选，隔离内容保留恢复记录。
             </div>
           </div>
 
@@ -125,14 +126,14 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn("text-[13px] font-semibold tracking-tight", isLight ? "text-[#1a1625]/90" : "text-white/90")}>
-                新更新：界面视觉升级与全域平滑过渡
+                新更新：可选预设安装与受控外链
               </span>
               <span className={cn("text-[10px] font-mono", isLight ? "text-[#1a1625]/35" : "text-white/30")}>
                 02
               </span>
             </div>
             <div className={cn("text-[11.5px] leading-relaxed", isLight ? "text-[#1a1625]/65" : "text-white/65")}>
-              设置抽屉与向导各级面板全面接入同位驻留模糊溶变过渡，容器高度自适应伸缩；向导机制说明升级为极简小红点折叠，界面更干净整洁。
+              创建本地实例或复制迁移时可选择主题与扩展，默认关闭。项目与更新页面在系统浏览器打开，不替换当前酒馆。
             </div>
           </div>
 
@@ -145,14 +146,14 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn("text-[13px] font-semibold tracking-tight", isLight ? "text-[#1a1625]/90" : "text-white/90")}>
-                新优化：120Hz 硬件高刷与底层渲染重构
+                新优化：任务取消与运行时保护
               </span>
               <span className={cn("text-[10px] font-mono", isLight ? "text-[#1a1625]/35" : "text-white/30")}>
                 03
               </span>
             </div>
             <div className={cn("text-[11.5px] leading-relaxed", isLight ? "text-[#1a1625]/65" : "text-white/65")}>
-              Android 底层注入硬件 120Hz 锁帧，消除滑动降频；酒馆前台运行时控制台自动深度休眠，拔除 14 层动态模糊滤镜，更流畅、更省电。
+              取消与切换实例后拒绝旧任务回包，日志按实例限制容量。维护在停止运行后执行，文件变化或恢复冲突时保留现有内容。
             </div>
           </div>
 
@@ -173,8 +174,8 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             className={cn(
               "motion-control h-8 px-5 rounded-xl text-xs font-medium border-0 transition-colors",
               isLight
-                ? "bg-black/[0.06] hover:bg-black/[0.1] text-[#1a1625]/85"
-                : "bg-white/[0.08] hover:bg-white/[0.12] text-white/90"
+                ? "bg-black/[0.06] text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "bg-white/[0.08] text-white/60 hover:text-white"
             )}
           >
             开始使用

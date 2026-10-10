@@ -1,8 +1,8 @@
 import React from "react";
-import { cn } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
 import { InstanceStoppedCard } from "./InstanceStoppedCard";
 import { RunningConsoleCard } from "./RunningConsoleCard";
+import { FlipCard } from "../common/FlipCard";
 
 export interface InstanceCardProps {
   instance: TavernInstance;
@@ -20,18 +20,24 @@ export interface InstanceCardProps {
   onRenameSave?: (instanceId: string, newName: string) => void;
   isExternallyRenaming?: boolean;
   onClearExternalRenaming?: () => void;
-  terminalLogs?: { msg: string; level?: string }[];
-  setTerminalLogs?: React.Dispatch<React.SetStateAction<{ msg: string; level?: string }[]>>;
   isWindows?: boolean;
+  onLongPress?: (instance: TavernInstance) => void;
+  style?: React.CSSProperties;
+  className?: string;
+  isReordering?: boolean;
+  isDropping?: boolean;
+  isReorderCommitting?: boolean;
+  onPointerDownCapture?: (e: React.PointerEvent) => void;
+  onClickCapture?: (e: React.MouseEvent) => void;
 }
 
 /**
  * 实例轮播槽位卡片 (InstanceCard)
- * 职责：纯净卡片槽位与状态流体过渡调度。
+ * 职责：纯净卡片槽位与状态 3D 旋转翻转过渡调度。
  * 高内聚低耦合：
- * - 停止态卡片 100% 保持 1.9.1 原始无缝单层卡片与纯粹拟物动效结构；
+ * - 停止态卡片 InstanceStoppedCard 100% 保持原有无缝单层卡片与纯粹拟物动效结构；
  * - 运行态卡片归口于 RunningConsoleCard (实色轻拟物控制台、终端日志流、实时命令交互、就地操作按钮)；
- * - 两者彼此解耦，互不干扰 DOM 与交互事件。
+ * - 正反两面严格约束于 240x320 物理尺寸与 18px 圆角，通过 3D 弹簧物理旋转实现无缝翻转。
  */
 export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   const isRunning = props.instance.status === "running";
@@ -39,24 +45,43 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   const isMenuOpen = props.activeCardMenu === props.instance.id;
 
   return (
-    <div
+    <FlipCard
+      data-instance-id={props.instance.id}
       data-card-index={String(props.index + 1)}
       data-card-running={isRunning ? "true" : "false"}
-      className="flex-shrink-0 w-60 h-[320px] rounded-[18px] snap-center relative"
-      style={{
-        transformStyle: "preserve-3d",
-      }}
-    >
-      {/* 停止态普通卡片面（同位驻留，统一 500ms 高斯模糊与位移交叉溶变，和设置页/主题切换 100% 对齐） */}
-      <div
-        className={cn(
-          "w-full h-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          !isRunning
-            ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
-            : "absolute inset-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
-        )}
-        aria-hidden={isRunning}
-      >
+      data-reordering={props.isReordering ? "true" : undefined}
+      data-dropping={props.isDropping ? "true" : undefined}
+      data-reorder-committing={props.isReorderCommitting ? "true" : undefined}
+      className={`flex-shrink-0 snap-center${props.className ? ` ${props.className}` : ""}`}
+      style={props.style}
+      width={240}
+      height={320}
+      radius={26}
+      flipped={isRunning}
+      axis="y"
+      flipOnClick={false}
+      onLongPress={props.onLongPress ? () => props.onLongPress?.(props.instance) : undefined}
+      onPointerDownCapture={props.onPointerDownCapture}
+      onClickCapture={props.onClickCapture}
+      draggable={false}
+      tilt={true}
+      tiltMax={3.8}
+      glare={true}
+      glareOpacity={props.isLight ? 0.010 : 0.015}
+      behindGlow={true}
+      behindGlowColor={props.isLight ? "rgba(0, 0, 0, 0.015)" : "rgba(255, 255, 255, 0.025)"}
+      behindGlowSize="35%"
+      borderColor="transparent"
+      hoverScale={1.0}
+      perspective={1100}
+      stiffness={160}
+      damping={28}
+      background={props.isLight ? "#fbfafc" : "#16131f"}
+      color={props.isLight ? "#1a1625" : "#f5f5f5"}
+      shadow={true}
+      shadowColor="#000000"
+      shadowOpacity={props.isLight ? 0.05 : 0.18}
+      front={
         <InstanceStoppedCard
           instance={props.instance}
           index={props.index}
@@ -72,18 +97,8 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           isExternallyRenaming={props.isExternallyRenaming}
           onClearExternalRenaming={props.onClearExternalRenaming}
         />
-      </div>
-
-      {/* 运行态控制台卡片面 (RunningConsoleCard, 统一 500ms 高斯模糊与位移交叉溶变) */}
-      <div
-        className={cn(
-          "w-full h-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          isRunning
-            ? "relative opacity-100 translate-y-0 filter-none pointer-events-auto visible"
-            : "absolute inset-0 opacity-0 translate-y-1.5 blur-[3px] pointer-events-none select-none invisible"
-        )}
-        aria-hidden={!isRunning}
-      >
+      }
+      back={
         <RunningConsoleCard
           instance={props.instance}
           index={props.index}
@@ -92,12 +107,11 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           onReturnToTavern={props.onReturnToTavern}
           onStopInstance={props.onStopInstance}
           onOpenMenu={props.onOpenMenu}
-          terminalLogs={props.terminalLogs}
-          setTerminalLogs={props.setTerminalLogs}
+          active={isRunning}
           isWindows={props.isWindows}
         />
-      </div>
-    </div>
+      }
+    />
   );
 });
 InstanceCard.displayName = "InstanceCard";

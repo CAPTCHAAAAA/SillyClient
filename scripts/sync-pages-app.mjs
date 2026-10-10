@@ -25,7 +25,8 @@ const appIndex = fs.readFileSync(path.join(source, 'index.html'), 'utf8');
 const pageIndex = appIndex
   .replaceAll('./assets/', './app/assets/')
   .replaceAll('./fonts/', './app/fonts/')
-  .replaceAll('./reviewed-material-runtime.js', './app/reviewed-material-runtime.js');
+  .replaceAll('./reviewed-material-runtime.js', './app/reviewed-material-runtime.js')
+  .replaceAll('./carousel-snap-lock.js', './app/carousel-snap-lock.js');
 
 const showcaseBootstrap = `    <script>
       (() => {

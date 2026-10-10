@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Terminal, Eraser, X } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import type { TavernInstance } from "../../types";
+import { useInstanceLogs } from "../../hooks/useInstanceLogs";
+import { GLOBAL_LOG_KEY, instanceLogs } from "../../lib/log-store";
 
 export interface TerminalModalProps {
   isOpen: boolean;
@@ -17,8 +19,6 @@ export interface TerminalModalProps {
   terminalDisplayBanner: string;
   terminalDisplayPrompt: string;
   terminalDisplayPlaceholder: string;
-  terminalLogs: { msg: string; level?: string }[];
-  setTerminalLogs: React.Dispatch<React.SetStateAction<{ msg: string; level?: string }[]>>;
   terminalInstance: TavernInstance | null;
 }
 
@@ -38,21 +38,76 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   terminalDisplayBanner,
   terminalDisplayPrompt,
   terminalDisplayPlaceholder,
-  terminalLogs,
-  setTerminalLogs,
   terminalInstance,
 }) => {
   const [terminalSize, setTerminalSize] = useState({ w: 640, h: 340 });
   const [terminalFontSize, setTerminalFontSize] = useState(12);
   const [terminalInput, setTerminalInput] = useState("");
+  const logKey = terminalInstance?.installDir || terminalInstance?.id || GLOBAL_LOG_KEY;
+  const terminalLogs = useInstanceLogs(logKey, isOpen || isClosing);
+  const resizeCleanup = useRef<(() => void) | null>(null);
+
+  // 拖动定位与状态
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCleanup = useRef<(() => void) | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => () => {
+    resizeCleanup.current?.();
+    dragCleanup.current?.();
+  }, []);
+
+  const handleDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    dragCleanup.current?.();
+
+    const modalEl = modalRef.current;
+    if (!modalEl) return;
+
+    const rect = modalEl.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialLeft = rect.left;
+    const initialTop = rect.top;
+
+    setIsDragging(true);
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const deltaX = ev.clientX - startX;
+      const deltaY = ev.clientY - startY;
+
+      const maxLeft = Math.max(8, window.innerWidth - terminalSize.w - 8);
+      const maxTop = Math.max(8, window.innerHeight - terminalSize.h - 8);
+
+      const nextX = Math.max(8, Math.min(maxLeft, initialLeft + deltaX));
+      const nextY = Math.max(8, Math.min(maxTop, initialTop + deltaY));
+
+      setDragPos({ x: nextX, y: nextY });
+    };
+
+    const onPointerUp = () => {
+      setIsDragging(false);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      dragCleanup.current = null;
+    };
+
+    dragCleanup.current = onPointerUp;
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+  };
 
   const startResize = (startX: number, startY: number) => {
+    resizeCleanup.current?.();
     const origW = terminalSize.w;
     const origH = terminalSize.h;
     const onMove = (clientX: number, clientY: number) => {
       setTerminalSize({
-        w: Math.max(320, origW + (clientX - startX)),
-        h: Math.max(200, origH + (clientY - startY)),
+        w: Math.max(320, Math.min(window.innerWidth - 16, origW + (clientX - startX))),
+        h: Math.max(200, Math.min(window.innerHeight - 16, origH + (clientY - startY))),
       });
     };
     const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
@@ -64,7 +119,9 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       window.removeEventListener("mouseup", onEnd);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onEnd);
+      resizeCleanup.current = null;
     };
+    resizeCleanup.current = onEnd;
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onEnd);
     window.addEventListener("touchmove", onTouchMove, { passive: false });
@@ -75,32 +132,37 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
 
   return (
     <div
+      ref={modalRef}
+      data-terminal-modal="true"
       className={cn(
         "fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
         glassBg,
-        isClosing ? "animate-terminal-exit" : "animate-terminal-enter"
+        isClosing ? "animate-terminal-exit" : "animate-terminal-enter",
+        isDragging && "select-none"
       )}
       style={{
         zIndex: LAYERS.MODAL,
-        top: `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`,
-        left: terminalPos.left,
-        right: terminalPos.right,
+        top: dragPos ? dragPos.y : `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`,
+        left: dragPos ? dragPos.x : terminalPos.left,
         width: terminalSize.w,
         height: terminalSize.h,
         minWidth: 320,
         minHeight: 200,
-        maxWidth: `calc(100vw - ${terminalPos.left + terminalPos.right}px)`,
-        maxHeight: "calc(100vh - 7rem)",
+        maxWidth: "calc(100vw - 16px)",
+        maxHeight: "calc(100vh - 2rem)",
       }}
     >
-      {/* 标题栏 */}
+      {/* 标题栏 (支持拖拽到其他位置) */}
       <div
+        data-terminal-header="true"
+        onPointerDown={handleDragStart}
         className={cn(
-          "flex items-center justify-between px-4 h-9 flex-shrink-0 border-b",
+          "flex items-center justify-between px-4 h-9 flex-shrink-0 border-b select-none touch-none",
+          isDragging ? "cursor-grabbing" : "cursor-grab",
           isLight ? "border-black/[0.06]" : "border-white/[0.06]"
         )}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pointer-events-none">
           <Terminal
             className={cn(
               "w-3.5 h-3.5",
@@ -116,7 +178,10 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             {terminalDisplayTitle}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           {/* 字号调节 */}
           <div
             className={cn(
@@ -154,13 +219,13 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             </span>
           </div>
           <button
-            onClick={() => setTerminalLogs([])}
+            onClick={() => instanceLogs.update(logKey, [])}
             title="清空终端"
             className={cn(
               "p-1 rounded-md transition-colors",
               isLight
-                ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-                : "hover:bg-white/5 text-white/30 hover:text-white/60"
+                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                : "text-white/40 hover:text-white/85"
             )}
           >
             <Eraser className="w-3.5 h-3.5" />
@@ -170,8 +235,8 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             className={cn(
               "p-1 rounded-md transition-colors",
               isLight
-                ? "hover:bg-black/5 text-[#1a1625]/30 hover:text-[#1a1625]/60"
-                : "hover:bg-white/5 text-white/30 hover:text-white/60"
+                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                : "text-white/40 hover:text-white/85"
             )}
           >
             <X className="w-3.5 h-3.5" />
@@ -181,6 +246,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
 
       {/* 终端内容区 */}
       <div
+        data-native-log-list
         className={cn(
           "flex-1 font-sans leading-relaxed p-4 overflow-y-auto scrollbar-subtle",
           isLight
@@ -225,13 +291,13 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
                 const cmd = terminalInput.trim();
                 const instanceId =
                   terminalInstance.installDir || terminalInstance.id;
-                setTerminalLogs((prev) => [
-                  ...prev,
-                  { msg: `${terminalDisplayPrompt} ${cmd}`, level: "info" },
-                ]);
-                TarvenEnv.sendCommand({ text: cmd, instanceId }).catch(
-                  () => {}
-                );
+                instanceLogs.append(logKey, { msg: `${terminalDisplayPrompt} ${cmd}`, level: "info" });
+                TarvenEnv.sendCommand({ text: cmd, instanceId }).catch(error => {
+                  instanceLogs.append(instanceId, {
+                    msg: `命令失败: ${error instanceof Error ? error.message : String(error)}`,
+                    level: "error",
+                  });
+                });
                 setTerminalInput("");
               }
             }}

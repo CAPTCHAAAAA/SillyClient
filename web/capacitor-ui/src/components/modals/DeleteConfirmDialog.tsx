@@ -76,8 +76,8 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             className={cn(
               "rounded-lg p-1.5 transition-colors disabled:pointer-events-none disabled:opacity-30",
               isLight
-                ? "text-[#1a1625]/30 hover:bg-black/5"
-                : "text-white/30 hover:bg-white/5"
+                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
+                : "text-white/40 hover:text-white/85"
             )}
           >
             <X className="h-4 w-4" />
@@ -137,10 +137,10 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             disabled={isDeleting}
             onClick={onClose}
             className={cn(
-              "motion-control h-8 rounded-full px-4 text-xs font-medium transition-all border disabled:pointer-events-none disabled:opacity-40",
+              "motion-control h-8 rounded-full px-4 text-xs font-medium transition-colors border disabled:pointer-events-none disabled:opacity-40",
               isLight
-                ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:bg-black/[0.08]"
-                : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:bg-white/[0.14]"
+                ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:text-white"
             )}
           >
             取消
@@ -150,10 +150,10 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             disabled={isDeleting}
             onClick={onConfirm}
             className={cn(
-              "motion-control flex h-8 items-center justify-center gap-1.5 rounded-full px-5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 transition-all border",
+              "motion-control flex h-8 items-center justify-center gap-1.5 rounded-full px-5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 transition-colors border",
               isLight
-                ? "bg-red-500/10 border-red-500/15 text-red-600 hover:bg-red-500/20 active:bg-red-500/25"
-                : "bg-red-500/20 border-red-500/25 text-red-300 hover:bg-red-500/30 active:bg-red-500/35"
+                ? "bg-red-500/10 border-red-500/15 text-red-600/70 hover:text-red-600 active:bg-red-500/25"
+                : "bg-red-500/20 border-red-500/25 text-red-300/70 hover:text-red-300 active:bg-red-500/35"
             )}
           >
             {isDeleting && (

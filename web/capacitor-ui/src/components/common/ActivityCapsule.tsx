@@ -94,11 +94,11 @@ export const ActivityCapsule: React.FC<ActivityCapsuleProps> = ({
         className={cn(
           "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors",
           isLight
-            ? "bg-black/[0.04] group-hover:bg-black/[0.08]"
-            : "bg-white/[0.06] group-hover:bg-white/[0.12]"
+            ? "bg-black/[0.04]"
+            : "bg-white/[0.06]"
         )}
       >
-        <Maximize2 className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+        <Maximize2 className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
       </div>
     </aside>
   );

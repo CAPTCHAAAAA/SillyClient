@@ -5,10 +5,19 @@ import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
 import "./styles.css";
 
-const router = getRouter();
+async function mountApplication() {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("nativePreview") === "1") {
+    const { installNativePreview } = await import("./dev/native-preview");
+    installNativePreview();
+  }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>
-);
+  const router = getRouter();
+
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <RouterProvider router={router} />
+    </React.StrictMode>
+  );
+}
+
+void mountApplication();

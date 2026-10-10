@@ -1,0 +1,50 @@
+{
+  "revision": 1,
+  "extensions": [
+    {
+      "id": "tavern-helper",
+      "displayName": "\u9152\u9986\u52a9\u624b",
+      "repository": "N0VI028/JS-Slash-Runner",
+      "commit": "46ec10df770b47e1ce6562de747d72f1bde3549e",
+      "archiveSha256": "67272CFB56C5D1E15001A70885492C6742420941F5F1C50D0403EF9C29BB482F",
+      "archiveBytes": 2579938,
+      "minimumClientVersion": "1.13.0",
+      "version": "4.11.2",
+      "license": "PolyForm-Noncommercial-1.0.0",
+      "licensePath": "LICENSE"
+    },
+    {
+      "id": "littlewhitebox",
+      "displayName": "\u5c0f\u767d\u76d2",
+      "repository": "RT15548/LittleWhiteBox",
+      "commit": "66cb1001e860cdddd77e5a3911c7c47ea325df3a",
+      "archiveSha256": "152901A86FD0937955FB5B3A8A6B3C8C192A916076B326C07BD7318AA2754A6D",
+      "archiveBytes": 26258271,
+      "version": "3.1.6",
+      "license": "Apache-2.0 + attribution",
+      "licensePath": "docs/LICENSE.md"
+    },
+    {
+      "id": "prompt-template",
+      "displayName": "\u63d0\u793a\u8bcd\u6a21\u677f",
+      "repository": "zonde306/ST-Prompt-Template",
+      "commit": "d6f520d149aba146305b0b781ddd691d449c28d2",
+      "archiveSha256": "1A866075E0BF7499F4FB0C39E5E763077AEDDFEE851624B4464289176943546B",
+      "archiveBytes": 13622195,
+      "version": "1.17.9",
+      "license": "AGPL-3.0",
+      "licensePath": "LICENSE"
+    },
+    {
+      "id": "dice",
+      "displayName": "\u9ab0\u5b50",
+      "repository": "SillyTavern/Extension-Dice",
+      "commit": "b4047508a1191ba3b32cb20f64ebc5f7877d689b",
+      "archiveSha256": "7039926EE840FD45A879051FDBBCC0EC1BEDBE9AF3A9D3DA50EB1C057CED127F",
+      "archiveBytes": 17852,
+      "version": "2.0.0",
+      "license": "AGPL-3.0",
+      "licensePath": "LICENSE"
+    }
+  ]
+}
