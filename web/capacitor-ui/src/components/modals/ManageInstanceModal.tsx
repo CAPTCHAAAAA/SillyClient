@@ -325,6 +325,196 @@ function manageFaceScrollClassName(portrait: boolean) {
 let manageTheme: "light" | "dynamic" | "dark" = "dark";
 let managePortrait = false;
 
+const coverAlphaCache = new Map<string, boolean>();
+
+function coverHasTransparency(src: string) {
+  const known = coverAlphaCache.get(src);
+  if (known !== undefined) return Promise.resolve(known);
+  return new Promise<boolean>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let transparent = false;
+      try {
+        const size = 32;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (ctx) {
+          ctx.clearRect(0, 0, size, size);
+          ctx.drawImage(img, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+          let clear = 0;
+          const pixels = size * size;
+          for (let i = 3; i < data.length; i += 4) {
+            if (data[i] < 240) clear += 1;
+          }
+          transparent = clear / pixels > 0.04;
+        }
+      } catch {
+        transparent = false;
+      }
+      coverAlphaCache.set(src, transparent);
+      resolve(transparent);
+    };
+    img.onerror = () => {
+      coverAlphaCache.set(src, false);
+      resolve(false);
+    };
+    img.src = src;
+  });
+}
+
+function manageCoverPlate(isLight: boolean, isDynamic: boolean) {
+  if (isLight) return "oklch(0.97 0.008 90 / 0.94)";
+  if (isDynamic) return "oklch(0.44 0.05 350 / 0.92)";
+  return "oklch(0.42 0.022 260 / 0.92)";
+}
+
+function ManageInstanceCard({
+  item,
+  selected,
+  isPortrait,
+  isLight,
+  isDynamic,
+  onSelect,
+}: {
+  item: TavernInstance;
+  selected: boolean;
+  isPortrait: boolean;
+  isLight: boolean;
+  isDynamic: boolean;
+  onSelect: (item: TavernInstance) => void;
+}) {
+  const src = item.cover || "./tavern-logo.png";
+  const [clearCover, setClearCover] = useState(() => coverAlphaCache.get(src) ?? false);
+
+  useEffect(() => {
+    let dead = false;
+    const known = coverAlphaCache.get(src);
+    if (known !== undefined) {
+      setClearCover(known);
+      return;
+    }
+    void coverHasTransparency(src).then((value) => {
+      if (!dead) setClearCover(value);
+    });
+    return () => {
+      dead = true;
+    };
+  }, [src]);
+
+  const restingVeil = clearCover
+    ? isLight
+      ? "linear-gradient(to top, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.26) 34%, transparent 62%)"
+      : "linear-gradient(to top, oklch(0.16 0.02 260 / 0.58) 0%, oklch(0.16 0.02 260 / 0.14) 36%, transparent 62%)"
+    : undefined;
+  const activeVeil = clearCover
+    ? "linear-gradient(to top, oklch(0.14 0.02 260 / 0.7) 0%, oklch(0.14 0.02 260 / 0.22) 42%, transparent 68%)"
+    : undefined;
+
+  return (
+    <div
+      data-manage-card={item.id}
+      onClick={() => onSelect(item)}
+      className={cn(
+        "motion-instance-card group relative cursor-pointer select-none flex-shrink-0",
+        !isPortrait && "w-full",
+        selected && "is-expanded"
+      )}
+      style={{
+        width: isPortrait ? (selected ? PORTRAIT_CARD_ACTIVE_W : PORTRAIT_CARD_W) : undefined,
+        height: isPortrait ? PORTRAIT_CARD_H : selected ? manageEm(196) : manageEm(152),
+        borderRadius: manageEm(22),
+      }}
+    >
+      <div className="manage-card-clip">
+        <div
+          className="manage-card-plate"
+          style={{ background: manageCoverPlate(isLight, isDynamic) }}
+        />
+        <img
+          src={src}
+          alt=""
+          className="manage-card-photo"
+          draggable={false}
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = "none";
+          }}
+        />
+        <div
+          className={cn(
+            "manage-card-veil",
+            !clearCover && "bg-gradient-to-t",
+            !clearCover && (isLight
+              ? "from-white/70 via-white/35 to-white/5"
+              : "from-black/75 via-black/40 to-black/10"),
+            selected ? "opacity-0" : "opacity-100"
+          )}
+          style={restingVeil ? { background: restingVeil } : undefined}
+        />
+        <div
+          className={cn(
+            "manage-card-veil",
+            !clearCover && "bg-gradient-to-t from-black/80 via-black/50 to-black/20",
+            selected ? "opacity-100" : "opacity-0"
+          )}
+          style={activeVeil ? { background: activeVeil } : undefined}
+        />
+        <div className="pointer-events-none absolute left-0 top-0 z-[2] flex items-center gap-1.5" style={{ padding: manageEm(14) }}>
+          <span
+            className={cn(
+              "rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-wide",
+              isLight
+                ? "bg-black/[0.06] text-[#1a1625]/60"
+                : "bg-white/10 text-white/72"
+            )}
+          >
+            {formatDisplayVersion(item.version)}
+          </span>
+          {item.hasPassword && (
+            <span
+              title="已设置访问密码"
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
+                isLight
+                  ? "bg-black/[0.06] text-[#1a1625]/60"
+                  : "bg-white/10 text-white/72"
+              )}
+            >
+              <Lock className="h-2.5 w-2.5" />
+              <span>锁定</span>
+            </span>
+          )}
+        </div>
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between"
+          style={{ paddingInline: manageEm(14), paddingBottom: manageEm(14), gap: manageEm(8) }}
+        >
+          <div
+            className={cn(
+              "motion-control min-w-0 flex-1 truncate text-sm font-medium leading-snug",
+              isLight
+                ? "text-[#1a1625]/75 group-hover:text-[#1a1625]"
+                : "text-white/80 group-hover:text-white"
+            )}
+          >
+            {item.subtitle || item.name}
+          </div>
+          <span
+            className={cn(
+              "flex shrink-0 items-end justify-center [&>svg]:h-[14px] [&>svg]:w-[14px]",
+              isLight ? "text-[#1a1625]/50" : "text-white"
+            )}
+          >
+            {item.icon}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * 实例管理高级控制面板 (ManageInstanceModal)
  * 涵盖：启动参数配置、存储信息与实例操作、实时终端、关于版本详情。
@@ -923,101 +1113,15 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
             {filteredManageInstances.map((item) => {
               const selected = item.id === mp.id;
               return (
-                <div
+                <ManageInstanceCard
                   key={item.id}
-                  data-manage-card={item.id}
-                  onClick={() => selectManagedInstance(item)}
-                  className={cn(
-                    "motion-instance-card group relative overflow-hidden cursor-pointer select-none flex-shrink-0",
-                    !isPortrait && "w-full",
-                    selected && "is-expanded"
-                  )}
-                  style={{
-                    width: isPortrait ? (selected ? PORTRAIT_CARD_ACTIVE_W : PORTRAIT_CARD_W) : undefined,
-                    height: isPortrait ? PORTRAIT_CARD_H : selected ? manageEm(196) : manageEm(152),
-                    borderRadius: manageEm(22),
-                  }}
-                >
-                  <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-                    <img
-                      src={item.cover || "./tavern-logo.png"}
-                      alt=""
-                      className="block h-full w-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = "none";
-                      }}
-                    />
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: isLight
-                          ? "linear-gradient(135deg, oklch(1 0 0 / 0.10) 0%, oklch(1 0 0 / 0.03) 100%)"
-                          : "oklch(0 0 0 / 0.04)",
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    className={cn(
-                      "pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-t",
-                      isLight
-                        ? "from-white/50 via-white/10 to-transparent"
-                        : "from-black/40 via-black/8 to-transparent"
-                    )}
-                  />
-
-                  <div className="pointer-events-none absolute left-0 top-0 z-[2] flex items-center gap-1.5" style={{ padding: manageEm(14) }}>
-                    <span
-                      className={cn(
-                        "rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-wide",
-                        isLight
-                          ? "bg-black/[0.06] text-[#1a1625]/60"
-                          : "bg-white/10 text-white/72"
-                      )}
-                    >
-                      {formatDisplayVersion(item.version)}
-                    </span>
-                    {item.hasPassword && (
-                      <span
-                        title="已设置访问密码"
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
-                          isLight
-                            ? "bg-black/[0.06] text-[#1a1625]/60"
-                            : "bg-white/10 text-white/72"
-                        )}
-                      >
-                        <Lock className="h-2.5 w-2.5" />
-                        <span>锁定</span>
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between"
-                    style={{ paddingInline: manageEm(14), paddingBottom: manageEm(14), gap: manageEm(8) }}
-                  >
-                    <div
-                      className={cn(
-                        "motion-control min-w-0 flex-1 truncate text-sm font-medium leading-snug",
-                        isLight
-                          ? "text-[#1a1625]/75 group-hover:text-[#1a1625]"
-                          : "text-white/80 group-hover:text-white"
-                      )}
-                    >
-                      {item.subtitle || item.name}
-                    </div>
-                    <span
-                      className={cn(
-                        "flex origin-bottom shrink-0 scale-[0.72] items-end justify-center",
-                        isLight ? "text-[#1a1625]/50" : "text-white"
-                      )}
-                    >
-                      {item.icon}
-                    </span>
-                  </div>
-                </div>
+                  item={item}
+                  selected={selected}
+                  isPortrait={isPortrait}
+                  isLight={isLight}
+                  isDynamic={isDynamic}
+                  onSelect={selectManagedInstance}
+                />
               );
             })}
 
