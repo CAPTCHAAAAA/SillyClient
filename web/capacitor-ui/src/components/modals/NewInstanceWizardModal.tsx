@@ -289,6 +289,8 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   const importCopyRef = useRef<HTMLDivElement>(null);
   const importTakeoverRef = useRef<HTMLDivElement>(null);
   const [wizardHeight, setWizardHeight] = useState<number | null>(null);
+  const wizardBodyRef = useRef<HTMLDivElement>(null);
+  const [wizardBodyFade, setWizardBodyFade] = useState({ top: false, bottom: false });
 
   const [showPreflightInfo, setShowPreflightInfo] = useState(false);
   const [hasReadPreflight, setHasReadPreflight] = useState(false);
@@ -340,6 +342,39 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     isOpen,
   ]);
 
+  const syncWizardBodyFade = () => {
+    const node = wizardBodyRef.current;
+    if (!node) return;
+    const top = node.scrollTop > 2;
+    const bottom = node.scrollHeight - node.clientHeight - node.scrollTop > 2;
+    setWizardBodyFade((current) => (
+      current.top === top && current.bottom === bottom ? current : { top, bottom }
+    ));
+  };
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    syncWizardBodyFade();
+    const node = wizardBodyRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => syncWizardBodyFade());
+    observer.observe(node);
+    Array.from(node.children).forEach((child) => observer.observe(child));
+    return () => observer.disconnect();
+  }, [
+    isOpen,
+    newInstanceMode,
+    wizardHeight,
+    newInstanceError,
+    newInstanceCompanionPresetEnabled,
+    newRemoteAuthEnabled,
+    migrationAccessMode,
+    showPreflightInfo,
+    showSecretsInfo,
+    showAccessModeInfo,
+    migrationIncludeSecrets,
+  ]);
+
   const handleSwitchMode = (mode: WizardMode) => {
     if (mode === newInstanceMode) return;
     if (wizardContainerRef.current) {
@@ -349,6 +384,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   };
 
   if (!isOpen && !isClosing) return null;
+
+  const wizardBodyMask = wizardBodyFade.top || wizardBodyFade.bottom
+    ? `linear-gradient(to bottom, ${wizardBodyFade.top ? "transparent" : "#000"} 0, #000 36px, #000 calc(100% - 36px), ${wizardBodyFade.bottom ? "transparent" : "#000"} 100%)`
+    : undefined;
 
   return (
     <div
@@ -384,7 +423,20 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-hidden">
+      <div
+        style={{
+          flex: "1 1 auto",
+          WebkitMaskImage: wizardBodyMask,
+          maskImage: wizardBodyMask,
+        }}
+        className="flex min-h-0 flex-col overflow-hidden"
+      >
+      <div
+        ref={wizardBodyRef}
+        onScroll={syncWizardBodyFade}
+        className="min-h-0 overflow-y-auto p-5 space-y-5 scrollbar-hidden"
+        style={{ flex: "1 1 auto" }}
+      >
         {/* 实例名称 */}
         <NewInstanceField label="名称" isLight={isLight}>
           <input
@@ -411,48 +463,33 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           >
             实例模式
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="ios-choice-track" role="group" aria-label="实例模式">
             <button
+              type="button"
               onClick={() => handleSwitchMode("local")}
+              aria-pressed={newInstanceMode === "local"}
               className={cn(
-                "ios-choice-control py-2 rounded-xl text-xs font-medium transition-all duration-300 border flex items-center justify-center gap-1.5",
-                newInstanceMode === "local"
-                  ? isLight
-                    ? "bg-black/[0.08] border-black/15 text-[#1a1625] shadow-sm"
-                    : "bg-white/[0.10] border-white/20 text-white shadow-sm"
-                  : isLight
-                  ? "bg-black/[0.02] border-black/[0.06] text-[#1a1625]/40 hover:text-[#1a1625]/85"
-                  : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/85"
+                "ios-choice-control py-2 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
               )}
             >
               本地实例
             </button>
             <button
+              type="button"
               onClick={() => handleSwitchMode("remote")}
+              aria-pressed={newInstanceMode === "remote"}
               className={cn(
-                "ios-choice-control py-2 rounded-xl text-xs font-medium transition-all duration-300 border flex items-center justify-center gap-1.5",
-                newInstanceMode === "remote"
-                  ? isLight
-                    ? "bg-black/[0.08] border-black/15 text-[#1a1625] shadow-sm"
-                    : "bg-white/[0.10] border-white/20 text-white shadow-sm"
-                  : isLight
-                  ? "bg-black/[0.02] border-black/[0.06] text-[#1a1625]/40 hover:text-[#1a1625]/85"
-                  : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/85"
+                "ios-choice-control py-2 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
               )}
             >
               远程连接
             </button>
             <button
+              type="button"
               onClick={() => handleSwitchMode("import")}
+              aria-pressed={newInstanceMode === "import"}
               className={cn(
-                "ios-choice-control py-2 rounded-xl text-xs font-medium transition-all duration-300 border flex items-center justify-center gap-1.5",
-                newInstanceMode === "import"
-                  ? isLight
-                    ? "bg-black/[0.08] border-black/15 text-[#1a1625] shadow-sm"
-                    : "bg-white/[0.10] border-white/20 text-white shadow-sm"
-                  : isLight
-                  ? "bg-black/[0.02] border-black/[0.06] text-[#1a1625]/40 hover:text-[#1a1625]/85"
-                  : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/85"
+                "ios-choice-control py-2 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
               )}
             >
               数据迁移
@@ -754,19 +791,13 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="ios-choice-track" role="group" aria-label="接入方式">
                 <button
                   type="button"
                   onClick={() => setMigrationAccessMode("copy")}
+                  aria-pressed={migrationAccessMode === "copy"}
                   className={cn(
-                    "ios-choice-control py-2.5 px-3 rounded-xl text-xs font-medium transition-all border flex items-center justify-center gap-1.5",
-                    migrationAccessMode === "copy"
-                      ? isLight
-                        ? "bg-black/[0.08] border-black/15 text-[#1a1625] shadow-sm"
-                        : "bg-white/[0.10] border-white/20 text-white shadow-sm"
-                      : isLight
-                      ? "bg-black/[0.02] border-black/[0.06] text-[#1a1625]/40 hover:text-[#1a1625]/85"
-                      : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/85"
+                    "ios-choice-control py-2.5 px-3 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                   )}
                 >
                   复制迁移
@@ -774,15 +805,9 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setMigrationAccessMode("takeover")}
+                  aria-pressed={migrationAccessMode === "takeover"}
                   className={cn(
-                    "ios-choice-control py-2.5 px-3 rounded-xl text-xs font-medium transition-all border flex items-center justify-center gap-1.5",
-                    migrationAccessMode === "takeover"
-                      ? isLight
-                        ? "bg-black/[0.08] border-black/15 text-[#1a1625] shadow-sm"
-                        : "bg-white/[0.10] border-white/20 text-white shadow-sm"
-                      : isLight
-                      ? "bg-black/[0.02] border-black/[0.06] text-[#1a1625]/40 hover:text-[#1a1625]/85"
-                      : "bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/85"
+                    "ios-choice-control py-2.5 px-3 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                   )}
                 >
                   原地接管
@@ -1260,6 +1285,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* 底部按钮 */}

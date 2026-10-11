@@ -192,6 +192,7 @@ function SillyClientLauncher() {
   const isWeb = !Capacitor.isNativePlatform();
   const showcaseParams = new URLSearchParams(window.location.search);
   const isShowcase = showcaseParams.get("showcase") === "1";
+  const isLocalPreview = /^(127\.0\.0\.1|localhost)$/.test(window.location.hostname);
   const isNativePreview = import.meta.env.DEV && showcaseParams.get("nativePreview") === "1";
   const isDemoPreview = import.meta.env.DEV && isWeb && !isShowcase;
   const showcaseSafeTop = isShowcase
@@ -2565,7 +2566,7 @@ function SillyClientLauncher() {
           <button
             ref={settingsBtnRef}
             onClick={() => {
-              if (isWeb && !isShowcase) return;
+              if (isWeb && !isShowcase && !isLocalPreview) return;
               if (showAppMenu) {
                 closeAppMenu();
               } else {
@@ -2658,26 +2659,28 @@ function SillyClientLauncher() {
 
         {/* 搜索栏 */}
         <div className="relative mb-10 w-full max-w-2xl">
-          <Search className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5", isLight ? "text-[#1a1625]/40" : "text-white/40")} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const match = instances.find(t => (t.subtitle || t.name).toLowerCase().includes(searchQuery.toLowerCase()));
-                if (match) {
-                  const idx = instances.indexOf(match) + 1;
-                  carouselRef.current?.goToSlide(idx);
+          <div className={cn("home-search", isLight && "is-light")}>
+            <Search className={cn("pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5", isLight ? "text-[#1a1625]/40" : "text-white/40")} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const match = instances.find(t => (t.subtitle || t.name).toLowerCase().includes(searchQuery.toLowerCase()));
+                  if (match) {
+                    const idx = instances.indexOf(match) + 1;
+                    carouselRef.current?.goToSlide(idx);
+                  }
                 }
-              }
-            }}
-            placeholder="搜索并打开实例"
-            className={cn(
-              "w-full h-14 pl-12 pr-4 rounded-[20px] border focus:outline-none focus:ring-0",
-              isLight ? "bg-black/5 border-black/10 text-[#1a1625] placeholder:text-[#1a1625]/40" : "bg-white/5 border-white/10 text-white placeholder:text-white/40"
-            )}
-          />
+              }}
+              placeholder="搜索并打开实例"
+              className={cn(
+                "w-full h-14 pl-12 pr-4 rounded-[20px] border-0 bg-transparent focus:outline-none focus:ring-0",
+                isLight ? "text-[#1a1625] placeholder:text-[#1a1625]/40" : "text-white placeholder:text-white/40"
+              )}
+            />
+          </div>
           {searchQuery && (
             <div className="motion-menu-list animate-dropdown absolute top-full left-0 right-0 mt-2 rounded-2xl border overflow-hidden z-30 max-h-64 overflow-y-auto scrollbar-subtle">
               {searchResults.map(t => (
@@ -2740,8 +2743,9 @@ function SillyClientLauncher() {
           isWindows={isWindows}
           isWeb={isWeb}
           isShowcase={isShowcase}
+          isLocalPreview={isLocalPreview}
           onNewInstance={() => {
-            if (isWeb && !isShowcase && !import.meta.env.DEV) {
+            if (isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV) {
               void openExternalUrl("https://github.com/CAPTCHAAAAA/SillyClient/releases/latest").catch(() => {});
               return;
             }

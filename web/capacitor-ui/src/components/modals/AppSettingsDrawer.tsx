@@ -280,7 +280,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
       <div className="app-settings-body flex-1 overflow-y-auto p-5 scrollbar-subtle">
         {/* 顶部胶囊切换栏 */}
         <div
-          className="app-settings-tabs flex gap-2 mb-4"
+          className="app-settings-tabs ios-choice-track mb-4"
           role="group"
           aria-label="设置分类"
         >
@@ -295,7 +295,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
               key={tab.id}
               type="button"
               aria-pressed={appSettingsTab === tab.id}
-              className="app-settings-tab ios-choice-control motion-control flex-1 h-9 rounded-xl text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="app-settings-tab ios-choice-control motion-control h-9 text-xs font-medium border transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
               onClick={() => setAppSettingsTab(tab.id)}
             >
               {tab.label}

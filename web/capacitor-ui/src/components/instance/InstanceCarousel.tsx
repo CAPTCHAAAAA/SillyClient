@@ -30,6 +30,7 @@ export interface InstanceCarouselProps {
   isWindows?: boolean;
   isWeb?: boolean;
   isShowcase?: boolean;
+  isLocalPreview?: boolean;
   onNewInstance: () => void;
   activeSlide?: number;
   onActiveSlideChange?: (index: number) => void;
@@ -62,6 +63,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   isWindows = false,
   isWeb = false,
   isShowcase = false,
+  isLocalPreview = false,
   onNewInstance,
   activeSlide: activeSlideProp,
   onActiveSlideChange,
@@ -602,8 +604,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     };
   }, [goToSlide, setActiveSlide]);
 
-  const createLabel = isWeb && !isShowcase && !import.meta.env.DEV ? "下载 APK" : "新建实例";
-  const createHint = isWeb && !isShowcase && !import.meta.env.DEV ? "获取最新版本" : "设置新的酒馆环境";
+  const createLabel = isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV ? "下载 APK" : "新建实例";
+  const createHint = isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV ? "获取最新版本" : "设置新的酒馆环境";
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6 md:px-8">
