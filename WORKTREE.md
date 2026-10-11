@@ -32,7 +32,7 @@
 
 | 日期 | 操作人 / 提交 | 改动摘要与内部验证结果 | 状态 |
 | :--- | :--- | :--- | :---: |
-| 2026-10-11 | Agent | 管理菜单按 Movie workspace 骨架重做：控制岛玻璃、扁平设置项、页签溶解、终端内凹、磨砂滑杆内圈提亮。显示为 CSS zoom 0.67（约 724×460），不除 devicePixelRatio。新建实例卡复用 FlipCard 倾斜按压，封面圆角毛边修复。`tsc --noEmit && vite build` 通过。只推本分支，未合入 main。 | 已推送 `lts/common-frontend` |
+| 2026-10-11 | Agent (`b89e89a`) | 管理菜单按 Movie workspace 骨架重做：控制岛玻璃、扁平设置项、页签溶解、终端内凹、磨砂滑杆内圈提亮。显示为 CSS zoom 0.67（约 724×460），不除 devicePixelRatio。新建实例卡复用 FlipCard 倾斜按压，封面圆角毛边修复。`tsc --noEmit && vite build` 通过。只推本分支，未合入 main。 | 已推送 `lts/common-frontend` |
 | 2026-10-10 | Agent (9cd200e) | 全量归位通用前端基线：3D机械下沉卡片、长按拖拽重排与Terminal拖拽定位 | 已同步并推送主干 |
 | 2026-10-10 | Agent | 正式建立 `lts/common-frontend` 独立全端前端开发区，挂载依赖软链接并通过 tsc 严格类型检查 | 准备就绪 |
 
