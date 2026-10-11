@@ -218,6 +218,8 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform-style: flat;
+  -webkit-mask-image: linear-gradient(#fff, #fff);
+  mask-image: linear-gradient(#fff, #fff);
 }
 
 /* 强制正反面内部所有子卡片、容器、渐变遮罩与伪元素与 26px 边框绝对同心（26px），彻底消除圆角脱节与发丝缝隙 */
@@ -251,6 +253,50 @@
   outline: none !important;
 }
 
+/* 封面卡不需要毛玻璃采样。backdrop-filter 会让圆角遮罩走未抗锯齿的合成层。 */
+.flip-card .motion-instance-card:not([data-card-index="0"]) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: transparent !important;
+}
+
+/* 新建实例卡内部：一比一沿用柔焦材质的透明雾面 + 边缘内发光。
+   外体积投影用原来的柔焦阴影，不换成实例卡那层淡阴影。
+   悬停只在这层投影上叠加指针阴影，按压仍走转子按压阴影。 */
+.flip-card .motion-instance-card[data-card-index="0"],
+.flip-card .motion-instance-card[data-card-index="0"]:hover,
+body[data-preview-light] .flip-card .motion-instance-card[data-card-index="0"],
+body[data-preview-light] .flip-card .motion-instance-card[data-card-index="0"]:hover,
+body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0"],
+body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0"]:hover {
+  background-color: rgba(var(--sf-fog-rgb, 255 250 252) / var(--sf-fog, 0.02)) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
+  backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
+  box-shadow:
+    inset 0 0 var(--sf-glow1-spread, 41px) 1px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
+    inset 0 0 var(--sf-glow2-spread, 81px) 0 rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
+}
+
+.flip-card .motion-instance-card[data-card-index="0"]::after,
+body[data-preview-light] .flip-card .motion-instance-card[data-card-index="0"]::after,
+body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0"]::after {
+  background: transparent !important;
+}
+
+.flip-card[data-card-index="0"] .flip-card__rotor {
+  box-shadow:
+    0 var(--sf-sh-y, 7px) var(--sf-sh-blur, 26px) rgba(var(--sf-sh-rgb, 7 5 10) / var(--sf-sh-a, 0.375)),
+    calc((var(--pointer-from-left, 0.5) - 0.5) * 12px)
+    calc((var(--pointer-from-top, 0.5) - 0.5) * 14px + 3px)
+    30px -4px
+    rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.32 * var(--card-opacity, 0))),
+    calc((var(--pointer-from-left, 0.5) - 0.5) * 6px)
+    calc((var(--pointer-from-top, 0.5) - 0.5) * 6px + 1px)
+    12px -2px
+    rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.18 * var(--card-opacity, 0)));
+}
+
 /* 避免 FlipCard 内部的子卡片产生二次重复缩放导致的撕裂脱节，由外层 .flip-card 统一承载 3D 阴影一体化按压下沉 */
 .flip-card .motion-instance-card:active {
   transform: none !important;
@@ -258,9 +304,16 @@
 
 .flip-card .motion-instance-card img {
   border-radius: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  transform: scale(1.015) !important;
+  position: absolute !important;
+  top: -1px !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: -1px !important;
+  width: calc(100% + 2px) !important;
+  height: calc(100% + 2px) !important;
+  max-width: none !important;
+  object-fit: cover;
+  transform: none !important;
 }
 
 .flip-card__face img {

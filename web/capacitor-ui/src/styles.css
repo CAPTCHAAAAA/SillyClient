@@ -913,9 +913,6 @@ header span[class*="truncate"] {
     inset 0 -1px 0 rgba(0, 0, 0, 0.06),
     0 0 12px rgba(7, 5, 10, 0.08),
     0 2px 5px rgba(7, 5, 10, 0.055);
-  transform: scale(1) translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  will-change: transform;
   transition:
     transform var(--motion-release) var(--motion-ease-release),
     border-color var(--motion-fast) ease,
@@ -982,6 +979,33 @@ header span[class*="truncate"] {
   transform: translate3d(0, 0, 0);
   filter: blur(0);
   visibility: visible;
+  transition-delay: 0s;
+}
+
+.manage-settings-outgoing {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 管理菜单这块画布是定高的，没有页签那种高度跟随。
+   全局 ease-out 会在前 200ms 把 500ms 溶解做完，大面积设置页看起来像没动画。
+   时长、3px 模糊、6px 位移不动，只把曲线铺满这 500ms。 */
+.manage-panel-surface .motion-panel-face,
+.manage-panel-surface .motion-panel-face.is-active,
+.manage-panel-surface .manage-settings-outgoing {
+  transition:
+    opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 500ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 500ms cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s linear 500ms;
+}
+
+.manage-panel-surface .motion-panel-face.is-active {
   transition-delay: 0s;
 }
 
@@ -2115,3 +2139,156 @@ select option {
   }
 }
 
+/* 管理菜单只有一层控制岛玻璃。任务面板的渐变描边不再叠上来。 */
+.manage-panel-surface.ios-task-surface,
+.manage-panel-surface.ios-task-surface.is-light {
+  border: 0;
+  box-shadow:
+    rgba(13, 7, 12, 0.17) 0 14px 30px,
+    rgba(13, 7, 12, 0.055) 0 2px 8px,
+    rgba(255, 255, 255, 0.06) 0 0.5px 0 0 inset;
+}
+
+.manage-panel-surface.ios-task-surface.is-light {
+  box-shadow:
+    rgba(30, 18, 25, 0.1) 0 14px 30px,
+    rgba(30, 18, 25, 0.04) 0 2px 8px,
+    rgba(255, 255, 255, 0.65) 0 0.5px 0 0 inset;
+}
+
+.manage-panel-surface.ios-task-surface::before {
+  content: none;
+}
+
+/* 搜索、页签、输入和次要按钮共用这一层浅内凹。 */
+.manage-recess {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 0 1px 1.5px rgba(0, 0, 0, 0.22),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.08);
+}
+
+.manage-panel-surface.is-light .manage-recess {
+  background: rgba(26, 22, 37, 0.045);
+  box-shadow:
+    inset 0 1px 1.5px rgba(28, 18, 24, 0.08),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.7);
+}
+
+.manage-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
+.manage-panel-surface.is-light .manage-thumb {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+/* 管理菜单悬停跟控制岛、实例菜单一样：只走字色，500ms，不缩放、不改底。 */
+.manage-panel-surface button.motion-control {
+  transition-property: color;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.manage-panel-surface button.motion-control:hover,
+.manage-panel-surface button.motion-control:active:not(:disabled) {
+  transform: none;
+  filter: none;
+}
+
+/* 管理菜单缩小时，字号跟面板字号同比例缩小。基准 16px = 1em。 */
+
+.manage-panel-surface .text-xs {
+  font-size: 0.75em;
+}
+
+.manage-panel-surface .text-sm {
+  font-size: 0.875em;
+}
+
+.manage-panel-surface .text-\[10px\] {
+  font-size: 0.625em;
+}
+
+.manage-panel-surface .text-\[11px\] {
+  font-size: 0.6875em;
+}
+
+.manage-panel-surface .text-\[11\.5px\] {
+  font-size: 0.71875em;
+}
+
+.manage-panel-surface .text-\[11px\].leading-\[18px\] {
+  line-height: calc(18 / 11);
+}
+
+/* 管理菜单左侧卡片：和侧栏只差一层很轻的透明度，边缘用 1px 内凹，不铺实色。
+   图片不再 scale。缩放会让 Chrome 的圆角裁切失去抗锯齿，角上出现毛边。 */
+.manage-panel-surface aside .motion-instance-card,
+.manage-panel-surface aside .motion-instance-card:hover,
+.manage-panel-surface aside .motion-instance-card:active,
+.manage-panel-surface aside .motion-instance-card.is-expanded {
+  overflow: hidden;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: transparent;
+  filter: none;
+  transform: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06),
+    0 0 12px rgba(7, 5, 10, 0.08),
+    0 2px 5px rgba(7, 5, 10, 0.055);
+  isolation: isolate;
+  will-change: height;
+  backface-visibility: visible;
+  outline: none;
+  border: 0;
+  -webkit-mask-image: linear-gradient(#fff, #fff);
+  mask-image: linear-gradient(#fff, #fff);
+}
+
+.manage-panel-surface.is-light aside .motion-instance-card,
+.manage-panel-surface.is-light aside .motion-instance-card:hover,
+.manage-panel-surface.is-light aside .motion-instance-card:active,
+.manage-panel-surface.is-light aside .motion-instance-card.is-expanded {
+  background-color: transparent;
+}
+
+.manage-panel-surface aside .motion-instance-card.is-expanded,
+.manage-panel-surface aside .motion-instance-card.is-expanded:hover,
+.manage-panel-surface aside .motion-instance-card.is-expanded:active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.065),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.07),
+    0 0 16px rgba(0, 0, 0, 0.12),
+    0 3px 8px rgba(0, 0, 0, 0.07);
+}
+
+.manage-panel-surface aside .motion-instance-card {
+  transition: height 500ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.manage-card-veil {
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.manage-panel-surface aside .motion-instance-card img {
+  display: block;
+  position: absolute;
+  top: -1px;
+  right: auto;
+  bottom: auto;
+  left: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  max-width: none;
+  object-fit: cover;
+  transform: none;
+  filter: none;
+}
+
+.manage-panel-surface aside .motion-instance-card > .absolute {
+  border-radius: inherit;
+}

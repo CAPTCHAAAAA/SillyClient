@@ -5,6 +5,7 @@ import type { TavernInstance } from "../../types";
 import { InstanceCard } from "./InstanceCard";
 import { setCarouselSnapLock } from "../../lib/carousel-snap";
 import { createPaginationMotion, paginationCenter, paginationDotOpacity, PAGINATION_REST_WIDTH } from "../../lib/pagination-motion";
+import { FlipCard } from "../common/FlipCard";
 
 export interface InstanceCarouselRef {
   goToSlide: (index: number) => void;
@@ -601,6 +602,9 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     };
   }, [goToSlide, setActiveSlide]);
 
+  const createLabel = isWeb && !isShowcase && !import.meta.env.DEV ? "下载 APK" : "新建实例";
+  const createHint = isWeb && !isShowcase && !import.meta.env.DEV ? "获取最新版本" : "设置新的酒馆环境";
+
   return (
     <div className="w-full max-w-6xl mx-auto px-6 md:px-8">
       <div className="relative">
@@ -621,37 +625,65 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
           {/* 左侧视口居中弹性垫片 */}
           <div className="flex-shrink-0 w-[calc(50%-120px)]" aria-hidden />
 
-          {/* 新建实例卡片（完全对齐普通实例卡片的轻拟物微光与物理回弹动效体系） */}
-          <button
-            type="button"
-            onClick={onNewInstance}
-            className={cn(
-              "motion-instance-card flex-shrink-0 w-60 h-[320px] rounded-[26px] overflow-hidden snap-center group relative cursor-pointer text-left focus:outline-none",
-              isLight
-                ? "bg-black/[0.03]"
-                : "bg-white/[0.04]"
-            )}
+          {/* 新建实例卡片：倾斜/高光/按压跟实例卡，内部仍是原透明雾面 + 边缘内发光 */}
+          <FlipCard
             data-card-index="0"
-          >
-            <div className="relative h-full flex flex-col justify-between p-3.5 pointer-events-none">
+            className="group flex-shrink-0 snap-center cursor-pointer"
+            width={240}
+            height={320}
+            radius={26}
+            flipped={false}
+            axis="y"
+            flipOnClick={false}
+            draggable={false}
+            tilt
+            tiltMax={3.8}
+            glare
+            glareOpacity={isLight ? 0.01 : 0.015}
+            behindGlow={false}
+            borderColor="transparent"
+            hoverScale={1}
+            perspective={1100}
+            stiffness={160}
+            damping={28}
+            background="transparent"
+            color={isLight ? "#1a1625" : "#f5f5f5"}
+            shadow
+            shadowColor="#000000"
+            shadowOpacity={isLight ? 0.05 : 0.18}
+            ariaLabel={createLabel}
+            onClick={onNewInstance}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              if (!event.repeat) onNewInstance();
+            }}
+            front={(
               <div
-                className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200",
-                  isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
-                )}
+                data-card-index="0"
+                className="motion-instance-card relative h-full w-full overflow-hidden rounded-[26px] text-left"
               >
-                <Play className={cn("w-3.5 h-3.5 fill-current transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/80" : "text-white/40 group-hover:text-white/80")} />
-              </div>
-              <div>
-                <div className={cn("text-base font-semibold mb-0.5 transition-colors", isLight ? "text-[#1a1625]" : "text-white")}>
-                  {isWeb && !isShowcase && !import.meta.env.DEV ? "下载 APK" : "新建实例"}
+                <div className="relative z-[2] flex h-full flex-col justify-between p-3.5">
+                  <div
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-lg",
+                      isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
+                    )}
+                  >
+                    <Play className={cn("h-3.5 w-3.5 fill-current transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/80" : "text-white/40 group-hover:text-white/80")} />
+                  </div>
+                  <div>
+                    <div className={cn("mb-0.5 text-base font-semibold transition-colors", isLight ? "text-[#1a1625]" : "text-white")}>
+                      {createLabel}
+                    </div>
+                    <div className={cn("text-xs transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/75" : "text-white/40 group-hover:text-white/75")}>
+                      {createHint}
+                    </div>
+                  </div>
                 </div>
-                <div className={cn("text-xs transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/75" : "text-white/40 group-hover:text-white/75")}>
-                  {isWeb && !isShowcase && !import.meta.env.DEV ? "获取最新版本" : "设置新的酒馆环境"}
-                </div>
               </div>
-            </div>
-          </button>
+            )}
+          />
 
           {/* 解耦后的实例卡片列表 */}
           {localInstances.map((instance, index) => {

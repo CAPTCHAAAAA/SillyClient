@@ -97,11 +97,11 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
       }}
     >
       {/* 封面与遮罩：100% 饱满贴合圆角内壁，彻底消除边缘漏边 */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0">
         <img
           src={instance.cover || "./tavern-logo.png"}
           alt=""
-          className="w-full h-full object-cover scale-[1.015]"
+          className="w-full h-full object-cover"
           loading="lazy"
         />
         <div

@@ -765,131 +765,118 @@
             background: rgba(255, 255, 255, 0.12);
           }
 
-          /* 磨砂强度滑块：恢复原点纹凹槽，保留当前扁平拨杆。 */
+          /* 磨砂强度：内凹轨道不动。进度溶进轨道，滑杆是细环，拖动无极跟手。 */
+          @property --blur-t {
+            syntax: "<number>";
+            inherits: true;
+            initial-value: 0;
+          }
+
+          .preview-blur-field {
+            position: relative;
+            height: 32px;
+            touch-action: none;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: --blur-t 220ms cubic-bezier(0.22, 1, 0.36, 1);
+          }
+
+          .preview-blur-field.is-dragging {
+            cursor: grabbing;
+            transition: none;
+          }
+
+          .preview-blur-field:focus-visible {
+            outline: none;
+          }
+
+          .preview-blur-track {
+            position: relative;
+            height: 32px;
+            border-radius: 999px;
+            overflow: hidden;
+            background:
+              linear-gradient(100deg, rgba(255, 255, 255, 0.07), transparent 42%, rgba(0, 0, 0, 0.08) 100%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.035));
+            -webkit-backdrop-filter: blur(12.9px) saturate(1.35);
+            backdrop-filter: blur(12.9px) saturate(1.35);
+            box-shadow:
+              inset 0 2px 4px rgba(0, 0, 0, 0.28),
+              inset 1.11px 1.67px 4.45px rgba(0, 0, 0, 0.10),
+              inset 1.11px 1.67px 4.45px rgba(0, 0, 0, 0.08),
+              inset 0 -0.7px 1px rgba(255, 255, 255, 0.16);
+          }
+
+          .preview-blur-fill {
+            position: absolute;
+            z-index: 0;
+            inset: 0 auto 0 0;
+            width: calc(29px + (100% - 32px) * var(--blur-t, 0));
+            max-width: 100%;
+            border-radius: inherit;
+            pointer-events: none;
+            background:
+              linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08) calc(100% - 26px), rgba(255, 255, 255, 0));
+          }
+
+          .preview-blur-knob {
+            --t: var(--blur-t, 0);
+            position: absolute;
+            z-index: 2;
+            top: 50%;
+            left: calc(16px + (100% - 32px) * var(--t, 0));
+            width: 26px;
+            height: 26px;
+            border: 2px solid rgba(255, 255, 255, 0.72);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.82);
+            box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.16);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+          }
+
+          .preview-blur-field:active .preview-blur-knob,
+          .preview-blur-field.is-dragging .preview-blur-knob {
+            border-color: rgba(255, 255, 255, 0.86);
+          }
+
           .preview-blur-slider {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            opacity: 0.001;
+            cursor: pointer;
+            pointer-events: none;
             -webkit-appearance: none;
             appearance: none;
-            width: 100%;
-            height: 24px;
             background: transparent;
             outline: none;
-            cursor: pointer;
           }
 
-          .preview-blur-slider::-webkit-slider-runnable-track {
-            height: 13px;
-            border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            background-image:
-              radial-gradient(circle at 50% 50%,
-                rgba(255, 255, 255, 0.17) 0 0.9px,
-                rgba(255, 255, 255, 0.17) 0.9px,
-                transparent 1.9px),
-              linear-gradient(to right,
-                rgba(255, 255, 255, 0.10) var(--pct, 44%),
-                rgba(255, 255, 255, 0.03) calc(var(--pct, 44%) + 8px));
-            background-size:
-              14px 100%,
-              100% 100%;
-            background-repeat: repeat-x, no-repeat;
+          body[data-preview-light] .preview-blur-track {
+            background:
+              linear-gradient(100deg, rgba(255, 255, 255, 0.34), transparent 46%, rgba(28, 18, 24, 0.05) 100%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28));
             box-shadow:
-              inset 0 1.5px 3px rgba(0, 0, 0, 0.16),
-              inset 0 -0.5px 0 rgba(255, 255, 255, 0.045);
+              inset 0 2px 4px rgba(28, 18, 24, 0.12),
+              inset 1.11px 1.67px 4.45px rgba(28, 18, 24, 0.10),
+              inset 1.11px 1.67px 4.45px rgba(28, 18, 24, 0.06),
+              inset 0 -0.56px 1.11px rgba(255, 255, 255, 0.45);
           }
 
-          .preview-blur-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 10px;
-            margin-top: 1.5px;
-            border: 0;
-            border-radius: 5px;
-            background: rgba(232, 229, 235, 0.94);
-            box-shadow:
-              0 1px 2px rgba(7, 5, 10, 0.24),
-              inset 0 0 0 0.5px rgba(28, 23, 34, 0.16),
-              inset 0 0.5px 0 rgba(255, 255, 255, 0.48);
-            cursor: pointer;
+          body[data-preview-light] .preview-blur-knob {
+            border-color: rgba(26, 22, 37, 0.78);
+            background: rgba(255, 255, 255, 0.62);
+            box-shadow: 0 0.5px 1px rgba(28, 18, 24, 0.16);
           }
 
-          .preview-blur-slider::-moz-range-track {
-            height: 13px;
-            border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            background-image:
-              radial-gradient(circle at 50% 50%,
-                rgba(255, 255, 255, 0.17) 0 0.9px,
-                rgba(255, 255, 255, 0.17) 0.9px,
-                transparent 1.9px),
-              linear-gradient(to right,
-                rgba(255, 255, 255, 0.10) var(--pct, 44%),
-                rgba(255, 255, 255, 0.03) calc(var(--pct, 44%) + 8px));
-            background-size:
-              14px 100%,
-              100% 100%;
-            background-repeat: repeat-x, no-repeat;
-            box-shadow:
-              inset 0 1.5px 3px rgba(0, 0, 0, 0.16),
-              inset 0 -0.5px 0 rgba(255, 255, 255, 0.045);
-          }
-
-          .preview-blur-slider::-moz-range-thumb {
-            width: 18px;
-            height: 10px;
-            border: 0;
-            border-radius: 5px;
-            background: rgba(232, 229, 235, 0.94);
-            box-shadow:
-              0 1px 2px rgba(7, 5, 10, 0.24),
-              inset 0 0 0 0.5px rgba(28, 23, 34, 0.16),
-              inset 0 0.5px 0 rgba(255, 255, 255, 0.48);
-            cursor: pointer;
-          }
-
-          body[data-preview-light] .preview-blur-slider::-webkit-slider-runnable-track {
-            border-color: rgba(36, 30, 43, 0.10);
-            background-image:
-              radial-gradient(circle at 50% 50%,
-                rgba(36, 30, 43, 0.18) 0 0.9px,
-                rgba(36, 30, 43, 0.18) 0.9px,
-                transparent 1.9px),
-              linear-gradient(to right,
-                rgba(36, 30, 43, 0.12) var(--pct, 44%),
-                rgba(36, 30, 43, 0.045) calc(var(--pct, 44%) + 8px));
-            box-shadow:
-              inset 0 1.5px 3px rgba(36, 30, 43, 0.10),
-              inset 0 -0.5px 0 rgba(255, 255, 255, 0.5);
-          }
-
-          body[data-preview-light] .preview-blur-slider::-webkit-slider-thumb {
-            background: rgba(255, 255, 255, 0.94);
-            box-shadow:
-              0 1px 2px rgba(36, 30, 43, 0.15),
-              inset 0 0 0 0.5px rgba(36, 30, 43, 0.11),
-              inset 0 0.5px 0 rgba(255, 255, 255, 0.64);
-          }
-
-          body[data-preview-light] .preview-blur-slider::-moz-range-track {
-            border-color: rgba(36, 30, 43, 0.10);
-            background-image:
-              radial-gradient(circle at 50% 50%,
-                rgba(36, 30, 43, 0.18) 0 0.9px,
-                rgba(36, 30, 43, 0.18) 0.9px,
-                transparent 1.9px),
-              linear-gradient(to right,
-                rgba(36, 30, 43, 0.12) var(--pct, 44%),
-                rgba(36, 30, 43, 0.045) calc(var(--pct, 44%) + 8px));
-            box-shadow:
-              inset 0 1.5px 3px rgba(36, 30, 43, 0.10),
-              inset 0 -0.5px 0 rgba(255, 255, 255, 0.5);
-          }
-
-          body[data-preview-light] .preview-blur-slider::-moz-range-thumb {
-            background: rgba(255, 255, 255, 0.94);
-            box-shadow:
-              0 1px 2px rgba(36, 30, 43, 0.15),
-              inset 0 0 0 0.5px rgba(36, 30, 43, 0.11),
-              inset 0 0.5px 0 rgba(255, 255, 255, 0.64);
+          body[data-preview-light] .preview-blur-fill {
+            background:
+              linear-gradient(90deg, rgba(26, 22, 37, 0.16), rgba(26, 22, 37, 0.07) calc(100% - 26px), rgba(26, 22, 37, 0));
           }
 
           /* 4b — 壁纸导入组块：中性玻璃材质，替换原有大红大绿状态色 */
@@ -1522,10 +1509,9 @@
 
           .motion-instance-card img {
             display: block;
-            width: 100% !important;
-            height: 100% !important;
             opacity: var(--sf-img-op, 1) !important;
-            filter: brightness(var(--sf-img-bri, 1)) saturate(var(--sf-img-sat, 1)) blur(var(--sf-img-blur, 0px)) !important;
+            filter: var(--sf-img-filter, none) !important;
+            transform: none !important;
           }
 
           /* 压掉源样式遗留的卡片伪元素盖层，保持背景通透
@@ -1611,23 +1597,69 @@
             to { opacity: 0; }
           }
 
+          /* 管理菜单左侧卡片叠在 14px 间距里。轮播用的 7px/26px 投影会被裁成圆角外的深色断层，
+             再叠上壁纸色就变成两层阴影。侧栏内改成和栏体同色的实底，不再外扩投影。 */
+          .manage-panel-surface aside .motion-instance-card,
+          .manage-panel-surface aside .motion-instance-card:hover,
+          body[data-preview-light] .manage-panel-surface aside .motion-instance-card,
+          body[data-preview-light] .manage-panel-surface aside .motion-instance-card:hover,
+          body[data-preview-dark-mode] .manage-panel-surface aside .motion-instance-card,
+          body[data-preview-dark-mode] .manage-panel-surface aside .motion-instance-card:hover {
+            background-color: rgba(255, 255, 255, 0.055) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+          }
+
+          .manage-panel-surface aside .motion-instance-card::after,
+          body[data-preview-light] .manage-panel-surface aside .motion-instance-card::after,
+          body[data-preview-dark-mode] .manage-panel-surface aside .motion-instance-card::after {
+            background: transparent !important;
+          }
+
+          body[data-preview-light] .manage-panel-surface.is-light aside .motion-instance-card,
+          body[data-preview-light] .manage-panel-surface.is-light aside .motion-instance-card:hover,
+          .manage-panel-surface.is-light aside .motion-instance-card,
+          .manage-panel-surface.is-light aside .motion-instance-card:hover {
+            background-color: rgba(255, 255, 255, 0.28) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(26, 22, 37, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+          }
+
         `;
 
         const textNodesMatching = (node, value) =>
           Array.from(node.querySelectorAll("span")).filter((item) => item.textContent.trim() === value);
 
-        const setWallpaperBlur = (doc, value) => {
-          wallpaperBlur = Number(value);
-          doc.documentElement.style.setProperty("--preview-wallpaper-blur", `${wallpaperBlur}px`);
+        const setWallpaperBlur = (doc, value, visualT) => {
+          const min = 0;
+          const max = 16;
+          const numeric = Math.min(max, Math.max(min, Number(value)));
+          const t = visualT == null
+            ? (max === min ? 0 : (numeric - min) / (max - min))
+            : Math.min(1, Math.max(0, Number(visualT)));
+          const shown = min + t * (max - min);
+          wallpaperBlur = shown;
+          doc.documentElement.style.setProperty("--preview-wallpaper-blur", `${shown}px`);
           const output = doc.querySelector(".preview-wallpaper-blur-control output");
-          if (output) output.value = `${wallpaperBlur} px`;
-          const slider = doc.querySelector(".preview-blur-slider");
-          if (slider) {
-            const min = Number(slider.min) || 0;
-            const max = Number(slider.max) || 16;
-            const pct = ((wallpaperBlur - min) / (max - min)) * 100;
-            slider.style.setProperty("--pct", `${pct}%`);
+          if (output) output.value = formatBlur(shown);
+          const field = doc.querySelector(".preview-blur-field");
+          const slider = field?.querySelector(".preview-blur-slider");
+          if (field) {
+            field.style.setProperty("--blur-t", String(t));
+            field.setAttribute("aria-valuenow", String(Math.round(shown * 10) / 10));
+            field.setAttribute("aria-valuetext", formatBlur(shown));
+            field.querySelectorAll(".preview-blur-dot").forEach((dot) => dot.remove());
           }
+          if (slider) slider.value = String(shown);
+        };
+
+        const formatBlur = (value) => {
+          const rounded = Math.round(Number(value) * 10) / 10;
+          return `${Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)} px`;
         };
 
         const getBackgroundPanel = (doc) =>
@@ -1699,8 +1731,9 @@
           const wallpaperGroup = wallpaperLabel?.parentElement;
           if (!wallpaperGroup) return;
           if (existing) {
-            if (wallpaperGroup.nextElementSibling !== existing) wallpaperGroup.after(existing);
-            return;
+            if (!existing.querySelector(".preview-blur-fill")) existing.remove();
+            else if (wallpaperGroup.nextElementSibling !== existing) wallpaperGroup.after(existing);
+            if (existing.isConnected) return;
           }
 
           const isLight = !!doc.body.dataset.previewLight;
@@ -1718,17 +1751,84 @@
           output.value = `${wallpaperBlur} px`;
           label.append(title, output);
 
+          const field = doc.createElement("div");
+          field.className = "preview-blur-field";
+          const track = doc.createElement("div");
+          track.className = "preview-blur-track";
+          track.setAttribute("aria-hidden", "true");
+          const fill = doc.createElement("span");
+          fill.className = "preview-blur-fill";
+          track.append(fill);
+          const blurMin = 0;
+          const blurMax = 16;
+          const knob = doc.createElement("span");
+          knob.className = "preview-blur-knob";
+          track.append(knob);
+
           const input = doc.createElement("input");
           input.className = "preview-blur-slider";
           input.type = "range";
-          input.min = "0";
-          input.max = "16";
-          input.step = "1";
+          input.min = String(blurMin);
+          input.max = String(blurMax);
+          input.step = "any";
           input.value = String(wallpaperBlur);
           input.setAttribute("aria-label", "壁纸磨砂强度");
-          input.addEventListener("input", () => setWallpaperBlur(doc, input.value));
+          input.tabIndex = -1;
 
-          control.append(label, input);
+          const valueFromPointer = (event) => {
+            const rect = track.getBoundingClientRect();
+            const inset = 16;
+            const span = Math.max(1, rect.width - inset * 2);
+            const x = Math.min(rect.width - inset, Math.max(inset, event.clientX - rect.left));
+            const ratio = (x - inset) / span;
+            return { t: ratio, value: blurMin + ratio * (blurMax - blurMin) };
+          };
+
+          field.tabIndex = 0;
+          field.setAttribute("role", "slider");
+          field.setAttribute("aria-label", "壁纸磨砂强度");
+          field.setAttribute("aria-valuemin", String(blurMin));
+          field.setAttribute("aria-valuemax", String(blurMax));
+          field.setAttribute("aria-orientation", "horizontal");
+          field.addEventListener("pointerdown", (event) => {
+            if (event.button != null && event.button !== 0) return;
+            event.preventDefault();
+            field.setPointerCapture(event.pointerId);
+            field.classList.add("is-dragging");
+            const apply = (pointerEvent) => {
+              const next = valueFromPointer(pointerEvent);
+              setWallpaperBlur(doc, next.value, next.t);
+            };
+            const end = (pointerEvent) => {
+              if (field.hasPointerCapture?.(pointerEvent.pointerId)) {
+                field.releasePointerCapture(pointerEvent.pointerId);
+              }
+              field.classList.remove("is-dragging");
+              const next = valueFromPointer(pointerEvent);
+              setWallpaperBlur(doc, next.value, next.t);
+              field.removeEventListener("pointermove", apply);
+              field.removeEventListener("pointerup", end);
+              field.removeEventListener("pointercancel", end);
+            };
+            apply(event);
+            field.addEventListener("pointermove", apply);
+            field.addEventListener("pointerup", end);
+            field.addEventListener("pointercancel", end);
+          });
+          field.addEventListener("keydown", (event) => {
+            const current = Number(input.value);
+            let next = null;
+            if (event.key === "ArrowRight" || event.key === "ArrowUp") next = Math.round(current) + 1;
+            else if (event.key === "ArrowLeft" || event.key === "ArrowDown") next = Math.round(current) - 1;
+            else if (event.key === "Home") next = blurMin;
+            else if (event.key === "End") next = blurMax;
+            if (next == null) return;
+            event.preventDefault();
+            setWallpaperBlur(doc, Math.min(blurMax, Math.max(blurMin, next)));
+          });
+
+          field.append(track, input);
+          control.append(label, field);
           wallpaperGroup.after(control);
           setWallpaperBlur(doc, wallpaperBlur);
         };
@@ -2872,6 +2972,10 @@
           el.style.setProperty("--sf-img-bri", String(v.imgBri / 100));
           el.style.setProperty("--sf-img-sat", String(v.imgSat / 100));
           el.style.setProperty("--sf-img-blur", v.imgBlur + "px");
+          el.style.setProperty("--sf-img-filter",
+            v.imgBri === 100 && v.imgSat === 100 && v.imgBlur === 0
+              ? "none"
+              : "brightness(" + (v.imgBri / 100) + ") saturate(" + (v.imgSat / 100) + ") blur(" + v.imgBlur + "px)");
           el.style.setProperty("--sf-cover", String(v.cover / 100));
           el.style.setProperty("--sf-grad-bc", String(v.gradBc / 100));
           el.style.setProperty("--sf-grad-be", String(v.gradBe / 100));
