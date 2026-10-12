@@ -42,7 +42,7 @@
 
 ```
 4c14e4f6cc665f734109f933338ffc2c97bfab26726ca949d991718ee4ad5dff  SillyClient-Android-v1.12.1.apk  (189 MB)
-3b12de2231ca76758eb3dd90073221ebf175022f557d27a6aa52dcef0b58b991  SillyClient-Windows-v1.12.1.exe  (113 MB)
+ce785ed3bc5c460ac7bf728cc8ccf9a3a0cdae921c7a983a69d703b735d12b76  SillyClient-Windows-v1.12.1.exe  (113 MB)
 ```
 
 Android / Windows 覆盖安装，实例与设置原样保留。iOS 无需操作。
