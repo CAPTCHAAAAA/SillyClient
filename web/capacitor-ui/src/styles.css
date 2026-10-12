@@ -106,6 +106,9 @@ select:focus-visible {
   --motion-ease-release: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* 状态切换溶解。两端都减速，不能用 --motion-ease-out，那个前段就冲完了。 */
+  --motion-dissolve: 780ms;
+  --motion-dissolve-ease: cubic-bezier(0.5, 0, 0.2, 1);
   --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --transition-fast: var(--motion-fast) var(--motion-ease-out);
   --transition-normal: var(--motion-base) var(--motion-ease-out);
@@ -440,6 +443,10 @@ body::-webkit-scrollbar,
 
 .ambient-paused .ambient-glow {
   animation-play-state: paused !important;
+}
+
+.ambient-glow-container.is-shedding {
+  display: none !important;
 }
 
 /* iOS 拨杆开关 - 动态壁纸控制 */
@@ -959,7 +966,7 @@ header span[class*="truncate"] {
 .motion-panel-stack {
   position: relative;
   overflow: hidden;
-  transition: height 500ms var(--motion-ease-out);
+  transition: height var(--motion-dissolve) var(--motion-dissolve-ease);
 }
 
 .motion-panel-face {
@@ -968,10 +975,10 @@ header span[class*="truncate"] {
   filter: blur(3px);
   visibility: hidden;
   transition:
-    opacity 500ms var(--motion-ease-out),
-    transform 500ms var(--motion-ease-out),
-    filter 500ms var(--motion-ease-out),
-    visibility 0s linear 500ms;
+    opacity var(--motion-dissolve) var(--motion-dissolve-ease),
+    transform var(--motion-dissolve) var(--motion-dissolve-ease),
+    filter var(--motion-dissolve) var(--motion-dissolve-ease),
+    visibility 0s linear var(--motion-dissolve);
 }
 
 .motion-panel-face.is-active {
@@ -990,23 +997,6 @@ header span[class*="truncate"] {
   height: auto !important;
   margin: 0 !important;
   pointer-events: none !important;
-}
-
-/* 管理菜单这块画布是定高的，没有页签那种高度跟随。
-   全局 ease-out 会在前 200ms 把 500ms 溶解做完，大面积设置页看起来像没动画。
-   时长、3px 模糊、6px 位移不动，只把曲线铺满这 500ms。 */
-.manage-panel-surface .motion-panel-face,
-.manage-panel-surface .motion-panel-face.is-active,
-.manage-panel-surface .manage-settings-outgoing {
-  transition:
-    opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 500ms cubic-bezier(0.4, 0, 0.2, 1),
-    filter 500ms cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s linear 500ms;
-}
-
-.manage-panel-surface .motion-panel-face.is-active {
-  transition-delay: 0s;
 }
 
 /* 高度未知的内容使用 grid 行连续展开，允许中途反向。 */
@@ -1853,7 +1843,7 @@ select option {
 }
 
 /* 状态切换：多个按钮接成一条。整条是浅沟槽，选中项沿用原来的内凹，只是更深。
-   选中材质用和面板一样的 500ms 溶解：模糊 3px 淡入淡出，文字保持清晰。
+   选中材质和面板溶解同一条曲线：780ms，两端减速，模糊 3px 淡入淡出，文字保持清晰。
    外圆角 = 内边距 3px + 内圆角 18px。 */
 .ios-choice-track {
   display: flex;
@@ -1913,10 +1903,17 @@ select option {
   filter: blur(3px);
   pointer-events: none;
   transition:
-    opacity 500ms var(--motion-ease-out),
-    filter 500ms var(--motion-ease-out),
-    background-color 500ms var(--motion-ease-out),
-    box-shadow 500ms var(--motion-ease-out);
+    opacity var(--motion-dissolve) var(--motion-dissolve-ease),
+    filter var(--motion-dissolve) var(--motion-dissolve-ease),
+    background-color var(--motion-dissolve) var(--motion-dissolve-ease),
+    box-shadow var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ios-choice-track > .ios-choice-control::before {
+    filter: none;
+    transition-duration: 120ms;
+  }
 }
 
 .ios-task-surface .ios-choice-track > .ios-choice-control[aria-pressed="true"]::before,
@@ -2279,10 +2276,11 @@ select option {
 
 /* 搜索、页签、输入和次要按钮共用这一层浅内凹。 */
 .manage-recess {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.20);
   box-shadow:
-    inset 0 1px 1.5px rgba(0, 0, 0, 0.22),
-    inset 0 -0.5px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1.25px 2px rgba(0, 0, 0, 0.38),
+    inset 0 -0.75px 0 rgba(255, 255, 255, 0.16),
+    0 0.5px 0 rgba(255, 255, 255, 0.08);
 }
 
 .manage-panel-surface.is-light .manage-recess {
@@ -2294,11 +2292,29 @@ select option {
 
 .manage-thumb {
   background: rgba(255, 255, 255, 0.16);
-  box-shadow: none;
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22),
+    0 0.5px 0 rgba(255, 255, 255, 0.06);
 }
 
 .manage-panel-surface.is-light .manage-thumb {
   background: rgba(255, 255, 255, 0.78);
+  box-shadow: none;
+}
+
+/* 管理分类沿用控制岛 / App 设置的连体沟槽。高度跟顶栏走，所以做成满圆胶囊。 */
+.manage-panel-surface .manage-choice-track {
+  border-radius: 9999px;
+}
+
+.manage-panel-surface .manage-choice-track > .ios-choice-control {
+  flex: 0 0 auto;
+  align-self: stretch;
+  border-radius: 9999px !important;
+}
+
+.manage-panel-surface .manage-choice-track.is-portrait > .ios-choice-control {
+  flex: 1 1 0;
 }
 
 /* 管理菜单悬停跟控制岛、实例菜单一样：只走字色，500ms，不缩放、不改底。 */
@@ -2383,11 +2399,114 @@ select option {
     height 500ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+.motion-slot {
+  --slot-gap: 0px;
+  display: grid;
+  grid-template-columns: 0fr;
+  min-width: 0;
+  transition:
+    grid-template-columns var(--motion-dissolve) var(--motion-dissolve-ease),
+    margin var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+.motion-slot.is-before {
+  margin-right: calc(var(--slot-gap) * -1);
+}
+
+.motion-slot.is-after {
+  margin-left: calc(var(--slot-gap) * -1);
+}
+
+.motion-slot.is-open {
+  grid-template-columns: 1fr;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.motion-slot:not(.is-open) {
+  pointer-events: none;
+}
+
+.motion-slot-clip {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.motion-slot-face {
+  width: max-content;
+  opacity: 0;
+  filter: blur(3px);
+  transform: translate3d(0, 6px, 0);
+  transition:
+    opacity var(--motion-dissolve) var(--motion-dissolve-ease),
+    filter var(--motion-dissolve) var(--motion-dissolve-ease),
+    transform var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+.motion-slot.is-open .motion-slot-face {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-slot,
+  .motion-slot-face,
+  .motion-slot.is-open .motion-slot-face {
+    filter: none;
+    transform: none;
+    transition-duration: 120ms;
+  }
+}
+
 .manage-card-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
   transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 与首页实例卡同一套遮罩。运行时会清掉源码里的纯黑渐变，改用这组变量。 */
+.manage-card-scrim {
+  background: linear-gradient(
+    to top,
+    rgba(var(--sf-grad-rgb, 30 15 24) / var(--sf-grad-bc, 0.55)) 0%,
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.51)) calc(var(--sf-grad-hc, 68%) * 0.56),
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.11)) var(--sf-grad-hc, 68%),
+    transparent 100%
+  );
+}
+
+.manage-card-scrim.is-focus {
+  background: linear-gradient(
+    to top,
+    rgba(var(--sf-grad-rgb, 30 15 24) / var(--sf-grad-be, 0.72)) 0%,
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-be, 0.72) * 0.62)) calc(var(--sf-grad-he, 85%) * 0.65),
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-be, 0.72) * 0.17)) var(--sf-grad-he, 85%),
+    transparent 100%
+  );
+}
+
+.manage-panel-surface.is-light .manage-card-scrim {
+  background: linear-gradient(
+    to top,
+    rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-bc, 0.92)) 0%,
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.92) * 0.85)) calc(var(--sf-lg-hc, 75%) * 0.6),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.92) * 0.33)) var(--sf-lg-hc, 75%),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.92) * 0.09)) calc(var(--sf-lg-hc, 75%) * 1.22),
+    transparent 100%
+  );
+}
+
+.manage-panel-surface.is-light .manage-card-scrim.is-focus {
+  background: linear-gradient(
+    to top,
+    rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-be, 0.96)) 0%,
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.92)) calc(var(--sf-lg-he, 82%) * 0.67),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.47)) var(--sf-lg-he, 82%),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.16)) calc(var(--sf-lg-he, 82%) * 1.16),
+    transparent 100%
+  );
 }
 
 .manage-card-clip {
@@ -2396,11 +2515,6 @@ select option {
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
-}
-
-.manage-card-plate {
-  position: absolute;
-  inset: -1px;
 }
 
 .manage-panel-surface aside .motion-instance-card img {

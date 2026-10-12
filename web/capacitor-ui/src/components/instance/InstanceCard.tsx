@@ -1,6 +1,7 @@
 import React from "react";
 import type { TavernInstance } from "../../types";
 import { InstanceStoppedCard } from "./InstanceStoppedCard";
+import { coverPlate, coverTone } from "./coverTone";
 import { RunningConsoleCard } from "./RunningConsoleCard";
 import { FlipCard } from "../common/FlipCard";
 
@@ -8,6 +9,7 @@ export interface InstanceCardProps {
   instance: TavernInstance;
   index: number;
   isLight: boolean;
+  isDynamic?: boolean;
   glassBg?: string;
   hoveredCard: string | null;
   setHoveredCard: (id: string | null) => void;
@@ -76,7 +78,7 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
       perspective={1100}
       stiffness={160}
       damping={28}
-      background={props.isLight ? "#fbfafc" : "#16131f"}
+      background={coverPlate(coverTone(props.isLight, props.isDynamic))}
       color={props.isLight ? "#1a1625" : "#f5f5f5"}
       shadow={true}
       shadowColor="#000000"
@@ -86,6 +88,7 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           instance={props.instance}
           index={props.index}
           isLight={props.isLight}
+          isDynamic={props.isDynamic}
           glassBg={props.glassBg}
           isExpanded={isExpanded}
           isMenuOpen={isMenuOpen}

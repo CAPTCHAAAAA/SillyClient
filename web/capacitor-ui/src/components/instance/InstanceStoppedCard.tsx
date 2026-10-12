@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from "react";
 import { Play, MoreVertical, Edit2, Lock } from "lucide-react";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
+import { coverTone, coverWash } from "./coverTone";
 
 export interface InstanceStoppedCardProps {
   instance: TavernInstance;
   index: number;
   isLight: boolean;
+  isDynamic?: boolean;
   glassBg?: string;
   isExpanded: boolean;
   isMenuOpen: boolean;
@@ -42,6 +44,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
   instance,
   index,
   isLight,
+  isDynamic = false,
   isExpanded,
   isMenuOpen,
   launchingId,
@@ -107,9 +110,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
         <div
           className="absolute inset-0"
           style={{
-            background: isLight
-              ? "linear-gradient(135deg, oklch(1 0 0 / 0.40) 0%, oklch(1 0 0 / 0.25) 100%)"
-              : "oklch(0 0 0 / 0.5)",
+            background: coverWash(coverTone(isLight, isDynamic)),
           }}
         />
       </div>

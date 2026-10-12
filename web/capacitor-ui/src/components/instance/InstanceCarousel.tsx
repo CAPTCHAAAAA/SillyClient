@@ -15,6 +15,7 @@ export interface InstanceCarouselRef {
 export interface InstanceCarouselProps {
   instances: TavernInstance[];
   isLight: boolean;
+  isDynamic?: boolean;
   glassBg?: string;
   hoveredCard: string | null;
   setHoveredCard: (id: string | null) => void;
@@ -48,6 +49,7 @@ export interface InstanceCarouselProps {
 const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarouselProps>(({
   instances,
   isLight,
+  isDynamic = false,
   glassBg,
   hoveredCard,
   setHoveredCard,
@@ -747,6 +749,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                 isReorderCommitting={isReorderCommitting}
                 onPointerDownCapture={(e) => handleCardPointerDown(index, e)}
                 isLight={isLight}
+                isDynamic={isDynamic}
                 glassBg={glassBg}
                 hoveredCard={hoveredCard}
                 setHoveredCard={setHoveredCard}

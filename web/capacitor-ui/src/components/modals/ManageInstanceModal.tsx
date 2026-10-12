@@ -11,6 +11,7 @@ import {
 import { TarvenEnv } from "../../capacitor-plugin";
 import type { InstanceConfig } from "../../capacitor-plugin";
 import { cn, formatDisplayVersion } from "../../lib/utils";
+import { coverPlate, coverTone } from "../instance/coverTone";
 import { LAYERS } from "../../constants/layers";
 import type { TavernInstance, ManageTab, BgMode, ThemeStyle } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
@@ -32,6 +33,8 @@ const MANAGE_FRAME_W = 1080;
 const MANAGE_FRAME_H = MANAGE_IMAGE_H;
 /** 相对当前 CSS 帧的整帧显示比例。字号、间距、圆角一起走，不除 devicePixelRatio。 */
 const MANAGE_VISUAL_SCALE = 0.67;
+/** 长于 --motion-dissolve（780ms），让切实例时的离场层走完溶解。 */
+const MANAGE_FACE_EXIT_MS = 860;
 /** 布局用。设计像素按 Figma 帧 1:1 落到 CSS 像素，不跟字号一起放大。 */
 const manageEm = (px: number) => `${px / MANAGE_FONT_PX}em`;
 /** 字号用。保持缩小菜单之前的像素大小。 */
@@ -61,6 +64,54 @@ function manageRecessedGlass(isLight: boolean): React.CSSProperties {
       ? "inset 0 1px 1.5px rgba(28,18,24,0.08), inset 0 -0.5px 0 rgba(255,255,255,0.7)"
       : "inset 0 1px 1.5px rgba(0,0,0,0.22), inset 0 -0.5px 0 rgba(255,255,255,0.08)",
   };
+}
+
+const MANAGE_TABS = [
+  { id: "launch", label: "启动参数" },
+  { id: "storage", label: "存储路径" },
+  { id: "terminal", label: "实例终端" },
+  { id: "about", label: "关于实例" },
+] as const;
+
+function ManageTabTrack({
+  manageTab,
+  setManageTab,
+  isPortrait,
+}: {
+  manageTab: ManageTab;
+  setManageTab: (tab: ManageTab) => void;
+  isPortrait: boolean;
+}) {
+  return (
+    <div
+      className={cn("ios-choice-track manage-choice-track flex-shrink-0", isPortrait && "is-portrait")}
+      role="group"
+      aria-label="管理分类"
+      style={isPortrait ? { height: 48, width: "100%" } : { height: manageEm(49) }}
+    >
+      {MANAGE_TABS.map((tab) => {
+        const isTabActive = manageTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            aria-pressed={isTabActive}
+            onClick={() => {
+              if (tab.id === manageTab) return;
+              setManageTab(tab.id);
+            }}
+            className="ios-choice-control motion-control flex select-none items-center justify-center whitespace-nowrap border font-medium"
+            style={{
+              width: isPortrait ? undefined : manageEm(109),
+              fontSize: isPortrait ? 16 : manageFont(16),
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 /** 右侧内容区外框圆角。内框圆角 = 外框圆角 - 边距。 */
@@ -150,29 +201,29 @@ function ManageItem({
   label,
   desc,
   isLight,
+  isPortrait,
   children,
 }: {
   label: string;
   desc?: string;
   isLight: boolean;
+  isPortrait: boolean;
   children: React.ReactNode;
 }) {
-  void isLight;
-  const tone = manageTheme;
   return (
     <div>
       <div
         className="flex items-center justify-between gap-6"
         style={{
-          minHeight: managePortrait ? 68 : 88,
-          marginInline: managePortrait ? 20 : 28,
+          minHeight: isPortrait ? 68 : 88,
+          marginInline: isPortrait ? 20 : 28,
         }}
       >
       <div className="min-w-0 flex-1 pr-4">
         <div
           className={cn(
             "font-medium leading-tight",
-            tone === "light" ? "text-[#1a1625]/85" : "text-white/88"
+            isLight ? "text-[#1a1625]/85" : "text-white/88"
           )}
           style={{ fontSize: MANAGE_LABEL_PX }}
         >
@@ -182,7 +233,7 @@ function ManageItem({
           <div
             className={cn(
               "leading-snug",
-              tone === "light" ? "text-[#1a1625]/45" : "text-white/48"
+              isLight ? "text-[#1a1625]/45" : "text-white/48"
             )}
             style={{ marginTop: 4, fontSize: 13 }}
           >
@@ -190,7 +241,7 @@ function ManageItem({
           </div>
         )}
       </div>
-      <div className={managePortrait ? "shrink-0" : "min-w-0 max-w-[46%]"}>{children}</div>
+      <div className={isPortrait ? "shrink-0" : "min-w-0 max-w-[46%]"}>{children}</div>
       </div>
     </div>
   );
@@ -210,7 +261,7 @@ function ManageSettingValue({
       className={cn(
         "text-right break-words",
         mono && "font-mono",
-        manageTheme === "light" ? "text-[#1a1625]/72" : "text-white/78"
+        isLight ? "text-[#1a1625]/72" : "text-white/78"
       )}
       style={{ fontSize: 16 }}
     >
@@ -220,18 +271,16 @@ function ManageSettingValue({
 }
 
 function manageNumberFieldClass(isLight: boolean) {
-  void isLight;
   return cn(
     "manage-recess h-10 w-[112px] rounded-xl border-0 text-center outline-none",
-    manageTheme === "light" ? "text-[#1a1625]" : "text-white"
+    isLight ? "text-[#1a1625]" : "text-white"
   );
 }
 
 function manageTextFieldClass(isLight: boolean) {
-  void isLight;
   return cn(
     "manage-recess h-10 w-full rounded-xl border-0 px-3.5 outline-none",
-    manageTheme === "light"
+    isLight
       ? "text-[#1a1625] placeholder:text-[#1a1625]/30"
       : "text-white placeholder:text-white/35"
   );
@@ -246,7 +295,6 @@ function ManageToggle({
   onChange: (value: boolean) => void;
   isLight: boolean;
 }) {
-  void isLight;
   return (
     <button
       type="button"
@@ -258,11 +306,11 @@ function ManageToggle({
         width: 61,
         height: 33,
         background: on
-          ? manageTheme === "light"
+          ? isLight
             ? "rgba(26,22,37,0.78)"
             : "rgba(255,255,255,0.86)"
-          : manageRecessedGlass(manageTheme === "light").background,
-        boxShadow: on ? "none" : manageRecessedGlass(manageTheme === "light").boxShadow,
+          : manageRecessedGlass(isLight).background,
+        boxShadow: on ? "none" : manageRecessedGlass(isLight).boxShadow,
       }}
     >
       <span
@@ -272,7 +320,7 @@ function ManageToggle({
           height: 27,
           left: 3,
           transform: on ? "translateX(28px)" : "translateX(0)",
-          background: manageTheme === "light" || !on ? "#ffffff" : "#1a1625",
+          background: isLight || !on ? "#ffffff" : "#1a1625",
         }}
       />
     </button>
@@ -295,10 +343,9 @@ function getStatusText(status: TavernInstance["status"]) {
 }
 
 function manageCapsuleButtonClass(isLight: boolean) {
-  void isLight;
   return cn(
     "manage-recess motion-control flex h-10 flex-shrink-0 items-center rounded-xl border-0 px-4 font-medium",
-    manageTheme === "light"
+    isLight
       ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
       : "text-white/65 hover:text-white/85",
   );
@@ -307,11 +354,11 @@ function manageCapsuleButtonClass(isLight: boolean) {
 function managePanelFaceClass(active: boolean, portrait = false) {
   return cn(
     "motion-panel-face w-full",
-    portrait ? "absolute inset-0 overflow-hidden" : "h-full",
+    portrait ? "absolute inset-0" : "h-full",
     active
       ? "is-active pointer-events-auto"
       : "pointer-events-none select-none",
-    !portrait && (active ? "relative" : "absolute inset-x-0 top-0"),
+    !portrait && (active ? "relative" : "absolute inset-0"),
   );
 }
 
@@ -320,55 +367,6 @@ function manageFaceScrollClassName(portrait: boolean) {
     "min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
     portrait ? "absolute inset-0 pb-3" : "h-full",
   );
-}
-
-let manageTheme: "light" | "dynamic" | "dark" = "dark";
-let managePortrait = false;
-
-const coverAlphaCache = new Map<string, boolean>();
-
-function coverHasTransparency(src: string) {
-  const known = coverAlphaCache.get(src);
-  if (known !== undefined) return Promise.resolve(known);
-  return new Promise<boolean>((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      let transparent = false;
-      try {
-        const size = 32;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (ctx) {
-          ctx.clearRect(0, 0, size, size);
-          ctx.drawImage(img, 0, 0, size, size);
-          const data = ctx.getImageData(0, 0, size, size).data;
-          let clear = 0;
-          const pixels = size * size;
-          for (let i = 3; i < data.length; i += 4) {
-            if (data[i] < 240) clear += 1;
-          }
-          transparent = clear / pixels > 0.04;
-        }
-      } catch {
-        transparent = false;
-      }
-      coverAlphaCache.set(src, transparent);
-      resolve(transparent);
-    };
-    img.onerror = () => {
-      coverAlphaCache.set(src, false);
-      resolve(false);
-    };
-    img.src = src;
-  });
-}
-
-function manageCoverPlate(isLight: boolean, isDynamic: boolean) {
-  if (isLight) return "oklch(0.97 0.008 90 / 0.94)";
-  if (isDynamic) return "oklch(0.44 0.05 350 / 0.92)";
-  return "oklch(0.42 0.022 260 / 0.92)";
 }
 
 function ManageInstanceCard({
@@ -387,31 +385,6 @@ function ManageInstanceCard({
   onSelect: (item: TavernInstance) => void;
 }) {
   const src = item.cover || "./tavern-logo.png";
-  const [clearCover, setClearCover] = useState(() => coverAlphaCache.get(src) ?? false);
-
-  useEffect(() => {
-    let dead = false;
-    const known = coverAlphaCache.get(src);
-    if (known !== undefined) {
-      setClearCover(known);
-      return;
-    }
-    void coverHasTransparency(src).then((value) => {
-      if (!dead) setClearCover(value);
-    });
-    return () => {
-      dead = true;
-    };
-  }, [src]);
-
-  const restingVeil = clearCover
-    ? isLight
-      ? "linear-gradient(to top, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.26) 34%, transparent 62%)"
-      : "linear-gradient(to top, oklch(0.16 0.02 260 / 0.58) 0%, oklch(0.16 0.02 260 / 0.14) 36%, transparent 62%)"
-    : undefined;
-  const activeVeil = clearCover
-    ? "linear-gradient(to top, oklch(0.14 0.02 260 / 0.7) 0%, oklch(0.14 0.02 260 / 0.22) 42%, transparent 68%)"
-    : undefined;
 
   return (
     <div
@@ -429,38 +402,23 @@ function ManageInstanceCard({
       }}
     >
       <div className="manage-card-clip">
-        <div
-          className="manage-card-plate"
-          style={{ background: manageCoverPlate(isLight, isDynamic) }}
-        />
+        {/* 封面与遮罩：与首页实例卡片同一套逻辑。图上一层匀色，底部渐变遮罩按选中态溶变 */}
+        {!isLight && (
+          <div
+            className="manage-card-veil"
+            style={{ background: coverPlate(coverTone(false, isDynamic)) }}
+          />
+        )}
         <img
           src={src}
           alt=""
-          className="manage-card-photo"
           draggable={false}
           onError={(e) => {
             (e.target as HTMLElement).style.display = "none";
           }}
         />
-        <div
-          className={cn(
-            "manage-card-veil",
-            !clearCover && "bg-gradient-to-t",
-            !clearCover && (isLight
-              ? "from-white/70 via-white/35 to-white/5"
-              : "from-black/75 via-black/40 to-black/10"),
-            selected ? "opacity-0" : "opacity-100"
-          )}
-          style={restingVeil ? { background: restingVeil } : undefined}
-        />
-        <div
-          className={cn(
-            "manage-card-veil",
-            !clearCover && "bg-gradient-to-t from-black/80 via-black/50 to-black/20",
-            selected ? "opacity-100" : "opacity-0"
-          )}
-          style={activeVeil ? { background: activeVeil } : undefined}
-        />
+        <div className={cn("manage-card-veil manage-card-scrim", selected && "opacity-0")} />
+        <div className={cn("manage-card-veil manage-card-scrim is-focus", selected ? "opacity-100" : "opacity-0")} />
         <div className="pointer-events-none absolute left-0 top-0 z-[2] flex items-center gap-1.5" style={{ padding: manageEm(14) }}>
           <span
             className={cn(
@@ -717,7 +675,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     if (!node) return;
     const timer = window.setTimeout(() => {
       if (host.firstElementChild === node) host.replaceChildren();
-    }, 520);
+    }, MANAGE_FACE_EXIT_MS);
     return () => window.clearTimeout(timer);
   }, [settingsFaceReady, settingsFaceEpoch]);
   const [terminalInput, setTerminalInput] = useState("");
@@ -822,8 +780,6 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   };
 
   const isDynamic = bgMode === "dynamic";
-  manageTheme = isLight ? "light" : isDynamic ? "dynamic" : "dark";
-  managePortrait = isPortrait;
   const portraitFit = portraitFitFor(viewportBox.w, viewportBox.h);
 
   const rightFadeTop = manageEm(36);
@@ -856,10 +812,10 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         borderRadius: isPortrait ? 40 : manageEm(49),
         padding: isPortrait ? "18px 18px 16px" : `${manageEm(27)} ${manageEm(27)} ${manageEm(23)}`,
         background: isLight
-          ? "rgba(255,255,255,0.62)"
+          ? "rgba(255,255,255,0.70)"
           : isDynamic
-            ? "oklch(0.20 0.012 350 / 0.40)"
-            : "oklch(0.18 0.005 260 / 0.40)",
+            ? "rgba(28,20,32,0.70)"
+            : "rgba(26,22,37,0.80)",
         backdropFilter: "blur(40px) saturate(1.8)",
         WebkitBackdropFilter: "blur(40px) saturate(1.8)",
       }}
@@ -939,18 +895,26 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 : "text-white placeholder:text-white/45"
             )}
           />
-          {manageSearchQuery && (
-            <button
-              type="button"
-              onClick={() => setManageSearchQuery("")}
-              className={cn(
-                "motion-control rounded-full p-1",
-                isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/85" : "text-white/40 hover:text-white/85"
-              )}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <div
+            className={cn("motion-slot is-after", manageSearchQuery && "is-open")}
+            style={{ ["--slot-gap" as string]: isPortrait ? "10px" : manageEm(15) }}
+            aria-hidden={!manageSearchQuery}
+          >
+            <div className="motion-slot-clip">
+              <div className="motion-slot-face">
+                <button
+                  type="button"
+                                    onClick={() => setManageSearchQuery("")}
+                  className={cn(
+                    "motion-control rounded-full p-1",
+                    isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/85" : "text-white/40 hover:text-white/85"
+                  )}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {!isPortrait && (
@@ -958,64 +922,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         {/* 搜索栏与分类标签间距，与顶栏其余固定间距统一 */}
         <div className="flex-shrink-0" style={{ width: manageEm(18) }} />
 
-        {/* 四个分类：同一条内凹毛玻璃轨道，选中项为浮起小胶囊 */}
-        <div
-          className="manage-recess relative flex flex-shrink-0 items-center overflow-hidden"
-          style={{ height: manageEm(49), padding: manageEm(4), borderRadius: 9999 }}
-        >
-          <div
-            className="manage-thumb pointer-events-none absolute"
-            style={{
-              top: manageEm(4),
-              bottom: manageEm(4),
-              left: `calc(${manageEm(4)} + (100% - ${manageEm(8)}) * ${
-                ["launch", "storage", "terminal", "about"].indexOf(manageTab) / 4
-              })`,
-              width: `calc((100% - ${manageEm(8)}) / 4)`,
-              borderRadius: 9999,
-              transition: "left 500ms cubic-bezier(0.22, 1, 0.36, 1)",
-            }}
-          />
-          {(
-            [
-              { id: "launch", label: "启动参数" },
-              { id: "storage", label: "存储路径" },
-              { id: "terminal", label: "实例终端" },
-              { id: "about", label: "关于实例" },
-            ] as const
-          ).map((tab) => {
-            const isTabActive = manageTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  if (tab.id === manageTab) return;
-                  setManageTab(tab.id);
-                }}
-                aria-pressed={isTabActive}
-                className={cn(
-                  "motion-control relative z-[1] flex flex-1 select-none items-center justify-center border-0 bg-transparent shadow-none outline-none",
-                  isTabActive
-                    ? isLight
-                      ? "text-[#1a1625] font-semibold"
-                      : "text-white font-semibold"
-                    : isLight
-                    ? "text-[#1a1625]/55 hover:text-[#1a1625]/85 font-medium"
-                    : "text-white/60 hover:text-white/85 font-medium"
-                )}
-                style={{
-                  width: manageEm(109),
-                  height: "100%",
-                  fontSize: manageFont(16),
-                  borderRadius: 9999,
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        <ManageTabTrack manageTab={manageTab} setManageTab={setManageTab} isPortrait={false} />
         </>
         )}
 
@@ -1023,21 +930,31 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         {!isPortrait && <div className="flex-1" style={{ minWidth: manageEm(18) }} />}
 
         <div className="flex items-center flex-shrink-0" style={{ height: isPortrait ? PORTRAIT_CTRL : manageEm(49), gap: isPortrait ? 0 : manageEm(18), marginLeft: isPortrait ? "auto" : undefined }}>
-          {!isPortrait && manageTab === "launch" && (
-            <button
-              type="button"
-              disabled={isSavingManagePanel}
-              onClick={onSaveManagedInstance}
-              className={cn(
-                "manage-recess motion-control flex flex-shrink-0 items-center justify-center rounded-full border-0 font-medium whitespace-nowrap disabled:pointer-events-none disabled:opacity-50",
-                isLight
-                  ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
-                  : "text-white/60 hover:text-white/85"
-              )}
-              style={{ height: manageEm(49), minHeight: manageEm(49), paddingBlock: 0, paddingInline: manageEm(22), lineHeight: 1, boxSizing: "border-box", fontSize: manageFont(16) }}
+          {!isPortrait && (
+            <div
+              className={cn("motion-slot is-before", manageTab === "launch" && "is-open")}
+              style={{ ["--slot-gap" as string]: manageEm(18) }}
+              aria-hidden={manageTab !== "launch"}
             >
-              {isSavingManagePanel ? "保存中..." : "保存"}
-            </button>
+              <div className="motion-slot-clip">
+                <div className="motion-slot-face">
+                  <button
+                    type="button"
+                    disabled={isSavingManagePanel}
+                    onClick={onSaveManagedInstance}
+                    className={cn(
+                      "manage-recess motion-control flex flex-shrink-0 items-center justify-center rounded-full border-0 font-medium whitespace-nowrap disabled:pointer-events-none disabled:opacity-50",
+                      isLight
+                        ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
+                        : "text-white/60 hover:text-white/85"
+                    )}
+                    style={{ height: manageEm(49), minHeight: manageEm(49), paddingBlock: 0, paddingInline: manageEm(22), lineHeight: 1, boxSizing: "border-box", fontSize: manageFont(16) }}
+                  >
+                    {isSavingManagePanel ? "保存中..." : "保存"}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
           {!isPortrait && (
           <button
@@ -1050,8 +967,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
             className={cn(
               "motion-control flex flex-shrink-0 items-center justify-center rounded-full border-0 font-semibold whitespace-nowrap disabled:pointer-events-none disabled:opacity-50",
               isLight
-                ? "bg-[#1a1625] text-white/60 hover:text-white"
-                : "bg-white text-[#1a1625]/60 hover:text-[#1a1625]"
+                ? "bg-black/[0.07] text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "bg-white/15 text-white/60 hover:text-white"
             )}
             style={{ height: manageEm(49), minHeight: manageEm(49), paddingBlock: 0, paddingInline: manageEm(22), lineHeight: 1, boxSizing: "border-box", gap: manageEm(8), fontSize: manageFont(16) }}
           >
@@ -1140,52 +1057,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         </aside>
 
         {isPortrait && (
-          <div
-            className="flex w-full flex-shrink-0 items-center justify-between"
-            style={{ height: 48, paddingInline: 4 }}
-          >
-            {(
-              [
-                { id: "launch", label: "启动参数" },
-                { id: "storage", label: "存储路径" },
-                { id: "terminal", label: "实例终端" },
-                { id: "about", label: "关于实例" },
-              ] as const
-            ).map((tab) => {
-              const isTabActive = manageTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    if (tab.id === manageTab) return;
-                    setManageTab(tab.id);
-                  }}
-                  aria-pressed={isTabActive}
-                  className={cn(
-                    "motion-control flex flex-shrink-0 select-none items-center justify-center border-0 bg-transparent shadow-none outline-none",
-                    isTabActive && "manage-thumb",
-                    isTabActive
-                      ? isLight
-                        ? "text-[#1a1625] font-semibold"
-                        : "text-white font-semibold"
-                      : isLight
-                      ? "text-[#1a1625]/55 hover:text-[#1a1625]/85 font-medium"
-                      : "text-white/60 hover:text-white/85 font-medium"
-                  )}
-                  style={{
-                    height: 40,
-                    paddingInline: 16,
-                    fontSize: 16,
-                    borderRadius: 9999,
-                    transition: "background-color 500ms cubic-bezier(0.22, 1, 0.36, 1), color 500ms cubic-bezier(0.22, 1, 0.36, 1)",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          <ManageTabTrack manageTab={manageTab} setManageTab={setManageTab} isPortrait />
         )}
 
         {/* 右侧主设置面板。竖版落到卡片和分类下面，材质与溶解不变。 */}
@@ -1205,21 +1077,21 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
               : "inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.14)",
           }}
         >
-            <div className={cn("motion-panel-stack min-h-0 w-full overflow-hidden", isPortrait ? "flex-1 [contain:paint]" : "h-full")}>
+            <div className={cn("motion-panel-stack min-h-0 w-full overflow-hidden", isPortrait ? "flex-1" : "h-full")}>
               {/* 启动与配置 */}
               <div
                 className={managePanelFaceClass(manageTab === "launch" && settingsFaceReady, isPortrait)}
                 aria-hidden={manageTab !== "launch"}
                 inert={manageTab !== "launch"}
-                style={{
-                  WebkitMaskImage: rightFaceMask,
-                  maskImage: rightFaceMask,
-                }}
               >
                 <div
                   ref={launchFaceRef}
                   onScroll={syncRightFade}
                   className={manageFaceScrollClassName(isPortrait)}
+                  style={{
+                    WebkitMaskImage: rightFaceMask,
+                    maskImage: rightFaceMask,
+                  }}
                 >
                 <>
                   {mp.type === "local" ? (
@@ -1227,7 +1099,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="启动端口"
                         desc="宿主 WebView 和本地服务都会使用这个端口"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <input
                           type="text"
@@ -1244,7 +1116,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="允许外部监听"
                         desc="Android 宿主默认建议关闭，只在明确需要局域网访问时开启"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
                           on={draftConfig.listen}
@@ -1257,7 +1129,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="启用 IPv4"
                         desc="至少要保留一个网络协议可用"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
                           on={draftConfig.ipv4}
@@ -1270,7 +1142,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="启用 IPv6"
                         desc="如果网络环境稳定支持 IPv6，可以开启"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
                           on={draftConfig.ipv6}
@@ -1283,7 +1155,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="优先使用 IPv6 DNS"
                         desc="在 IPv6 网络质量足够好时再开启"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
                           on={draftConfig.dnsIpv6}
@@ -1296,7 +1168,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="心跳写入间隔"
                         desc="单位秒，填 0 关闭心跳文件"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <input
                           type="text"
@@ -1314,7 +1186,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="启用 HTTP Keep-Alive"
                         desc="网络波动大时可临时关闭"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
                           on={draftConfig.keepAlive}
@@ -1330,7 +1202,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <ManageItem
                         label="Basic Auth"
                         desc="为受 HTTP 基本认证保护的远程地址提供凭据"
-                        isLight={isLight}
+                        isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
                           on={draftRemoteAuthEnabled}
@@ -1394,7 +1266,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                   <ManageItem
                     label="访问密码保护"
                     desc="开启后需在本地输入密码方可启动或连接实例"
-                    isLight={isLight}
+                    isLight={isLight} isPortrait={isPortrait}
                   >
                     <div className="flex items-center gap-2">
                       {hasPassword && !isConfiguringPassword && (
@@ -1637,25 +1509,25 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 className={managePanelFaceClass(manageTab === "storage" && settingsFaceReady, isPortrait)}
                 aria-hidden={manageTab !== "storage"}
                 inert={manageTab !== "storage"}
-                style={{
-                  WebkitMaskImage: rightFaceMask,
-                  maskImage: rightFaceMask,
-                }}
               >
                 <div
                   ref={storageFaceRef}
                   onScroll={syncRightFade}
                   className={manageFaceScrollClassName(isPortrait)}
+                  style={{
+                    WebkitMaskImage: rightFaceMask,
+                    maskImage: rightFaceMask,
+                  }}
                 >
                 <ManageItem
                   label={mp.type === "local" ? "实例位置" : "连接地址"}
-                  isLight={isLight}
+                  isLight={isLight} isPortrait={isPortrait}
                 >
                   <ManageSettingValue isLight={isLight} mono>
                     {effectiveInstancePath}
                   </ManageSettingValue>
                 </ManageItem>
-                <ManageItem label="占用空间" isLight={isLight}>
+                <ManageItem label="占用空间" isLight={isLight} isPortrait={isPortrait}>
                   <ManageSettingValue isLight={isLight}>
                     {mp.type === "local" &&
                     (aboutInfo?.sizeBytes !== undefined || localAboutInfo?.sizeBytes !== undefined)
@@ -1666,7 +1538,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 <ManageItem
                   label="实例插图"
                   desc={mp.cover ? "已使用自定义插图" : "使用默认插图"}
-                  isLight={isLight}
+                  isLight={isLight} isPortrait={isPortrait}
                 >
                   <button
                     type="button"
@@ -1681,7 +1553,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     <ManageItem
                       label="存储迁移"
                       desc="无损搬迁至新目录或软件默认路径"
-                      isLight={isLight}
+                      isLight={isLight} isPortrait={isPortrait}
                     >
                       <button
                         type="button"
@@ -1694,7 +1566,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     </ManageItem>
                   )}
                   {mp.type === "local" && onOpenMaintenance && (
-                    <ManageItem label="实例维护" isLight={isLight}>
+                    <ManageItem label="实例维护" isLight={isLight} isPortrait={isPortrait}>
                       <button
                         type="button"
                         onClick={() => onOpenMaintenance(mp)}
@@ -1846,23 +1718,23 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 className={managePanelFaceClass(manageTab === "about" && settingsFaceReady, isPortrait)}
                 aria-hidden={manageTab !== "about"}
                 inert={manageTab !== "about"}
-                style={{
-                  WebkitMaskImage: rightFaceMask,
-                  maskImage: rightFaceMask,
-                }}
               >
                 <div
                   ref={aboutFaceRef}
                   onScroll={syncRightFade}
                   className={manageFaceScrollClassName(isPortrait)}
+                  style={{
+                    WebkitMaskImage: rightFaceMask,
+                    maskImage: rightFaceMask,
+                  }}
                 >
-                <ManageItem label="实例名称" isLight={isLight}>
+                <ManageItem label="实例名称" isLight={isLight} isPortrait={isPortrait}>
                   <ManageSettingValue isLight={isLight}>{mp.subtitle || mp.name}</ManageSettingValue>
                 </ManageItem>
-                <ManageItem label={mp.type === "local" ? "实例位置" : "连接地址"} isLight={isLight}>
+                <ManageItem label={mp.type === "local" ? "实例位置" : "连接地址"} isLight={isLight} isPortrait={isPortrait}>
                   <ManageSettingValue isLight={isLight} mono>{effectiveInstancePath}</ManageSettingValue>
                 </ManageItem>
-                <ManageItem label="版本" isLight={isLight}>
+                <ManageItem label="版本" isLight={isLight} isPortrait={isPortrait}>
                   <ManageSettingValue isLight={isLight}>
                     {formatDisplayVersion(
                       mp.type === "local" &&
@@ -1873,17 +1745,17 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     )}
                   </ManageSettingValue>
                 </ManageItem>
-                <ManageItem label="类型" isLight={isLight}>
+                <ManageItem label="类型" isLight={isLight} isPortrait={isPortrait}>
                   <ManageSettingValue isLight={isLight}>{mp.type === "local" ? "本地实例" : "远程实例"}</ManageSettingValue>
                 </ManageItem>
-                <ManageItem label="状态" isLight={isLight}>
+                <ManageItem label="状态" isLight={isLight} isPortrait={isPortrait}>
                   <ManageSettingValue isLight={isLight}>
                     {mp.type === "local"
                       ? aboutInfo?.status || localAboutInfo?.status || getStatusText(mp.status)
                       : getStatusText(mp.status)}
                   </ManageSettingValue>
                 </ManageItem>
-                <ManageItem label="创建时间" isLight={isLight}>
+                <ManageItem label="创建时间" isLight={isLight} isPortrait={isPortrait}>
                   <ManageSettingValue isLight={isLight}>
                     {mp.type === "local" && (aboutInfo?.createdAt || localAboutInfo?.createdAt)
                       ? (aboutInfo?.createdAt || localAboutInfo?.createdAt)
@@ -1891,7 +1763,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                   </ManageSettingValue>
                 </ManageItem>
                 {mp.type === "remote" && (
-                  <ManageItem label="Basic Auth" isLight={isLight}>
+                  <ManageItem label="Basic Auth" isLight={isLight} isPortrait={isPortrait}>
                     <ManageSettingValue isLight={isLight}>{mp.basicAuth?.username || "未配置"}</ManageSettingValue>
                   </ManageItem>
                 )}
@@ -1901,19 +1773,27 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
             </div>
             {isPortrait && (
               <div className="relative z-10 flex flex-shrink-0 items-center justify-end" style={{ gap: 8, padding: "12px 10px 8px" }}>
-                {manageTab === "launch" && (
-                  <button
-                    type="button"
-                    disabled={isSavingManagePanel}
-                    onClick={onSaveManagedInstance}
-                    className={cn(
-                      "manage-recess motion-control flex h-9 flex-shrink-0 items-center justify-center rounded-full border-0 px-4 text-sm font-medium whitespace-nowrap disabled:pointer-events-none disabled:opacity-50",
-                      isLight ? "text-[#1a1625]/60 hover:text-[#1a1625]/85" : "text-white/60 hover:text-white/85"
-                    )}
-                  >
-                    {isSavingManagePanel ? "保存中..." : "保存"}
-                  </button>
-                )}
+                <div
+                  className={cn("motion-slot is-before", manageTab === "launch" && "is-open")}
+                  style={{ ["--slot-gap" as string]: "8px" }}
+                  aria-hidden={manageTab !== "launch"}
+                >
+                  <div className="motion-slot-clip">
+                    <div className="motion-slot-face">
+                      <button
+                        type="button"
+                        disabled={isSavingManagePanel}
+                        onClick={onSaveManagedInstance}
+                        className={cn(
+                          "manage-recess motion-control flex h-9 flex-shrink-0 items-center justify-center rounded-full border-0 px-4 text-sm font-medium whitespace-nowrap disabled:pointer-events-none disabled:opacity-50",
+                          isLight ? "text-[#1a1625]/60 hover:text-[#1a1625]/85" : "text-white/60 hover:text-white/85"
+                        )}
+                      >
+                        {isSavingManagePanel ? "保存中..." : "保存"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <button
                   type="button"
                   disabled={Boolean(launchingId)}
@@ -1923,7 +1803,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                   }}
                   className={cn(
                     "motion-control flex h-9 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border-0 px-4 text-sm font-semibold whitespace-nowrap disabled:pointer-events-none disabled:opacity-50",
-                    isLight ? "bg-[#1a1625] text-white/60 hover:text-white" : "bg-white text-[#1a1625]/60 hover:text-[#1a1625]"
+                    isLight ? "bg-black/[0.07] text-[#1a1625]/60 hover:text-[#1a1625]" : "bg-white/15 text-white/60 hover:text-white"
                   )}
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />

@@ -247,6 +247,7 @@ function SillyClientLauncher() {
   });
   const [themeSmoothing, setThemeSmoothing] = useState(false);
   const themeSmoothingTimer = useRef<number | null>(null);
+  const themeSwitchFrame = useRef<number | null>(null);
   const [customWallpaperUrl, setCustomWallpaperUrl] = useState<string | null>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const [showTerminal, setShowTerminal] = useState(false);
@@ -556,12 +557,12 @@ function SillyClientLauncher() {
     }
   }, []);
 
-  // 液态玻璃底色:动态模式微偏红,黑夜模式蓝紫,白天模式白色
+  // 液态玻璃底色:动态偏红紫,黑夜保持 #1a1625 深蓝紫,白天白色。黑夜不再用近黑 #0d0d12。
   const glassBg = isLight
     ? "bg-white/70 border-black/5 shadow-[0_16px_60px_rgba(0,0,0,0.10)]"
     : isDynamic
       ? "bg-[#1c1420]/70 border-white/10 shadow-[0_16px_60px_rgba(0,0,0,0.30)]"
-      : "bg-[#0d0d12]/85 border-white/[0.08] shadow-[0_16px_60px_rgba(0,0,0,0.50)]";
+      : "bg-[#1a1625]/80 border-white/[0.08] shadow-[0_16px_60px_rgba(26,22,37,0.45)]";
 
 
 
@@ -715,14 +716,33 @@ function SillyClientLauncher() {
 
   useEffect(() => () => {
     if (themeSmoothingTimer.current !== null) window.clearTimeout(themeSmoothingTimer.current);
+    if (themeSwitchFrame.current !== null) window.cancelAnimationFrame(themeSwitchFrame.current);
   }, []);
 
-  const switchThemeMode = useCallback((apply: () => void) => {
-    setThemeSmoothing(true);
-    apply();
-    if (themeSmoothingTimer.current !== null) window.clearTimeout(themeSmoothingTimer.current);
-    themeSmoothingTimer.current = window.setTimeout(() => setThemeSmoothing(false), 1200);
-  }, []);
+  const switchThemeMode = useCallback((apply: () => void, shedAmbient = false) => {
+    const begin = () => {
+      setThemeSmoothing(true);
+      apply();
+      if (themeSmoothingTimer.current !== null) window.clearTimeout(themeSmoothingTimer.current);
+      themeSmoothingTimer.current = window.setTimeout(() => setThemeSmoothing(false), 1200);
+    };
+    if (themeSwitchFrame.current !== null) window.cancelAnimationFrame(themeSwitchFrame.current);
+    // 只有离开动态壁纸、并且白天已经选中时，才先卸掉五层全屏模糊。
+    // 其它切换不能留下 is-shedding，否则同一节点会一直不显示。
+    const shedAmbientFirst = shedAmbient && bgMode === "dynamic" && themeStyle === "light";
+    if (!shedAmbientFirst) {
+      document.querySelector(".ambient-glow-container")?.classList.remove("is-shedding");
+      begin();
+      return;
+    }
+    document.querySelector(".ambient-glow-container")?.classList.add("is-shedding");
+    themeSwitchFrame.current = window.requestAnimationFrame(() => {
+      themeSwitchFrame.current = window.requestAnimationFrame(() => {
+        themeSwitchFrame.current = null;
+        begin();
+      });
+    });
+  }, [bgMode, themeStyle]);
 
   const switchInstanceMode = useCallback((mode: "local" | "remote" | "import") => {
     if (newInstanceMode === mode) return;
@@ -2713,6 +2733,7 @@ function SillyClientLauncher() {
           ref={carouselRef}
           instances={instances}
           isLight={isLight}
+          isDynamic={isDynamic}
           glassBg={glassBg}
           hoveredCard={hoveredCard}
           setHoveredCard={setHoveredCard}
