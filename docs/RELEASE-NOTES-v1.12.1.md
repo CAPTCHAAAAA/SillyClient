@@ -1,6 +1,6 @@
 # SillyClient v1.12.1
 
-> Android 与 Windows 同版更新，iOS 无本版变更（v1.12.0 Build 30 仍为当前版本）。Android 资产首次纳入本 Release，Android 1.12.0 用户将收到更新提醒。
+> 三端同版更新。主要内容：管理菜单透明封面垫主题色与管理卡圆角修复，Windows 端恢复存储页签功能与启动自愈。
 
 ## 变更内容
 
@@ -20,7 +20,10 @@
 
 **iOS**
 
-- 无本版变更，v1.12.0（Build 30）仍为当前版本。
+- 同步通用前端 1.12.1 更新：透明底封面垫主题色（`ManageInstanceCard` 透明度检测）、管理卡圆角改用容器溢出裁切（替代缩放下发毛的 `mask-image`）、导入三张透明底封面资产。
+- 保留 iOS 平台契约：修改实例访问密码（Keychain 变更）前回收已解锁会话、实例路径与移动宿主平台安全指引不变。
+- versionName 1.12.1（Build 31）。
+- 41 项前端单测、116 项 iOS 运行时测试、7 套云验证全绿。
 
 ## What's Changed
 
@@ -34,6 +37,10 @@
 - feat: port transparent cover polish from common frontend (3fbd81f) [`5802a5d`](https://github.com/CAPTCHAAAAA/SillyClient-Windows/commit/5802a5d)
 - chore: release 1.12.1 (Windows-only update channel) [`abf46b6`](https://github.com/CAPTCHAAAAA/SillyClient-Windows/commit/abf46b6)
 
+**iOS · [SillyClient-iOS](https://github.com/CAPTCHAAAAA/SillyClient-iOS)**
+
+- feat: sync common frontend 1.12.1 updates and bump version to 1.12.1 (Build 31) [`c2f8c8b`](https://github.com/CAPTCHAAAAA/SillyClient-iOS/commit/c2f8c8b)
+
 **通用前端 · [SillyClient](https://github.com/CAPTCHAAAAA/SillyClient)**
 
 - feat: 透明封面垫主题色，并收管理卡圆角毛边 [`3fbd81f`](https://github.com/CAPTCHAAAAA/SillyClient/commit/3fbd81f)
@@ -41,10 +48,11 @@
 ## 下载与校验
 
 ```
-4c14e4f6cc665f734109f933338ffc2c97bfab26726ca949d991718ee4ad5dff  SillyClient-Android-v1.12.1.apk  (189 MB)
-ce785ed3bc5c460ac7bf728cc8ccf9a3a0cdae921c7a983a69d703b735d12b76  SillyClient-Windows-v1.12.1.exe  (113 MB)
+4c14e4f6cc665f734109f933338ffc2c97bfab26726ca949d991718ee4ad5dff  SillyClient-Android-v1.12.1.apk       (189 MB)
+ce785ed3bc5c460ac7bf728cc8ccf9a3a0cdae921c7a983a69d703b735d12b76  SillyClient-Windows-v1.12.1.exe       (113 MB)
+351ab870e6d76718fe87200113b31d4ee364b24d5e0d08cddeabdf7661a9302a  SillyClient-iOS-v1.12.1-unsigned.ipa  (185 MB)
 ```
 
-Android / Windows 覆盖安装，实例与设置原样保留。iOS 无需操作。
+Android / Windows 覆盖安装，实例与设置原样保留（Android versionCode 71，签名与历史版本一致）。iOS 为未签名 IPA，需在 macOS 上使用 Xcode 签名后安装。
 
 **Full Changelog**: https://github.com/CAPTCHAAAAA/SillyClient/compare/v1.12.0...v1.12.1
