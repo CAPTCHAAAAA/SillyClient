@@ -15,13 +15,10 @@ export function coverWash(tone: CoverTone): string {
 
 /**
  * 透明像素底下的实色底板。不透明封面盖住它。
- * 黑夜沿界面墨色。动态壁纸在紫和酒红之间流动，底板取这条色带的中段。
- * 不落在暗紫一端，也不落在酒红一端，明度仍按黑夜那层。
+ * 黑夜沿界面墨色。动态不铺色板，透明封面与创建卡一样透出壁纸。
  */
 export function coverPlate(tone: CoverTone): string {
   if (tone === "light") return "#fbfafc";
-  if (tone === "dynamic") {
-    return "linear-gradient(168deg, #281824 0%, #241621 52%, #21141e 100%)";
-  }
+  if (tone === "dynamic") return "transparent";
   return "linear-gradient(168deg, #1f1c2a 0%, #1c1926 52%, #1a1723 100%)";
 }

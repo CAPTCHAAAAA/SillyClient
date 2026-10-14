@@ -392,7 +392,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   return (
     <div
       className={cn(
-        "ios-task-surface fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
+        "ios-task-surface reading-flat-surface fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
         glassBg,
         isLight && "is-light",
         isClosing ? "animate-clone-panel-exit" : "animate-clone-panel"

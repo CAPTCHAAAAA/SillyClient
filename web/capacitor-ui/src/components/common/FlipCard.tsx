@@ -251,10 +251,13 @@ export const FlipCard: React.FC<FlipCardProps> = ({
 
       // 同步通过弹簧物理坐标更新 CSS 变量（光斑、阴影与倾角处于同一物理惯性相位）
       if (rootRef.current) {
+        const showingBack = isBack(turnSpring.current.current);
+        const shadowFromLeft = axis === "y" && showingBack ? 1 - gxVal / 100 : gxVal / 100;
+        const shadowFromTop = axis === "x" && showingBack ? 1 - gyVal / 100 : gyVal / 100;
         rootRef.current.style.setProperty("--pointer-x", `${gxVal.toFixed(2)}%`);
         rootRef.current.style.setProperty("--pointer-y", `${gyVal.toFixed(2)}%`);
-        rootRef.current.style.setProperty("--pointer-from-left", (gxVal / 100).toFixed(4));
-        rootRef.current.style.setProperty("--pointer-from-top", (gyVal / 100).toFixed(4));
+        rootRef.current.style.setProperty("--pointer-from-left", shadowFromLeft.toFixed(4));
+        rootRef.current.style.setProperty("--pointer-from-top", shadowFromTop.toFixed(4));
         rootRef.current.style.setProperty("--fc-sheen", sheenVal.toFixed(3));
         rootRef.current.style.setProperty("--card-opacity", sheenVal.toFixed(3));
       }
@@ -276,7 +279,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
     };
 
     rafId.current = requestAnimationFrame(loop);
-  }, [controlled, onFlipChange, reduceMotion, renderTransforms, tilt]);
+  }, [axis, controlled, onFlipChange, reduceMotion, renderTransforms, tilt]);
 
   const settle = useCallback((to: number, _velocity = 0, instant = false) => {
     targetDeg.current = to;
@@ -317,16 +320,15 @@ export const FlipCard: React.FC<FlipCardProps> = ({
     const py = clamp((clientY - rect.top) / rect.height, 0, 1);
 
     const maxAngle = pressed ? pressTiltMax : tiltMax;
-    const back = isBack(turnSpring.current.current);
 
     // 跷跷板力矩几何计算（物理 3D 杠杆模型）：
     // py < 0.5 (上半部受压) => targetTx > 0 => rotateX(+) 顶部向屏幕深处下陷，底部向上跷起
     // py > 0.5 (下半部受压) => targetTx < 0 => rotateX(-) 底部向屏幕深处下陷，顶部向上跷起
     // px > 0.5 (右半部受压) => 正面时 targetTy > 0 => rotateY(+) 右侧向屏幕深处下陷，左侧向上跷起
     // px < 0.5 (左半部受压) => 正面时 targetTy < 0 => rotateY(-) 左侧向屏幕深处下陷，右侧向上跷起
-    // 反面时绕 Y 轴反转 180°，故水平力矩需取反
+    // 背面层自己还有一次 180，和转子抵消，倾角不能再取反。阴影在转子上，背面时单独镜像。
     const targetTx = (0.5 - py) * 2 * maxAngle;
-    const targetTy = back ? -(px - 0.5) * 2 * maxAngle : (px - 0.5) * 2 * maxAngle;
+    const targetTy = (px - 0.5) * 2 * maxAngle;
 
     tiltXSpring.current.setTarget(targetTx);
     tiltYSpring.current.setTarget(targetTy);

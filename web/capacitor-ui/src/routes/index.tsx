@@ -64,7 +64,7 @@ const LEGACY_MIGRATION_KEY = "sillyclient.legacy_migration.version";
 const CURRENT_VERSION = 2;
 const BACKGROUND_PANEL_EXIT_MS = 300;
 const PANEL_EXIT_MS = 300;
-const POPOVER_EXIT_MS = 200;
+const POPOVER_EXIT_MS = 300;
 const MANAGE_PANEL_OPEN_GAP_MS = 32;
 
 function hydrateInstance(t: StoredInstance): TavernInstance {
@@ -2001,7 +2001,9 @@ function SillyClientLauncher() {
 
     try {
       let freedBytes = 0;
-      if (pendingDelete.type === "local") {
+      if (isWeb) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1400));
+      } else if (pendingDelete.type === "local") {
         if (pendingDelete.status === "running") {
           operations.cancel(pendingDelete.installDir || pendingDelete.id);
           await TarvenEnv.closeTavern({ instanceId: pendingDelete.installDir || pendingDelete.id });
@@ -2032,7 +2034,7 @@ function SillyClientLauncher() {
     } finally {
       setIsDeletingInstance(false);
     }
-  }, [instances.length, isDeletingInstance, pendingDelete, operations, setTerminalLogs]);
+  }, [instances.length, isDeletingInstance, isWeb, pendingDelete, operations, setTerminalLogs]);
 
   /** 更新当前管理面板实例的 config 字段。 */
   const updateManagedConfig = (patch: Partial<InstanceConfig>) => {

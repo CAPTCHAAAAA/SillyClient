@@ -109,6 +109,10 @@ select:focus-visible {
   /* 状态切换溶解。两端都减速，不能用 --motion-ease-out，那个前段就冲完了。 */
   --motion-dissolve: 780ms;
   --motion-dissolve-ease: cubic-bezier(0.5, 0, 0.2, 1);
+  /* 弹窗进出用同一条曲线，但更短。先显现，再把最后一点位移收回来。 */
+  --motion-present: 440ms;
+  --motion-dismiss: 280ms;
+  --motion-present-ease: var(--motion-dissolve-ease);
   --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --transition-fast: var(--motion-fast) var(--motion-ease-out);
   --transition-normal: var(--motion-base) var(--motion-ease-out);
@@ -408,11 +412,10 @@ body::-webkit-scrollbar,
 @keyframes panel-pop-in {
   0% {
     opacity: 0;
-    transform: translateY(-16px) scale(0.9);
+    transform: translateY(-8px) scale(0.986);
   }
-  60% {
+  46% {
     opacity: 1;
-    transform: translateY(4px) scale(1.02);
   }
   100% {
     opacity: 1;
@@ -425,9 +428,12 @@ body::-webkit-scrollbar,
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+  28% {
+    opacity: 1;
+  }
   100% {
     opacity: 0;
-    transform: translateY(-12px) scale(0.92);
+    transform: translateY(-6px) scale(0.992);
   }
 }
 
@@ -660,12 +666,12 @@ header span[class*="truncate"] {
 
 /* 壁纸面板入场更柔和 */
 .bg-panel-enter {
-  animation: panel-pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: panel-pop-in var(--motion-present) var(--motion-present-ease) forwards;
   transform-origin: top center;
 }
 
 .bg-panel-exit {
-  animation: panel-pop-out 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: panel-pop-out var(--motion-dismiss) var(--motion-present-ease) forwards;
   transform-origin: top center;
   pointer-events: none;
 }
@@ -674,7 +680,10 @@ header span[class*="truncate"] {
 @keyframes terminal-enter {
   0% {
     opacity: 0;
-    transform: translateY(-8px) scale(0.97);
+    transform: translateY(-6px) scale(0.986);
+  }
+  46% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
@@ -687,18 +696,21 @@ header span[class*="truncate"] {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+  28% {
+    opacity: 1;
+  }
   100% {
     opacity: 0;
-    transform: translateY(-6px) scale(0.98);
+    transform: translateY(-4px) scale(0.992);
   }
 }
 
 .animate-terminal-enter {
-  animation: terminal-enter 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: terminal-enter var(--motion-present) var(--motion-present-ease) forwards;
 }
 
 .animate-terminal-exit {
-  animation: terminal-exit 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: terminal-exit var(--motion-dismiss) var(--motion-present-ease) forwards;
   pointer-events: none;
 }
 
@@ -717,8 +729,10 @@ header span[class*="truncate"] {
 }
 
 .overlay-backdrop {
-  animation: overlay-fade-in 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-  transition: opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1), backdrop-filter 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: overlay-fade-in 340ms var(--motion-present-ease) forwards;
+  transition:
+    opacity var(--motion-dismiss) var(--motion-present-ease),
+    backdrop-filter var(--motion-dismiss) var(--motion-present-ease);
 }
 
 .overlay-backdrop-exit {
@@ -741,11 +755,12 @@ header span[class*="truncate"] {
 @keyframes popover-in {
   0% {
     opacity: 0;
-    transform: var(--popover-origin, translateY(-50%)) scale(0.97);
-    filter: blur(6px);
+    transform: var(--popover-origin, translateY(-50%)) scale(0.986);
+    filter: blur(3px);
   }
-  60% {
+  46% {
     opacity: 1;
+    filter: blur(0);
   }
   100% {
     opacity: 1;
@@ -755,7 +770,7 @@ header span[class*="truncate"] {
 }
 
 .animate-popover {
-  animation: popover-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: popover-in var(--motion-present) var(--motion-present-ease) forwards;
 }
 
 @keyframes popover-out {
@@ -764,15 +779,19 @@ header span[class*="truncate"] {
     transform: var(--popover-origin, translateY(-50%)) scale(1);
     filter: blur(0);
   }
+  28% {
+    opacity: 1;
+    filter: blur(0);
+  }
   100% {
     opacity: 0;
-    transform: var(--popover-origin, translateY(-50%)) scale(0.98);
-    filter: blur(6px);
+    transform: var(--popover-origin, translateY(-50%)) scale(0.992);
+    filter: blur(3px);
   }
 }
 
 .animate-popover-exit {
-  animation: popover-out 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: popover-out var(--motion-dismiss) var(--motion-present-ease) forwards;
   pointer-events: none;
 }
 
@@ -780,7 +799,10 @@ header span[class*="truncate"] {
 @keyframes clone-panel-in {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.975);
+    transform: translate(-50%, -50%) scale(0.986);
+  }
+  46% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
@@ -789,7 +811,7 @@ header span[class*="truncate"] {
 }
 
 .animate-clone-panel {
-  animation: clone-panel-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: clone-panel-in var(--motion-present) var(--motion-present-ease) forwards;
 }
 
 @keyframes clone-panel-out {
@@ -797,14 +819,17 @@ header span[class*="truncate"] {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
+  28% {
+    opacity: 1;
+  }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.98);
+    transform: translate(-50%, -50%) scale(0.992);
   }
 }
 
 .animate-clone-panel-exit {
-  animation: clone-panel-out 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: clone-panel-out var(--motion-dismiss) var(--motion-present-ease) forwards;
   pointer-events: none;
 }
 
@@ -812,7 +837,10 @@ header span[class*="truncate"] {
 @keyframes modal-dialog-in {
   0% {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 14px)) scale(0.95);
+    transform: translate(-50%, calc(-50% + 8px)) scale(0.986);
+  }
+  46% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
@@ -821,7 +849,7 @@ header span[class*="truncate"] {
 }
 
 .animate-modal-dialog {
-  animation: modal-dialog-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modal-dialog-in var(--motion-present) var(--motion-present-ease) forwards;
 }
 
 @keyframes modal-dialog-out {
@@ -829,14 +857,17 @@ header span[class*="truncate"] {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
+  28% {
+    opacity: 1;
+  }
   100% {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 10px)) scale(0.96);
+    transform: translate(-50%, calc(-50% + 6px)) scale(0.992);
   }
 }
 
 .animate-modal-dialog-exit {
-  animation: modal-dialog-out 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modal-dialog-out var(--motion-dismiss) var(--motion-present-ease) forwards;
   pointer-events: none;
 }
 
@@ -844,68 +875,86 @@ header span[class*="truncate"] {
 @keyframes dropdown-in {
   0% {
     opacity: 0;
-    transform: translateY(-4px) scaleY(0.985);
+    transform: translateY(-4px) scale(0.986);
+    filter: blur(3px);
   }
-  60% {
+  46% {
     opacity: 1;
+    filter: blur(0);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
 .animate-dropdown {
-  animation: dropdown-in 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: dropdown-in var(--motion-present) var(--motion-present-ease) forwards;
 }
 
 @keyframes dropdown-out {
   0% {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  28% {
+    opacity: 1;
+    filter: blur(0);
   }
   100% {
     opacity: 0;
-    transform: translateY(-3px) scaleY(0.99);
+    transform: translateY(-3px) scale(0.992);
+    filter: blur(3px);
   }
 }
 
 .animate-dropdown-exit {
-  animation: dropdown-out 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: dropdown-out var(--motion-dismiss) var(--motion-present-ease) forwards;
   pointer-events: none;
 }
 
 @keyframes dropdown-up-in {
   0% {
     opacity: 0;
-    transform: translateY(4px) scaleY(0.985);
+    transform: translateY(4px) scale(0.986);
+    filter: blur(3px);
   }
-  60% {
+  46% {
     opacity: 1;
+    filter: blur(0);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
 @keyframes dropdown-up-out {
   0% {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  28% {
+    opacity: 1;
+    filter: blur(0);
   }
   100% {
     opacity: 0;
-    transform: translateY(3px) scaleY(0.99);
+    transform: translateY(3px) scale(0.992);
+    filter: blur(3px);
   }
 }
 
 .animate-dropdown-up {
-  animation: dropdown-up-in 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: dropdown-up-in var(--motion-present) var(--motion-present-ease) forwards;
 }
 
 .animate-dropdown-up-exit {
-  animation: dropdown-up-out 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: dropdown-up-out var(--motion-dismiss) var(--motion-present-ease) forwards;
   pointer-events: none;
 }
 
@@ -1449,6 +1498,28 @@ header span[class*="truncate"] {
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+/* 删除没有逐项百分比，条只往前走，停在完成前，避免假装已经删完。 */
+@keyframes delete-progress-fill {
+  0% { width: 8%; }
+  100% { width: 92%; }
+}
+
+.delete-progress-fill {
+  width: 8%;
+  animation: delete-progress-fill 16s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delete-progress-fill,
+  .delete-progress-fill > div {
+    animation: none;
+  }
+
+  .delete-progress-fill {
+    width: 46%;
+  }
 }
 
 /* 全局表单元素 — 去除浏览器默认样式 */
@@ -2072,12 +2143,11 @@ select option {
   width: 100%;
   cursor: pointer;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
-  transition: border-color 0.2s ease;
+  border-bottom: 0;
 }
 
 .ios-task-surface.is-light .app-settings-link-row {
-  border-bottom: 1px solid rgba(26, 22, 37, 0.055);
+  border-bottom: 0;
 }
 
 .app-settings-link-row .app-settings-copy,
@@ -2093,14 +2163,6 @@ select option {
 
   .ios-task-surface.is-light .app-settings-link-row:hover .app-settings-label {
     color: rgba(26, 22, 37, 0.9);
-  }
-
-  .app-settings-link-row:hover {
-    border-bottom-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .ios-task-surface.is-light .app-settings-link-row:hover {
-    border-bottom-color: rgba(26, 22, 37, 0.12);
   }
 
   .app-settings-action:hover {
@@ -2274,7 +2336,7 @@ select option {
   content: none;
 }
 
-/* 搜索、页签、输入和次要按钮共用这一层浅内凹。 */
+/* 搜索和顶栏按钮用浅内凹。文字很多的设置项不走这里。 */
 .manage-recess {
   background: rgba(0, 0, 0, 0.20);
   box-shadow:
@@ -2288,6 +2350,41 @@ select option {
   box-shadow:
     inset 0 1px 1.5px rgba(28, 18, 24, 0.08),
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* 高阅读设置项保持扁平。边界只靠极轻的色差，不描实线，也不做内凹。 */
+.manage-panel-surface .manage-flat {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+  box-shadow: none !important;
+}
+
+.manage-panel-surface.is-light .manage-flat {
+  background: rgba(26, 22, 37, 0.04);
+  border-color: rgba(26, 22, 37, 0.04) !important;
+}
+
+.reading-flat-surface input,
+.reading-flat-surface textarea,
+.reading-flat-surface .ios-field-control,
+.reading-flat-surface button.border:not(.ios-choice-control):not(.rounded-full),
+.reading-flat-surface .app-settings-action {
+  background: rgba(255, 255, 255, 0.045) !important;
+  background-color: rgba(255, 255, 255, 0.045) !important;
+  border-style: solid !important;
+  border-width: 1px !important;
+  border-color: rgba(255, 255, 255, 0.03) !important;
+  box-shadow: none !important;
+}
+
+.reading-flat-surface.is-light input,
+.reading-flat-surface.is-light textarea,
+.reading-flat-surface.is-light .ios-field-control,
+.reading-flat-surface.is-light button.border:not(.ios-choice-control):not(.rounded-full),
+.reading-flat-surface.is-light .app-settings-action {
+  background: rgba(26, 22, 37, 0.04) !important;
+  background-color: rgba(26, 22, 37, 0.04) !important;
+  border-color: rgba(26, 22, 37, 0.04) !important;
 }
 
 .manage-thumb {
@@ -2466,46 +2563,63 @@ select option {
   transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 与首页实例卡同一套遮罩。运行时会清掉源码里的纯黑渐变，改用这组变量。 */
+/* 管理页未选中加重底边，名字压在更实的遮罩上。选中仍收短。 */
 .manage-card-scrim {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-grad-rgb, 30 15 24) / var(--sf-grad-bc, 0.55)) 0%,
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.51)) calc(var(--sf-grad-hc, 68%) * 0.56),
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.11)) var(--sf-grad-hc, 68%),
-    transparent 100%
+    rgba(var(--sf-grad-rgb, 30 15 24) / max(0.9, var(--sf-grad-bc, 0.55))) 0%,
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(max(0.9, var(--sf-grad-bc, 0.55)) * 0.66)) calc(var(--sf-grad-hc, 40%) * 0.9),
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(max(0.9, var(--sf-grad-bc, 0.55)) * 0.26)) min(70%, calc(var(--sf-grad-hc, 40%) * 1.6)),
+    transparent min(78%, calc(var(--sf-grad-hc, 40%) * 2))
   );
 }
 
+/* 选中收短，封面成为焦点。不用首页展开高度。 */
 .manage-card-scrim.is-focus {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-grad-rgb, 30 15 24) / var(--sf-grad-be, 0.72)) 0%,
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-be, 0.72) * 0.62)) calc(var(--sf-grad-he, 85%) * 0.65),
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-be, 0.72) * 0.17)) var(--sf-grad-he, 85%),
-    transparent 100%
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.78)) 0%,
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.28)) calc(var(--sf-grad-hc, 40%) * 0.36),
+    transparent calc(var(--sf-grad-hc, 40%) * 0.66)
   );
 }
 
 .manage-panel-surface.is-light .manage-card-scrim {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-bc, 0.92)) 0%,
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.92) * 0.85)) calc(var(--sf-lg-hc, 75%) * 0.6),
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.92) * 0.33)) var(--sf-lg-hc, 75%),
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.92) * 0.09)) calc(var(--sf-lg-hc, 75%) * 1.22),
-    transparent 100%
+    rgba(var(--sf-lg-rgb, 244 240 237) / max(0.94, var(--sf-lg-bc, 0.86))) 0%,
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(max(0.94, var(--sf-lg-bc, 0.86)) * 0.7)) calc(var(--sf-lg-hc, 28%) * 1.15),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(max(0.94, var(--sf-lg-bc, 0.86)) * 0.3)) min(56%, calc(var(--sf-lg-hc, 28%) * 2.15)),
+    transparent min(66%, calc(var(--sf-lg-hc, 28%) * 2.7))
   );
 }
 
 .manage-panel-surface.is-light .manage-card-scrim.is-focus {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-be, 0.96)) 0%,
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.92)) calc(var(--sf-lg-he, 82%) * 0.67),
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.47)) var(--sf-lg-he, 82%),
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.16)) calc(var(--sf-lg-he, 82%) * 1.16),
-    transparent 100%
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.86) * 0.78)) 0%,
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.86) * 0.3)) calc(var(--sf-lg-hc, 28%) * 0.46),
+    transparent calc(var(--sf-lg-hc, 28%) * 0.92)
+  );
+}
+
+/* 动态模式管理卡底边仍是中性灰，只把这一层加实。菜单底色不动。 */
+body:has(.ambient-glow-container) .manage-panel-surface:not(.is-light) .manage-card-scrim {
+  background: linear-gradient(
+    to top,
+    rgba(78, 78, 84, 0.97) 0%,
+    rgba(78, 78, 84, 0.74) calc(var(--sf-grad-hc, 40%) * 0.9),
+    rgba(78, 78, 84, 0.32) min(70%, calc(var(--sf-grad-hc, 40%) * 1.6)),
+    transparent min(78%, calc(var(--sf-grad-hc, 40%) * 2))
+  );
+}
+
+body:has(.ambient-glow-container) .manage-panel-surface:not(.is-light) .manage-card-scrim.is-focus {
+  background: linear-gradient(
+    to top,
+    rgba(78, 78, 84, 0.86) 0%,
+    rgba(78, 78, 84, 0.34) calc(var(--sf-grad-hc, 40%) * 0.36),
+    transparent calc(var(--sf-grad-hc, 40%) * 0.66)
   );
 }
 

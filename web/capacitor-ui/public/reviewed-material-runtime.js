@@ -2809,6 +2809,32 @@
         };
         migrateSfDraftsToApprovedBaseline();
 
+        // 酒红底板已否决。只把动态草稿的遮罩色和渐变色拉回基线一次，其它手调不动。
+        const SF_DYNAMIC_PLATE_KEY = "sillyclient.sfTuningPreset.dynamicPlate";
+        const clearDynamicWinePlate = () => {
+          let applied = null;
+          try {
+            applied = window.localStorage.getItem(SF_DYNAMIC_PLATE_KEY);
+          } catch (err) {
+            return;
+          }
+          if (applied === "clear-20261014") return;
+          const raw = readSfJson(SF_DRAFT_KEYS.dynamic);
+          if (raw && raw.values && typeof raw.values === "object") {
+            raw.values.coverRgb = [18, 16, 20];
+            raw.values.gradRgb = [30, 15, 24];
+            raw.updatedAt = Date.now();
+            writeSfJson(SF_DRAFT_KEYS.dynamic, raw);
+          }
+          try {
+            window.localStorage.setItem(SF_DYNAMIC_PLATE_KEY, "clear-20261014");
+          } catch (err) {
+            /* 存储不可用时仍回退到内置默认 */
+          }
+        };
+        clearDynamicWinePlate();
+
+
         const sfDraftCache = Object.create(null);
         const sfDraftSaveTimers = Object.create(null);
         const loadSfDraftRecord = (mode) => {

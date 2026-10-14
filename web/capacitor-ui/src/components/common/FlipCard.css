@@ -260,6 +260,20 @@
   background-color: transparent !important;
 }
 
+/* 动态模式普通卡与创建卡同一套透明底，只补边缘内发光。不加 backdrop-filter，避免圆角发毛。 */
+body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-card-index="0"]),
+body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-card-index="0"]):hover {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow:
+    inset 0 0 var(--sf-glow1-spread, 41px) 1px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
+    inset 0 0 var(--sf-glow2-spread, 81px) 0 rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
+}
+
+body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-card-index="0"])::after {
+  background: transparent !important;
+}
+
 /* 新建实例卡内部：一比一沿用柔焦材质的透明雾面 + 边缘内发光。
    外体积投影用原来的柔焦阴影，不换成实例卡那层淡阴影。
    悬停只在这层投影上叠加指针阴影，按压仍走转子按压阴影。 */

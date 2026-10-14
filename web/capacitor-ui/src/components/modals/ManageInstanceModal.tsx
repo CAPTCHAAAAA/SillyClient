@@ -66,6 +66,20 @@ function manageRecessedGlass(isLight: boolean): React.CSSProperties {
   };
 }
 
+/**
+ * 阅读区只在外圈毛玻璃上罩一层很薄的色。透明度必须留低，不然会把 blur 盖死。
+ * 动态用浅酒红，黑夜用浅靛蓝，白天用暖白。不要再把这块涂成实色底板。
+ */
+function manageReadingWell(isLight: boolean, isDynamic: boolean): React.CSSProperties {
+  return {
+    background: isLight
+      ? "rgba(255,248,244,0.14)"
+      : isDynamic
+        ? "rgba(86,30,58,0.22)"
+        : "rgba(58,48,82,0.16)",
+  };
+}
+
 const MANAGE_TABS = [
   { id: "launch", label: "启动参数" },
   { id: "storage", label: "存储路径" },
@@ -272,14 +286,14 @@ function ManageSettingValue({
 
 function manageNumberFieldClass(isLight: boolean) {
   return cn(
-    "manage-recess h-10 w-[112px] rounded-xl border-0 text-center outline-none",
+    "manage-flat h-10 w-[112px] rounded-xl border-0 text-center outline-none",
     isLight ? "text-[#1a1625]" : "text-white"
   );
 }
 
 function manageTextFieldClass(isLight: boolean) {
   return cn(
-    "manage-recess h-10 w-full rounded-xl border-0 px-3.5 outline-none",
+    "manage-flat h-10 w-full rounded-xl border-0 px-3.5 outline-none",
     isLight
       ? "text-[#1a1625] placeholder:text-[#1a1625]/30"
       : "text-white placeholder:text-white/35"
@@ -344,7 +358,7 @@ function getStatusText(status: TavernInstance["status"]) {
 
 function manageCapsuleButtonClass(isLight: boolean) {
   return cn(
-    "manage-recess motion-control flex h-10 flex-shrink-0 items-center rounded-xl border-0 px-4 font-medium",
+    "manage-flat motion-control flex h-10 flex-shrink-0 items-center rounded-xl border-0 px-4 font-medium",
     isLight
       ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
       : "text-white/65 hover:text-white/85",
@@ -402,7 +416,7 @@ function ManageInstanceCard({
       }}
     >
       <div className="manage-card-clip">
-        {/* 封面与遮罩：与首页实例卡片同一套逻辑。图上一层匀色，底部渐变遮罩按选中态溶变 */}
+        {/* 封面与遮罩：未选中加重底边。选中后收短，封面成为焦点 */}
         {!isLight && (
           <div
             className="manage-card-veil"
@@ -1003,10 +1017,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
             height: isPortrait ? "auto" : "100%",
             borderRadius: manageEm(30),
             padding: isPortrait ? "12px" : `${manageEm(27)} ${manageEm(28)}`,
-            background: isLight ? "rgba(26, 22, 37, 0.04)" : "rgba(255, 255, 255, 0.04)",
-            boxShadow: isLight
-              ? "inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(28,18,24,0.05)"
-              : "inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.14)",
+            ...manageReadingWell(isLight, isDynamic),
           }}
         >
           {/* 卡片容器：滚到边缘时渐隐，避免最后一张被栏体硬切 */}
@@ -1071,10 +1082,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
           style={{
             height: isPortrait ? undefined : "100%",
             borderRadius: manageEm(MANAGE_PANE_RADIUS),
-            background: isLight ? "rgba(26, 22, 37, 0.04)" : "rgba(255, 255, 255, 0.04)",
-            boxShadow: isLight
-              ? "inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(28,18,24,0.05)"
-              : "inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.14)",
+            ...manageReadingWell(isLight, isDynamic),
           }}
         >
             <div className={cn("motion-panel-stack min-h-0 w-full overflow-hidden", isPortrait ? "flex-1" : "h-full")}>
@@ -1282,7 +1290,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                             setPasswordSuccess(null);
                           }}
                           className={cn(
-                            "manage-recess motion-control rounded-md px-2 py-0.5 text-[10px] font-medium",
+                            "manage-flat motion-control rounded-md px-2 py-0.5 text-[10px] font-medium",
                             isLight
                               ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
                               : "text-white/60 hover:text-white/85"
@@ -1402,7 +1410,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                             }}
                             disabled={passwordSaving}
                             className={cn(
-                              "manage-recess motion-control h-7 rounded-lg px-3 text-xs font-medium",
+                              "manage-flat motion-control h-7 rounded-lg px-3 text-xs font-medium",
                               isLight
                                 ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
                                 : "text-white/60 hover:text-white/85"
@@ -1470,8 +1478,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                               "motion-control h-7 rounded-lg px-3.5 text-xs font-semibold disabled:opacity-40",
                               passwordMode === "clear"
                                 ? isLight
-                                  ? "manage-recess text-red-900/70 hover:text-red-900"
-                                  : "manage-recess text-red-200/80 hover:text-red-100"
+                                  ? "manage-flat text-red-900/70 hover:text-red-900"
+                                  : "manage-flat text-red-200/80 hover:text-red-100"
                                 : isLight
                                   ? "bg-black text-white/80 hover:text-white"
                                   : "bg-white text-[#1a1625]/80 hover:text-[#1a1625]"
