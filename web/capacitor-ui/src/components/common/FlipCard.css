@@ -119,9 +119,9 @@
     0 8px 22px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.25)),
     0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15)) !important;
   filter: brightness(1) !important;
-  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1),
-              box-shadow 180ms ease,
-              filter 180ms ease !important;
+  transition: transform 420ms cubic-bezier(0.2, 0.62, 0.2, 1),
+              box-shadow 420ms cubic-bezier(0.2, 0.62, 0.2, 1),
+              filter 420ms ease !important;
   border: none !important;
   outline: none !important;
 }
@@ -136,6 +136,7 @@
   transition: none !important;
   animation: none !important;
 }
+
 
 .flip-card[data-axis='x'] {
   touch-action: pan-x;
@@ -208,8 +209,8 @@
 .flip-card__face {
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  border-radius: var(--fc-radius);
+  overflow: visible;
+  border-radius: 0;
   box-sizing: border-box;
   border: none !important;
   outline: none !important;
@@ -218,14 +219,13 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform-style: flat;
-  -webkit-mask-image: linear-gradient(#fff, #fff);
-  mask-image: linear-gradient(#fff, #fff);
+  /* overflow+radius 在 3D 面上会把封面裁出 1px 亮边。只留这一层 clip，并向内收 1px，圆角才有抗锯齿，也不露出壁纸红线。 */
+  clip-path: inset(1px round calc(var(--fc-radius, 26px) - 1px));
 }
 
 /* 强制正反面内部所有子卡片、容器、渐变遮罩与伪元素与 26px 边框绝对同心（26px），彻底消除圆角脱节与发丝缝隙 */
 .flip-card,
 .flip-card .flip-card__rotor,
-.flip-card .flip-card__face,
 .flip-card .flip-card__face > *,
 .flip-card .motion-instance-card,
 .flip-card .motion-instance-card > div,
@@ -266,8 +266,8 @@ body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-car
   background-color: transparent !important;
   background-image: none !important;
   box-shadow:
-    inset 0 0 var(--sf-glow1-spread, 41px) 1px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
-    inset 0 0 var(--sf-glow2-spread, 81px) 0 rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
+    inset 0 0 var(--sf-glow1-spread, 41px) -12px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
+    inset 0 0 var(--sf-glow2-spread, 81px) -16px rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
 }
 
 body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-card-index="0"])::after {
@@ -288,8 +288,8 @@ body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0
   -webkit-backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
   backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
   box-shadow:
-    inset 0 0 var(--sf-glow1-spread, 41px) 1px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
-    inset 0 0 var(--sf-glow2-spread, 81px) 0 rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
+    inset 0 0 var(--sf-glow1-spread, 41px) -12px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
+    inset 0 0 var(--sf-glow2-spread, 81px) -16px rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
 }
 
 .flip-card .motion-instance-card[data-card-index="0"]::after,
@@ -319,12 +319,12 @@ body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0
 .flip-card .motion-instance-card img {
   border-radius: 0 !important;
   position: absolute !important;
-  top: -1px !important;
+  top: -2px !important;
   right: auto !important;
   bottom: auto !important;
-  left: -1px !important;
-  width: calc(100% + 2px) !important;
-  height: calc(100% + 2px) !important;
+  left: -2px !important;
+  width: calc(100% + 4px) !important;
+  height: calc(100% + 4px) !important;
   max-width: none !important;
   object-fit: cover;
   transform: none !important;
@@ -390,7 +390,8 @@ body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0
 
 @media (prefers-reduced-motion: reduce) {
   .flip-card,
-  .flip-card:active:not([data-disabled]) {
+  .flip-card:active:not([data-disabled]),
+  .flip-card[data-dropping="true"] .flip-card__rotor {
     transform: none !important;
     transition: none !important;
   }

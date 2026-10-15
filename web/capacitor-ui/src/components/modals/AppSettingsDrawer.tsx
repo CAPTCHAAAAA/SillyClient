@@ -105,7 +105,7 @@ function AppSettingsAction({
       type="button"
       onClick={onClick}
       className={cn(
-        "app-settings-action motion-control h-9 px-3 rounded-xl text-[11px] font-medium border flex-shrink-0",
+        "app-settings-action flat-capsule motion-control h-9 px-3 rounded-full text-[11px] font-medium border-0 flex-shrink-0",
         tone !== "default" && `is-${tone}`
       )}
     >

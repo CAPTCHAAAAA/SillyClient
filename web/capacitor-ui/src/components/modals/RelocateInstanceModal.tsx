@@ -359,10 +359,10 @@ export const RelocateInstanceModal: React.FC<RelocateInstanceModalProps> = ({
                       type="button"
                       onClick={handlePickDirectory}
                       className={cn(
-                        "motion-control h-9 px-3 rounded-xl text-[11px] font-medium border flex-shrink-0 transition-colors",
+                        "flat-capsule motion-control h-9 px-3 rounded-full text-[11px] font-medium border-0 flex-shrink-0",
                         isLight
-                          ? "border-black/[0.08] text-[#1a1625]/50 hover:text-[#1a1625]/85"
-                          : "border-white/[0.08] text-white/50 hover:text-white/85"
+                          ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                          : "text-white/60 hover:text-white"
                       )}
                     >
                       浏览
@@ -404,10 +404,10 @@ export const RelocateInstanceModal: React.FC<RelocateInstanceModalProps> = ({
             <button
               onClick={onClose}
               className={cn(
-                "motion-control px-5 h-8 rounded-full text-xs font-medium transition-colors border",
+                "flat-capsule motion-control px-5 h-8 rounded-full text-xs font-medium border-0",
                 isLight
-                  ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625]"
-                  : "bg-white/20 border-white/15 text-white/70 hover:text-white"
+                  ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                  : "text-white/70 hover:text-white"
               )}
             >
               完成
@@ -419,10 +419,10 @@ export const RelocateInstanceModal: React.FC<RelocateInstanceModalProps> = ({
                 disabled={migrating}
                 onClick={onClose}
                 className={cn(
-                  "motion-control px-4 h-8 rounded-full text-xs font-medium transition-colors border disabled:opacity-40",
+                  "flat-capsule motion-control px-4 h-8 rounded-full text-xs font-medium border-0 disabled:opacity-40",
                   isLight
-                    ? "bg-transparent border-black/[0.08] text-[#1a1625]/60 hover:text-[#1a1625]"
-                    : "bg-transparent border-white/[0.08] text-white/60 hover:text-white"
+                    ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                    : "text-white/60 hover:text-white"
                 )}
               >
                 取消
@@ -432,10 +432,10 @@ export const RelocateInstanceModal: React.FC<RelocateInstanceModalProps> = ({
                 disabled={isRunning || migrating || (targetMode === "custom" && !customPath.trim())}
                 onClick={handleExecuteRelocate}
                 className={cn(
-                  "motion-control px-5 h-8 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 transition-colors border disabled:opacity-40",
+                  "flat-capsule motion-control px-5 h-8 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 border-0 disabled:opacity-40",
                   isLight
-                    ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625] active:bg-black/[0.18]"
-                    : "bg-white/20 border-white/15 text-white/70 hover:text-white active:bg-white/35"
+                    ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                    : "text-white/70 hover:text-white"
                 )}
               >
                 {migrating ? (

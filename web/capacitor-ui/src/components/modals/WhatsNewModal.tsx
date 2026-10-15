@@ -172,10 +172,10 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           <button
             onClick={onClose}
             className={cn(
-              "motion-control h-8 px-5 rounded-xl text-xs font-medium border-0 transition-colors",
+              "flat-capsule motion-control h-8 px-5 rounded-full text-xs font-medium border-0",
               isLight
-                ? "bg-black/[0.06] text-[#1a1625]/60 hover:text-[#1a1625]"
-                : "bg-white/[0.08] text-white/60 hover:text-white"
+                ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "text-white/60 hover:text-white"
             )}
           >
             开始使用

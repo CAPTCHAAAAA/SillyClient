@@ -7,6 +7,112 @@ import { setCarouselSnapLock } from "../../lib/carousel-snap";
 import { createPaginationMotion, paginationCenter, paginationDotOpacity, PAGINATION_REST_WIDTH } from "../../lib/pagination-motion";
 import { FlipCard } from "../common/FlipCard";
 
+const REORDER_CURVE = "cubic-bezier(0.22, 0.7, 0.3, 1)";
+const REORDER_SETTLE_MS = 380;
+const RELEASE_ALPHA = 0.84;
+type GestureSample = { x: number; t: number };
+
+function pushGestureSample(samples: GestureSample[], x: number, t: number) {
+  samples.push({ x, t });
+  const cutoff = t - 96;
+  while (samples.length > 2 && samples[0].t < cutoff) samples.shift();
+}
+
+/** 最近约 72ms 的位移。松手停住则速度归零，避免单帧抖动被当成甩动。 */
+function gestureVelocity(samples: GestureSample[], now: number) {
+  if (samples.length < 2) return 0;
+  const last = samples[samples.length - 1];
+  if (now - last.t > 72) return 0;
+  let first = samples[0];
+  for (let i = samples.length - 1; i >= 0; i -= 1) {
+    if (last.t - samples[i].t <= 72) first = samples[i];
+    else break;
+  }
+  const dt = last.t - first.t;
+  if (dt < 16) return 0;
+  return (last.x - first.x) / dt;
+}
+
+function releaseDuration(distance: number, velocity: number) {
+  const span = Math.abs(distance);
+  if (span < 1) return 0;
+  const rest = Math.min(460, Math.max(210, 200 + span * 0.9));
+  const toward = Math.sign(velocity) === Math.sign(distance) ? Math.abs(velocity) : 0;
+  if (toward < 0.05) return Math.round(rest);
+  const matched = (3 * span) / toward;
+  return Math.round(Math.min(480, Math.max(200, Math.min(rest, matched))));
+}
+
+/** 起点接上松手速度，终点速度为 0。静止翻页初速靠近临界值，整段持续减速，避免中段匀速平移。 */
+function releaseOffset(progress: number, distance: number, velocity: number, duration: number) {
+  const t = Math.max(0, Math.min(1, progress));
+  const span = Math.abs(distance);
+  if (span < 0.5 || duration < 1) return distance * t;
+  const maxSlope = (3 * distance) / duration;
+  let slope = velocity;
+  const sameWay = slope === 0 || Math.sign(slope) === Math.sign(distance);
+  if (sameWay) {
+    const floor = maxSlope * RELEASE_ALPHA;
+    if (Math.abs(slope) < Math.abs(floor)) slope = floor;
+    if (Math.abs(slope) > Math.abs(maxSlope)) slope = maxSlope;
+  } else {
+    const cap = Math.abs(maxSlope) * 0.28;
+    if (Math.abs(slope) > cap) slope = Math.sign(slope) * cap;
+  }
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const blend = -2 * t3 + 3 * t2;
+  const incoming = t3 - 2 * t2 + t;
+  return distance * blend + slope * duration * incoming;
+}
+
+/** 卡片相对滚动容器内容的左缘。offsetParent 是外层定位盒，不能直接拿 offsetLeft 当 scrollLeft。 */
+function cardContentLeft(scroller: HTMLElement, card: HTMLElement) {
+  return card.offsetLeft - scroller.offsetLeft;
+}
+
+function scrollLeftForCard(scroller: HTMLElement, card: HTMLElement) {
+  const cardWidth = card.offsetWidth || 240;
+  const raw = cardContentLeft(scroller, card) - (scroller.clientWidth - cardWidth) / 2;
+  const max = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+  return Math.min(max, Math.max(0, raw));
+}
+
+function releaseCardIndex(scroller: HTMLElement, cards: HTMLElement[], scrollVelocity: number) {
+  const nearest = closestCardIndex(scroller, cards);
+  if (Math.abs(scrollVelocity) < 0.12) return nearest;
+  const projected = scroller.scrollLeft + scrollVelocity / 0.0034;
+  const projectedCenter = projected + scroller.clientWidth / 2;
+  let idx = nearest;
+  let best = Infinity;
+  for (let i = 0; i < cards.length; i += 1) {
+    const card = cards[i];
+    const center = cardContentLeft(scroller, card) + card.offsetWidth / 2;
+    const dist = Math.abs(center - projectedCenter);
+    if (dist < best) {
+      best = dist;
+      idx = i;
+    }
+  }
+  return Math.max(0, Math.min(cards.length - 1, Math.max(nearest - 1, Math.min(nearest + 1, idx))));
+}
+
+function closestCardIndex(scroller: HTMLElement, cards: HTMLElement[]) {
+  const containerCenter = scroller.scrollLeft + scroller.clientWidth / 2;
+  let closestIdx = 0;
+  let closestDist = Infinity;
+  for (let i = 0; i < cards.length; i += 1) {
+    const card = cards[i];
+    const center = cardContentLeft(scroller, card) + card.offsetWidth / 2;
+    const dist = Math.abs(center - containerCenter);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closestIdx = i;
+    }
+  }
+  return closestIdx;
+}
+
 export interface InstanceCarouselRef {
   goToSlide: (index: number) => void;
   activeSlide: number;
@@ -96,13 +202,69 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   const isProgrammaticScrollingRef = useRef(false);
   const activeSlideRef = useRef(0);
   activeSlideRef.current = activeSlide;
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paginationMoverRef = useRef<HTMLDivElement>(null);
   const paginationCapsuleRef = useRef<HTMLSpanElement>(null);
   const paginationDotsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const paginationMotionRef = useRef<ReturnType<typeof createPaginationMotion> | null>(null);
   const animatePaginationRef = useRef(true);
   const reducedMotionRef = useRef(false);
+  const settleTokenRef = useRef(0);
+  const settleFrameRef = useRef(0);
+
+  const cancelSettle = useCallback(() => {
+    settleTokenRef.current += 1;
+    if (settleFrameRef.current) {
+      cancelAnimationFrame(settleFrameRef.current);
+      settleFrameRef.current = 0;
+    }
+  }, []);
+
+  const releaseSnap = useCallback((el: HTMLElement) => {
+    isProgrammaticScrollingRef.current = false;
+    setCarouselSnapLock(el, "drag", false);
+    el.style.scrollBehavior = "";
+  }, []);
+
+  const settleScrollTo = useCallback((el: HTMLElement, targetScroll: number, scrollVelocity = 0) => {
+    cancelSettle();
+    const token = settleTokenRef.current;
+    const from = el.scrollLeft;
+    const distance = targetScroll - from;
+    setCarouselSnapLock(el, "drag", true);
+    el.style.scrollBehavior = "auto";
+    isProgrammaticScrollingRef.current = true;
+
+    if (reducedMotionRef.current || Math.abs(distance) < 0.5) {
+      el.scrollLeft = targetScroll;
+      if (settleTokenRef.current === token) releaseSnap(el);
+      return;
+    }
+
+    const duration = releaseDuration(distance, scrollVelocity);
+    if (duration < 1) {
+      el.scrollLeft = targetScroll;
+      if (settleTokenRef.current === token) releaseSnap(el);
+      return;
+    }
+    const startedAt = performance.now();
+    const step = (now: number) => {
+      if (settleTokenRef.current !== token) return;
+      const progress = Math.min(1, (now - startedAt) / duration);
+      el.scrollLeft = from + releaseOffset(progress, distance, scrollVelocity, duration);
+      if (progress < 1) {
+        settleFrameRef.current = requestAnimationFrame(step);
+        return;
+      }
+      el.scrollLeft = targetScroll;
+      settleFrameRef.current = requestAnimationFrame(() => {
+        settleFrameRef.current = 0;
+        if (settleTokenRef.current !== token) return;
+        el.scrollLeft = targetScroll;
+        releaseSnap(el);
+      });
+    };
+    settleFrameRef.current = requestAnimationFrame(step);
+  }, [cancelSettle, releaseSnap]);
 
   useLayoutEffect(() => {
     const mover = paginationMoverRef.current;
@@ -146,8 +308,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     animatePaginationRef.current = true;
   }, [activeSlide, totalSlides]);
 
-  // 原生硬件加速平滑滚动至指定索引卡片（居中对齐）
-  const goToSlide = useCallback((targetIndex: number, animateIndicator = true) => {
+  // 按释放曲线把滚动收到目标卡中心。吸附锁在动画结束后才打开。
+  const goToSlide = useCallback((targetIndex: number, animateIndicator = true, scrollVelocity = 0) => {
     const el = carouselRef.current;
     if (!el) return;
 
@@ -162,18 +324,12 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     else if (!animateIndicator) paginationMotionRef.current?.snap();
     setActiveSlide(clampedIndex);
 
-    const cardWidth = target.offsetWidth || 240;
-    const containerWidth = el.clientWidth;
-    const targetScroll = Math.max(0, target.offsetLeft - (containerWidth - cardWidth) / 2);
+    const targetScroll = scrollLeftForCard(el, target);
 
-    // 原生由渲染合成器硬件加速驱动平滑滚动，0 JS 逐帧计算开销
-    el.scrollTo({ left: targetScroll, behavior: "smooth" });
-
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = setTimeout(() => {
-      isProgrammaticScrollingRef.current = false;
-    }, 320);
-  }, [totalSlides, setActiveSlide]);
+    // 吸附全程锁住 scroll-snap。松手速度接进曲线，再减速贴到目标卡，结束才解锁。
+    // 否则 mandatory snap 会先跳一帧，看起来像系统刷新把卡片弹回去。
+    settleScrollTo(el, targetScroll, scrollVelocity);
+  }, [totalSlides, setActiveSlide, settleScrollTo]);
 
   useImperativeHandle(ref, () => ({
     goToSlide,
@@ -228,17 +384,13 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     startX: number;
     scrollLeft: number;
     hasDragged: boolean;
-    lastX: number;
-    lastTime: number;
-    velocityX: number;
+    samples: GestureSample[];
   }>({
     isDown: false,
     startX: 0,
     scrollLeft: 0,
     hasDragged: false,
-    lastX: 0,
-    lastTime: 0,
-    velocityX: 0,
+    samples: [],
   });
 
   // 手机桌面级长按拖拽重排状态机 (Springboard Drag-to-Reorder)
@@ -272,6 +424,9 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   const pointerStartRef = useRef<{ x: number; y: number; cardIndex: number; pointerId: number } | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const justReorderedRef = useRef(false);
+  const reorderSamplesRef = useRef<GestureSample[]>([]);
+  const dropFrameRef = useRef(0);
+  const dropTokenRef = useRef(0);
 
   // 动态测量卡片槽位物理步长 (240px card + 28px gap = 268px)
   const getCardStride = useCallback(() => {
@@ -315,6 +470,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
 
       dragState.current.isDown = false;
       justReorderedRef.current = true;
+      reorderSamplesRef.current = [{ x: start.x, t: performance.now() }];
 
       const initial = {
         active: true,
@@ -350,6 +506,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       // 已处于拖拽重排模式中：纯在当前视口内平滑计算槽位，容器保持完全静止
       e.preventDefault();
       const dx = e.clientX - start.x;
+      pushGestureSample(reorderSamplesRef.current, e.clientX, performance.now());
       const stride = getCardStride();
       const slotDelta = Math.round(dx / stride);
       const newTarget = Math.max(0, Math.min(localInstances.length - 1, currentReorder.draggedIndex + slotDelta));
@@ -379,22 +536,17 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         return;
       }
 
-      // 执行放手落位吸附动画（180ms 与 CSS 严格对齐）
+      pointerStartRef.current = null;
       const stride = getCardStride();
+      const fromIdx = currentReorder.draggedIndex;
+      const toIdx = currentReorder.targetIndex;
+      const fromOffset = currentReorder.dragOffset;
       const finalOffset = (currentReorder.targetIndex - currentReorder.draggedIndex) * stride;
+      const distance = finalOffset - fromOffset;
+      const pointerVelocity = gestureVelocity(reorderSamplesRef.current, performance.now());
+      const duration = reducedMotionRef.current ? 0 : releaseDuration(distance, pointerVelocity);
 
-      const droppingState = {
-        ...currentReorder,
-        dragOffset: finalOffset,
-        isDropping: true,
-      };
-      reorderStateRef.current = droppingState;
-      setReorderState(droppingState);
-
-      setTimeout(() => {
-        const fromIdx = currentReorder.draggedIndex;
-        const toIdx = currentReorder.targetIndex;
-
+      const finishReorder = () => {
         if (fromIdx !== toIdx) {
           const next = [...localInstances];
           const [moved] = next.splice(fromIdx, 1);
@@ -409,7 +561,6 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         setIsReorderCommitting(true);
         setReorderState(null);
         reorderStateRef.current = null;
-        pointerStartRef.current = null;
 
         // 双 rAF 跨帧保护：等待 React 完成真实 DOM 节点调换并在首个合成帧绘制完成后，平稳释放冻结
         requestAnimationFrame(() => {
@@ -435,7 +586,43 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
             }, 200);
           });
         });
-      }, 180);
+      };
+
+      if (duration < 1) {
+        finishReorder();
+        return;
+      }
+
+      const token = dropTokenRef.current + 1;
+      dropTokenRef.current = token;
+      const dropping = {
+        ...currentReorder,
+        dragOffset: fromOffset,
+        isDropping: true,
+      };
+      reorderStateRef.current = dropping;
+      setReorderState(dropping);
+      const started = performance.now();
+      const step = (now: number) => {
+        if (dropTokenRef.current !== token) return;
+        const progress = Math.min(1, (now - started) / duration);
+        const offset = progress >= 1
+          ? finalOffset
+          : fromOffset + releaseOffset(progress, distance, pointerVelocity, duration);
+        const next = { ...dropping, dragOffset: offset };
+        reorderStateRef.current = next;
+        setReorderState(next);
+        if (progress < 1) {
+          dropFrameRef.current = requestAnimationFrame(step);
+          return;
+        }
+        dropFrameRef.current = requestAnimationFrame(() => {
+          dropFrameRef.current = 0;
+          if (dropTokenRef.current !== token) return;
+          finishReorder();
+        });
+      };
+      dropFrameRef.current = requestAnimationFrame(step);
     };
 
     const onPointerCancel = (e: PointerEvent) => {
@@ -470,10 +657,10 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         startX: e.pageX,
         scrollLeft: el.scrollLeft,
         hasDragged: false,
-        lastX: e.pageX,
-        lastTime: performance.now(),
-        velocityX: 0,
+        samples: [{ x: e.pageX, t: performance.now() }],
       };
+      cancelSettle();
+      isProgrammaticScrollingRef.current = false;
       // 拖拽开始：临时禁用 CSS scroll-snap 与平滑滚动，杜绝浏览器在拖拽过程中强行重吸附导致的生硬卡顿
       setCarouselSnapLock(el, "drag", true);
       el.style.scrollBehavior = "auto";
@@ -490,15 +677,9 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       }
       if (dragState.current.hasDragged) {
         e.preventDefault();
-        const now = performance.now();
-        const dt = now - dragState.current.lastTime;
-        if (dt > 8) {
-          dragState.current.velocityX = (x - dragState.current.lastX) / dt;
-          dragState.current.lastX = x;
-          dragState.current.lastTime = now;
-        }
+        pushGestureSample(dragState.current.samples, x, performance.now());
         el.scrollLeft = dragState.current.scrollLeft - walk;
-      }
+        }
     };
 
     const onMouseUp = () => {
@@ -506,36 +687,19 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       if (!dragState.current.isDown) return;
       dragState.current.isDown = false;
       el.style.cursor = "grab";
-      // 恢复原生 snap
-      setCarouselSnapLock(el, "drag", false);
-      el.style.scrollBehavior = "";
 
-      if (dragState.current.hasDragged) {
-        // 拖拽释放：根据释放瞬时速度或视口中心平滑吸附到对应卡片
-        const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-card-index")) as HTMLElement[];
-        if (cards.length > 0) {
-          const containerCenter = el.scrollLeft + el.clientWidth / 2;
-          let closestIdx = 0;
-          let closestDist = Infinity;
-          for (let i = 0; i < cards.length; i++) {
-            const card = cards[i];
-            const center = card.offsetLeft + card.offsetWidth / 2;
-            const dist = Math.abs(center - containerCenter);
-            if (dist < closestDist) {
-              closestDist = dist;
-              closestIdx = i;
-            }
-          }
-          const v = dragState.current.velocityX;
-          if (v < -0.35 && closestIdx < cards.length - 1) {
-            goToSlide(Math.min(cards.length - 1, closestIdx + 1));
-          } else if (v > 0.35 && closestIdx > 0) {
-            goToSlide(Math.max(0, closestIdx - 1));
-          } else {
-            goToSlide(closestIdx);
-          }
-        }
+      if (!dragState.current.hasDragged) {
+        releaseSnap(el);
+        return;
       }
+
+      const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-card-index")) as HTMLElement[];
+      if (cards.length === 0) {
+        releaseSnap(el);
+        return;
+      }
+      const scrollVelocity = -gestureVelocity(dragState.current.samples, performance.now());
+      goToSlide(releaseCardIndex(el, cards, scrollVelocity), true, scrollVelocity);
     };
 
     // 拖拽完成拦截点击穿透，防止松开鼠标时意外触发展开或激活按钮
@@ -555,19 +719,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     // 滚动时更新指示器：基于 offsetLeft 零重排零回流计算，采用 requestAnimationFrame 保证 120Hz 顺滑
     const updateIndicatorOnScroll = () => {
       if (isProgrammaticScrollingRef.current) return;
-      const containerCenter = el.scrollLeft + el.clientWidth / 2;
       const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-card-index")) as HTMLElement[];
-      let closestIdx = 0;
-      let closestDist = Infinity;
-      for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const center = card.offsetLeft + card.offsetWidth / 2;
-        const dist = Math.abs(center - containerCenter);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestIdx = i;
-        }
-      }
+      const closestIdx = closestCardIndex(el, cards);
       if (closestIdx !== activeSlideRef.current) {
         animatePaginationRef.current = true;
         activeSlideRef.current = closestIdx;
@@ -599,12 +752,11 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       el.removeEventListener("click", onClickCapture, true);
       el.removeEventListener("scroll", onScroll);
       if (scrollFrame) cancelAnimationFrame(scrollFrame);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      cancelSettle();
       dragState.current.isDown = false;
-      setCarouselSnapLock(el, "drag", false);
-      el.style.scrollBehavior = "";
+      releaseSnap(el);
     };
-  }, [goToSlide, setActiveSlide]);
+  }, [goToSlide, setActiveSlide, cancelSettle, releaseSnap]);
 
   const createLabel = isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV ? "下载 APK" : "新建实例";
   const createHint = isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV ? "获取最新版本" : "设置新的酒馆环境";
@@ -623,6 +775,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
             scrollPaddingInline: "1px",
             WebkitOverflowScrolling: "touch",
             touchAction: "pan-x",
+            overscrollBehaviorX: "contain",
             willChange: "scroll-position",
           }}
         >
@@ -711,9 +864,12 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
 
             // 针对 DOM 重排瞬态的精密样式隔离：
             // 1. 提交帧 (isReorderCommitting)：强制关闭一切 transition 并重置 transform，使新物理位置与 0 位移完美对齐，0 帧闪烁；
-            // 2. 拖拽与落位帧：保持高刷新率物理跟随与 180ms cubic-bezier 吸附；
+            // 2. 拖拽与落位帧：拖动时无过渡跟随，松手后按减速曲线贴入槽位；
             // 3. 邻卡让位帧：平滑侧移让位；
             // 4. 常态：不施加多余 inline transform/transition，纯净原生排版。
+            const reorderTransition = reducedMotionRef.current
+              ? "none"
+              : `transform ${REORDER_SETTLE_MS}ms ${REORDER_CURVE}`;
             const cardStyle: React.CSSProperties | undefined = isReorderCommitting
               ? {
                   transform: "none",
@@ -723,18 +879,18 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
               ? {
                   transform: `translate3d(${reorderState.dragOffset}px, 0, 0)`,
                   zIndex: 50,
-                  transition: isDropping ? "transform 180ms cubic-bezier(0.2, 0, 0, 1)" : "none",
+                  transition: "none",
                   pointerEvents: isDropping ? "none" : "auto",
                 }
               : shiftX !== 0
               ? {
                   transform: `translate3d(${shiftX}px, 0, 0)`,
-                  transition: "transform 260ms cubic-bezier(0.2, 0, 0, 1)",
+                  transition: reorderTransition,
                 }
               : reorderState?.active
               ? {
                   transform: "translate3d(0, 0, 0)",
-                  transition: "transform 260ms cubic-bezier(0.2, 0, 0, 1)",
+                  transition: reorderTransition,
                 }
               : undefined;
 

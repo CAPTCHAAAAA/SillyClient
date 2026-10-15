@@ -249,10 +249,10 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
             onClick={onClose}
             disabled={verifying}
             className={cn(
-              "motion-control h-8 px-3.5 rounded-xl text-xs font-medium border transition-colors",
+              "flat-capsule motion-control h-8 px-3.5 rounded-full text-xs font-medium border-0",
               isLight
-                ? "border-black/[0.08] text-[#1a1625]/60 hover:text-[#1a1625]"
-                : "border-white/[0.08] text-white/60 hover:text-white"
+                ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "text-white/60 hover:text-white"
             )}
           >
             取消
@@ -261,7 +261,7 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
             onClick={handleUnlock}
             disabled={verifying || !password.trim()}
             className={cn(
-              "motion-control h-8 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-40",
+              "motion-control h-8 px-4 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40",
               isLight
                 ? "bg-black text-white/80 hover:text-white"
                 : "bg-white text-[#14101e]/80 hover:text-[#14101e]"

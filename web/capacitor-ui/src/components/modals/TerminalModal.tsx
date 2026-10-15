@@ -6,6 +6,7 @@ import { LAYERS } from "../../constants/layers";
 import type { TavernInstance } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { GLOBAL_LOG_KEY, instanceLogs } from "../../lib/log-store";
+import { CornerResizeCurve } from "./CornerResizeCurve";
 
 export interface TerminalModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   const [terminalInput, setTerminalInput] = useState("");
   const logKey = terminalInstance?.installDir || terminalInstance?.id || GLOBAL_LOG_KEY;
   const terminalLogs = useInstanceLogs(logKey, isOpen || isClosing);
-  const resizeCleanup = useRef<(() => void) | null>(null);
+  const resizeDrag = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
 
   // 拖动定位与状态
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
@@ -54,7 +55,6 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => {
-    resizeCleanup.current?.();
     dragCleanup.current?.();
   }, []);
 
@@ -100,32 +100,31 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     window.addEventListener("pointercancel", onPointerUp);
   };
 
-  const startResize = (startX: number, startY: number) => {
-    resizeCleanup.current?.();
-    const origW = terminalSize.w;
-    const origH = terminalSize.h;
-    const onMove = (clientX: number, clientY: number) => {
-      setTerminalSize({
-        w: Math.max(320, Math.min(window.innerWidth - 16, origW + (clientX - startX))),
-        h: Math.max(200, Math.min(window.innerHeight - 16, origH + (clientY - startY))),
-      });
+  const onResizePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (event.button !== 0 && event.pointerType === "mouse") return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    resizeDrag.current = {
+      x: event.clientX,
+      y: event.clientY,
+      w: terminalSize.w,
+      h: terminalSize.h,
     };
-    const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY);
-    };
-    const onEnd = () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onEnd);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onEnd);
-      resizeCleanup.current = null;
-    };
-    resizeCleanup.current = onEnd;
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onEnd);
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onEnd);
+  };
+  const onResizePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+    const drag = resizeDrag.current;
+    if (!drag) return;
+    setTerminalSize({
+      w: Math.round(Math.min(window.innerWidth - 16, Math.max(320, drag.w + (event.clientX - drag.x)))),
+      h: Math.round(Math.min(window.innerHeight - 16, Math.max(200, drag.h + (event.clientY - drag.y)))),
+    });
+  };
+  const onResizePointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
+    resizeDrag.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   if (!isOpen && !isClosing) return null;
@@ -135,8 +134,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       ref={modalRef}
       data-terminal-modal="true"
       className={cn(
-        "fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
-        glassBg,
+        "fixed",
         isClosing ? "animate-terminal-exit" : "animate-terminal-enter",
         isDragging && "select-none"
       )}
@@ -151,6 +149,12 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
         maxWidth: "calc(100vw - 16px)",
         maxHeight: "calc(100vh - 2rem)",
       }}
+    >
+    <div
+      className={cn(
+        "absolute inset-0 flex flex-col overflow-hidden rounded-2xl backdrop-blur-[40px] saturate-180",
+        glassBg
+      )}
     >
       {/* 标题栏 (支持拖拽到其他位置) */}
       <div
@@ -311,40 +315,17 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
         </div>
       </div>
 
-      {/* 拖拽缩放 */}
-      <div
-        className={cn(
-          "absolute bottom-1 right-1 w-5 h-5 cursor-se-resize z-10 opacity-40 transition-opacity hover:opacity-80 touch-none",
-          isLight ? "text-[#1a1625]" : "text-white"
-        )}
-        onMouseDown={(e) => startResize(e.clientX, e.clientY)}
-        onTouchStart={(e) => {
-          e.preventDefault();
-          const t = e.touches[0];
-          startResize(t.clientX, t.clientY);
-        }}
-      >
-        <svg viewBox="0 0 12 12" fill="none" className="w-full h-full">
-          <line
-            x1="11"
-            y1="1"
-            x2="5"
-            y2="7"
-            stroke="currentColor"
-            strokeWidth="1"
-            strokeLinecap="round"
-          />
-          <line
-            x1="11"
-            y1="4"
-            x2="8"
-            y2="7"
-            stroke="currentColor"
-            strokeWidth="1"
-            strokeLinecap="round"
-          />
-        </svg>
-      </div>
+    </div>
+      <CornerResizeCurve
+        radius={32}
+        gap={10}
+        isLight={isLight}
+        label="拖动缩放终端"
+        onPointerDown={onResizePointerDown}
+        onPointerMove={onResizePointerMove}
+        onPointerUp={onResizePointerUp}
+        onPointerCancel={onResizePointerUp}
+      />
     </div>
   );
 };

@@ -40,8 +40,8 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
   const [activeRun, setActiveRun] = useState<Awaited<ReturnType<typeof TarvenEnv.getStatus>> | null>(null);
   const text = isLight ? "text-[#1a1625]/70" : "text-white/70";
   const subtle = isLight ? "text-[#1a1625]/40" : "text-white/40";
-  const control = cn("motion-control h-8 rounded-xl px-3 text-[11px] font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
-    isLight ? "bg-black/[0.05] text-[#1a1625]/60 hover:text-[#1a1625]" : "bg-white/[0.06] text-white/60 hover:text-white");
+  const control = cn("flat-capsule motion-control h-8 rounded-full px-3 text-[11px] font-medium border-0 disabled:opacity-40 disabled:pointer-events-none",
+    isLight ? "text-[#1a1625]/60 hover:text-[#1a1625]" : "text-white/60 hover:text-white");
 
   const requestClose = useCallback(() => {
     if (busy || closing) return;

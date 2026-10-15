@@ -187,10 +187,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
               onClick={onRetry}
               disabled={!!launchingId}
               className={cn(
-                "motion-control flex-1 h-9 rounded-full text-xs font-semibold disabled:opacity-50 transition-colors border active:scale-[0.98]",
+                "flat-capsule motion-control flex-1 h-9 rounded-full text-xs font-semibold border-0 disabled:opacity-50",
                 isLight
-                  ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/60 hover:text-[#1a1625] active:bg-black/[0.18]"
-                  : "bg-white/15 border-white/10 text-white/60 hover:text-white active:bg-white/30"
+                  ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                  : "text-white/70 hover:text-white"
               )}
             >
               重试
@@ -198,10 +198,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
             <button
               onClick={onClose}
               className={cn(
-                "motion-control flex-1 h-9 rounded-full text-xs font-medium transition-colors border",
+                "flat-capsule motion-control flex-1 h-9 rounded-full text-xs font-medium border-0",
                 isLight
-                  ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/50 hover:text-[#1a1625]/85"
-                  : "bg-white/[0.08] border-white/[0.06] text-white/50 hover:text-white/85"
+                  ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                  : "text-white/60 hover:text-white"
               )}
             >
               关闭
@@ -219,10 +219,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
                   }
                 }}
                 className={cn(
-                  "motion-control flex-1 h-9 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border active:scale-[0.98]",
+                  "flat-capsule motion-control flex-1 h-9 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 border-0",
                   isLight
-                    ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625] active:bg-black/[0.18]"
-                    : "bg-white/20 border-white/15 text-white/70 hover:text-white active:bg-white/35"
+                    ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                    : "text-white/70 hover:text-white"
                 )}
               >
                 <Play className="w-3 h-3 fill-current" />
@@ -231,10 +231,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
               <button
                 onClick={onClose}
                 className={cn(
-                  "motion-control px-4 h-9 rounded-full text-xs font-medium transition-colors border",
+                  "flat-capsule motion-control px-4 h-9 rounded-full text-xs font-medium border-0",
                   isLight
-                    ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/50 hover:text-[#1a1625]/85"
-                    : "bg-white/[0.08] border-white/[0.06] text-white/50 hover:text-white/85"
+                    ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                    : "text-white/60 hover:text-white"
                 )}
               >
                 稍后
@@ -256,7 +256,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
                 onClick={onClose}
                 title="取消创建"
                 aria-label="取消创建"
-                className="motion-control flex h-8 flex-shrink-0 items-center gap-1.5 rounded-full px-3"
+                className={cn(
+                  "flat-capsule motion-control flex h-8 flex-shrink-0 items-center gap-1.5 rounded-full border-0 px-3",
+                  isLight ? "text-[#1a1625]/70 hover:text-[#1a1625]" : "text-white/70 hover:text-white"
+                )}
               >
                 <X className="h-3 w-3" />
                 <span>取消</span>
@@ -267,10 +270,10 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
           <button
             onClick={onMinimize || onClose}
             className={cn(
-              "motion-control w-full h-10 rounded-xl text-[13px] font-semibold transition-colors",
+              "flat-capsule motion-control h-10 rounded-full px-5 text-[13px] font-semibold border-0",
               isLight
-                ? "bg-black/[0.05] text-[#1a1625]/50 hover:text-[#1a1625]/85"
-                : "bg-white/[0.08] text-white/50 hover:text-white/85"
+                ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                : "text-white/70 hover:text-white"
             )}
           >
             隐藏

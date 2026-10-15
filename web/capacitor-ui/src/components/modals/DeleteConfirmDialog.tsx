@@ -168,10 +168,10 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             disabled={isDeleting}
             onClick={onClose}
             className={cn(
-              "motion-control h-8 rounded-full px-4 text-xs font-medium transition-colors border disabled:pointer-events-none disabled:opacity-40",
+              "flat-capsule motion-control h-8 rounded-full px-4 text-xs font-medium border-0 disabled:pointer-events-none disabled:opacity-40",
               isLight
-                ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/60 hover:text-[#1a1625]"
-                : "bg-white/[0.08] border-white/[0.06] text-white/60 hover:text-white"
+                ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "text-white/60 hover:text-white"
             )}
           >
             取消
@@ -181,10 +181,10 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             disabled={isDeleting}
             onClick={onConfirm}
             className={cn(
-              "motion-control flex h-8 items-center justify-center gap-1.5 rounded-full px-5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 transition-colors border",
+              "flat-capsule motion-control flex h-8 items-center justify-center gap-1.5 rounded-full px-5 text-xs font-semibold border-0 disabled:pointer-events-none disabled:opacity-50",
               isLight
-                ? "bg-red-500/10 border-red-500/15 text-red-600/70 hover:text-red-600 active:bg-red-500/25"
-                : "bg-red-500/20 border-red-500/25 text-red-300/70 hover:text-red-300 active:bg-red-500/35"
+                ? "text-red-900/60 hover:text-red-900"
+                : "text-red-300/75 hover:text-red-200"
             )}
           >
             {isDeleting ? "正在删除" : "删除"}

@@ -244,10 +244,10 @@ export const LegacyMigrationModal: React.FC<LegacyMigrationModalProps> = ({
             <button
               onClick={onClose}
               className={cn(
-                "motion-control px-5 h-8 rounded-full text-xs font-medium transition-colors border",
+                "flat-capsule motion-control px-5 h-8 rounded-full text-xs font-medium border-0",
                 isLight
-                  ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625]"
-                  : "bg-white/20 border-white/15 text-white/70 hover:text-white"
+                  ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                  : "text-white/70 hover:text-white"
               )}
             >
               进入控制台
@@ -259,10 +259,10 @@ export const LegacyMigrationModal: React.FC<LegacyMigrationModalProps> = ({
                   type="button"
                   onClick={onClose}
                   className={cn(
-                    "motion-control px-4 h-8 rounded-full text-xs font-medium transition-colors border disabled:opacity-40",
+                    "flat-capsule motion-control px-4 h-8 rounded-full text-xs font-medium border-0 disabled:opacity-40",
                     isLight
-                      ? "bg-transparent border-black/[0.08] text-[#1a1625]/60 hover:text-[#1a1625]"
-                      : "bg-transparent border-white/[0.08] text-white/60 hover:text-white"
+                      ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                      : "text-white/60 hover:text-white"
                   )}
                 >
                   稍后处理
@@ -273,10 +273,10 @@ export const LegacyMigrationModal: React.FC<LegacyMigrationModalProps> = ({
                 disabled={migrating}
                 onClick={handleStartMigration}
                 className={cn(
-                  "motion-control px-5 h-8 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 transition-colors border disabled:opacity-40",
+                  "flat-capsule motion-control px-5 h-8 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 border-0 disabled:opacity-40",
                   isLight
-                    ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625] active:bg-black/[0.18]"
-                    : "bg-white/20 border-white/15 text-white/70 hover:text-white active:bg-white/35"
+                    ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                    : "text-white/70 hover:text-white"
                 )}
               >
                 {migrating ? (

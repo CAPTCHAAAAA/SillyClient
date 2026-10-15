@@ -177,10 +177,10 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
             onClick={onClose}
             disabled={cleaningGarbage}
             className={cn(
-              "motion-control px-4 h-8 rounded-xl text-[11px] font-medium transition-colors disabled:opacity-50",
+              "flat-capsule motion-control px-4 h-8 rounded-full text-[11px] font-medium border-0 disabled:opacity-50",
               isLight
-                ? "bg-black/[0.05] text-[#1a1625]/50 hover:text-[#1a1625]/85"
-                : "bg-white/[0.06] text-white/50 hover:text-white/85"
+                ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                : "text-white/60 hover:text-white"
             )}
           >
             取消
@@ -202,7 +202,7 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
             }}
             disabled={cleaningGarbage || garbageItems.length === 0}
             className={cn(
-              "motion-control px-4 h-8 rounded-xl text-[11px] font-semibold transition-colors disabled:opacity-50",
+              "motion-control px-4 h-8 rounded-full text-[11px] font-semibold transition-colors disabled:opacity-50",
               isLight
                 ? "bg-[#1a1625] text-[#f5f3ef]/80 hover:text-[#f5f3ef]"
                 : "bg-white/90 text-[#1a1625]/80 hover:text-[#1a1625]"

@@ -2629,10 +2629,10 @@ function SillyClientLauncher() {
               setUpdatePromptDismissed(true);
             }}
             className={cn(
-              "motion-control h-7 px-3 rounded-full text-xs font-semibold transition-all border",
+              "flat-capsule motion-control h-7 px-3 rounded-full text-xs font-semibold border-0",
               isLight
-                ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625]"
-                : "bg-white/20 border-white/15 text-white/70 hover:text-white"
+                ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                : "text-white/70 hover:text-white"
             )}
           >
             查看

@@ -1163,7 +1163,7 @@
             -webkit-backdrop-filter: blur(var(--sf-blur, 0px)) saturate(var(--sf-sat, 1.1)) !important;
             backdrop-filter: blur(var(--sf-blur, 0px)) saturate(var(--sf-sat, 1.1)) !important;
             box-shadow:
-              inset 0 0 var(--sf-glow1-spread, 18px) 1px rgba(var(--sf-glow1-rgb, 228 186 204) / var(--sf-glow1, 0.11)),
+              inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 228 186 204) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 196 120 142) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 7 5 10) / var(--sf-sh-a, 0.075)) !important;
             transition: box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1) !important;
@@ -1259,14 +1259,14 @@
           /* 主题模式差异仅剩发光色；浓度/雾/遮罩统一由调试面板全局变量控制 */
           body[data-preview-light] .motion-instance-card {
             box-shadow:
-              inset 0 0 var(--sf-glow1-spread, 18px) 1px rgba(var(--sf-glow1-rgb, 96 84 76) / var(--sf-glow1, 0.11)),
+              inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 96 84 76) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 110 96 86) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 120 100 80) / var(--sf-sh-a, 0.075)) !important;
           }
 
           body[data-preview-light] .motion-instance-card:hover {
             box-shadow:
-              inset 0 0 var(--sf-glow1-spread, 18px) 1px rgba(var(--sf-glow1-rgb, 96 84 76) / var(--sf-glow1, 0.11)),
+              inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 96 84 76) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 110 96 86) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 120 100 80) / var(--sf-sh-a, 0.075)) !important;
           }
@@ -1274,14 +1274,14 @@
           /* 黑夜模式（indigo 系，与源码暗夜按钮 indigo-500 同族） */
           body[data-preview-dark-mode] .motion-instance-card {
             box-shadow:
-              inset 0 0 var(--sf-glow1-spread, 18px) 1px rgba(var(--sf-glow1-rgb, 151 171 255) / var(--sf-glow1, 0.11)),
+              inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 151 171 255) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 120 140 230) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 7 5 10) / var(--sf-sh-a, 0.075)) !important;
           }
 
           body[data-preview-dark-mode] .motion-instance-card:hover {
             box-shadow:
-              inset 0 0 var(--sf-glow1-spread, 18px) 1px rgba(var(--sf-glow1-rgb, 151 171 255) / var(--sf-glow1, 0.11)),
+              inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 151 171 255) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 120 140 230) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 7 5 10) / var(--sf-sh-a, 0.075)) !important;
           }
@@ -1597,20 +1597,20 @@
             to { opacity: 0; }
           }
 
-          /* 管理菜单左侧卡片叠在 14px 间距里。轮播用的 7px/26px 投影会被裁成圆角外的深色断层，
-             再叠上壁纸色就变成两层阴影。侧栏内改成和栏体同色的实底，不再外扩投影。 */
+          /* 管理菜单左侧卡片跟创建实例卡同一套雾面和边缘光。
+             不画 1px 内描边：zoom 后会被拉成细线。也不外扩投影，避免圆角外裁出深色断层。 */
           .manage-panel-surface aside .motion-instance-card,
           .manage-panel-surface aside .motion-instance-card:hover,
           body[data-preview-light] .manage-panel-surface aside .motion-instance-card,
           body[data-preview-light] .manage-panel-surface aside .motion-instance-card:hover,
           body[data-preview-dark-mode] .manage-panel-surface aside .motion-instance-card,
           body[data-preview-dark-mode] .manage-panel-surface aside .motion-instance-card:hover {
-            background-color: rgba(255, 255, 255, 0.055) !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
+            background-color: rgba(var(--sf-fog-rgb, 249 255 249) / var(--sf-fog, 0.02)) !important;
+            -webkit-backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.36)) !important;
+            backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.36)) !important;
             box-shadow:
-              inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-              inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+              inset 0 0 var(--sf-glow1-spread, 23px) 0 rgba(var(--sf-glow1-rgb, 36 18 76) / var(--sf-glow1, 0.03)),
+              inset 0 0 var(--sf-glow2-spread, 53px) 0 rgba(var(--sf-glow2-rgb, 91 79 118) / var(--sf-glow2, 0.14)) !important;
           }
 
           .manage-panel-surface aside .motion-instance-card::after,
@@ -1623,10 +1623,10 @@
           body[data-preview-light] .manage-panel-surface.is-light aside .motion-instance-card:hover,
           .manage-panel-surface.is-light aside .motion-instance-card,
           .manage-panel-surface.is-light aside .motion-instance-card:hover {
-            background-color: rgba(255, 255, 255, 0.28) !important;
+            background-color: rgba(var(--sf-fog-rgb, 171 168 169) / var(--sf-fog, 0.02)) !important;
             box-shadow:
-              inset 0 0 0 1px rgba(26, 22, 37, 0.05),
-              inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+              inset 0 0 var(--sf-glow1-spread, 41px) 0 rgba(var(--sf-glow1-rgb, 255 255 255) / var(--sf-glow1, 0.48)),
+              inset 0 0 var(--sf-glow2-spread, 81px) 0 rgba(var(--sf-glow2-rgb, 255 255 255) / var(--sf-glow2, 0.27)) !important;
           }
 
         `;

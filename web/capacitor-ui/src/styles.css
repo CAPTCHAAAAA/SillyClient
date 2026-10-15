@@ -1048,6 +1048,30 @@ header span[class*="truncate"] {
   pointer-events: none !important;
 }
 
+/* 管理页翻页停在同一个槽位里。不位移、不缩放、不越过落点。
+   旧页用较短的 ease-out 让开，避免两页叠在中间发糊。
+   新页透明度先到位，模糊再用同一条刹车曲线多停一会儿，收焦而不是弹回来。
+   透明度和模糊始终挂在过渡上，切换当帧不改 animation。 */
+.manage-panel-surface .motion-panel-face {
+  opacity: 0;
+  filter: blur(6px);
+  transform: none;
+  transition:
+    opacity 320ms cubic-bezier(0.23, 1, 0.32, 1),
+    filter 320ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 320ms;
+}
+
+.manage-panel-surface .motion-panel-face.is-active {
+  opacity: 1;
+  filter: blur(0.01px);
+  transform: none;
+  transition:
+    opacity 380ms cubic-bezier(0.23, 1, 0.32, 1),
+    filter 560ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 0s;
+}
+
 /* 高度未知的内容使用 grid 行连续展开，允许中途反向。 */
 .motion-accordion {
   display: grid;
@@ -2106,8 +2130,9 @@ select option {
 
 .app-settings-action {
   min-width: 55px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .ios-task-surface.is-light .app-settings-action {
@@ -2115,13 +2140,11 @@ select option {
 }
 
 .app-settings-action.is-warning {
-  background: rgba(255, 255, 255, 0.045);
-  color: rgba(235, 182, 108, 0.62);
+  color: rgba(235, 182, 108, 0.72);
 }
 
 .app-settings-action.is-danger {
-  background: rgba(255, 255, 255, 0.045);
-  color: rgba(238, 127, 151, 0.64);
+  color: rgba(238, 127, 151, 0.74);
 }
 
 .app-settings-row.is-pending {
@@ -2180,10 +2203,6 @@ select option {
   .app-settings-action.is-danger:hover {
     color: rgba(246, 145, 166, 0.98);
   }
-}
-
-.app-settings-action:active:not(:disabled) {
-  transform: scale(0.97);
 }
 
 @media (max-width: 420px) {
@@ -2339,17 +2358,20 @@ select option {
 /* 搜索和顶栏按钮用浅内凹。文字很多的设置项不走这里。 */
 .manage-recess {
   background: rgba(0, 0, 0, 0.20);
-  box-shadow:
-    inset 0 1.25px 2px rgba(0, 0, 0, 0.38),
-    inset 0 -0.75px 0 rgba(255, 255, 255, 0.16),
-    0 0.5px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.24);
 }
 
 .manage-panel-surface.is-light .manage-recess {
   background: rgba(26, 22, 37, 0.045);
-  box-shadow:
-    inset 0 1px 1.5px rgba(28, 18, 24, 0.08),
-    inset 0 -0.5px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 2px rgba(28, 18, 24, 0.07);
+}
+
+.manage-recess input {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* 高阅读设置项保持扁平。边界只靠极轻的色差，不描实线，也不做内凹。 */
@@ -2364,11 +2386,47 @@ select option {
   border-color: rgba(26, 22, 37, 0.04) !important;
 }
 
+/* 交互扁平胶囊对齐实例卡片启动键：满圆、无描边、悬停只提亮文字。输入框不走这里。 */
+.manage-panel-surface button.manage-flat,
+.app-settings-action,
+button.flat-capsule {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  transition-property: color;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.manage-panel-surface.is-light button.manage-flat,
+.ios-task-surface.is-light .app-settings-action,
+.is-light button.flat-capsule {
+  background: rgba(26, 22, 37, 0.07) !important;
+}
+
+button.flat-capsule[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+.is-light button.flat-capsule[aria-pressed="true"] {
+  background: rgba(26, 22, 37, 0.12) !important;
+}
+
+.manage-panel-surface button.manage-flat:hover,
+.manage-panel-surface button.manage-flat:active:not(:disabled),
+.app-settings-action:hover,
+.app-settings-action:active:not(:disabled),
+button.flat-capsule:hover,
+button.flat-capsule:active:not(:disabled) {
+  transform: none;
+  filter: none;
+}
+
 .reading-flat-surface input,
 .reading-flat-surface textarea,
 .reading-flat-surface .ios-field-control,
-.reading-flat-surface button.border:not(.ios-choice-control):not(.rounded-full),
-.reading-flat-surface .app-settings-action {
+.reading-flat-surface button.border:not(.ios-choice-control):not(.rounded-full):not(.flat-capsule) {
   background: rgba(255, 255, 255, 0.045) !important;
   background-color: rgba(255, 255, 255, 0.045) !important;
   border-style: solid !important;
@@ -2380,8 +2438,7 @@ select option {
 .reading-flat-surface.is-light input,
 .reading-flat-surface.is-light textarea,
 .reading-flat-surface.is-light .ios-field-control,
-.reading-flat-surface.is-light button.border:not(.ios-choice-control):not(.rounded-full),
-.reading-flat-surface.is-light .app-settings-action {
+.reading-flat-surface.is-light button.border:not(.ios-choice-control):not(.rounded-full):not(.flat-capsule) {
   background: rgba(26, 22, 37, 0.04) !important;
   background-color: rgba(26, 22, 37, 0.04) !important;
   border-color: rgba(26, 22, 37, 0.04) !important;
@@ -2402,6 +2459,19 @@ select option {
 /* 管理分类沿用控制岛 / App 设置的连体沟槽。高度跟顶栏走，所以做成满圆胶囊。 */
 .manage-panel-surface .manage-choice-track {
   border-radius: 9999px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.manage-panel-surface.is-light .manage-choice-track {
+  box-shadow: inset 0 1px 2px rgba(28, 18, 24, 0.06);
+}
+
+.manage-panel-surface .ios-choice-track > .ios-choice-control[aria-pressed="true"]::before {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.manage-panel-surface.is-light .ios-choice-track > .ios-choice-control[aria-pressed="true"]::before {
+  box-shadow: inset 0 1px 2px rgba(28, 18, 24, 0.1);
 }
 
 .manage-panel-surface .manage-choice-track > .ios-choice-control {
@@ -2549,10 +2619,19 @@ select option {
 @media (prefers-reduced-motion: reduce) {
   .motion-slot,
   .motion-slot-face,
-  .motion-slot.is-open .motion-slot-face {
+  .motion-slot.is-open .motion-slot-face,
+  .manage-panel-surface .motion-panel-face,
+  .manage-panel-surface .motion-panel-face.is-active {
     filter: none;
     transform: none;
-    transition-duration: 120ms;
+    animation: none;
+    transition:
+      opacity 120ms var(--motion-ease-out),
+      visibility 0s linear 120ms;
+  }
+
+  .manage-panel-surface .motion-panel-face.is-active {
+    transition-delay: 0s;
   }
 }
 

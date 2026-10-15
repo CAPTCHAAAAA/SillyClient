@@ -185,10 +185,10 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
             onReturnToTavern?.(instance);
           }}
           className={cn(
-            "motion-control px-4 h-8 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 flex-1 transition-colors border active:scale-[0.98]",
+            "flat-capsule motion-control px-4 h-8 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 flex-1 border-0",
             isLight
-              ? "bg-black/[0.08] border-black/[0.10] text-[#1a1625]/70 hover:text-[#1a1625] active:bg-black/[0.18]"
-              : "bg-white/20 border-white/15 text-white/70 hover:text-white active:bg-white/35"
+              ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+              : "text-white/70 hover:text-white"
           )}
         >
           <Play className="w-3 h-3 fill-current" />
@@ -202,10 +202,10 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
             onStopInstance?.(instance);
           }}
           className={cn(
-            "motion-control px-3.5 h-8 rounded-full text-xs font-medium transition-colors border active:scale-[0.98]",
+            "flat-capsule motion-control px-3.5 h-8 rounded-full text-xs font-medium border-0",
             isLight
-              ? "bg-black/[0.04] border-black/[0.06] text-red-900/50 hover:text-red-900/80"
-              : "bg-white/[0.08] border-white/[0.06] text-red-400/55 hover:text-red-300/90"
+              ? "text-red-900/55 hover:text-red-900/80"
+              : "text-red-300/70 hover:text-red-200"
           )}
         >
           关闭
@@ -222,10 +222,10 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
             onOpenMenu(instance, r);
           }}
           className={cn(
-            "motion-control w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border transition-colors",
+            "flat-capsule motion-control w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border-0",
             isLight
-              ? "bg-black/[0.04] border-black/[0.06] text-[#1a1625]/50 hover:text-[#1a1625]"
-              : "bg-white/[0.08] border-white/[0.06] text-white/50 hover:text-white"
+              ? "text-[#1a1625]/55 hover:text-[#1a1625]"
+              : "text-white/55 hover:text-white"
           )}
         >
           <MoreVertical className="w-3.5 h-3.5 text-current transition-colors" />
