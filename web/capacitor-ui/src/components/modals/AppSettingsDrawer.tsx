@@ -47,10 +47,10 @@ function AppSettingsRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="app-settings-row">
+    <div className="app-settings-row setting-row">
       <div className="app-settings-copy">
-        <div className="app-settings-label">{label}</div>
-        <div className="app-settings-desc">{desc}</div>
+        <div className="app-settings-label setting-label">{label}</div>
+        <div className="app-settings-desc setting-desc">{desc}</div>
       </div>
       <div className="app-settings-control">{children}</div>
     </div>
@@ -78,11 +78,11 @@ function AppSettingsLinkRow({
     <button
       type="button"
       onClick={onClick}
-      className="app-settings-row app-settings-link-row is-interactive motion-control"
+      className="app-settings-row app-settings-link-row setting-row is-interactive motion-control"
     >
       <div className="app-settings-copy">
-        <div className="app-settings-label">{label}</div>
-        <div className="app-settings-desc">{desc}</div>
+        <div className="app-settings-label setting-label">{label}</div>
+        <div className="app-settings-desc setting-desc">{desc}</div>
       </div>
       <div className="app-settings-control">
         <ChevronRight className="w-4 h-4 opacity-35" />

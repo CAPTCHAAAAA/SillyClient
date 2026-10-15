@@ -660,11 +660,11 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 isLight ? "border-black/[0.04]" : "border-white/[0.04]"
               )}
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="setting-row flex items-center justify-between gap-4">
                 <div>
                   <div
                     className={cn(
-                      "text-xs font-medium",
+                      "setting-label text-xs font-medium",
                       isLight ? "text-[#1a1625]/70" : "text-white/70"
                     )}
                   >
@@ -961,11 +961,11 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
 
                 {/* 4. 私有凭据处理 (secrets.json) */}
                 <div className="py-1">
-                  <div className="flex items-center justify-between">
+                  <div className="setting-row flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "text-xs font-medium",
+                          "setting-label text-xs font-medium",
                           isLight ? "text-[#1a1625]/75" : "text-white/75"
                         )}
                       >
@@ -1151,11 +1151,11 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
 
                 {/* 3. 私有凭据处理 (secrets.json) */}
                 <div className="py-1">
-                  <div className="flex items-center justify-between">
+                  <div className="setting-row flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "text-xs font-medium",
+                          "setting-label text-xs font-medium",
                           isLight ? "text-[#1a1625]/75" : "text-white/75"
                         )}
                       >

@@ -217,7 +217,7 @@ function ManageItem({
   return (
     <div>
       <div
-        className="flex items-center justify-between gap-6"
+        className="setting-row flex items-center justify-between gap-6"
         style={{
           minHeight: isPortrait ? 64 : 88,
           marginInline: isPortrait ? 16 : 28,
@@ -226,7 +226,7 @@ function ManageItem({
       <div className="min-w-0 flex-1 pr-4">
         <div
           className={cn(
-            "font-medium leading-tight",
+            "setting-label font-medium leading-tight",
             isLight ? "text-[#1a1625]/85" : "text-white/88"
           )}
           style={{ fontSize: isPortrait ? 17 : MANAGE_LABEL_PX }}
@@ -236,7 +236,7 @@ function ManageItem({
         {desc && (
           <div
             className={cn(
-              "leading-snug",
+              "setting-desc leading-snug",
               isLight ? "text-[#1a1625]/45" : "text-white/48"
             )}
             style={{ marginTop: 4, fontSize: 13 }}
@@ -263,7 +263,7 @@ function ManageSettingValue({
   return (
     <div
       className={cn(
-        "text-right break-words",
+        "setting-value text-right break-words",
         mono && "font-mono",
         isLight ? "text-[#1a1625]/72" : "text-white/78"
       )}

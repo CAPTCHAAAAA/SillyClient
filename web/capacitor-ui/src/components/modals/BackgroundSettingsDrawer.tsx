@@ -163,10 +163,10 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
             aria-hidden={bgMode !== "dynamic"}
             inert={bgMode !== "dynamic"}
           >
-            <div className="flex items-center justify-between py-1">
+            <div className="setting-row flex items-center justify-between py-1">
               <span
                 className={cn(
-                  "text-xs font-medium",
+                  "setting-label text-xs font-medium",
                   isLight ? "text-[#1a1625]" : "text-white/90"
                 )}
               >
