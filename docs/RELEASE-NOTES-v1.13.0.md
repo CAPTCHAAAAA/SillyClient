@@ -1,6 +1,6 @@
 # SillyClient v1.13.0
 
-> Windows / Android 更新通道（iOS 资产后续并入）。主要内容：实例存储改为完全用户指定、不再存在软件默认落点；修复旧版本升级后实例失联与误装顶替问题；同步通用前端新版动效与质感。
+> 三端同版更新。主要内容：实例存储改为完全用户指定、不再存在软件默认落点；修复旧版本升级后实例失联与误装顶替；iOS 接通实例导出并对齐同一套创建与迁移契约；同步通用前端新版动效与质感。
 
 ## ⚠️ 重要提醒（v1.10.0–v1.12.1 用户必读）
 
@@ -73,6 +73,16 @@ v1.10.0–v1.12.1 期间，若实例存放在安装目录的 `instances` 文件�
 - 垃圾清理扫描覆盖全部历史存储落点。
 - 移除冗余批量迁移接口；创建流程的一次性安装参数不再持久化到实例卡片。
 
+**iOS**
+
+- 对齐创建意图：实例目录缺失且并非新建时，拒绝静默重装顶替，改为明确提示。
+- 对齐无默认存储落点：创建向导预填已登记的实例根，目录必选，创建成功后登记为存储根；设置中不再提供恢复默认路径。
+- 存储页接通「导出实例（ZIP）」，保存到「文件」App 的 Documents/Exports/；实例运行中拒绝导出。
+- 迁移逐项进行，单项失败不阻断其余；「稍后处理」或一次检测异常不再永久跳过提醒。
+- 恢复「存储迁移」入口。
+- 同步通用前端至 55edc3b：动态封面底板、扁平胶囊、遮罩关闭同步淡出、删除进度条、设置项悬停。
+- 版本 1.13.0（Build 34）。
+
 ## What's Changed
 
 **Windows · [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows)**
@@ -93,14 +103,23 @@ v1.10.0–v1.12.1 期间，若实例存放在安装目录的 `instances` 文件�
 - diag: 依赖校验失败自报现场（创建失败诊断增强） [`67042b3`](https://github.com/CAPTCHAAAAA/SillyClient-Android/commit/67042b3)
 - feat: 同步已验收通用前端 55edc3b（收焦刹车/遮罩同步淡出/扁平胶囊） [`a16c2e5`](https://github.com/CAPTCHAAAAA/SillyClient-Android/commit/a16c2e5)
 
+**iOS · [SillyClient-iOS](https://github.com/CAPTCHAAAAA/SillyClient-iOS)**
+
+- feat: 同步 1.13.0 跨端契约，接通实例 ZIP 导出并清理死代码 [`d49845f`](https://github.com/CAPTCHAAAAA/SillyClient-iOS/commit/d49845f)
+- fix: 消除 ZIPFoundation addEntry 重载歧义，导出归档可编过 [`8427fc3`](https://github.com/CAPTCHAAAAA/SillyClient-iOS/commit/8427fc3)
+- feat: 同步通用前端 f0be259 封面底板，恢复存储迁移入口 [`f6f2acc`](https://github.com/CAPTCHAAAAA/SillyClient-iOS/commit/f6f2acc)
+- feat: 同步通用前端 55edc3b 扁平胶囊基线（Build 34） [`9caf5ea`](https://github.com/CAPTCHAAAAA/SillyClient-iOS/commit/9caf5ea)
+
 ## 下载与校验
 
 ```
 bef42c737f4cd09a76e37fc4f53eb116c0dcb47c9432460d4171577dc09120f0  SillyClient-Windows-v1.13.0.exe  (113 MB)
 2dfac8ff31fe3d12a876830b073fca239204a9839bda71c633b25f3e80ba72bb  SillyClient-Android-v1.13.0.apk  (189 MB)
+cb378fbddbddfcb309abc97db49a4429bb8123a998673e8069aba43559219864  SillyClient-iOS-v1.13.0-unsigned.ipa  (185 MB)
 ```
 
-Windows / Android 覆盖安装，实例与设置原样保留。
+Windows / Android 覆盖安装，实例与设置原样保留。iOS 为未签名 IPA（Build 34），需在 macOS 上使用 Xcode 签名后安装。
 
 **Full Changelog**: https://github.com/CAPTCHAAAAA/SillyClient-Windows/compare/abf46b6...62e72f2
 **Android Full Changelog**: https://github.com/CAPTCHAAAAA/SillyClient-Android/compare/186944f...a16c2e5
+**iOS Full Changelog**: https://github.com/CAPTCHAAAAA/SillyClient-iOS/compare/c2f8c8b...9caf5ea
