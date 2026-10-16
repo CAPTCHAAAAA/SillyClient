@@ -964,6 +964,18 @@
           .ios-toggle-track-active {
             background: #34c759 !important;
             border-color: transparent !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            box-shadow:
+              0 0 12px rgba(52, 199, 89, 0.4),
+              0 0 4px rgba(52, 199, 89, 0.2) !important;
+          }
+
+          .ios-floating-menu.is-light .ios-toggle-track-active {
+            background: #34c759 !important;
+            border-color: transparent !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
             box-shadow:
               0 0 12px rgba(52, 199, 89, 0.4),
               0 0 4px rgba(52, 199, 89, 0.2) !important;

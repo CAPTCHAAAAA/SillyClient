@@ -173,8 +173,11 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
                 动态壁纸
               </span>
               <button
+                type="button"
                 onClick={() => setDynamicPaused(!dynamicPaused)}
                 className="ios-toggle"
+                role="switch"
+                aria-checked={!dynamicPaused}
                 aria-label="切换动态壁纸"
               >
                 <div
@@ -183,10 +186,6 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
                     !dynamicPaused && "ios-toggle-track-active"
                   )}
                 >
-                  <div className="ios-toggle-icons">
-                    <span className="ios-toggle-icon-off">○</span>
-                    <span className="ios-toggle-icon-on">│</span>
-                  </div>
                   <div
                     className={cn(
                       "ios-toggle-thumb",
