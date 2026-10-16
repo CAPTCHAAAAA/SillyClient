@@ -34,6 +34,11 @@
 
 ## What's Changed
 
+**Windows · [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows)**
+
+- feat: 同步已验收通用前端基线并发布 1.12.0 [`ccad821`](https://github.com/CAPTCHAAAAA/SillyClient-Windows/commit/ccad821)
+- fix: 补接漏改基线——首页搜索栏、管理菜单主题属性与 hover 规范 [`3b2f9ad`](https://github.com/CAPTCHAAAAA/SillyClient-Windows/commit/3b2f9ad)
+
 **Android · [SillyClient-Android](https://github.com/CAPTCHAAAAA/SillyClient-Android)**
 
 - feat: 实例导出接入系统 SAF 另存为，拔除硬编码导出路径 [`a5b2043`](https://github.com/CAPTCHAAAAA/SillyClient-Android/commit/a5b2043)
@@ -41,11 +46,6 @@
 - feat: 同步通用前端竖版管理菜单与 3D 物理卡片基线 [`cac5971`](https://github.com/CAPTCHAAAAA/SillyClient-Android/commit/cac5971)
 - refactor: 纯净后端骨架——强类型领域模型，0 编译器警告 [`9912e36`](https://github.com/CAPTCHAAAAA/SillyClient-Android/commit/9912e36)
 - docs: 工作树台账与真机验收记录 [`dc272af`](https://github.com/CAPTCHAAAAA/SillyClient-Android/commit/dc272af)
-
-**Windows · [SillyClient-Windows](https://github.com/CAPTCHAAAAA/SillyClient-Windows)**
-
-- feat: 同步已验收通用前端基线并发布 1.12.0 [`ccad821`](https://github.com/CAPTCHAAAAA/SillyClient-Windows/commit/ccad821)
-- fix: 补接漏改基线——首页搜索栏、管理菜单主题属性与 hover 规范 [`3b2f9ad`](https://github.com/CAPTCHAAAAA/SillyClient-Windows/commit/3b2f9ad)
 
 **iOS · [SillyClient-iOS](https://github.com/CAPTCHAAAAA/SillyClient-iOS)**
 
@@ -61,9 +61,9 @@
 ## 下载与校验
 
 ```
-cc330ac7448a10495910c1976d0b3b93ca0f53af3cb6aff74c6706b7fcc451a9  SillyClient-Android-v1.12.0.apk      (189 MB)
-3c282648be0e74a72d85d1214f6aa8b98e9901f879002162af721ffac0dc63b1  SillyClient-Windows-v1.12.0.exe      (113 MB)
-7a6905a66438718f71a97cd019e9c7357d8db07c6f762f68870f0df400d53dff  SillyClient-iOS-v1.12.0-unsigned.ipa (453 MB)
+3c282648be0e74a72d85d1214f6aa8b98e9901f879002162af721ffac0dc63b1  SillyClient-Windows-v1.12.0.exe  (113 MB)
+cc330ac7448a10495910c1976d0b3b93ca0f53af3cb6aff74c6706b7fcc451a9  SillyClient-Android-v1.12.0.apk  (189 MB)
+7a6905a66438718f71a97cd019e9c7357d8db07c6f762f68870f0df400d53dff  SillyClient-iOS-v1.12.0-unsigned.ipa  (453 MB)
 ```
 
 - Windows：覆盖安装，实例与设置保留。
