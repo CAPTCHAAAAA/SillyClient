@@ -6,7 +6,6 @@ import { LAYERS } from "../../constants/layers";
 import type { TavernInstance } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { GLOBAL_LOG_KEY, instanceLogs } from "../../lib/log-store";
-import { CornerResizeCurve } from "./CornerResizeCurve";
 
 export interface TerminalModalProps {
   isOpen: boolean;
@@ -32,7 +31,6 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   isClosing = false,
   onClose,
   isLight,
-  glassBg,
   safeInsetTop,
   terminalPos,
   terminalDisplayTitle,
@@ -41,13 +39,11 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   terminalDisplayPlaceholder,
   terminalInstance,
 }) => {
-  const [terminalSize, setTerminalSize] = useState({ w: 640, h: 340 });
+  const terminalSize = { w: 640, h: 340 };
   const [terminalFontSize, setTerminalFontSize] = useState(12);
   const [terminalInput, setTerminalInput] = useState("");
   const logKey = terminalInstance?.installDir || terminalInstance?.id || GLOBAL_LOG_KEY;
   const terminalLogs = useInstanceLogs(logKey, isOpen || isClosing);
-  const resizeDrag = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
-
   // 拖动定位与状态
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -100,33 +96,6 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     window.addEventListener("pointercancel", onPointerUp);
   };
 
-  const onResizePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (event.button !== 0 && event.pointerType === "mouse") return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    resizeDrag.current = {
-      x: event.clientX,
-      y: event.clientY,
-      w: terminalSize.w,
-      h: terminalSize.h,
-    };
-  };
-  const onResizePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    const drag = resizeDrag.current;
-    if (!drag) return;
-    setTerminalSize({
-      w: Math.round(Math.min(window.innerWidth - 16, Math.max(320, drag.w + (event.clientX - drag.x)))),
-      h: Math.round(Math.min(window.innerHeight - 16, Math.max(200, drag.h + (event.clientY - drag.y)))),
-    });
-  };
-  const onResizePointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
-    resizeDrag.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  };
-
   if (!isOpen && !isClosing) return null;
 
   return (
@@ -152,8 +121,10 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     >
     <div
       className={cn(
-        "absolute inset-0 flex flex-col overflow-hidden rounded-2xl backdrop-blur-[40px] saturate-180",
-        glassBg
+        "absolute inset-0 flex flex-col overflow-hidden rounded-2xl border backdrop-blur-[40px]",
+        isLight
+          ? "bg-[#1e1e2e] border-black/10 text-[#cdd6f4] shadow-[0_16px_60px_rgba(0,0,0,0.18)]"
+          : "bg-[#0d0d14] border-white/10 text-[#cdd6f4] shadow-[0_16px_60px_rgba(0,0,0,0.30)]"
       )}
     >
       {/* 标题栏 (支持拖拽到其他位置) */}
@@ -161,22 +132,21 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
         data-terminal-header="true"
         onPointerDown={handleDragStart}
         className={cn(
-          "flex items-center justify-between px-4 h-9 flex-shrink-0 border-b select-none touch-none",
-          isDragging ? "cursor-grabbing" : "cursor-grab",
-          isLight ? "border-black/[0.06]" : "border-white/[0.06]"
+          "flex items-center justify-between px-4 h-9 flex-shrink-0 border-b border-white/[0.06] select-none touch-none",
+          isDragging ? "cursor-grabbing" : "cursor-grab"
         )}
       >
         <div className="flex items-center gap-2 pointer-events-none">
           <Terminal
             className={cn(
               "w-3.5 h-3.5",
-              isLight ? "text-[#1a1625]/40" : "text-white/40"
+              "text-white/40"
             )}
           />
           <span
             className={cn(
               "text-xs font-medium",
-              isLight ? "text-[#1a1625]/50" : "text-white/50"
+              "text-white/50"
             )}
           >
             {terminalDisplayTitle}
@@ -190,13 +160,13 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
           <div
             className={cn(
               "flex items-center gap-1.5 px-2 py-1 rounded-lg",
-              isLight ? "bg-black/[0.04]" : "bg-white/[0.04]"
+              "bg-white/[0.04]"
             )}
           >
             <span
               className={cn(
                 "text-[10px] tabular-nums w-6 text-right",
-                isLight ? "text-[#1a1625]/35" : "text-white/35"
+                "text-white/35"
               )}
             >
               {terminalFontSize}
@@ -208,15 +178,12 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
               step={1}
               value={terminalFontSize}
               onChange={(e) => setTerminalFontSize(Number(e.target.value))}
-              className={cn(
-                "ios-font-slider w-14 h-1 appearance-none bg-none cursor-pointer",
-                isLight && "ios-font-slider-light"
-              )}
+              className="ios-font-slider w-14 h-1 appearance-none bg-none cursor-pointer"
             />
             <span
               className={cn(
                 "text-[10px]",
-                isLight ? "text-[#1a1625]/25" : "text-white/25"
+                "text-white/25"
               )}
             >
               A
@@ -225,23 +192,13 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
           <button
             onClick={() => instanceLogs.update(logKey, [])}
             title="清空终端"
-            className={cn(
-              "p-1 rounded-md transition-colors",
-              isLight
-                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
-                : "text-white/40 hover:text-white/85"
-            )}
+            className="p-1 rounded-md text-white/40 transition-colors hover:text-white/85"
           >
             <Eraser className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onClose}
-            className={cn(
-              "p-1 rounded-md transition-colors",
-              isLight
-                ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
-                : "text-white/40 hover:text-white/85"
-            )}
+            className="p-1 rounded-md text-white/40 transition-colors hover:text-white/85"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -251,12 +208,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       {/* 终端内容区 */}
       <div
         data-native-log-list
-        className={cn(
-          "flex-1 font-sans leading-relaxed p-4 overflow-y-auto scrollbar-subtle",
-          isLight
-            ? "bg-[#1e1e2e]/90 text-[#cdd6f4]"
-            : "bg-[#0d0d14]/90 text-[#cdd6f4]"
-        )}
+        className="flex-1 bg-transparent font-sans leading-relaxed p-4 overflow-y-auto scrollbar-subtle text-[#cdd6f4]"
         style={{ fontSize: `${terminalFontSize}px` }}
       >
         <div className="opacity-50 mb-1">{terminalDisplayBanner}</div>
@@ -268,9 +220,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
               log.level === "error"
                 ? "text-red-400"
                 : log.level === "success"
-                ? isLight
-                  ? "text-[#1a1625]/90 font-medium"
-                  : "text-white/90 font-medium"
+                ? "text-white/90 font-medium"
                 : "opacity-80"
             )}
           >
@@ -316,16 +266,6 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       </div>
 
     </div>
-      <CornerResizeCurve
-        radius={32}
-        gap={10}
-        isLight={isLight}
-        label="拖动缩放终端"
-        onPointerDown={onResizePointerDown}
-        onPointerMove={onResizePointerMove}
-        onPointerUp={onResizePointerUp}
-        onPointerCancel={onResizePointerUp}
-      />
     </div>
   );
 };

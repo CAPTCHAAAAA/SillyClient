@@ -182,8 +182,10 @@
 }
 
 .sc-onboarding-shot.is-toolbar img {
-  width: min(19rem, 92%);
-  max-height: none;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 4.25rem;
 }
 
 .sc-onboarding-shot.is-card img {

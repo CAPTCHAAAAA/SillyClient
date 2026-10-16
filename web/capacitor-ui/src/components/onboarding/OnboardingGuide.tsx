@@ -62,7 +62,7 @@ const guideSteps: GuideStep[] = [
     views: [
       {
         label: "展开后",
-        description: "轻触实例卡片可查看创建时间、最近使用与快捷操作；再次轻触即可收回。",
+        description: "轻触实例卡片可查看创建时间、上次使用、累计使用和启动；再次轻触即可收回。",
         image: "./onboarding/instance-card-default-expanded.webp",
         imageAlt: "使用默认封面的展开实例卡片",
         imageClass: "is-card",
@@ -74,14 +74,14 @@ const guideSteps: GuideStep[] = [
     views: [
       {
         label: "私密锁定",
-        description: "开启访问密码的实例卡片带有专属保险锁标记，处于受保护状态，防止未授权访问。",
+        description: "开启访问密码后，实例卡片会显示「锁定」。启动前需要先在本地解锁。",
         image: "./onboarding/instance-card-locked.webp",
-        imageAlt: "带有保险锁标记的私密实例卡片",
+        imageAlt: "带有锁定标记的私密实例卡片",
         imageClass: "is-card",
       },
       {
         label: "本地解锁",
-        description: "启动或打开受保护实例时只需输入本地密码即可解锁，纯本地离线校验，无需联网验证。",
+        description: "启动受保护实例时输入本地密码，确认后会解锁并启动。校验只在本机完成，不需要联网。",
         image: "./onboarding/password-unlock.webp",
         imageAlt: "本地免联网密码解锁面板",
         imageClass: "is-panel",
@@ -93,7 +93,7 @@ const guideSteps: GuideStep[] = [
     views: [
       {
         label: "无损迁移",
-        description: "支持将实例完整搬迁至新目录或软件默认路径。跨卷迁移完整保留原数据并严格校验，数据零丢失。",
+        description: "在实例管理的「存储路径」里点「迁移目录」，可以把实例搬到新目录或软件默认路径。跨卷迁移会保留原数据并做校验。",
         image: "./onboarding/storage-migrate.webp",
         imageAlt: "单实例存储路径无损重定位与迁移面板",
         imageClass: "is-panel",
@@ -101,20 +101,20 @@ const guideSteps: GuideStep[] = [
     ],
   },
   {
-    title: "控制台",
+    title: "实例终端",
     views: [
       {
         label: "入口",
-        description: "点击顶部控制岛左侧的控制台入口，展开或收起运行记录。",
+        description: "点击顶部控制岛左侧的终端按钮，打开或收起当前实例的终端。",
         image: "./onboarding/console-button.webp",
-        imageAlt: "顶部控制岛左侧的控制台入口",
+        imageAlt: "顶部控制岛左侧的终端按钮",
         imageClass: "is-toolbar",
       },
       {
         label: "实时日志",
-        description: "下载、安装、启动与错误信息会保留在这里，便于确认实例当前所处的阶段。",
+        description: "启动、安装和报错会留在这个终端里，用来确认实例现在走到哪一步。",
         image: "./onboarding/terminal-open.webp",
-        imageAlt: "展开后的运行控制台",
+        imageAlt: "展开后的实例终端",
         imageClass: "is-terminal",
       },
     ],
