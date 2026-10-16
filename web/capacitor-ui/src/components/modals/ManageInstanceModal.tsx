@@ -14,6 +14,7 @@ import { LAYERS } from "../../constants/layers";
 import type { TavernInstance, ManageTab, BgMode, ThemeStyle } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { instanceLogs } from "../../lib/log-store";
+import { CornerResizeCurve } from "./CornerResizeCurve";
 
 const MANAGE_IMAGE_W = 1254;
 const MANAGE_IMAGE_H = 687;
@@ -639,6 +640,47 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const [terminalInput, setTerminalInput] = useState("");
   const [localAboutInfo, setLocalAboutInfo] = useState<{ path?: string; sizeBytes?: number; version?: string; status?: string; createdAt?: string } | null>(null);
 
+  // 缩放状态与终端浮窗保持一致：默认就是当前设计帧尺寸，拖动只改宽高
+  const [manageBox, setManageBox] = useState<{ w: number; h: number } | null>(null);
+  const [isResizingManage, setIsResizingManage] = useState(false);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => resizeCleanupRef.current?.(), []);
+
+  const onManageResizePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (event.button !== 0 && event.pointerType === "mouse") return;
+    event.preventDefault();
+    event.stopPropagation();
+    resizeCleanupRef.current?.();
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startW = manageBox?.w ?? MANAGE_FRAME_W * MANAGE_VISUAL_SCALE;
+    const startH = manageBox?.h ?? MANAGE_FRAME_H * MANAGE_VISUAL_SCALE;
+
+    setIsResizingManage(true);
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const maxW = window.innerWidth - MANAGE_VIEW_GUTTER * 2;
+      const maxH = window.innerHeight - MANAGE_VIEW_GUTTER * 2;
+      setManageBox({
+        w: Math.round(Math.min(maxW, Math.max(MANAGE_FRAME_W * 0.5, startW + (moveEvent.clientX - startX)))),
+        h: Math.round(Math.min(maxH, Math.max(MANAGE_FRAME_H * 0.5, startH + (moveEvent.clientY - startY)))),
+      });
+    };
+    const onUp = () => {
+      setIsResizingManage(false);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      resizeCleanupRef.current = null;
+    };
+
+    resizeCleanupRef.current = onUp;
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  };
+
   // 访问密码保护状态
   const [hasPassword, setHasPassword] = useState(Boolean(instance?.hasPassword));
   const [isConfiguringPassword, setIsConfiguringPassword] = useState(false);
@@ -750,22 +792,53 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       : `linear-gradient(to bottom, ${cardListFade.top ? "transparent" : "#000"} 0, #000 ${manageEm(36)}, #000 calc(100% - ${manageEm(36)}), ${cardListFade.bottom ? "transparent" : "#000"} 100%)`
     : undefined;
 
+  // 外层壳按显示后的 CSS 像素定尺寸，内层仍是设计帧尺寸，靠 zoom 缩到对应大小
+  const shellW = manageBox && !isPortrait
+    ? manageBox.w
+    : MANAGE_FRAME_W * MANAGE_VISUAL_SCALE;
+  const shellH = manageBox && !isPortrait
+    ? manageBox.h
+    : MANAGE_FRAME_H * MANAGE_VISUAL_SCALE;
+  const manageShellStyle: React.CSSProperties = isPortrait
+    ? {
+        width: `min(${PORTRAIT_MAX_W}px, calc(100vw - ${PORTRAIT_GUTTER * 2}px))`,
+        height: `min(${PORTRAIT_MAX_H}px, calc(100dvh - 88px))`,
+      }
+    : {
+        width: shellW,
+        height: shellH,
+      };
+
   return (
     <div
-      className={cn(
-        "ios-task-surface manage-panel-surface fixed flex flex-col overflow-hidden select-none",
-        isLight && "is-light",
-        isClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
-      )}
+      className="fixed flex select-none"
       style={{
         zIndex: LAYERS.MODAL_SURFACE,
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100dvh",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+      }}
+    >
+    <div
+      className="relative flex flex-shrink-0"
+      style={{ ...manageShellStyle, pointerEvents: "auto" }}
+    >
+    <div
+      className={cn(
+        "ios-task-surface manage-panel-surface relative flex h-full w-full flex-col overflow-hidden",
+        isLight && "is-light",
+        isClosing ? "animate-manage-panel-exit" : "animate-manage-panel"
+      )}
+      style={{
         fontSize: MANAGE_FONT_PX,
         zoom: isPortrait ? 1 : MANAGE_VISUAL_SCALE,
-        width: isPortrait ? `min(${PORTRAIT_MAX_W}px, calc(100vw - ${PORTRAIT_GUTTER * 2}px))` : MANAGE_FRAME_W,
-        height: isPortrait ? `min(${PORTRAIT_MAX_H}px, calc(100dvh - 88px))` : MANAGE_FRAME_H,
+        // 内层是未缩放的设计帧，尺寸按外壳除以 zoom 还原
+        width: isPortrait ? "100%" : shellW / MANAGE_VISUAL_SCALE,
+        height: isPortrait ? "100%" : shellH / MANAGE_VISUAL_SCALE,
         borderRadius: isPortrait ? 32 : manageEm(49),
         padding: isPortrait ? "14px 14px 12px" : `${manageEm(27)} ${manageEm(27)} ${manageEm(23)}`,
         background: isLight
@@ -1697,6 +1770,16 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
 
         </section>
       </div>
+    </div>
+      {!isPortrait && (
+        <CornerResizeCurve
+          isLight={isLight}
+          label="拖动缩放管理菜单"
+          active={isResizingManage}
+          onPointerDown={onManageResizePointerDown}
+        />
+      )}
+    </div>
     </div>
   );
 };

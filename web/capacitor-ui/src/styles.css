@@ -835,6 +835,41 @@ header span[class*="truncate"] {
   pointer-events: none;
 }
 
+/* 管理菜单外层改成全屏居中层后，弹跳动画只缩放不再自带居中位移 */
+@keyframes manage-panel-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.986);
+  }
+  46% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-manage-panel {
+  animation: manage-panel-in var(--motion-present) var(--motion-present-ease) forwards;
+}
+
+@keyframes manage-panel-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+}
+
+.animate-manage-panel-exit {
+  animation: manage-panel-out var(--motion-dismiss) var(--motion-present-ease) forwards;
+  pointer-events: none;
+}
+
 /* 阻断对话框轻拟物弹性弹出动画 */
 @keyframes modal-dialog-in {
   0% {
@@ -1388,6 +1423,8 @@ header span[class*="truncate"] {
   .animate-popover-exit,
   .animate-clone-panel,
   .animate-clone-panel-exit,
+  .animate-manage-panel,
+  .animate-manage-panel-exit,
   .animate-modal-dialog,
   .animate-modal-dialog-exit,
   .animate-dropdown,
