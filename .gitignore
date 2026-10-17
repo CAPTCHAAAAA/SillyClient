@@ -14,9 +14,13 @@ web/capacitor-ui/.plan/
 coverage/
 playwright-report/
 test-results/
+.playwright-cli/
 .cache/
 .tmp/
 tmp/
+/*.png
+*.tmp
+*.bak
 
 docs/product-render/output/
 docs/product-render/screens/*.tmp.*
