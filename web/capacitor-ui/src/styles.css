@@ -455,6 +455,7 @@ body::-webkit-scrollbar,
 /* 动态壁纸拨杆：比 h-9 略收一档，拨杆比轨道小一圈，填充对齐扁平胶囊。 */
 .ios-toggle {
   display: inline-flex;
+  cursor: pointer;
   align-items: center;
   flex-shrink: 0;
   height: 32px;
@@ -514,6 +515,7 @@ body::-webkit-scrollbar,
   position: absolute;
   top: 4px;
   left: 4px;
+  transform: translateX(0);
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -1222,6 +1224,7 @@ header span[class*="truncate"] {
 
 .companion-preset__switch {
   position: relative;
+  cursor: pointer;
   width: 36px;
   height: 20px;
   padding: 0;
@@ -2467,33 +2470,38 @@ select option {
   border-color: rgba(26, 22, 37, 0.04) !important;
 }
 
-/* 交互扁平胶囊：满圆，边缘只留控制岛那种 0.5px 发丝，不画实线。
-   悬停仍以提亮文字为主，底色只跟着同一条 500ms 曲线轻轻抬一点。按下不缩放。 */
+/* 交互扁平胶囊：一面磨砂，一面光滑。
+   磨砂靠背景采样，光面靠顶棱高光。光面仍能透出磨砂，不垫实色。 */
 .manage-panel-surface button.manage-flat,
 .app-settings-action,
 button.flat-capsule {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
   border: 0 !important;
-  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.07) !important;
+  box-shadow: none !important;
   transition-property: color, background-color, box-shadow;
-  transition-duration: 500ms;
+  transition-duration: 180ms;
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .manage-panel-surface.is-light button.manage-flat,
 .ios-task-surface.is-light .app-settings-action,
 .is-light button.flat-capsule {
-  background: rgba(26, 22, 37, 0.07) !important;
-  box-shadow: 0 0 0 0.5px rgba(26, 22, 37, 0.08) !important;
+  background: rgba(255, 255, 255, 0.34) !important;
+  box-shadow: none !important;
 }
 
 button.flat-capsule[aria-pressed="true"] {
-  background: rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 .is-light button.flat-capsule[aria-pressed="true"] {
-  background: rgba(26, 22, 37, 0.12) !important;
+  background: rgba(26, 22, 37, 0.08) !important;
 }
 
 .manage-panel-surface button.manage-flat:hover,
@@ -2510,31 +2518,27 @@ button.flat-capsule:active:not(:disabled) {
   .manage-panel-surface button.manage-flat:hover,
   .app-settings-action:hover,
   button.flat-capsule:hover {
-    background-color: rgba(255, 255, 255, 0.22) !important;
-    box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.12) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
   }
 
   .manage-panel-surface.is-light button.manage-flat:hover,
   .ios-task-surface.is-light .app-settings-action:hover,
   .is-light button.flat-capsule:hover {
-    background-color: rgba(26, 22, 37, 0.11) !important;
-    box-shadow: 0 0 0 0.5px rgba(26, 22, 37, 0.12) !important;
+    background-color: rgba(26, 22, 37, 0.075) !important;
   }
 }
 
 .manage-panel-surface button.manage-flat:active:not(:disabled),
 .app-settings-action:active:not(:disabled),
 button.flat-capsule:active:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.05) !important;
-  transition-duration: 140ms;
+  background-color: rgba(255, 255, 255, 0.035) !important;
+  transition-duration: 90ms;
 }
 
 .manage-panel-surface.is-light button.manage-flat:active:not(:disabled),
 .ios-task-surface.is-light .app-settings-action:active:not(:disabled),
 .is-light button.flat-capsule:active:not(:disabled) {
-  background-color: rgba(26, 22, 37, 0.14) !important;
-  box-shadow: 0 0 0 0.5px rgba(26, 22, 37, 0.1) !important;
+  background-color: rgba(26, 22, 37, 0.09) !important;
 }
 
 .reading-flat-surface input,

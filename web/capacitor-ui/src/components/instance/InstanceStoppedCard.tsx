@@ -89,7 +89,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
 
   return (
     <div
-      data-card-index={String(index + 1)}
+      data-slot={String(index + 1)}
       className={cn(
         "motion-instance-card w-full h-full rounded-[26px] relative group cursor-pointer overflow-hidden",
         isLight && "is-light",

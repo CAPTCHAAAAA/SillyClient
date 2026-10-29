@@ -313,6 +313,7 @@ function SillyClientLauncher() {
   const [appSettingsTab, setAppSettingsTab] = useState<"general" | "data" | "maintenance">("general");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [createCardSlot, setCreateCardSlot] = useState(0);
   const [showNewInstancePanel, setShowNewInstancePanel] = useState(false);
   const [isNewInstancePanelClosing, setIsNewInstancePanelClosing] = useState(false);
   const [newInstanceMode, setNewInstanceMode] = useState<"local" | "remote" | "import">("local");
@@ -369,6 +370,20 @@ function SillyClientLauncher() {
       localStorage.setItem("sc_pull_to_refresh", enabled ? "true" : "false");
     } catch {}
     TarvenEnv.setPullToRefresh({ enabled }).catch(() => {});
+  }, []);
+  const [createCardPinned, setCreateCardPinnedState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("sillyclient.createCardPinned") !== "false";
+    } catch {
+      return true;
+    }
+  });
+  const setCreateCardPinned = useCallback((pinned: boolean) => {
+    setCreateCardPinnedState(pinned);
+    if (pinned) setCreateCardSlot(0);
+    try {
+      localStorage.setItem("sillyclient.createCardPinned", pinned ? "true" : "false");
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -467,7 +482,11 @@ function SillyClientLauncher() {
   const terminalInstance = terminalInstanceId
     ? instances.find(instance => instance.id === terminalInstanceId) || null
     : null;
-  const activeInstance = activeSlide > 0 ? instances[activeSlide - 1] || null : null;
+  const activeInstance = (() => {
+    if (activeSlide === createCardSlot) return null;
+    const instanceIndex = activeSlide - (activeSlide > createCardSlot ? 1 : 0);
+    return instances[instanceIndex] || null;
+  })();
   const terminalDisplayTitle = terminalInstance
     ? `${terminalInstance.subtitle || terminalInstance.name} · 实例终端`
     : terminalTitle;
@@ -2763,6 +2782,9 @@ function SillyClientLauncher() {
           externallyRenamingId={externallyRenamingId}
           onClearExternalRenaming={() => setExternallyRenamingId(null)}
           onReorderInstances={handleReorderInstances}
+          createCardPinned={createCardPinned}
+          createCardSlot={createCardSlot}
+          onCreateCardSlotChange={setCreateCardSlot}
           isWindows={isWindows}
           isWeb={isWeb}
           isShowcase={isShowcase}
@@ -2905,6 +2927,8 @@ function SillyClientLauncher() {
         contentOpenMode={contentOpenMode}
         setContentOpenMode={setContentOpenMode}
         replayOnboarding={replayOnboarding}
+        createCardPinned={createCardPinned}
+        setCreateCardPinned={setCreateCardPinned}
         instances={instances}
         setInstances={setInstances}
         onImportBackup={content => {

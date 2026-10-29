@@ -97,11 +97,10 @@
 }
 
 .flip-card[data-reordering="true"] .flip-card__rotor {
-  transform: scale(1.036) !important;
+  transform: none !important;
   box-shadow:
     0 24px 50px -8px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.95 + 0.18)),
     0 12px 24px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.65 + 0.12)) !important;
-  filter: brightness(1.025) !important;
   border: none !important;
   outline: none !important;
 }
@@ -118,7 +117,6 @@
   box-shadow:
     0 8px 22px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.25)),
     0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15)) !important;
-  filter: brightness(1) !important;
   transition: transform 420ms cubic-bezier(0.2, 0.62, 0.2, 1),
               box-shadow 420ms cubic-bezier(0.2, 0.62, 0.2, 1),
               filter 420ms ease !important;
@@ -254,15 +252,15 @@
 }
 
 /* 封面卡不需要毛玻璃采样。backdrop-filter 会让圆角遮罩走未抗锯齿的合成层。 */
-.flip-card .motion-instance-card:not([data-card-index="0"]) {
+.flip-card .motion-instance-card:not([data-create-card]) {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   background-color: transparent !important;
 }
 
 /* 动态模式普通卡与创建卡同一套透明底，只补边缘内发光。不加 backdrop-filter，避免圆角发毛。 */
-body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-card-index="0"]),
-body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-card-index="0"]):hover {
+body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-create-card]),
+body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-create-card]):hover {
   background-color: transparent !important;
   background-image: none !important;
   box-shadow:
@@ -270,19 +268,19 @@ body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-car
     inset 0 0 var(--sf-glow2-spread, 81px) -16px rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
 }
 
-body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-card-index="0"])::after {
+body:has(.ambient-glow-container) .flip-card .motion-instance-card:not([data-create-card])::after {
   background: transparent !important;
 }
 
 /* 新建实例卡内部：一比一沿用柔焦材质的透明雾面 + 边缘内发光。
    外体积投影用原来的柔焦阴影，不换成实例卡那层淡阴影。
    悬停只在这层投影上叠加指针阴影，按压仍走转子按压阴影。 */
-.flip-card .motion-instance-card[data-card-index="0"],
-.flip-card .motion-instance-card[data-card-index="0"]:hover,
-body[data-preview-light] .flip-card .motion-instance-card[data-card-index="0"],
-body[data-preview-light] .flip-card .motion-instance-card[data-card-index="0"]:hover,
-body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0"],
-body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0"]:hover {
+.flip-card .motion-instance-card[data-create-card],
+.flip-card .motion-instance-card[data-create-card]:hover,
+body[data-preview-light] .flip-card .motion-instance-card[data-create-card],
+body[data-preview-light] .flip-card .motion-instance-card[data-create-card]:hover,
+body[data-preview-dark-mode] .flip-card .motion-instance-card[data-create-card],
+body[data-preview-dark-mode] .flip-card .motion-instance-card[data-create-card]:hover {
   background-color: rgba(var(--sf-fog-rgb, 255 250 252) / var(--sf-fog, 0.02)) !important;
   background-image: none !important;
   -webkit-backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
@@ -292,13 +290,20 @@ body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0
     inset 0 0 var(--sf-glow2-spread, 81px) -16px rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05)) !important;
 }
 
-.flip-card .motion-instance-card[data-card-index="0"]::after,
-body[data-preview-light] .flip-card .motion-instance-card[data-card-index="0"]::after,
-body[data-preview-dark-mode] .flip-card .motion-instance-card[data-card-index="0"]::after {
+.flip-card .motion-instance-card[data-create-card]::after,
+body[data-preview-light] .flip-card .motion-instance-card[data-create-card]::after,
+body[data-preview-dark-mode] .flip-card .motion-instance-card[data-create-card]::after {
   background: transparent !important;
 }
 
-.flip-card[data-card-index="0"] .flip-card__rotor {
+.flip-card[data-reordering="true"] .motion-instance-card[data-create-card],
+.flip-card[data-reordering="true"] .motion-instance-card[data-create-card]:hover {
+  background-color: rgba(var(--sf-fog-rgb, 255 250 252) / var(--sf-fog, 0.02)) !important;
+  -webkit-backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
+  backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
+}
+
+.flip-card:has([data-create-card]) .flip-card__rotor {
   box-shadow:
     0 var(--sf-sh-y, 7px) var(--sf-sh-blur, 26px) rgba(var(--sf-sh-rgb, 7 5 10) / var(--sf-sh-a, 0.375)),
     calc((var(--pointer-from-left, 0.5) - 0.5) * 12px)
