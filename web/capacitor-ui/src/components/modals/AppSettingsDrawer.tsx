@@ -25,6 +25,8 @@ export interface AppSettingsDrawerProps {
   contentOpenMode: ContentOpenMode;
   setContentOpenMode: (m: ContentOpenMode) => void;
   replayOnboarding: () => void;
+  createCardPinned: boolean;
+  setCreateCardPinned: (pinned: boolean) => void;
   instances: TavernInstance[];
   setInstances: React.Dispatch<React.SetStateAction<TavernInstance[]>>;
   onImportBackup: (content: string) => void;
@@ -132,6 +134,8 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
   contentOpenMode,
   setContentOpenMode,
   replayOnboarding,
+  createCardPinned,
+  setCreateCardPinned,
   instances,
   setInstances,
   onImportBackup,
@@ -362,6 +366,16 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                 desc="再次查看 SillyClient 的使用说明"
                 onClick={replayOnboarding}
               />
+              <AppSettingsRow
+                label="创建卡片置顶"
+                desc="关闭后创建实例卡片可与普通卡片一样拖动排序"
+              >
+                <ToggleSwitch
+                  on={createCardPinned}
+                  onChange={setCreateCardPinned}
+                  isLight={isLight}
+                />
+              </AppSettingsRow>
               <AppSettingsPlaceholder />
             </div>
           </div>

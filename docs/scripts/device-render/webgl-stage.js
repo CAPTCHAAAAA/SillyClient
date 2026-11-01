@@ -1,10 +1,10 @@
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { createStudioLighting } from '../studio-lighting.js?v=20260726-product-lighting-v2';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createStudioLighting } from '../studio-lighting.js?v=20261102-final-v12';
 
 export function createWebglStage({
   THREE,
@@ -13,7 +13,8 @@ export function createWebglStage({
   heroScene,
   verticalFovForAspect
 }) {
-  const renderPixelRatio = () => Math.min(devicePixelRatio, innerHeight > innerWidth ? 1.4 : 2);
+  // 渲染分辨率统一上限 2x：竖屏此前 1.4 是偏糊的主因；配合按需渲染，静止时无成本
+  const renderPixelRatio = () => Math.min(devicePixelRatio, 2);
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x0b0d10, 0.012);
 
@@ -40,7 +41,14 @@ export function createWebglStage({
   renderer.toneMappingExposure = 0.84;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-  const composer = new EffectComposer(renderer);
+  // EffectComposer 会绕过画布自身的 MSAA（场景先渲到离屏目标），
+  // 因此给渲染目标显式开 8x 多重采样，硬件抗锯齿与 SMAA 叠加。
+  const initialSize = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(
+    initialSize.x,
+    initialSize.y,
+    { type: THREE.HalfFloatType, samples: 8 }
+  ));
   composer.addPass(new RenderPass(scene, camera));
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),

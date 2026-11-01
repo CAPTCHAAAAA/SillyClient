@@ -1300,22 +1300,22 @@
 
           /* 已创建实例卡：去掉源码内联的灰/黑遮罩盖层与 blur 磨砂，
              遮罩统一由内容层的酒红渐变（下方规则）承担 */
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > div:first-child > div[style*="background"] {
+          .motion-instance-card:not([data-create-card]) > div:first-child > div[style*="background"] {
             background: transparent !important;
             -webkit-backdrop-filter: none !important;
             backdrop-filter: none !important;
           }
 
           /* 源码里 hover 前后的黑色渐变遮罩层（bg-gradient-to-t from-black/...）压成透明 */
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > div[class*="from-black"] {
+          .motion-instance-card:not([data-create-card]) > div[class*="from-black"] {
             background-image: none !important;
             background: transparent !important;
           }
 
           /* 收起/展开遮罩各自独立成固定合成层，只交叉淡入淡出；
              遮罩不再参与详情内容的弹性位移。 */
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col {
+          .motion-instance-card:not([data-create-card]) > .relative,
+          .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col {
             --card-reveal-ease: cubic-bezier(0.2, 0, 0, 1);
             --card-focus-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
             --card-fade-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -1324,10 +1324,10 @@
             background: transparent !important;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::before,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::after {
+          .motion-instance-card:not([data-create-card]) > .relative::before,
+          .motion-instance-card:not([data-create-card]) > .relative::after,
+          .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col::before,
+          .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col::after {
             content: "";
             position: absolute;
             z-index: 0;
@@ -1338,8 +1338,8 @@
             will-change: opacity;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::before {
+          .motion-instance-card:not([data-create-card]) > .relative::before,
+          .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col::before {
             opacity: 1;
             transition: opacity 460ms var(--card-fade-ease);
             background: linear-gradient(
@@ -1351,8 +1351,8 @@
             );
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::after {
+          .motion-instance-card:not([data-create-card]) > .relative::after,
+          .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col::after {
             opacity: 0;
             transition: opacity 460ms var(--card-fade-ease);
             background: linear-gradient(
@@ -1364,25 +1364,25 @@
             );
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative > *,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col > * {
+          .motion-instance-card:not([data-create-card]) > .relative > *,
+          .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col > * {
             position: relative;
             z-index: 1;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded > .relative::before,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .relative.h-full.flex-col::before {
+          .motion-instance-card:not([data-create-card]).is-expanded > .relative::before,
+          .motion-instance-card:not([data-create-card]).is-expanded .relative.h-full.flex-col::before {
             opacity: 0;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded > .relative::after,
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .relative.h-full.flex-col::after {
+          .motion-instance-card:not([data-create-card]).is-expanded > .relative::after,
+          .motion-instance-card:not([data-create-card]).is-expanded .relative.h-full.flex-col::after {
             opacity: 1;
           }
 
           /* 浅色模式沿用独立浅色参数，只替换两张遮罩层的填充。 */
-          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before,
-          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::before {
+          body[data-preview-light] .motion-instance-card:not([data-create-card]) > .relative::before,
+          body[data-preview-light] .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col::before {
             background: linear-gradient(
               to top,
               rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-bc, 0.92)) 0%,
@@ -1393,8 +1393,8 @@
             );
           }
 
-          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after,
-          body[data-preview-light] .motion-instance-card[data-card-index]:not([data-card-index="0"]) .relative.h-full.flex-col::after {
+          body[data-preview-light] .motion-instance-card:not([data-create-card]) > .relative::after,
+          body[data-preview-light] .motion-instance-card:not([data-create-card]) .relative.h-full.flex-col::after {
             background: linear-gradient(
               to top,
               rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-be, 0.96)) 0%,
@@ -1407,7 +1407,7 @@
 
           /* System focus transition：旧信息先退场，标题与详情沿同一条缓入曲线交接。
              不拆字、不弹跳，也不使用前段过快、看似瞬切的减速曲线。 */
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .preview-card-subtitle {
+          .motion-instance-card:not([data-create-card]) .preview-card-subtitle {
             align-self: flex-start;
             width: fit-content;
             max-width: 100%;
@@ -1423,7 +1423,7 @@
               filter 260ms var(--card-fade-ease) 90ms !important;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .preview-card-subtitle {
+          .motion-instance-card:not([data-create-card]).is-expanded .preview-card-subtitle {
             opacity: 1;
             filter: brightness(1.06);
             transform: translate3d(0, var(--card-title-lift), 0) scale(1.07);
@@ -1433,7 +1433,7 @@
               filter 300ms var(--card-fade-ease) !important;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .preview-card-status {
+          .motion-instance-card:not([data-create-card]) .preview-card-status {
             opacity: 1;
             transform: translate3d(0, 0, 0);
             transform-origin: left center;
@@ -1443,7 +1443,7 @@
               transform 320ms var(--card-focus-ease) 90ms !important;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .preview-card-status {
+          .motion-instance-card:not([data-create-card]).is-expanded .preview-card-status {
             opacity: 0;
             transform: translate3d(0, -8px, 0);
             transition:
@@ -1451,7 +1451,7 @@
               transform 260ms var(--card-focus-ease) !important;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .motion-accordion {
+          .motion-instance-card:not([data-create-card]) .motion-accordion {
             position: absolute !important;
             left: 14px;
             right: 14px;
@@ -1469,7 +1469,7 @@
               visibility 0s linear 300ms !important;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .motion-accordion.is-open {
+          .motion-instance-card:not([data-create-card]) .motion-accordion.is-open {
             opacity: 1;
             visibility: visible;
             pointer-events: auto;
@@ -1480,7 +1480,7 @@
               visibility 0s linear 0s !important;
           }
 
-          .motion-instance-card[data-card-index]:not([data-card-index="0"]) .motion-accordion-inner {
+          .motion-instance-card:not([data-create-card]) .motion-accordion-inner {
             min-height: 0;
             overflow: visible;
             opacity: 1 !important;
@@ -1492,20 +1492,20 @@
           }
 
           @media (prefers-reduced-motion: reduce) {
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::before,
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]) > .relative::after,
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]) .preview-card-subtitle,
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]) .preview-card-status,
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]) .motion-accordion,
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]) .motion-accordion-inner {
+            .motion-instance-card:not([data-create-card]) > .relative::before,
+            .motion-instance-card:not([data-create-card]) > .relative::after,
+            .motion-instance-card:not([data-create-card]) .preview-card-subtitle,
+            .motion-instance-card:not([data-create-card]) .preview-card-status,
+            .motion-instance-card:not([data-create-card]) .motion-accordion,
+            .motion-instance-card:not([data-create-card]) .motion-accordion-inner {
               transition: none !important;
             }
 
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .preview-card-subtitle {
+            .motion-instance-card:not([data-create-card]).is-expanded .preview-card-subtitle {
               transform: translate3d(0, var(--card-title-lift), 0);
             }
 
-            .motion-instance-card[data-card-index]:not([data-card-index="0"]).is-expanded .preview-card-status {
+            .motion-instance-card:not([data-create-card]).is-expanded .preview-card-status {
               transform: none;
             }
           }
@@ -2065,7 +2065,7 @@
 
         const ensureCardRevealStructure = (doc) => {
           const cards = doc.querySelectorAll(
-            '.motion-instance-card[data-card-index]:not([data-card-index="0"])'
+            '.motion-instance-card:not([data-create-card])'
           );
           cards.forEach((card) => {
             const content = Array.from(card.children).find((node) =>
@@ -2126,7 +2126,7 @@
         };
 
         const wireCardTilt = (doc) => {
-          doc.querySelectorAll(".carousel-scrollbar-hidden > [data-card-index]").forEach((card) => {
+          doc.querySelectorAll(".carousel-scrollbar-hidden > [data-slot]").forEach((card) => {
             if (card.dataset.cardMotionManaged !== "true") card.dataset.cardMotionManaged = "true";
           });
           if (tiltWiredDoc === doc) return;
@@ -2165,7 +2165,7 @@
             while (curr && curr.parentElement !== track) {
               curr = curr.parentElement;
             }
-            if (!curr?.hasAttribute?.("data-card-index") || curr?.classList?.contains("flip-card")) {
+            if (!curr?.hasAttribute?.("data-slot") || curr?.classList?.contains("flip-card")) {
               return null;
             }
             return { track, card: curr };
@@ -2250,6 +2250,7 @@
           };
           const pressMoving = (state) => !!state.pressMoving;
           const render = (state) => {
+            if (state.card.closest(".flip-card[data-reordering], .flip-card[data-dropping], [data-carousel-committing]")) return;
             const rawDeg = parseFloat(doc.documentElement.style.getPropertyValue("--sf-tilt-max"));
             const deg = Number.isFinite(rawDeg) ? rawDeg : TILT_MAX_DEG;
             const depth = state.depth || 0;
@@ -2408,6 +2409,7 @@
           };
 
           listen(doc, "pointerdown", (event) => {
+            if (event.target?.closest?.(".flip-card[data-reordering], [data-carousel-committing]")) return;
             pointerIds.add(event.pointerId);
             if (!event.isPrimary || event.button !== 0 || pointerIds.size > 1) {
               if (held) interruptState(held.state);
@@ -2430,6 +2432,10 @@
             if (!reduced) targetPressure(state, position);
           });
           listen(doc, "pointermove", (event) => {
+            if (event.target?.closest?.(".flip-card[data-reordering], .flip-card[data-dropping], [data-carousel-committing]")) {
+              if (held?.id === event.pointerId) interruptState(held.state);
+              return;
+            }
             if (held?.id === event.pointerId) {
               const state = held.state;
               if (Math.hypot(event.clientX - held.x, event.clientY - held.y) > 4

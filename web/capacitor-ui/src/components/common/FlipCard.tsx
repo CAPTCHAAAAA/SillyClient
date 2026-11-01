@@ -231,6 +231,10 @@ export const FlipCard: React.FC<FlipCardProps> = ({
     lastTime.current = performance.now();
 
     const loop = (now: number) => {
+      if (rootRef.current?.getAttribute("data-reordering") === "true") {
+        rafId.current = null;
+        return;
+      }
       const dt = Math.min((now - (lastTime.current || now)) / 1000, 0.032);
       lastTime.current = now;
 
@@ -609,6 +613,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
       onKeyDown={onKeyDown}
       onClick={onClick}
       onDragStart={e => e.preventDefault()}
+      {...restProps}
       style={{
         width: widthCss,
         height: heightCss,
@@ -626,7 +631,6 @@ export const FlipCard: React.FC<FlipCardProps> = ({
         ["--fc-border" as string]: borderColor,
         ...style
       }}
-      {...restProps}
     >
       {/* ProfileCard 风格：背部漫反射光源，凸显卡片边缘与空间投影 */}
       {behindGlow ? (

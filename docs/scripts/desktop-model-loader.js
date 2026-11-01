@@ -5,7 +5,7 @@ let modelLoaded = false;
 function loadDesktopModel() {
   if ((!desktopViewport.matches && !productRenderRequested) || modelLoaded) return;
   modelLoaded = true;
-  import('./phone-model.js?v=20260726-device-modules-v5');
+  import('./phone-model.js?v=20261102-stage-quality-v5');
 }
 
 loadDesktopModel();

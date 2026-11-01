@@ -1,6 +1,6 @@
 /*! SillyClient background entry: Color Bends + Dot Field. */
 (() => {
-  import('./background/index.js?v=20260726-background-modules-v1').catch(error => {
+  import('./background/index.js?v=20261102-stage-quality-v5').catch(error => {
     console.error('Background renderer failed to load:', error);
   });
 })();

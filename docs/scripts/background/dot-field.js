@@ -57,7 +57,10 @@ function initDotField() {
     var frameCount = 0;
 
     var TWO_PI = Math.PI * 2;
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    /* 柔焦点阵背景：DPR 上限 1.5 + 30fps 节流（视觉近无损，常驻 GPU 占用降约七成） */
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    var BG_FRAME_INTERVAL = 1000 / 30;
+    var lastTickFrame = 0;
 
     /* ---- Parse glow color for Canvas radial gradient ---- */
     function parseHex(hex) {
@@ -136,14 +139,21 @@ function initDotField() {
     var speedInterval = setInterval(updateMouseSpeed, 32);
 
     /* ---- Render loop (source: tick()) ---- */
-    function tick() {
+    function tick(now) {
+      if (now === undefined) now = performance.now();
+      if (now - lastTickFrame < BG_FRAME_INTERVAL) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      lastTickFrame = now - ((now - lastTickFrame) % BG_FRAME_INTERVAL);
       frameCount++;
       var w = sizeRef.w, h = sizeRef.h;
       var cr = CFG.cursorRadius;
       var crSq = cr * cr;
       var rad = CFG.dotRadius / 2;  /* SOURCE: draw radius = dotRadius / 2 */
       var isBulge = CFG.bulgeOnly;
-      var t = frameCount * 0.02;
+      /* 波形相位改用墙钟：节流后漂移速度不变，也修掉 120Hz 屏上波速翻倍的帧率依赖 */
+      var t = performance.now() * 0.0012;
 
       /* Engagement (source: targetEngagement = min(speed/5, 1)) */
       var targetEng = mouse.active ? Math.min(0.36 + mouse.speed / 12, 1) : 0;

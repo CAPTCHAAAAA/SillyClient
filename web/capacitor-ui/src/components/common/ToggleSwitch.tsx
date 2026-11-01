@@ -32,7 +32,7 @@ export function ToggleSwitch({
         onChange?.(!value);
       }}
       className={cn(
-        "relative w-10 h-[22px] rounded-full transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "relative w-10 h-[22px] cursor-pointer rounded-full transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
         value
           ? isLight
             ? "bg-[#1a1625]/60"
@@ -44,8 +44,7 @@ export function ToggleSwitch({
     >
       <div
         className={cn(
-          "absolute left-[2px] top-[2px] w-[18px] h-[18px] rounded-full shadow-sm transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          value && "translate-x-[18px]",
+          "absolute left-[2px] top-[2px] w-[18px] h-[18px] rounded-full shadow-sm transition-transform duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
           isLight
             ? value
               ? "bg-white shadow-black/10"
@@ -54,6 +53,7 @@ export function ToggleSwitch({
             ? "bg-white shadow-black/40"
             : "bg-white/60 shadow-black/20"
         )}
+        style={{ transform: value ? "translateX(18px)" : "translateX(0px)" }}
       />
     </button>
   );

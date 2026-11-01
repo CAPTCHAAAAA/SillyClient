@@ -9,7 +9,7 @@
   <link rel="canonical" href="https://captchaaaaa.github.io/SillyClient/" />
   <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="./styles/theme.css?v=20260725-guided-focus-v1" />
-  <link rel="stylesheet" href="./styles/fonts.css?v=20260725-title-picker-v1" />
+  <link rel="stylesheet" href="./styles/fonts.css?v=20261101-landing-perf-v1" />
   <link rel="stylesheet" href="./styles/phone.css?v=20260726-rigid-projection-v6" />
   <link rel="stylesheet" href="./styles/laptop.css?v=20260726-notched-display-v5" />
   <link rel="stylesheet" href="./styles/page.css?v=20260726-reactbits-stage-v3" />
@@ -20,13 +20,9 @@
   <link rel="stylesheet" href="./styles/scroll-reveal.css?v=20260725-scroll-reveal-v2" />
   <link rel="stylesheet" href="./styles/variable-proximity.css?v=20260725-variable-proximity-v2" />
   <link rel="stylesheet" href="./styles/text-type.css?v=20260726-source-type-v2" />
-  <!-- Lenis smooth scroll + GSAP scroll-driven animation -->
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
   <script src="./scripts/fonts.js?v=20260725-title-picker-v1"></script>
   <!-- React Bits: Color Bends + Dot Field backgrounds -->
-  <script src="./scripts/background.js?v=20260726-vivid-silk-v3"></script>
+  <script src="./scripts/background.js?v=20261102-stage-quality-v5"></script>
   <link rel="stylesheet" href="./styles/product-showcase.css?v=20260918-product-showcase-v1" />
 </head>
 <body>
@@ -344,6 +340,11 @@
       </div>
     </aside>
   </div>
+
+  <!-- Lenis smooth scroll + GSAP scroll-driven animation：移到 body 末尾，不再阻塞首屏渲染，执行顺序不变 -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 
   <script src="./scripts/showcase/content.js?v=20261101-copy-polish-v2"></script>
   <script src="./scripts/showcase/AccordionGallery.js?v=20260918-product-showcase-v1"></script>

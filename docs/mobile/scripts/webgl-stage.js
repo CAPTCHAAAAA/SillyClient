@@ -1,17 +1,18 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createStudioLighting } from '../../scripts/studio-lighting.js';
-import { loadPhoneDevice } from '../../scripts/device-render/phone-device.js';
-import { loadLaptopModel } from '../../scripts/laptop-model.js';
-import { installProductScreenMaterials } from '../../scripts/product-render/screen-materials.js';
-import { composeShowcaseTransition } from '../../scripts/device-transition.js';
+import { createStudioLighting } from '../../scripts/studio-lighting.js?v=20261102-final-v12';
+import { loadPhoneDevice } from '../../scripts/device-render/phone-device.js?v=20261102-stage-quality-v5';
+import { loadLaptopModel } from '../../scripts/laptop-model.js?v=20261102-stage-quality-v5';
+import { installProductScreenMaterials } from '../../scripts/product-render/screen-materials.js?v=20261102-stage-quality-v5';
+import { composeShowcaseTransition } from '../../scripts/device-transition.js?v=20261102-stage-quality-v5';
+import { createGyroMotion } from '../../scripts/device-render/gyro-motion.js?v=20261102-gyro-v1';
 import {
   HERO_SCENE,
   PHONE_SHOWCASE_STATES,
   LAPTOP_SHOWCASE_STATES,
   CAMERA_SHOWCASE_STATES
-} from '../../scripts/device-scene-config.js';
+} from '../../scripts/device-scene-config.js?v=20261102-stage-quality-v5';
 
 const slots = [...document.querySelectorAll('[data-mobile-frame-stage]')];
 const experience = document.querySelector('.mobile-product-stage--experience');
@@ -42,6 +43,11 @@ let raf = 0;
 let environment;
 let viewWidth = 0;
 let viewHeight = 0;
+
+// 陀螺仪 → 相机微视差：首次触摸自动请求授权，拒绝/无传感器静默回退纯触摸
+const gyro = createGyroMotion({ THREE, invalidate });
+const gyroPointer = { x: 0, y: 0 };
+gyro.bindGesture();
 
 function invalidate(duration = 1700) {
   clock.dirtyUntil = Math.max(clock.dirtyUntil, performance.now() + duration);
@@ -120,6 +126,11 @@ function applyPose(hero, pose) {
     phone.root.rotation.y += pointer.x * 0.055;
     phone.root.rotation.x += pointer.y * 0.022;
     laptop.root.rotation.y -= pointer.x * 0.025;
+  }
+  if (!metrics.moving && !reduced.matches) {
+    // 相机微视差：lookAt 之后纯平移，画面随倾斜反向滑动，视角本身不转
+    camera.position.x += gyroPointer.x * 0.16;
+    camera.position.y += gyroPointer.y * 0.11;
   }
   scene.updateMatrixWorld(true);
   camera.updateMatrixWorld(true);
@@ -203,7 +214,7 @@ function fitViewport(width, height, hero, pose) {
 function resize() {
   const width = document.documentElement.clientWidth;
   const height = innerHeight;
-  const ratio = Math.min(devicePixelRatio || 1, 1.75);
+  const ratio = Math.min(devicePixelRatio || 1, 2);
   if (width !== viewWidth || height !== viewHeight || ratio !== renderer.getPixelRatio()) {
     viewWidth = width;
     viewHeight = height;
@@ -220,6 +231,8 @@ function draw(now) {
   const delta = Math.min((now - clock.last) / 1000 || 0.016, 0.05);
   pointer.x = THREE.MathUtils.damp(pointer.x, pointer.tx, 7, delta);
   pointer.y = THREE.MathUtils.damp(pointer.y, pointer.ty, 7, delta);
+  gyroPointer.x = THREE.MathUtils.damp(gyroPointer.x, gyro.state.tx, 7, delta);
+  gyroPointer.y = THREE.MathUtils.damp(gyroPointer.y, gyro.state.ty, 7, delta);
   const pose = poseAt(now);
   metrics.slots = [];
   for (const slot of slots) {
@@ -278,8 +291,6 @@ async function initialize() {
     renderer.autoClear = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.84;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    scene.fog = new THREE.FogExp2(0x0b0d10, 0.012);
     createStudioLighting(THREE, scene);
     rebuildEnvironment();
     const loader = new GLTFLoader();
