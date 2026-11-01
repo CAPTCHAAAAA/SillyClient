@@ -538,11 +538,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         dragOffset: dx,
         targetIndex: newTarget,
       };
-      const dragged = carouselRef.current?.querySelector(`[data-slot="${currentReorder.draggedIndex}"]`) as HTMLElement | null;
-      if (dragged) {
-        dragged.style.transform = `translate3d(${dx}px, 0, 0)`;
-        dragged.style.transition = "none";
-      }
+      paintReorder(dx);
       if (newTarget !== currentReorder.targetIndex) setReorderState(reorderStateRef.current);
     };
 
@@ -800,11 +796,21 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[];
     const stride = getCardStride();
     cards.forEach((card, slotIndex) => {
-      if (slotIndex !== state.draggedIndex) return;
-      card.style.transform = `translate3d(${offset}px, 0, 0)`;
-      card.style.transition = "none";
+      let shift = 0;
+      if (slotIndex === state.draggedIndex) shift = offset;
+      else if (state.draggedIndex < state.targetIndex && slotIndex > state.draggedIndex && slotIndex <= state.targetIndex) shift = -stride;
+      else if (state.draggedIndex > state.targetIndex && slotIndex >= state.targetIndex && slotIndex < state.draggedIndex) shift = stride;
+      card.style.transform = `translate3d(${shift}px, 0, 0)`;
+      card.style.transition = slotIndex === state.draggedIndex || isReorderCommitting ? "none" : reorderTransition;
+      card.style.zIndex = slotIndex === state.draggedIndex ? "50" : "";
     });
   };
+
+  useLayoutEffect(() => {
+    const state = reorderStateRef.current;
+    if (!state?.active || isReorderCommitting) return;
+    paintReorder(state.dragOffset);
+  });
 
   // 槽位位移：提交帧清掉位移，拖动卡跟随手指，邻卡侧移让位。
   const slotStyle = (slotIndex: number): React.CSSProperties | undefined => {
@@ -890,6 +896,9 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                   shadowColor="#000000"
                   shadowOpacity={isLight ? 0.05 : 0.18}
                   ariaLabel={createLabel}
+                  data-reordering={reorderState?.active && reorderState.draggedIndex === slotIndex ? "true" : undefined}
+                  data-dropping={reorderState?.active && reorderState.draggedIndex === slotIndex && reorderState.isDropping ? "true" : undefined}
+                  data-reorder-committing={isReorderCommitting ? "true" : undefined}
                   onClick={onNewInstance}
                   onPointerDownCapture={createCardPinned ? undefined : (event) => handleCardPointerDown(slotIndex, event)}
                   onKeyDown={(event) => {

@@ -1,6 +1,6 @@
 const TYPE_LABELS = {
-  zh: ['完整演示', '共享控制台', 'Android 原生宿主', 'Windows 桌面运行时'],
-  en: ['full walkthrough', 'shared console', 'Android native host', 'Windows desktop runtime']
+  zh: ['实机演示', '共享控制台', 'Android 原生宿主', 'Windows 桌面运行时'],
+  en: ['Walkthrough', 'Shared console', 'Android native host', 'Windows desktop runtime']
 };
 
 export function initializeSourceCarousel() {

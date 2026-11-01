@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { loadLaptopModel } from './laptop-model.js?v=20260726-screen-overscan-v21';
 import { composeShowcaseTransition } from './device-transition.js?v=20260726-bullet-time-v3';
-import { createInputMotion } from './device-render/input-motion.js?v=20260726-device-modules-v2';
+import { createInputMotion } from './device-render/input-motion.js?v=20261102-stage-quality-v5';
 import { loadPhoneDevice } from './device-render/phone-device.js?v=20260726-device-modules-v1';
 import { createScreenProjection } from './device-render/screen-projection.js?v=20260726-device-modules-v2';
-import { createWebglStage } from './device-render/webgl-stage.js?v=20260726-device-modules-v1';
+import { createWebglStage } from './device-render/webgl-stage.js?v=20261102-lights-v7';
+import { createRenderScheduler } from './device-render/render-scheduler.js?v=20261102-stage-quality-v5';
+import { createScreenLabels } from './device-render/screen-labels.js?v=20261102-stage-quality-v5';
 import { readProductRenderRequest } from './product-render/frame-export.js?v=20260726-product-config-v1';
 import { createProductFrameRenderer } from './product-render/product-frame-renderer.js?v=20260726-product-renderer-v1';
 import { installProductScreenMaterials } from './product-render/screen-materials.js?v=20260726-html-screen-v3';
@@ -32,7 +34,6 @@ const laptopScreenFrame = document.getElementById('laptop-screen-frame');
 const laptopAppScreen = document.getElementById('laptop-app-screen');
 const labelTitle = document.getElementById('phone-label-title');
 const labelCta = document.getElementById('phone-label-cta');
-let labelTitleW = 0, labelTitleH = 0, labelCtaW = 0, labelCtaH = 0;
 const {
   bloomPass,
   camera,
@@ -81,44 +82,73 @@ window.addEventListener('device-showcase-change', (event) => {
     ? Math.max(0, requestedDuration)
     : 1500;
   showcaseTransitionStartedAt = performance.now();
+  wakeStage(1600);
 });
 
-loadPhoneDevice({ THREE, loader, scene, heroScene: HERO_SCENE }).then(phone => {
-  phoneGroup = phone.root;
-  screenMesh = phone.screenMesh;
-  screenPlaneZ = phone.screenPlaneZ;
-  baseRotationY = phone.baseRotationY;
-  if (screenMesh) {
-    if (loadingEl) loadingEl.style.display = 'none';
-  } else if (loadingEl) {
-    loadingEl.textContent = '模型中未找到可映射的屏幕';
+// 设备 GLB 错峰加载：模型文件本身不做任何改动，仅把数十 MB 的下载挪到
+// 首屏关键资源（CSS/JS/字体/纹理）之后空闲时开始，避免抢带宽拖慢 LCP。
+// 产品帧导出链路（productRender）保持原有立即加载时序，验收断言不受影响。
+const startDeviceModelLoad = (mount) => {
+  if (productRenderMode) {
+    mount();
+    return;
   }
-}).catch(err => {
-  console.error('GLTF load error:', err);
-  phoneGroup = null;
-  screenFrame.style.display = 'none';
-  if (loadingEl) loadingEl.textContent = '3D 模型加载失败，请刷新页面重试';
-});
+  const kick = () => {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => mount(), { timeout: 2500 });
+    } else {
+      setTimeout(mount, 800);
+    }
+  };
+  if (document.readyState === 'complete') kick();
+  else window.addEventListener('load', kick, { once: true });
+};
 
-loadLaptopModel({ THREE, loader, scene }).then((loadedLaptop) => {
-  laptop = loadedLaptop;
-  laptopScreenSourceHeight = Math.round(laptopScreenSourceWidth / laptop.screenAspect);
-  laptopScreenFrame.style.width = `${laptopScreenSourceWidth}px`;
-  laptopScreenFrame.style.height = `${laptopScreenSourceHeight}px`;
-  laptopAppScreen.style.width = `${laptopScreenSourceWidth}px`;
-  laptopAppScreen.style.height = `${laptopScreenSourceHeight}px`;
-  laptop.root.position.fromArray(HERO_SCENE.laptop.position);
-  laptop.root.rotation.fromArray(HERO_SCENE.laptop.rotation);
-  laptop.root.scale.setScalar(HERO_SCENE.laptop.scale);
-  if (laptop.lidPivot) laptop.lidPivot.rotation.x = laptop.authoredLidAngle;
-  document.documentElement.dataset.laptopPerpendicularError = laptop.perpendicularError.toExponential(3);
-  document.documentElement.dataset.laptopPerpendicularAngle = laptop.perpendicularLidAngle.toFixed(6);
-  laptop.root.updateMatrixWorld(true);
-}).catch((error) => {
-  console.error('MacBook GLTF load error:', error);
-  laptop = null;
-  if (laptopScreenFrame) laptopScreenFrame.style.display = 'none';
-});
+const mountPhoneDevice = () => {
+  loadPhoneDevice({ THREE, loader, scene, heroScene: HERO_SCENE }).then(phone => {
+    phoneGroup = phone.root;
+    screenMesh = phone.screenMesh;
+    screenPlaneZ = phone.screenPlaneZ;
+    baseRotationY = phone.baseRotationY;
+    if (screenMesh) {
+      if (loadingEl) loadingEl.style.display = 'none';
+    } else if (loadingEl) {
+      loadingEl.textContent = '模型中未找到可映射的屏幕';
+    }
+    wakeStage(300);
+  }).catch(err => {
+    console.error('GLTF load error:', err);
+    phoneGroup = null;
+    screenFrame.style.display = 'none';
+    if (loadingEl) loadingEl.textContent = '3D 模型加载失败，请刷新页面重试';
+  });
+};
+
+const mountLaptopDevice = () => {
+  loadLaptopModel({ THREE, loader, scene }).then((loadedLaptop) => {
+    laptop = loadedLaptop;
+    laptopScreenSourceHeight = Math.round(laptopScreenSourceWidth / laptop.screenAspect);
+    laptopScreenFrame.style.width = `${laptopScreenSourceWidth}px`;
+    laptopScreenFrame.style.height = `${laptopScreenSourceHeight}px`;
+    laptopAppScreen.style.width = `${laptopScreenSourceWidth}px`;
+    laptopAppScreen.style.height = `${laptopScreenSourceHeight}px`;
+    laptop.root.position.fromArray(HERO_SCENE.laptop.position);
+    laptop.root.rotation.fromArray(HERO_SCENE.laptop.rotation);
+    laptop.root.scale.setScalar(HERO_SCENE.laptop.scale);
+    if (laptop.lidPivot) laptop.lidPivot.rotation.x = laptop.authoredLidAngle;
+    document.documentElement.dataset.laptopPerpendicularError = laptop.perpendicularError.toExponential(3);
+    document.documentElement.dataset.laptopPerpendicularAngle = laptop.perpendicularLidAngle.toFixed(6);
+    laptop.root.updateMatrixWorld(true);
+    wakeStage(300);
+  }).catch((error) => {
+    console.error('MacBook GLTF load error:', error);
+    laptop = null;
+    if (laptopScreenFrame) laptopScreenFrame.style.display = 'none';
+  });
+};
+
+startDeviceModelLoad(mountPhoneDevice);
+startDeviceModelLoad(mountLaptopDevice);
 
 // ========================================
 // 3D → 2D Projection (for iframe overlay)
@@ -172,14 +202,21 @@ const inputMotion = createInputMotion({
   THREE,
   section,
   appScreen,
-  isStageVisible: () => phoneVisible
+  isStageVisible: () => phoneVisible,
+  onActivity: () => wakeStage(300)
 });
 const {
-  compactInput,
-  orientationMotion,
-  pointer,
   reduced
 } = inputMotion;
+
+// 浮动标签投影：DOM 写入内聚在 device-render/screen-labels.js
+const updateScreenLabels = createScreenLabels({
+  THREE,
+  screenProjection,
+  title: labelTitle,
+  cta: labelCta,
+  reduced
+});
 
 const motionClock = new THREE.Clock();
 let journeyProgress = 0;
@@ -193,11 +230,15 @@ function updateJourneyProgress() {
   );
 }
 
-scroller.addEventListener('scroll', updateJourneyProgress, { passive: true });
+scroller.addEventListener('scroll', () => {
+  updateJourneyProgress();
+  wakeStage(300);
+}, { passive: true });
 updateJourneyProgress();
 
 const phoneObserver = new IntersectionObserver(([entry]) => {
   phoneVisible = entry.isIntersecting;
+  if (entry.isIntersecting) wakeStage(400);
   if (!phoneVisible) {
     screenFrame.style.display = 'none';
     if (laptopScreenFrame) laptopScreenFrame.style.display = 'none';
@@ -216,39 +257,43 @@ const heroCameraLookTarget = heroCameraPosition.clone().addScaledVector(heroCame
 const cameraLookTarget = heroCameraLookTarget.clone();
 const cameraUpTarget = heroCameraUp.clone();
 let lastRenderTime = 0;
-let loopRafId = 0;
+// ===== 按需渲染调度：任何会改变画面的输入先 wake，姿态全部收敛后自动停帧 =====
+// 输出帧序列与连续渲染完全一致，仅在画面静止时不再空转 GPU。
+// 调度机制在 device-render/render-scheduler.js，"哪些值代表画面"的策略在此。
+const scheduler = createRenderScheduler({
+  renderFrame: (now) => loop(now),
+  isSchedulingEnabled: () => !productRenderMode
+});
+const wakeStage = scheduler.wake;
+function stageSettleValues() {
+  if (!phoneGroup || !laptop) return null;
+  const lid = laptop.lidPivot ? laptop.lidPivot.rotation.x : 0;
+  return [
+    phoneGroup.position.x, phoneGroup.position.y, phoneGroup.position.z,
+    phoneGroup.rotation.x, phoneGroup.rotation.y, phoneGroup.rotation.z, phoneGroup.scale.x,
+    laptop.root.position.x, laptop.root.position.y, laptop.root.position.z,
+    laptop.root.rotation.x, laptop.root.rotation.y, laptop.root.rotation.z, laptop.root.scale.x,
+    lid,
+    camera.position.x, camera.position.y, camera.position.z,
+    phoneScreenAlpha, laptopScreenAlpha
+  ];
+}
 function loop(now = 0, frameOptions = null) {
-  if (!frameOptions) loopRafId = requestAnimationFrame(loop);
+  scheduler.consumeSchedule();
   if (!phoneVisible && !frameOptions?.force) return;
 
   const compact = section.clientHeight > section.clientWidth;
   const minimumFrameInterval = compact ? 1000 / 45 : 0;
-  if (!frameOptions && now - lastRenderTime < minimumFrameInterval) return;
+  if (!frameOptions && now - lastRenderTime < minimumFrameInterval) {
+    scheduler.reschedule();
+    return;
+  }
   lastRenderTime = now;
 
   const delta = frameOptions?.delta ?? Math.min(motionClock.getDelta(), 0.05);
-  pointer.x = THREE.MathUtils.damp(pointer.x, pointer.tx, 5.5, delta);
-  pointer.y = THREE.MathUtils.damp(pointer.y, pointer.ty, 5.5, delta);
-  const orientationFresh = compact
-    && orientationMotion.active
-    && now - orientationMotion.lastSample < 1600;
-  if (!orientationFresh) orientationMotion.active = false;
-  orientationMotion.x = THREE.MathUtils.damp(
-    orientationMotion.x,
-    orientationFresh ? orientationMotion.tx : 0,
-    4.4,
-    delta
-  );
-  orientationMotion.y = THREE.MathUtils.damp(
-    orientationMotion.y,
-    orientationFresh ? orientationMotion.ty : 0,
-    4.4,
-    delta
-  );
+  const { motionX: rawMotionX, motionY: rawMotionY } = inputMotion.sampleMotion(now, delta, { compact, reduced });
   const journeyEase = THREE.MathUtils.smoothstep(journeyProgress, 0.08, 0.86);
   const overlayOpacity = THREE.MathUtils.smoothstep(journeyProgress, 0.43, 0.72);
-  const rawMotionX = reduced ? 0 : (compact ? orientationMotion.x : pointer.x);
-  const rawMotionY = reduced ? 0 : (compact ? orientationMotion.y : pointer.y);
   const heroMotion = 1 - journeyEase;
   const showcaseTransitionProgress = THREE.MathUtils.clamp(
     showcaseTransitionDuration === 0
@@ -421,34 +466,7 @@ function loop(now = 0, frameOptions = null) {
     updateScreenOverlay();
 
     // ====== Floating labels — project 3D phone corners to screen ======
-    if (phoneGroup && phoneVisible && labelTitle && labelCta && !reduced) {
-      const labelVisible = journeyEase < 0.6 && journeyProgress > 0.02;
-      labelTitle.classList.toggle('is-visible', labelVisible);
-      labelCta.classList.toggle('is-visible', labelVisible);
-      if (labelVisible) {
-        phoneGroup.updateMatrixWorld(true);
-        labelTitleW = labelTitle.offsetWidth || 0;
-        labelTitleH = labelTitle.offsetHeight || 0;
-        labelCtaW = labelCta.offsetWidth || 0;
-        labelCtaH = labelCta.offsetHeight || 0;
-        const box3 = new THREE.Box3().setFromObject(phoneGroup);
-        const labelAlpha = THREE.MathUtils.smoothstep(journeyEase, 0, 0.3) * THREE.MathUtils.smoothstep(journeyEase, 0.6, 0.35);
-        labelTitle.style.opacity = labelAlpha.toFixed(3);
-        labelCta.style.opacity = labelAlpha.toFixed(3);
-        // Title label: top-right corner of phone bounding box, offset outward
-        const topRightWorld = new THREE.Vector3(box3.max.x + 0.18, box3.max.y + 0.08, box3.min.z);
-        const topRightScreen = screenProjection.project(topRightWorld);
-        if (Number.isFinite(topRightScreen.x) && Math.abs(topRightScreen.z) < 1) {
-          labelTitle.style.transform = `translate(${topRightScreen.x - labelTitleW}px, ${topRightScreen.y}px)`;
-        }
-        // CTA label: bottom-left corner, offset outward
-        const bottomLeftWorld = new THREE.Vector3(box3.min.x - 0.08, box3.min.y - 0.22, box3.min.z);
-        const bottomLeftScreen = screenProjection.project(bottomLeftWorld);
-        if (Number.isFinite(bottomLeftScreen.x) && Math.abs(bottomLeftScreen.z) < 1) {
-          labelCta.style.transform = `translate(${bottomLeftScreen.x}px, ${bottomLeftScreen.y - labelCtaH}px)`;
-        }
-      }
-    }
+    updateScreenLabels({ phoneGroup, phoneVisible, journeyEase, journeyProgress });
   }
 
   if (laptop && laptopScreenFrame) {
@@ -465,8 +483,13 @@ function loop(now = 0, frameOptions = null) {
 
   canvas.style.opacity = '1';
   composer.render(delta);
+
+  // 按需续排：脏窗口未关或姿态仍在收敛则继续，全部稳定即停帧
+  if (!frameOptions && (scheduler.isDirty() || !scheduler.settled(stageSettleValues()))) {
+    scheduler.reschedule();
+  }
 }
-loop();
+wakeStage(400);
 
 function waitForProductModels(timeout = 20000) {
   if (phoneGroup && laptop) return Promise.resolve();
@@ -502,7 +525,7 @@ createProductFrameRenderer({
     laptopScreenMesh: laptop.screenMesh
   }),
   prepareState(outputState) {
-    cancelAnimationFrame(loopRafId);
+    scheduler.stop();
     phoneVisible = true;
     journeyProgress = 1;
     showcaseFromState = outputState;
@@ -529,6 +552,7 @@ function resizeScene() {
   updateJourneyProgress();
   updateScreenOverlay();
   if (laptopScreenAlpha > 0.015) updateLaptopScreenOverlay();
+  wakeStage(250);
 }
 let resizeRaf = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(resizeRaf); resizeRaf = requestAnimationFrame(resizeScene); });

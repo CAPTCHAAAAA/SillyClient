@@ -375,7 +375,7 @@ function initColorBends() {
 
     /* ---- Resize handling ---- */
     function resize() {
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       var w = window.innerWidth;
       var h = window.innerHeight;
       canvas.width  = Math.floor(w * dpr);
@@ -395,6 +395,9 @@ function initColorBends() {
     var lastTime = performance.now();
     var elapsed  = 0;
     var running  = true;
+    /* 渐变光斑背景：30fps 节流（dt 驱动，跳帧不改变运动速度） */
+    var BG_FRAME_INTERVAL = 1000 / 30;
+    var lastBgFrame = 0;
 
     canvas.addEventListener('webglcontextlost', function (e) {
       e.preventDefault();
@@ -405,6 +408,11 @@ function initColorBends() {
       if (!running) return;
 
       var now = performance.now();
+      if (now - lastBgFrame < BG_FRAME_INTERVAL) {
+        requestAnimationFrame(render);
+        return;
+      }
+      lastBgFrame = now - ((now - lastBgFrame) % BG_FRAME_INTERVAL);
       var dt  = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
       elapsed += dt;

@@ -1,4 +1,4 @@
-export function createInputMotion({ THREE, section, appScreen, isStageVisible }) {
+export function createInputMotion({ THREE, section, appScreen, isStageVisible, onActivity }) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
@@ -66,6 +66,7 @@ export function createInputMotion({ THREE, section, appScreen, isStageVisible })
     orientationMotion.ty = THREE.MathUtils.clamp(pitch / 24, -1, 1);
     orientationMotion.active = true;
     orientationMotion.lastSample = performance.now();
+    onActivity?.();
   }
 
   function attachDeviceOrientation() {
@@ -107,6 +108,7 @@ export function createInputMotion({ THREE, section, appScreen, isStageVisible })
     const rect = section.getBoundingClientRect();
     pointer.tx = THREE.MathUtils.clamp(((clientX - rect.left) / rect.width - 0.5) * 2, -1, 1);
     pointer.ty = THREE.MathUtils.clamp(((clientY - rect.top) / rect.height - 0.5) * 2, -1, 1);
+    onActivity?.();
   }
 
   if (finePointer.matches) {
@@ -145,8 +147,9 @@ export function createInputMotion({ THREE, section, appScreen, isStageVisible })
           if (!isStageVisible()) return;
           const frameWidth = appScreen.clientWidth || 390;
           const frameHeight = appScreen.clientHeight || 844;
-          pointer.tx = THREE.MathUtils.clamp((event.clientX / frameWidth - 0.5) * 2, -1, 1);
-          pointer.ty = THREE.MathUtils.clamp((event.clientY / frameHeight - 0.5) * 2, -1, 1);
+        pointer.tx = THREE.MathUtils.clamp((event.clientX / frameWidth - 0.5) * 2, -1, 1);
+        pointer.ty = THREE.MathUtils.clamp((event.clientY / frameHeight - 0.5) * 2, -1, 1);
+        onActivity?.();
         }, { passive: true });
       }
       if (compactInput.matches && typeof deviceOrientationType?.requestPermission === 'function') {
@@ -161,11 +164,37 @@ export function createInputMotion({ THREE, section, appScreen, isStageVisible })
   appScreen.addEventListener('load', attachIframePointerTracking);
   if (appScreen.contentDocument?.readyState !== 'loading') attachIframePointerTracking();
 
+  // 每帧采样：把指针/陀螺仪输入阻尼为运动值（输入域内聚在本模块，装配文件只取结果）
+  function sampleMotion(now, delta, { compact, reduced: suppressMotion }) {
+    pointer.x = THREE.MathUtils.damp(pointer.x, pointer.tx, 5.5, delta);
+    pointer.y = THREE.MathUtils.damp(pointer.y, pointer.ty, 5.5, delta);
+    const orientationFresh = compact
+      && orientationMotion.active
+      && now - orientationMotion.lastSample < 1600;
+    if (!orientationFresh) orientationMotion.active = false;
+    orientationMotion.x = THREE.MathUtils.damp(
+      orientationMotion.x,
+      orientationFresh ? orientationMotion.tx : 0,
+      4.4,
+      delta
+    );
+    orientationMotion.y = THREE.MathUtils.damp(
+      orientationMotion.y,
+      orientationFresh ? orientationMotion.ty : 0,
+      4.4,
+      delta
+    );
+    const motionX = suppressMotion ? 0 : (compact ? orientationMotion.x : pointer.x);
+    const motionY = suppressMotion ? 0 : (compact ? orientationMotion.y : pointer.y);
+    return { motionX, motionY };
+  }
+
   return {
     compactInput,
     orientationMotion,
     pointer,
     reduced,
+    sampleMotion,
     resetOrientation: resetOrientationBaseline,
     reset() {
       pointer.x = 0;
