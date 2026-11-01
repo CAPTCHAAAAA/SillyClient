@@ -128,7 +128,7 @@
       const path = `${mediaPath}${slide.id}.webp`;
       if (image.getAttribute('src') !== path) image.src = path;
       image.alt = slide.alt;
-      dialog.querySelector('#sc-gallery-lightbox-title').textContent = slide.tab;
+      dialog.querySelector('#sc-gallery-lightbox-title').textContent = slide.title;
       dialog.querySelector('[data-lightbox-count]').textContent = `${String(slideIndex + 1).padStart(2, '0')} / ${String(copy[language].slides.length).padStart(2, '0')}`;
     }
     dialog.querySelector('[data-gallery-previous]').disabled = current <= videoCount;
@@ -156,11 +156,11 @@
     panels.forEach((panel, index) => {
       const slide = text.slides[index - videoCount];
       const label = stageLabels(language)[index];
-      panel.querySelector('.ag-toggle').setAttribute('aria-label', label);
+      panel.querySelector('.ag-toggle').setAttribute('aria-label', slide ? `${label}：${slide.title}` : label);
       panel.querySelector('.ag-toggle').title = slide ? `${slide.title} ${slide.body}`
         : index === 0 ? text.videoTitle : text.additionalVideoTitle;
       if (slide) panel.querySelector('img').alt = slide.alt;
-      panel.querySelector('[data-feature-label]').textContent = label;
+      panel.querySelector('[data-feature-label]').textContent = slide ? slide.title : label;
       panel.querySelector('[data-collapsed-label]').textContent = label;
     });
     additionalFrame.title = text.additionalVideoTitle;

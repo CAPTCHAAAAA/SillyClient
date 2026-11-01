@@ -1,5 +1,5 @@
-import { translations } from './page/content.js?v=20260918-product-showcase-v1';
-import { inspectorCatalog } from './page/inspector-content.js?v=20260726-page-modules-v1';
+import { translations } from './page/content.js?v=20261101-copy-polish-v2';
+import { inspectorCatalog } from './page/inspector-content.js?v=20261101-copy-polish-v2';
 import { createComponentInspector } from './page/component-inspector.js?v=20260726-page-modules-v1';
 import { initializePageNavigation } from './page/navigation-controller.js?v=20260726-page-modules-v2';
 import { initializeBilibiliPlayers } from './ui/bilibili-player.js?v=20260817-video-source-cards-v1';

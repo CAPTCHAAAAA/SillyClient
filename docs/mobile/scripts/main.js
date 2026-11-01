@@ -1,9 +1,9 @@
 import { initializeExperience } from './experience.js?v=20260817-visual-centering-v2';
-import { initializeFrameStages } from './frame-stage.js?v=20260817-visual-centering-v2';
-import { createI18n } from './i18n.js?v=20260919-mobile-webgl-v1';
+import { initializeFrameStages } from './frame-stage.js?v=20261101-copy-polish-v2';
+import { createI18n } from './i18n.js?v=20261101-copy-polish-v2';
 import { initializeNavigation } from './navigation.js';
-import { initializeSourceCarousel } from './source-carousel.js';
-import { initializeTitleFont } from './title-font.js';
+import { initializeSourceCarousel } from './source-carousel.js?v=20261101-copy-polish-v2';
+import { initializeTitleFont } from './title-font.js?v=20261101-copy-polish-v2';
 import { initializeBilibiliPlayers } from '../../scripts/ui/bilibili-player.js?v=20260817-video-source-cards-v1';
 
 createI18n();

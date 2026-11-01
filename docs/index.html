@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="./scripts/viewport-router.js?v=20260726-aspect-route-v3"></script>
-  <title>SillyClient | 安装、启动和管理 SillyTavern</title>
-  <meta name="description" content="在 Android 手机和 Windows 电脑上安装、启动和管理 SillyTavern（酒馆），也能连接已有的酒馆服务。" />
+  <title>SillyClient | SillyTavern 跨平台启动与管理工具</title>
+  <meta name="description" content="面向 Windows、Android 与 iOS 的 SillyTavern（酒馆）启动与管理工具。内置 Node.js 运行环境，支持应用内下载部署、多版本实例管理与远程酒馆连接。" />
   <link rel="canonical" href="https://captchaaaaa.github.io/SillyClient/" />
   <link rel="icon" href="./sillyclient-logo.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="./styles/theme.css?v=20260725-guided-focus-v1" />
@@ -77,12 +77,12 @@
           <div class="stage-shade" aria-hidden="true"></div>
           <div id="loading" role="status" aria-live="polite" data-i18n="loadingScene">正在载入 3D 场景</div>
           <div id="screen-frame">
-            <iframe id="app-screen" src="./phone-demo.html?showcase=1&amp;safeTop=52" title="SillyClient 软件界面" data-i18n-title="appFrameTitle"></iframe>
+            <iframe id="app-screen" src="./phone-demo.html?showcase=1&amp;safeTop=52" title="SillyClient 移动端界面" data-i18n-title="appFrameTitle"></iframe>
             <div id="screen-reflection" aria-hidden="true"></div>
             <div id="dynamic-island" aria-hidden="true"></div>
           </div>
           <div id="laptop-screen-frame">
-            <iframe id="laptop-app-screen" src="./phone-demo.html?showcase=1&amp;safeTop=0" title="SillyClient 桌面软件界面" data-i18n-title="desktopFrameTitle"></iframe>
+            <iframe id="laptop-app-screen" src="./phone-demo.html?showcase=1&amp;safeTop=0" title="SillyClient 桌面端界面" data-i18n-title="desktopFrameTitle"></iframe>
             <div id="laptop-screen-reflection" aria-hidden="true"></div>
           </div>
           <div class="stage-optics" aria-hidden="true">
@@ -101,26 +101,26 @@
         <div class="story-layer">
           <section class="story-panel hero-panel" id="hero" data-section="hero">
             <div class="hero-copy">
-              <div class="eyebrow"><span class="status-pulse"></span><span data-i18n="heroEyebrow">开源 SillyTavern 客户端</span></div>
+              <div class="eyebrow"><span class="status-pulse"></span><span data-i18n="heroEyebrow">Windows · Android · iOS 酒馆启动与管理工具</span></div>
               <h1 class="hero-title" aria-label="SillyClient">
                 <button class="hero-title-button" id="title-font-button" type="button">
                   <span class="title-wordmark" id="title-wordmark">Silly<span class="accent">Client</span></span>
                 </button>
               </h1>
-              <p class="hero-lede" data-i18n="heroTagline">SillyClient 是面向 Android 与 Windows 的开源 SillyTavern 客户端。</p>
-              <p class="hero-sub" data-i18n="heroSubtitle">它将本地实例、远程服务、运行状态与日志集中在同一套控制台，并随安装包提供所需运行环境。无论随身使用还是桌面常驻，都能从同一入口启动和管理 SillyTavern。</p>
+              <p class="hero-lede" data-i18n="heroTagline">无需配置环境，在手机与电脑上直接运行 SillyTavern。</p>
+              <p class="hero-sub" data-i18n="heroSubtitle">内置 Node.js 运行环境，省去命令行与依赖配置。可在应用内直接下载酒馆版本、导入本地压缩包、管理多个独立实例，或添加地址连接已有的远程酒馆。</p>
               <div class="hero-actions">
                 <a class="primary-action" href="https://github.com/CAPTCHAAAAA/SillyClient/releases" target="_blank" rel="noopener">
                   <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-download"></use></svg><span data-i18n="latestRelease">下载最新版本</span>
                 </a>
               </div>
-              <dl class="hero-specs" aria-label="平台支持" data-i18n-aria="techSummary">
-                <div><dt>Android</dt><dd>8.0+ · arm64</dd></div>
+              <dl class="hero-specs" aria-label="平台支持与系统要求" data-i18n-aria="techSummary">
                 <div><dt>Windows</dt><dd>10 / 11 · x64</dd></div>
+                <div><dt>Android / iOS</dt><dd>arm64</dd></div>
                 <div><dt>Runtime</dt><dd>Node.js included</dd></div>
               </dl>
             </div>
-            <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="进入产品体验" data-i18n-aria="enterExperience">
+            <button class="scroll-cue" type="button" data-scroll-target="experience" aria-label="了解多端使用方式" data-i18n-aria="enterExperience">
               <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-caret-down"></use></svg>
             </button>
           </section>
@@ -128,47 +128,47 @@
           <section class="story-panel experience-panel" id="experience" data-section="experience">
             <div class="device-showcase" id="device-showcase">
               <div class="device-showcase-copy">
-                <div class="section-index" data-i18n="experienceIndex">01 / 产品体验</div>
-                <h2 data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0" data-scroll-reveal-rotation="4" data-scroll-reveal-blur="8" data-i18n="experienceTitle">SillyClient，一套界面，两端都顺手。</h2>
-                <p class="device-showcase-intro" data-i18n="experienceBody">手机与电脑共享同一套控制台，运行环境分别由 Kotlin 与 Electron 接管。界面保持一致，各端也保留原生能力。</p>
+                <div class="section-index" data-i18n="experienceIndex">01 / 多端使用方式</div>
+                <h2 data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0" data-scroll-reveal-rotation="4" data-scroll-reveal-blur="8" data-i18n="experienceTitle">本机独立运行，或跨设备连接。</h2>
+                <p class="device-showcase-intro" data-i18n="experienceBody">三端共用同一套管理界面。既可在手机或电脑上独立部署运行，也可直接连接电脑与服务器上的现有酒馆。</p>
                 <div class="device-accordion">
                   <section class="device-accordion-item is-active" data-device-state="0">
                     <h3>
                       <button type="button" aria-expanded="true" aria-controls="device-state-phone">
-                        <span data-i18n="devicePhoneTitle">Android，随身运行</span>
+                        <span data-i18n="devicePhoneTitle">移动端：脱离电脑，手机独立运行</span>
                         <span aria-hidden="true">01</span>
                       </button>
                     </h3>
                     <div class="device-accordion-tray" id="device-state-phone" aria-hidden="false">
-                      <div><p data-i18n="devicePhoneBody">Kotlin 宿主管理实例目录、进程与内置 Node.js 生命周期；共享前端通过平台接口读取状态、日志和服务地址。</p></div>
+                      <div><p data-i18n="devicePhoneBody">无需安装 Termux 或配置命令行。在手机应用内即可完成版本下载、目录选择与服务启动，直接进入酒馆聊天界面。</p></div>
                     </div>
                   </section>
                   <section class="device-accordion-item" data-device-state="1">
                     <h3>
                       <button type="button" aria-expanded="false" aria-controls="device-state-desktop">
-                        <span data-i18n="deviceDesktopTitle">Windows，桌面常驻</span>
+                        <span data-i18n="deviceDesktopTitle">Windows：窗口分离，后台常驻运行</span>
                         <span aria-hidden="true">02</span>
                       </button>
                     </h3>
                     <div class="device-accordion-tray" id="device-state-desktop" aria-hidden="true" inert>
-                      <div><p data-i18n="deviceDesktopBody">Electron 主进程负责实例文件、Node.js 运行时与窗口调度，控制台和 SillyTavern 内容窗口彼此独立。</p></div>
+                      <div><p data-i18n="deviceDesktopBody">无需保持命令行窗口常开。控制台与酒馆聊天窗口彼此独立，关闭聊天窗口不会中断后台服务，支持多版本实例并存。</p></div>
                     </div>
                   </section>
                   <section class="device-accordion-item" data-device-state="2">
                     <h3>
                       <button type="button" aria-expanded="false" aria-controls="device-state-together">
-                        <span data-i18n="deviceTogetherTitle">SillyClient，体验一致</span>
+                        <span data-i18n="deviceTogetherTitle">远程连接：直连电脑与服务器酒馆</span>
                         <span aria-hidden="true">03</span>
                       </button>
                     </h3>
                     <div class="device-accordion-tray" id="device-state-together" aria-hidden="true" inert>
-                      <div><p data-i18n="deviceTogetherBody">Android 与 Windows 使用同一套 React 控制台和平台契约，交互、状态模型与版本能力由同一份源码维护。</p></div>
+                      <div><p data-i18n="deviceTogetherBody">若酒馆已运行在电脑、局域网或云服务器上，填入服务地址与访问密码即可直接连接使用，无需在当前设备重复安装。</p></div>
                     </div>
                   </section>
                 </div>
               </div>
             </div>
-            <div class="device-note"><span aria-hidden="true"></span><span data-i18n="interactiveScreen">Android · Windows</span></div>
+            <div class="device-note"><span aria-hidden="true"></span><span data-i18n="interactiveScreen">Windows · Android · iOS</span></div>
           </section>
         </div>
       </section>
@@ -178,25 +178,25 @@
           <section class="platform-marcom" data-platform-carousel aria-labelledby="platform-heading">
             <header class="platform-heading" data-reveal>
               <div class="platform-heading-kicker">
-                <div class="section-index" data-i18n="platformIndex">02 / 演示与源码</div>
+                <div class="section-index" data-i18n="platformIndex">02 / 演示与界面实览</div>
                 <div class="platform-type-line" aria-hidden="true">
                   <span>showcase /</span>
                   <span
                     class="text-type"
                     data-text-type
                     data-text-type-follow-carousel
-                    data-text-type-zh='["完整演示","共享控制台","Android 原生宿主","Windows 桌面运行时"]'
-                    data-text-type-en='["full walkthrough","shared console","Android native host","Windows desktop runtime"]'
+                    data-text-type-zh='["实机演示","共享控制台","Android 原生宿主","Windows 桌面运行时"]'
+                    data-text-type-en='["Walkthrough","Shared console","Android native host","Windows desktop runtime"]'
                     data-text-type-speed="48"
                     data-text-type-delete-speed="26"
                     data-text-type-pause="1450"
                     data-text-type-initial-delay="260"
-                  ><span class="text-type__content">完整演示</span><span class="text-type__cursor">|</span></span>
+                  ><span class="text-type__content">实机演示</span><span class="text-type__cursor">|</span></span>
                 </div>
               </div>
               <div class="platform-heading-row">
-                <h2 id="platform-heading"><span data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0.04" data-scroll-reveal-rotation="3" data-scroll-reveal-blur="7" data-i18n="platformTitleLead">SillyClient，</span><span data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0.04" data-scroll-reveal-rotation="3" data-scroll-reveal-blur="7" data-i18n="platformTitleTail">三层代码，一条运行链路。</span></h2>
-                <p data-i18n="platformBody">先通过完整演示了解 SillyClient，再查看共享控制台与双端宿主的核心实现。</p>
+                <h2 id="platform-heading"><span data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0.04" data-scroll-reveal-rotation="3" data-scroll-reveal-blur="7" data-i18n="platformTitleLead">从首次部署，</span><span data-scroll-reveal data-variable-proximity data-vp-radius="90" data-scroll-reveal-opacity="0.04" data-scroll-reveal-rotation="3" data-scroll-reveal-blur="7" data-i18n="platformTitleTail">到日常管理与维护。</span></h2>
+                <p data-i18n="platformBody">先通过实机视频了解整体流程，再逐一查看主页列表、新建向导、卡片菜单、内置终端与壁纸设置的实际界面。</p>
               </div>
             </header>
 
@@ -209,7 +209,7 @@
                       <iframe
                         class="platform-video-frame"
                         data-bilibili-player="https://player.bilibili.com/player.html?isOutside=true&amp;aid=117111712257791&amp;bvid=BV15kbv6YE9n&amp;cid=41004568317&amp;p=1&amp;high_quality=1&amp;danmaku=0&amp;autoplay=0"
-                        title="SillyClient 1.8.1 视频介绍"
+                        title="SillyClient 操作演示"
                         data-i18n-title="videoFrameTitle"
                         loading="lazy"
                         scrolling="no"
@@ -222,13 +222,13 @@
                   <article class="platform-slide platform-slide--source card-spotlight" data-platform-slide data-spotlight-card data-spotlight-color="rgba(255, 94, 133, 0.12)" aria-hidden="true" inert>
                     <div class="platform-slide-copy">
                       <div class="platform-slide-index">02 <span>/ 04</span></div>
-                      <h3 data-i18n="sourceStageTitle">共享契约，统一控制台能力。</h3>
-                      <p data-i18n="sourceStageBody">TarvenEnv 统一描述实例创建、状态、窗口与日志事件。React 控制台只依赖这一层，不区分宿主平台。</p>
+                      <h3 data-i18n="sourceStageTitle">统一平台契约，隔离宿主差异。</h3>
+                      <p data-i18n="sourceStageBody">TarvenEnv 统一定义实例创建、状态、存储与日志接口。React 控制台只依赖该契约，不耦合特定宿主平台。</p>
                     </div>
                     <div class="source-code-window">
                       <header>
                         <span>Contract · TypeScript</span>
-                        <a href="https://github.com/CAPTCHAAAAA/SillyClient-Android/blob/main/web/capacitor-ui/src/capacitor-plugin.ts#L62" target="_blank" rel="noopener" aria-label="打开共享接口源码" data-i18n-aria="openSharedSource">
+                        <a href="https://github.com/CAPTCHAAAAA/SillyClient/blob/main/web/capacitor-ui/src/capacitor-plugin.ts#L62" target="_blank" rel="noopener" aria-label="打开共享接口源码" data-i18n-aria="openSharedSource">
                           <code>capacitor-plugin.ts</code>
                           <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-external"></use></svg>
                         </a>
@@ -247,13 +247,13 @@
                   <article class="platform-slide platform-slide--android card-spotlight" data-platform-slide data-spotlight-card data-spotlight-color="rgba(255, 94, 133, 0.12)" aria-hidden="true" inert>
                     <div class="platform-slide-copy">
                       <div class="platform-slide-index">03 <span>/ 04</span></div>
-                      <h3 data-i18n="repositoryTitle">Android，确认就绪再交付。</h3>
-                      <p data-i18n="repositoryBody">Kotlin 宿主管理下载、进程与端口检测。只有本地服务能够连接时，控制台才会收到 ready 状态。</p>
+                      <h3 data-i18n="repositoryTitle">Android：服务就绪后再交付视图。</h3>
+                      <p data-i18n="repositoryBody">Kotlin 宿主负责文件、Bionic Node.js 进程与端口检测，确认本地服务可正常连接后才向控制台发送就绪状态。</p>
                     </div>
                     <div class="source-code-window">
                       <header>
                         <span>Runtime · Kotlin</span>
-                        <a href="https://github.com/CAPTCHAAAAA/SillyClient-Android/blob/main/app/src/main/java/com/sillyclient/MainActivity.kt#L1235" target="_blank" rel="noopener" aria-label="打开 Android 就绪检查源码" data-i18n-aria="openAndroidSource">
+                        <a href="https://github.com/CAPTCHAAAAA/SillyClient-Android/blob/main/app/src/main/java/com/sillyclient/MainActivity.kt#L1235" target="_blank" rel="noopener" aria-label="打开 Android 宿主源码" data-i18n-aria="openAndroidSource">
                           <code>MainActivity.kt</code>
                           <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-external"></use></svg>
                         </a>
@@ -272,13 +272,13 @@
                   <article class="platform-slide platform-slide--windows card-spotlight" data-platform-slide data-spotlight-card data-spotlight-color="rgba(255, 94, 133, 0.12)" aria-hidden="true" inert>
                     <div class="platform-slide-copy">
                       <div class="platform-slide-index">04 <span>/ 04</span></div>
-                      <h3 data-i18n="deliveryStageTitle">Windows，同一契约接入桌面。</h3>
-                      <p data-i18n="deliveryStageBody">Preload 代理把控制台调用送入 Electron 主进程；管理窗口、内容窗口与内置运行时保持各自边界。</p>
+                      <h3 data-i18n="deliveryStageTitle">Windows：管理窗口与内容窗口分离。</h3>
+                      <p data-i18n="deliveryStageBody">Electron 主进程管理实例文件、内置 Node.js 运行时与窗口生命周期，控制台与酒馆窗口保持独立边界。</p>
                     </div>
                     <div class="source-code-window">
                       <header>
                         <span>Bridge · Electron</span>
-                        <a href="https://github.com/CAPTCHAAAAA/SillyClient-Windows/blob/master/src/preload.ts#L107" target="_blank" rel="noopener" aria-label="打开 Windows IPC 桥接源码" data-i18n-aria="openWindowsSource">
+                        <a href="https://github.com/CAPTCHAAAAA/SillyClient-Windows/blob/main/src/preload.ts#L107" target="_blank" rel="noopener" aria-label="打开 Windows 桥接源码" data-i18n-aria="openWindowsSource">
                           <code>preload.ts</code>
                           <svg class="bi-icon" aria-hidden="true"><use href="./landing-icons.svg#icon-external"></use></svg>
                         </a>
@@ -345,15 +345,15 @@
     </aside>
   </div>
 
-  <script src="./scripts/showcase/content.js?v=20260918-product-showcase-v1"></script>
+  <script src="./scripts/showcase/content.js?v=20261101-copy-polish-v2"></script>
   <script src="./scripts/showcase/AccordionGallery.js?v=20260918-product-showcase-v1"></script>
-  <script src="./scripts/showcase/mount.js?v=20260918-home-entry-v2"></script>
+  <script src="./scripts/showcase/mount.js?v=20261101-copy-polish-v2"></script>
   <script src="./scripts/showcase/DownloadSwitch.js?v=20260918-product-showcase-v1"></script>
   <script src="./scripts/effects-runtime.js?v=20260725-variable-cleanup-v1"></script>
   <script src="./scripts/scroll-reveal.js?v=20260725-scroll-reveal-v1"></script>
   <script src="./scripts/variable-proximity.js?v=20260725-variable-proximity-v2"></script>
 
-  <script type="module" src="./scripts/page.js?v=20260918-product-showcase-v1"></script>
+  <script type="module" src="./scripts/page.js?v=20261101-copy-polish-v2"></script>
   <script src="./scripts/text-type.js?v=20260726-language-event-v3"></script>
   <script src="./scripts/platform-carousel.js?v=20260817-video-source-cards-v1"></script>
   <script src="./scripts/device-showcase.js?v=20260726-orbit-lock-v1"></script>

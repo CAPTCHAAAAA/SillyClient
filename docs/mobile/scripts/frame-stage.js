@@ -1,4 +1,4 @@
-const FRAME_LABELS = ['Android', 'Windows', 'Android · Windows'];
+const FRAME_LABELS = ['Mobile', 'Windows', 'Mobile · Windows'];
 // These offsets follow the visible device composition in each rendered frame,
 // rather than the transparent canvas bounds.
 const FRAME_VISUAL_OFFSETS = ['-13.4%', '-7.9%', '-15.3%'];

@@ -1,4 +1,4 @@
-import { translations } from './content.js?v=20260919-mobile-webgl-v1';
+import { translations } from './content.js?v=20261101-copy-polish-v2';
 
 const STORAGE_KEY = 'sillyclient-language';
 
