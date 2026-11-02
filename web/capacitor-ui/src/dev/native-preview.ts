@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import type { TarvenEnvPlugin, TarvenEvent, GarbageItem, MaintenanceItem, MaintenanceScan, MaintenanceRecovery } from "../capacitor-plugin";
+import { normalizeRenderEngineSettings } from "../lib/render-settings";
 import { exactInstallTarget } from "../lib/install-location";
 import { validateExternalUrl } from "../lib/external-url";
 import { APP_VERSION } from "../constants/app-version";
@@ -16,6 +17,7 @@ let failMigration = false;
 let failCommands = false;
 let status: Awaited<ReturnType<TarvenEnvPlugin["getStatus"]>> = { serverReady: false, mode: "launcher" };
 let openMode: "webview" | "browser" = "webview";
+let renderEngineSettings = normalizeRenderEngineSettings(null);
 let migrated = new Map<string, string>();
 let scannedInstanceIds = ["preview-local", "preview-second"];
 type DirectorySelection = Awaited<ReturnType<TarvenEnvPlugin["pickDirectory"]>>;
@@ -185,6 +187,8 @@ export const nativePreview: TarvenEnvPlugin = {
   async clearWebViewData() { record("clearWebViewData"); },
   async getSafeInsets() { return { top: 0, bottom: 0, left: 0, right: 0 }; },
   async setPullToRefresh() {},
+  async getRenderEngineSettings() { return { ...renderEngineSettings }; },
+  async setRenderEngineSettings(options) { renderEngineSettings = normalizeRenderEngineSettings(options); },
   async getContentOpenMode() { return { mode: openMode }; },
   async setContentOpenMode(options) { openMode = options.mode; return options; },
   async setRemoteBasicAuth(options) {

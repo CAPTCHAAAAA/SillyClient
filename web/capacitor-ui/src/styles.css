@@ -202,7 +202,6 @@ body,
 .scrollbar-hidden {
   scrollbar-width: none;
   -ms-overflow-style: none;
-  scrollbar-gutter: stable;
   overscroll-behavior-y: none;
 }
 
@@ -242,27 +241,16 @@ body::-webkit-scrollbar,
   -webkit-backdrop-filter: blur(40px) saturate(1.5);
 }
 
-/* 极细融入背景的滚动条 */
+/* 隐藏外露滚动条，彻底杜绝滑动栏露出与宽度挤压 */
 .scrollbar-subtle {
-  scrollbar-width: thin;
-  scrollbar-color: oklch(0.5 0 0 / 0.12) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .scrollbar-subtle::-webkit-scrollbar {
-  width: 4px;
-}
-
-.scrollbar-subtle::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-subtle::-webkit-scrollbar-thumb {
-  background: oklch(0.5 0 0 / 0.12);
-  border-radius: 2px;
-}
-
-.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0 / 0.22);
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* 等宽数字 */
@@ -2179,6 +2167,14 @@ select option {
 
 .app-settings-body {
   min-height: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.app-settings-body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .app-settings-tab-panel {
@@ -2243,6 +2239,59 @@ select option {
 
 .app-settings-actions {
   gap: 7px;
+}
+
+.app-settings-segment {
+  min-width: 84px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+
+.ios-task-surface.is-light .app-settings-segment,
+.app-settings-segment.is-light {
+  background: rgba(26, 22, 37, 0.055);
+  box-shadow: none;
+}
+
+.app-settings-segment-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ios-task-surface.is-light .app-settings-segment-thumb,
+.app-settings-segment.is-light .app-settings-segment-thumb {
+  background: rgba(26, 22, 37, 0.09);
+  box-shadow: none;
+}
+
+.app-settings-segment-btn {
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.app-settings-segment-btn.is-active {
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.ios-task-surface.is-light .app-settings-segment-btn,
+.app-settings-segment.is-light .app-settings-segment-btn {
+  color: rgba(26, 22, 37, 0.46);
+}
+
+.ios-task-surface.is-light .app-settings-segment-btn.is-active,
+.app-settings-segment.is-light .app-settings-segment-btn.is-active {
+  color: rgba(26, 22, 37, 0.92);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app-settings-segment-btn:not(:disabled):not(.is-active):hover {
+    color: rgba(255, 255, 255, 0.76);
+  }
+
+  .ios-task-surface.is-light .app-settings-segment-btn:not(:disabled):not(.is-active):hover,
+  .app-settings-segment.is-light .app-settings-segment-btn:not(:disabled):not(.is-active):hover {
+    color: rgba(26, 22, 37, 0.72);
+  }
 }
 
 .app-settings-action {
@@ -2551,7 +2600,6 @@ select option {
 /* 交互扁平胶囊：一面磨砂，一面光滑。
    磨砂靠背景采样，光面靠顶棱高光。光面仍能透出磨砂，不垫实色。 */
 .manage-panel-surface button.manage-flat,
-.app-settings-action,
 button.flat-capsule {
   position: relative;
   isolation: isolate;
@@ -2568,7 +2616,6 @@ button.flat-capsule {
 }
 
 .manage-panel-surface.is-light button.manage-flat,
-.ios-task-surface.is-light .app-settings-action,
 .is-light button.flat-capsule {
   background: rgba(255, 255, 255, 0.34) !important;
   box-shadow: none !important;
@@ -2583,10 +2630,8 @@ button.flat-capsule[aria-pressed="true"] {
 }
 
 .manage-panel-surface button.manage-flat:hover,
-.app-settings-action:hover,
 button.flat-capsule:hover,
 .manage-panel-surface button.manage-flat:active:not(:disabled),
-.app-settings-action:active:not(:disabled),
 button.flat-capsule:active:not(:disabled) {
   transform: none;
   filter: none;
@@ -2594,27 +2639,23 @@ button.flat-capsule:active:not(:disabled) {
 
 @media (hover: hover) and (pointer: fine) {
   .manage-panel-surface button.manage-flat:hover,
-  .app-settings-action:hover,
   button.flat-capsule:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;
   }
 
   .manage-panel-surface.is-light button.manage-flat:hover,
-  .ios-task-surface.is-light .app-settings-action:hover,
   .is-light button.flat-capsule:hover {
     background-color: rgba(26, 22, 37, 0.075) !important;
   }
 }
 
 .manage-panel-surface button.manage-flat:active:not(:disabled),
-.app-settings-action:active:not(:disabled),
 button.flat-capsule:active:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.035) !important;
   transition-duration: 90ms;
 }
 
 .manage-panel-surface.is-light button.manage-flat:active:not(:disabled),
-.ios-task-surface.is-light .app-settings-action:active:not(:disabled),
 .is-light button.flat-capsule:active:not(:disabled) {
   background-color: rgba(26, 22, 37, 0.09) !important;
 }

@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { X, ChevronRight } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv } from "../../capacitor-plugin";
-import type { ContentOpenMode, AppUpdateInfo } from "../../capacitor-plugin";
+import type { ContentOpenMode, AppUpdateInfo, RenderEngineSettings } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { ToggleSwitch } from "../common/ToggleSwitch";
+import { SegmentedSwitch } from "../common/SegmentedSwitch";
 import type { TavernInstance } from "../../types";
 import { createInstanceBackup } from "../../lib/instance-persistence";
 import { openExternalUrl } from "../../lib/external-links";
@@ -22,6 +23,8 @@ export interface AppSettingsDrawerProps {
   isWeb: boolean;
   pullToRefresh: boolean;
   setPullToRefresh: (v: boolean) => void;
+  renderSettings?: RenderEngineSettings | null;
+  onRenderSettingsChange?: (next: RenderEngineSettings) => void;
   contentOpenMode: ContentOpenMode;
   setContentOpenMode: (m: ContentOpenMode) => void;
   replayOnboarding: () => void;
@@ -131,6 +134,8 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
   isWeb,
   pullToRefresh,
   setPullToRefresh,
+  renderSettings,
+  onRenderSettingsChange,
   contentOpenMode,
   setContentOpenMode,
   replayOnboarding,
@@ -226,6 +231,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
     appSettingsTab,
     isOpen,
     pullToRefresh,
+    renderSettings,
     contentOpenMode,
     instances.length,
     appUpdateState,
@@ -281,10 +287,10 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
         </div>
       </div>
 
-      <div className="app-settings-body flex-1 overflow-y-auto p-5 scrollbar-subtle">
+      <div className="px-5 pt-5 pb-3.5 flex-shrink-0">
         {/* 顶部胶囊切换栏 */}
         <div
-          className="app-settings-tabs ios-choice-track mb-4"
+          className="app-settings-tabs ios-choice-track mb-0"
           role="group"
           aria-label="设置分类"
         >
@@ -306,7 +312,9 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
             </button>
           ))}
         </div>
+      </div>
 
+      <div className="app-settings-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-5 pb-5 scrollbar-hidden">
         {/* 模式切换容器（向导级平滑高度自适应 + 同位驻留高斯模糊交叉溶变） */}
         <div
           className="motion-panel-stack"
@@ -340,6 +348,74 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                   isLight={isLight}
                 />
               </AppSettingsRow>
+              {renderSettings && onRenderSettingsChange && (
+                <>
+                  <AppSettingsRow
+                    label="顶栏变色龙"
+                    desc="进入酒馆后顶栏自动融合页面主色调"
+                  >
+                    <ToggleSwitch
+                      on={renderSettings.immersiveColor}
+                      ariaLabel="顶栏变色龙"
+                      onChange={(enabled) => {
+                        onRenderSettingsChange({
+                          ...renderSettings,
+                          immersiveColor: enabled,
+                          clickEffect: enabled ? renderSettings.clickEffect : false,
+                        });
+                      }}
+                      isLight={isLight}
+                    />
+                  </AppSettingsRow>
+                  <AppSettingsRow
+                    label="取色频率"
+                    desc={
+                      renderSettings.colorExtractionMode === "once"
+                        ? "仅在进入酒馆时采样一次以降低功耗"
+                        : "随酒馆画面变化实时过渡顶栏色彩"
+                    }
+                  >
+                    <SegmentedSwitch
+                      value={renderSettings.colorExtractionMode}
+                      options={[
+                        { id: "realtime", label: "实时" },
+                        { id: "once", label: "单次" },
+                      ]}
+                      disabled={!renderSettings.immersiveColor}
+                      ariaLabel="取色频率"
+                      onChange={(mode) => {
+                        onRenderSettingsChange({
+                          ...renderSettings,
+                          colorExtractionMode: mode,
+                        });
+                      }}
+                      isLight={isLight}
+                    />
+                  </AppSettingsRow>
+                  <AppSettingsRow
+                    label="点击光效"
+                    desc={
+                      renderSettings.immersiveColor
+                        ? "轻触酒馆页面时在顶栏泛起柔光反馈"
+                        : "开启顶栏变色龙后可用"
+                    }
+                  >
+                    <ToggleSwitch
+                      on={renderSettings.immersiveColor && renderSettings.clickEffect}
+                      disabled={!renderSettings.immersiveColor}
+                      ariaLabel="点击光效"
+                      onChange={(enabled) => {
+                        if (!renderSettings.immersiveColor) return;
+                        onRenderSettingsChange({
+                          ...renderSettings,
+                          clickEffect: enabled,
+                        });
+                      }}
+                      isLight={isLight}
+                    />
+                  </AppSettingsRow>
+                </>
+              )}
               {isWindows && (
                 <AppSettingsRow
                   label="系统浏览器"
@@ -376,7 +452,6 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                   isLight={isLight}
                 />
               </AppSettingsRow>
-              <AppSettingsPlaceholder />
             </div>
           </div>
 

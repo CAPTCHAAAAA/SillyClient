@@ -1943,6 +1943,8 @@
         const ensureEdgeBlurs = (doc) => {
           const carousel = doc.querySelector(".carousel-scrollbar-hidden");
           const rect = carousel ? carousel.getBoundingClientRect() : null;
+          const topPx = rect ? `${Math.round(rect.top)}px` : "";
+          const heightPx = rect ? `${Math.round(rect.height)}px` : "";
           for (const side of ["left", "right"]) {
             const id = `preview-edge-blur-${side}`;
             const strip = doc.getElementById(id);
@@ -1959,8 +1961,14 @@
               for (const div of buildEdgeBlurDivs(doc, side)) node.appendChild(div);
               doc.body.appendChild(node);
             }
-            node.style.top = `${Math.round(rect.top)}px`;
-            node.style.height = `${Math.round(rect.height)}px`;
+            if (node.__lastTop !== topPx) {
+              node.__lastTop = topPx;
+              node.style.top = topPx;
+            }
+            if (node.__lastHeight !== heightPx) {
+              node.__lastHeight = heightPx;
+              node.style.height = heightPx;
+            }
           }
         };
 
@@ -2069,6 +2077,7 @@
           const cards = doc.querySelectorAll(
             '.motion-instance-card:not([data-create-card])'
           );
+          const pendingWrites = [];
           cards.forEach((card) => {
             const content = Array.from(card.children).find((node) =>
               node.classList &&
@@ -2084,14 +2093,7 @@
             if (!accordion || accordionIndex < 2) return;
 
             const subtitle = contentChildren[accordionIndex - 2];
-            if (!subtitle.classList.contains('preview-card-subtitle')) {
-              subtitle.classList.add('preview-card-subtitle');
-            }
             const status = contentChildren[accordionIndex - 1];
-            if (!status.classList.contains('preview-card-status')) {
-              status.classList.add('preview-card-status');
-            }
-
             const detailList = accordion.querySelector('.motion-accordion-inner > div');
             if (!detailList) return;
 
@@ -2101,16 +2103,25 @@
             const rawTitleLift = detailTop - 8 - expandedTitleHeight - subtitle.offsetTop;
             const titleLift = Math.max(-96, Math.min(-60, Math.round(rawTitleLift)));
             const titleLiftValue = `${titleLift}px`;
+            pendingWrites.push({ content, accordion, subtitle, status, titleLiftValue });
+          });
+
+          for (const { content, accordion, subtitle, status, titleLiftValue } of pendingWrites) {
+            if (!subtitle.classList.contains('preview-card-subtitle')) {
+              subtitle.classList.add('preview-card-subtitle');
+            }
+            if (!status.classList.contains('preview-card-status')) {
+              status.classList.add('preview-card-status');
+            }
             if (content.style.getPropertyValue('--card-title-lift') !== titleLiftValue) {
               content.style.setProperty('--card-title-lift', titleLiftValue);
             }
-
             if (accordion.classList.contains('is-open') && accordion.hasAttribute('inert')) {
               accordion.removeAttribute('inert');
             } else if (!accordion.classList.contains('is-open') && !accordion.hasAttribute('inert')) {
               accordion.setAttribute('inert', '');
             }
-          });
+          }
         };
 
         // —— 卡片轻微 3D 倾斜跟随鼠标（隔离架构）：
@@ -2573,6 +2584,7 @@
               timer = 0;
               if (!button.isConnected || frame.contentDocument !== doc) return;
               tuningPanelConcealed = !tuningPanelConcealed;
+              if (!tuningPanelConcealed) ensureTuningPanel(doc);
               syncTuningPanelVisibility(doc);
               consumeClick = true;
               if (consumeTimer) view.clearTimeout(consumeTimer);
@@ -3137,7 +3149,7 @@
             sfThemeTick(doc);
             return;
           }
-          if (!doc.body) return;
+          if (!doc.body || tuningPanelConcealed) return;
 
           panel = doc.createElement("div");
           panel.className = "preview-tuning-panel preview-tuning-panel--draggable";

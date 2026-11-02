@@ -1,24 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef, useCallback, useMemo, startTransition } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Menu,
   ChevronDown,
-  Check,
   X,
-  Play,
   Search,
   Folder,
   Cloud,
-  ChevronLeft,
-  ChevronRight,
   Terminal,
 } from "lucide-react";
 import { cn, normalizeStoredVersion, formatDisplayVersion } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
-import { TarvenEnv, DEFAULT_CONFIG } from "@/capacitor-plugin";
+import { TarvenEnv, DEFAULT_CONFIG, normalizeRenderEngineSettings } from "@/capacitor-plugin";
 import { openExternalUrl } from "@/lib/external-links";
-import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, InstallPathMode, GithubRelease, GarbageItem, TarvenEvent, PreinstalledExtensionId } from "@/capacitor-plugin";
-import { buildInstanceSubfolder, cleanInstallPath, exactInstallTarget, installationSelection, sanitizeFolderName } from "@/lib/install-location";
+import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, InstallPathMode, GithubRelease, GarbageItem, TarvenEvent, PreinstalledExtensionId, RenderEngineSettings } from "@/capacitor-plugin";
+import { buildInstanceSubfolder, cleanInstallPath, installationSelection, sanitizeFolderName } from "@/lib/install-location";
 import { normalizeStoredInstances, serializeInstanceRecords, parseInstanceBackup, type StoredInstance } from "@/lib/instance-persistence";
 import { GLOBAL_LOG_KEY, instanceLogs, type LogLine } from "@/lib/log-store";
 import { OperationCoordinator, OperationCancelledError, type OperationContext } from "@/lib/operation-coordinator";
@@ -45,7 +41,7 @@ import { VersionDropdownMenu } from "@/components/modals/VersionDropdownMenu";
 import { CardActionMenu } from "@/components/modals/CardActionMenu";
 import { LaunchConsoleModal } from "@/components/modals/LaunchConsoleModal";
 import { UnlockInstanceModal } from "@/components/modals/UnlockInstanceModal";
-import type { TavernInstance, ManageTab, BgMode, ThemeStyle, OperationPurpose } from "@/types";
+import type { TavernInstance, BgMode, ThemeStyle, OperationPurpose } from "@/types";
 
 export const Route = createFileRoute("/")({
   component: SillyClientLauncher,
@@ -152,6 +148,18 @@ const SC_BORDEAUX_PRESET: CompanionPresetSelection = {
   revision: 1,
 };
 
+const LOGO_FONTS = [
+  { name: "Yummy", family: "'Yummy', sans-serif" },
+  { name: "Arcade Raiders", family: "'Arcade Raiders', sans-serif" },
+  { name: "Noisy Walk", family: "'Noisy Walk', sans-serif" },
+  { name: "Stay Pixel", family: "'Stay Pixel', sans-serif" },
+  { name: "04B 30", family: "'04B 30', sans-serif" },
+  { name: "Pixel Chaos", family: "'Pixel Chaos', sans-serif" },
+  { name: "Soap", family: "'Soap', sans-serif" },
+  { name: "Syndra", family: "'Syndra', sans-serif" },
+  { name: "Dynamic Display", family: "'Dynamic Display', sans-serif" },
+] as const;
+
 function formatOperationStage(stage?: string, percent?: number) {
   const value = (stage || "").toLowerCase();
   if (value.includes("download")) return percent ? `正在下载当前版本 · ${percent}%` : "正在下载当前版本";
@@ -204,6 +212,8 @@ function SillyClientLauncher() {
       || Capacitor.getPlatform() === "windows"
     );
   const isAndroid = Capacitor.getPlatform() === "android";
+  const isIOS = Capacitor.getPlatform() === "ios";
+  const isMobile = isAndroid || isIOS;
   const terminalTitle = isWindows ? "Windows 控制台" : "Android 终端";
   const terminalPrompt = isWindows ? "C:\\>" : "~ $";
   const terminalBanner = isWindows
@@ -252,8 +262,6 @@ function SillyClientLauncher() {
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const [showTerminal, setShowTerminal] = useState(false);
   const [isTerminalClosing, setIsTerminalClosing] = useState(false);
-  const [terminalSize, setTerminalSize] = useState({ w: 640, h: 340 });
-  const [terminalFontSize, setTerminalFontSize] = useState(12);
   const operations = useMemo(() => new OperationCoordinator(), []);
   const [launchLogKey, setLaunchLogKey] = useState<string | null>(null);
   const lastMigration = useRef<Parameters<typeof TarvenEnv.migrateInstance>[0] | null>(null);
@@ -284,17 +292,6 @@ function SillyClientLauncher() {
   }, []);
 
   // Logo 字体切换
-  const logoFonts = [
-    { name: 'Yummy', family: "'Yummy', sans-serif" },
-    { name: 'Arcade Raiders', family: "'Arcade Raiders', sans-serif" },
-    { name: 'Noisy Walk', family: "'Noisy Walk', sans-serif" },
-    { name: 'Stay Pixel', family: "'Stay Pixel', sans-serif" },
-    { name: '04B 30', family: "'04B 30', sans-serif" },
-    { name: 'Pixel Chaos', family: "'Pixel Chaos', sans-serif" },
-    { name: 'Soap', family: "'Soap', sans-serif" },
-    { name: 'Syndra', family: "'Syndra', sans-serif" },
-    { name: 'Dynamic Display', family: "'Dynamic Display', sans-serif" },
-  ];
   const [logoFontIndex, setLogoFontIndex] = useState(0);
 
   // 实例卡片状态
@@ -304,13 +301,8 @@ function SillyClientLauncher() {
   const [maintenanceInstance, setMaintenanceInstance] = useState<TavernInstance | null>(null);
   const closeMaintenance = useCallback(() => setMaintenanceInstance(null), []);
   const [isManagePanelClosing, setIsManagePanelClosing] = useState(false);
-  const [manageTab, setManageTab] = useState<ManageTab>("launch");
-  const [manageSearchQuery, setManageSearchQuery] = useState("");
-  const [manageFilter, setManageFilter] = useState<"all" | "local" | "remote">("all");
-  const [manageMoreOpen, setManageMoreOpen] = useState(false);
   const [showAppMenu, setShowAppMenu] = useState(false);
   const [isAppMenuClosing, setIsAppMenuClosing] = useState(false);
-  const [appSettingsTab, setAppSettingsTab] = useState<"general" | "data" | "maintenance">("general");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [createCardSlot, setCreateCardSlot] = useState(0);
@@ -343,7 +335,6 @@ function SillyClientLauncher() {
   // 搜索
   const [searchQuery, setSearchQuery] = useState("");
   // 终端输入
-  const [terminalInput, setTerminalInput] = useState("");
   const [terminalInstanceId, setTerminalInstanceId] = useState<string | null>(null);
   const terminalLogTarget = useRef(GLOBAL_LOG_KEY);
   terminalLogTarget.current = instances.find(instance => instance.id === terminalInstanceId)?.installDir
@@ -389,6 +380,36 @@ function SillyClientLauncher() {
   useEffect(() => {
     TarvenEnv.setPullToRefresh({ enabled: pullToRefresh }).catch(() => {});
   }, [pullToRefresh]);
+  const canPreviewRenderSettings = isWeb && isLocalPreview && !isWindows;
+  const [renderSettings, setRenderSettings] = useState<RenderEngineSettings | null>(
+    () => (canPreviewRenderSettings ? normalizeRenderEngineSettings(null) : null),
+  );
+  const renderHydrated = useRef(canPreviewRenderSettings);
+  const commitRenderSettings = useCallback(
+    (next: RenderEngineSettings) => {
+      if ((!isMobile && !canPreviewRenderSettings) || !renderHydrated.current) return;
+      const normalized = normalizeRenderEngineSettings(next);
+      setRenderSettings(normalized);
+      if (isMobile) {
+        TarvenEnv.setRenderEngineSettings(normalized).catch(() => {});
+      }
+    },
+    [isMobile, canPreviewRenderSettings],
+  );
+  useEffect(() => {
+    if (!isMobile) return;
+    let cancelled = false;
+    TarvenEnv.getRenderEngineSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        setRenderSettings(normalizeRenderEngineSettings(settings));
+        renderHydrated.current = true;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isMobile]);
   const [contentOpenMode, setContentOpenMode] = useState<ContentOpenMode>("webview");
   const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo | null>(() => import.meta.env.DEV
     ? {
@@ -406,7 +427,6 @@ function SillyClientLauncher() {
   const [verDropdownOpen, setVerDropdownOpen] = useState(false);
   const [isVerDropdownClosing, setIsVerDropdownClosing] = useState(false);
   const [verDropdownPos, setVerDropdownPos] = useState({ bottom: 0, left: 0, width: 0, maxHeight: 360 });
-  const versionDropdownRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<InstanceCarouselRef>(null);
   const terminalBtnRef = useRef<HTMLButtonElement>(null);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
@@ -416,18 +436,7 @@ function SillyClientLauncher() {
   const renameCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [terminalPos, setTerminalPos] = useState({ left: 16, right: 16 });
-  const [isLaunchMinimized, setIsLaunchMinimized] = useState(false);
   const [externallyRenamingId, setExternallyRenamingId] = useState<string | null>(null);
-
-  // 向导模式平滑过渡 (本地 / 远程)
-  const wizardLocalRef = useRef<HTMLDivElement>(null);
-  const wizardRemoteRef = useRef<HTMLDivElement>(null);
-  const [wizardHeight, setWizardHeight] = useState<number | undefined>(undefined);
-
-  // 背景设置模式平滑过渡 (基础 / 自定义)
-  const bgDynamicRef = useRef<HTMLDivElement>(null);
-  const bgCustomRef = useRef<HTMLDivElement>(null);
-  const [bgContentHeight, setBgContentHeight] = useState<number | undefined>(undefined);
 
   // 下拉刷新启动页
   const [pullDistance, setPullDistance] = useState(0);
@@ -467,12 +476,6 @@ function SillyClientLauncher() {
   const isLight = bgMode === "custom" && themeStyle === "light";
   const isDynamic = bgMode === "dynamic";
 
-  const normalizedManageSearch = manageSearchQuery.trim().toLowerCase();
-  const filteredManageInstances = instances.filter(instance => {
-    const matchesFilter = manageFilter === "all" || instance.type === manageFilter;
-    const haystack = `${instance.name} ${instance.subtitle || ""} ${instance.url || ""}`.toLowerCase();
-    return matchesFilter && (!normalizedManageSearch || haystack.includes(normalizedManageSearch));
-  });
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return [];
@@ -882,40 +885,6 @@ function SillyClientLauncher() {
     setNewInstanceError(null);
     directoryPickerGeneration.current += 1;
   }, []);
-
-  // 向导容器自适应平滑高度测量
-  useEffect(() => {
-    const activeEl = newInstanceMode === "local" ? wizardLocalRef.current : wizardRemoteRef.current;
-    if (!activeEl) return;
-    setWizardHeight(activeEl.offsetHeight);
-
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.target === activeEl) {
-          setWizardHeight(entry.target.clientHeight || entry.contentRect.height);
-        }
-      }
-    });
-    ro.observe(activeEl);
-    return () => ro.disconnect();
-  }, [newInstanceMode, newInstanceCompanionPresetEnabled, showNewInstancePanel, newRemoteAuthEnabled]);
-
-  // 背景设置容器自适应平滑高度测量
-  useEffect(() => {
-    const activeEl = bgMode === "dynamic" ? bgDynamicRef.current : bgCustomRef.current;
-    if (!activeEl) return;
-    setBgContentHeight(activeEl.offsetHeight);
-
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.target === activeEl) {
-          setBgContentHeight(entry.target.clientHeight || entry.contentRect.height);
-        }
-      }
-    });
-    ro.observe(activeEl);
-    return () => ro.disconnect();
-  }, [bgMode, showBgPanel, customWallpaperUrl]);
 
   // 背景模式与主题风格持久化到 localStorage
   useEffect(() => {
@@ -1381,7 +1350,6 @@ function SillyClientLauncher() {
     }
     if (operations.current !== remainingOperation) return;
     setInstances(prev => prev.map(t => t.id === instance.id ? { ...t, status: "stopped" } : t));
-    setIsLaunchMinimized(false);
   }, [operations]);
 
   const provisionCreatedInstance = useCallback(async (instance: TavernInstance, operation: OperationContext) => {
@@ -1799,48 +1767,6 @@ function SillyClientLauncher() {
     }
   }, [lastLaunchParams, operationPurpose, doLaunch, openRemoteInstance, provisionCreatedInstance, migrateCreatedInstance, operations, setLaunchLogs]);
 
-  /** 终端拖拽调整大小(同时支持鼠标与触屏)。 */
-  const startResize = (clientX: number, clientY: number) => {
-    const startX = clientX;
-    const startY = clientY;
-    const startW = terminalSize.w;
-    const startH = terminalSize.h;
-    const onMove = (mx: number, my: number) => {
-      const newW = Math.min(Math.max(startW + mx - startX, 320), window.innerWidth - 32);
-      const newH = Math.min(Math.max(startH + my - startY, 200), window.innerHeight - 112);
-      setTerminalSize({ w: newW, h: newH });
-    };
-    const onMouseMove = (ev: MouseEvent) => onMove(ev.clientX, ev.clientY);
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-    const onTouchMove = (ev: TouchEvent) => { const t = ev.touches[0]; onMove(t.clientX, t.clientY); };
-    const onTouchEnd = () => {
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', onTouchEnd);
-      document.body.style.userSelect = '';
-    };
-    document.body.style.cursor = 'se-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-    document.addEventListener('touchend', onTouchEnd);
-  };
-
-  const getStatusText = (status: TavernInstance["status"]) => {
-    switch (status) {
-      case "running": return "运行中";
-      case "stopped": return "已停止";
-      case "error": return "错误";
-      case "online": return "在线";
-      case "offline": return "离线";
-    }
-  };
-
   const closeCardMenu = useCallback(() => {
     if (cardMenuCloseTimerRef.current) clearTimeout(cardMenuCloseTimerRef.current);
     setIsCardMenuClosing(true);
@@ -1957,7 +1883,6 @@ function SillyClientLauncher() {
       msg: `${instance.subtitle || instance.name} · 实例终端${instance.type === "remote" ? "（远程实例不支持本地命令）" : ""}`,
       level: "info",
     });
-    setTerminalInput("");
     setIsTerminalClosing(false);
     setShowTerminal(true);
   }, []);
@@ -1975,10 +1900,6 @@ function SillyClientLauncher() {
     if (cardMenuCloseTimerRef.current) clearTimeout(cardMenuCloseTimerRef.current);
 
     setIsManagePanelClosing(false);
-    setManageTab("launch");
-    setManageSearchQuery("");
-    setManageFilter("all");
-    setManageMoreOpen(false);
     setTerminalInstanceId(instance.id);
     setIsCardMenuClosing(true);
 
@@ -2003,15 +1924,6 @@ function SillyClientLauncher() {
       setIsVerDropdownClosing(false);
     }, POPOVER_EXIT_MS);
   }, [isVerDropdownClosing, verDropdownOpen]);
-
-  useEffect(() => {
-    if (!verDropdownOpen || isVerDropdownClosing) return;
-    const frame = requestAnimationFrame(() => {
-      const menu = versionDropdownRef.current;
-      if (menu) menu.scrollTop = menu.scrollHeight;
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [isVerDropdownClosing, releases.length, verDropdownOpen]);
 
   const confirmDeleteInstance = useCallback(async () => {
     if (!pendingDelete || isDeletingInstance) return;
@@ -2072,8 +1984,6 @@ function SillyClientLauncher() {
     managePanelCloseTimerRef.current = setTimeout(() => {
       setShowManagePanel(null);
       setIsManagePanelClosing(false);
-      setManageTab("launch");
-      setManageMoreOpen(false);
       setTerminalInstanceId(null);
       managePanelCloseTimerRef.current = null;
     }, PANEL_EXIT_MS);
@@ -2194,7 +2104,6 @@ function SillyClientLauncher() {
     setTimeout(() => {
       setShowAppMenu(false);
       setIsAppMenuClosing(false);
-      setAppSettingsTab("general");
     }, PANEL_EXIT_MS);
   }, []);
 
@@ -2578,7 +2487,6 @@ function SillyClientLauncher() {
                   if (!instance) {
                     setTerminalInstanceId(null);
                     setTerminalLogs([{ msg: "请先选择一个实例，再打开实例终端", level: "info" }]);
-                    setTerminalInput("");
                     setIsTerminalClosing(false);
                     setShowTerminal(true);
                     return;
@@ -2612,7 +2520,6 @@ function SillyClientLauncher() {
                 closeAppMenu();
               } else {
                 setUpdatePromptDismissed(true);
-                setAppSettingsTab("general");
                 setShowAppMenu(true);
               }
             }}
@@ -2681,11 +2588,11 @@ function SillyClientLauncher() {
         }}
       >
         {/* Logo */}
-        <div className="mb-4 text-center select-none cursor-pointer group" onClick={() => setLogoFontIndex(prev => (prev + 1) % logoFonts.length)} title={`点击切换字体 (${logoFonts[logoFontIndex].name})`}>
+        <div className="mb-4 text-center select-none cursor-pointer group" onClick={() => setLogoFontIndex(prev => (prev + 1) % LOGO_FONTS.length)} title={`点击切换字体 (${LOGO_FONTS[logoFontIndex].name})`}>
           <span
             className="inline-block text-[clamp(3rem,10vw,7.5rem)] font-normal leading-none transition-all duration-300"
             style={{
-              fontFamily: logoFonts[logoFontIndex].family,
+              fontFamily: LOGO_FONTS[logoFontIndex].family,
               letterSpacing: '0.03em',
             }}
           >
@@ -2695,7 +2602,7 @@ function SillyClientLauncher() {
           <div className={cn(
             "text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
             isLight ? "text-[#1a1625]/25" : "text-white/25"
-          )}>{logoFonts[logoFontIndex].name}</div>
+          )}>{LOGO_FONTS[logoFontIndex].name}</div>
         </div>
 
         {/* 搜索栏 */}
@@ -2924,6 +2831,8 @@ function SillyClientLauncher() {
         isWeb={isWeb}
         pullToRefresh={pullToRefresh}
         setPullToRefresh={setPullToRefresh}
+        renderSettings={renderSettings}
+        onRenderSettingsChange={commitRenderSettings}
         contentOpenMode={contentOpenMode}
         setContentOpenMode={setContentOpenMode}
         replayOnboarding={replayOnboarding}
@@ -3059,7 +2968,6 @@ function SillyClientLauncher() {
             if (operations.current !== expected) return;
             setShowLaunchPanel(false);
             setIsLaunchPanelClosing(false);
-            setIsLaunchMinimized(true);
           }, PANEL_EXIT_MS);
         }}
         onEnterTavern={async (params: any) => {

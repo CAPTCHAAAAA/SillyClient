@@ -7,6 +7,7 @@ interface ToggleSwitchProps {
   onChange?: (v: boolean) => void;
   isLight: boolean;
   ariaLabel?: string;
+  disabled?: boolean;
 }
 
 export function ToggleSwitch({
@@ -15,6 +16,7 @@ export function ToggleSwitch({
   onChange,
   isLight,
   ariaLabel,
+  disabled = false,
 }: ToggleSwitchProps) {
   const [internal, setInternal] = useState(defaultOn);
   const isControlled = on !== undefined;
@@ -27,12 +29,15 @@ export function ToggleSwitch({
       aria-label={ariaLabel}
       aria-checked={value}
       aria-pressed={value}
+      disabled={disabled}
       onClick={() => {
+        if (disabled) return;
         if (!isControlled) setInternal(!internal);
         onChange?.(!value);
       }}
       className={cn(
-        "relative w-10 h-[22px] cursor-pointer rounded-full transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "relative w-10 h-[22px] rounded-full transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
         value
           ? isLight
             ? "bg-[#1a1625]/60"

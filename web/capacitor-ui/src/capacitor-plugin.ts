@@ -1,4 +1,7 @@
 import { registerPlugin, PluginListenerHandle } from '@capacitor/core'
+import { type RenderEngineSettings, normalizeRenderEngineSettings } from './lib/render-settings'
+
+export { type RenderEngineSettings, normalizeRenderEngineSettings }
 
 /**
  * TarvenEnv 插件 —— 由原生侧 com.sillyclient.plugin.TarvenEnvPlugin 实现。
@@ -221,6 +224,10 @@ export interface TarvenEnvPlugin {
 
   /** 启用/禁用酒馆 WebView 下拉刷新。 */
   setPullToRefresh(options: { enabled: boolean }): Promise<void>
+
+  /** 获取和设置酒馆沉浸式页面渲染设置（取色开关、全时/单次取色模式、点击光效）。 */
+  getRenderEngineSettings(): Promise<RenderEngineSettings>
+  setRenderEngineSettings(options: RenderEngineSettings): Promise<void>
 
   /** Windows: 获取和保存酒馆内容的全局打开方式。 */
   getContentOpenMode(): Promise<{ mode: ContentOpenMode }>
