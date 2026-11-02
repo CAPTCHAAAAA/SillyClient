@@ -585,7 +585,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   const handleCardPointerDown = useCallback((slotIndex: number, e: React.PointerEvent) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement | null;
-    if (target?.closest("button, input, textarea, select, [contenteditable='true'], .ios-task-surface, a")) {
+    if (target?.closest("button, input, textarea, select, [contenteditable='true'], .ios-task-surface, .flip-card[data-card-running='true'], a")) {
       return;
     }
 

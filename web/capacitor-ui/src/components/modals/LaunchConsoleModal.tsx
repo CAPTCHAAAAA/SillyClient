@@ -1,6 +1,7 @@
 import React from "react";
 import { Play, LoaderCircle, X } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { menuNestedWash } from "../../lib/menu-surface";
 import { LAYERS } from "../../constants/layers";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 
@@ -44,6 +45,7 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
   onEnterTavern,
 }) => {
   const launchLogs = useInstanceLogs(logKey, isOpen || isClosing);
+  const isDynamic = glassBg.includes("1c1420");
   if (!isOpen && !isClosing) return null;
 
   return (
@@ -148,12 +150,9 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
       <div className="mx-6 mb-5">
         <div
           className={cn(
-            "rounded-2xl overflow-hidden max-h-[200px] overflow-y-auto",
-            "border shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_0.5px_0_rgba(0,0,0,0.2)]",
-            isLight
-              ? "bg-black/[0.04] border-black/[0.1]"
-              : "bg-black/[0.32] border-white/[0.03]"
+            "rounded-2xl overflow-hidden max-h-[200px] overflow-y-auto scrollbar-hidden border-0"
           )}
+          style={{ background: menuNestedWash(isLight, isDynamic) }}
         >
           <div data-native-log-list className="px-4 py-3 text-[11px] leading-[1.7] space-y-1">
             {launchLogs.map((log, i) => (

@@ -98,12 +98,21 @@
 
 .flip-card[data-reordering="true"] .flip-card__rotor {
   transform: perspective(1100px) translate3d(0, calc(var(--reorder-lift, 0) * -18px), 0) scale(calc(1 + var(--reorder-lift, 0) * 0.052)) rotateX(0deg) rotateY(0deg) !important;
-  box-shadow:
-    0 calc(var(--sf-sh-y, 7px) + var(--reorder-lift, 0) * 17px) calc(var(--sf-sh-blur, 26px) + var(--reorder-lift, 0) * 24px) rgba(var(--sf-sh-rgb, 7 5 10) / calc(var(--sf-sh-a, 0.375) + var(--reorder-lift, 0) * 0.16)),
-    0 calc(var(--reorder-lift, 0) * 10px) calc(var(--reorder-lift, 0) * 22px) -2px rgba(0, 0, 0, calc(var(--reorder-lift, 0) * 0.16)) !important;
+  box-shadow: none !important;
   border: none !important;
   outline: none !important;
   transition: none !important;
+}
+
+.flip-card[data-reordering="true"] .flip-card__rotor::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--fc-radius, 26px) - 1px);
+  pointer-events: none;
+  box-shadow:
+    0 calc(var(--sf-sh-y, 7px) + var(--reorder-lift, 0) * 17px) calc(var(--sf-sh-blur, 26px) + var(--reorder-lift, 0) * 24px) rgba(var(--sf-sh-rgb, 7 5 10) / calc(var(--sf-sh-a, 0.375) + var(--reorder-lift, 0) * 0.16)),
+    0 calc(var(--reorder-lift, 0) * 10px) calc(var(--reorder-lift, 0) * 22px) -2px rgba(0, 0, 0, calc(var(--reorder-lift, 0) * 0.16));
 }
 
 /* 4. 放手落位平滑吸附过渡 */
@@ -317,6 +326,7 @@ body[data-preview-dark-mode] .flip-card .motion-instance-card[data-create-card]:
 
 /* 避免 FlipCard 内部的子卡片产生二次重复缩放导致的撕裂脱节，由外层 .flip-card 统一承载 3D 阴影一体化按压下沉 */
 .flip-card .motion-instance-card:active {
+  opacity: 1;
   transform: none !important;
 }
 
@@ -420,6 +430,7 @@ body[data-preview-light] .flip-card[data-reordering="true"]:not(:has([data-froze
 
 .flip-card__face--back {
   transform: rotateY(180deg);
+  background: transparent;
 }
 
 .flip-card[data-axis='x'] .flip-card__face--back {

@@ -126,7 +126,6 @@ function saveInstances(list: TavernInstance[]) {
   }
 }
 
-/** 仅 Vite 开发预览使用，不进入正式构建与本地存储。 */
 const DEMO_INSTANCE: TavernInstance = {
   id: "demo-instance",
   name: "演示实例",
@@ -141,6 +140,12 @@ const DEMO_INSTANCE: TavernInstance = {
   port: 8000,
   icon: <Folder className="w-5 h-5" />,
 };
+
+const DEMO_RUNNING_INSTANCES: TavernInstance[] = [
+  { ...DEMO_INSTANCE, subtitle: "主酒馆 · 运行中" },
+  { ...DEMO_INSTANCE, id: "demo-running-second", name: "SillyTavern", subtitle: "测试酒馆 · 运行中", version: "1.19.0", port: 8001 },
+  { ...DEMO_INSTANCE, id: "demo-running-third", name: "SillyTavern", subtitle: "备用酒馆 · 运行中", version: "stable", port: 8002 },
+];
 
 
 const SC_BORDEAUX_PRESET: CompanionPresetSelection = {
@@ -202,7 +207,6 @@ function SillyClientLauncher() {
   const isShowcase = showcaseParams.get("showcase") === "1";
   const isLocalPreview = /^(127\.0\.0\.1|localhost)$/.test(window.location.hostname);
   const isNativePreview = import.meta.env.DEV && showcaseParams.get("nativePreview") === "1";
-  const isDemoPreview = import.meta.env.DEV && isWeb && !isShowcase;
   const showcaseSafeTop = isShowcase
     ? Math.max(0, Number(showcaseParams.get("safeTop")) || 52)
     : 0;
@@ -214,6 +218,8 @@ function SillyClientLauncher() {
   const isAndroid = Capacitor.getPlatform() === "android";
   const isIOS = Capacitor.getPlatform() === "ios";
   const isMobile = isAndroid || isIOS;
+  const isDemoPreview = isWeb && !isWindows && !isShowcase && !isNativePreview
+    && (import.meta.env.DEV || (isLocalPreview && window.location.port === "8768"));
   const terminalTitle = isWindows ? "Windows 控制台" : "Android 终端";
   const terminalPrompt = isWindows ? "C:\\>" : "~ $";
   const terminalBanner = isWindows
@@ -236,7 +242,7 @@ function SillyClientLauncher() {
   const [instances, setInstances] = useState<TavernInstance[]>(() => {
     if (isShowcase) return [];
     const loaded = loadInstances();
-    return isDemoPreview ? [DEMO_INSTANCE, ...loaded] : loaded;
+    return isDemoPreview ? [...DEMO_RUNNING_INSTANCES, ...loaded] : loaded;
   });
   const [showBgPanel, setShowBgPanel] = useState(false);
   const [isPanelClosing, setIsPanelClosing] = useState(false);
@@ -646,7 +652,7 @@ function SillyClientLauncher() {
 
   // 原生进程被系统结束后，持久化的 running 状态可能已经失效。
   useEffect(() => {
-    if (isShowcase) return;
+    if (isShowcase || isDemoPreview) return;
     (async () => {
       try {
         const status = await TarvenEnv.getStatus();
@@ -661,7 +667,7 @@ function SillyClientLauncher() {
         /* 浏览器环境没有原生运行状态。 */
       }
     })();
-  }, [isShowcase]);
+  }, [isShowcase, isDemoPreview]);
 
   // 安全 insets(挖孔避让) — 原生返回物理像素,需除以 devicePixelRatio 转为 CSS 像素
   // 用 useLayoutEffect + 轮询确保 insets 就绪(首次 mount 时可能返回 0)

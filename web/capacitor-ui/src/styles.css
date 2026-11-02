@@ -165,24 +165,17 @@ select:focus-visible {
     line-height: 1.47;
   }
 
-  /* 滚动条 - Liquid Glass 风格 */
-  ::-webkit-scrollbar {
-    width: 3px;
-    height: 3px;
+  /* 滚动功能保留，滚动条本身不占位、不露出。 */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
-
-  ::-webkit-scrollbar-thumb {
-    background: oklch(0.5 0 0 / 0.3);
-    border-radius: 1.5px;
-  }
-
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.6 0 0 / 0.4);
-}
 
 .carousel-scrollbar-hidden {
   scrollbar-width: none;
@@ -647,7 +640,7 @@ button:active:not(:disabled) {
 }
 
 /* 搜索栏 — iOS Search Bar 风格 */
-input[type="text"][placeholder] {
+input[type="text"][placeholder]:not(.terminal-command-input) {
   font-size: 15px;
   letter-spacing: -0.01em;
 }
@@ -1072,6 +1065,18 @@ header span[class*="truncate"] {
   inset: 0;
   background-color: var(--plate-base, #1a1625);
   opacity: 0;
+}
+
+.terminal-command-input {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  line-height: inherit;
 }
 
 .motion-instance-card.is-expanded {
@@ -2660,7 +2665,7 @@ button.flat-capsule:active:not(:disabled) {
   background-color: rgba(26, 22, 37, 0.09) !important;
 }
 
-.reading-flat-surface input,
+.reading-flat-surface input:not(.terminal-command-input):not([type="range"]),
 .reading-flat-surface textarea,
 .reading-flat-surface .ios-field-control,
 .reading-flat-surface button.border:not(.ios-choice-control):not(.rounded-full):not(.flat-capsule) {
@@ -2672,7 +2677,7 @@ button.flat-capsule:active:not(:disabled) {
   box-shadow: none !important;
 }
 
-.reading-flat-surface.is-light input,
+.reading-flat-surface.is-light input:not(.terminal-command-input):not([type="range"]),
 .reading-flat-surface.is-light textarea,
 .reading-flat-surface.is-light .ios-field-control,
 .reading-flat-surface.is-light button.border:not(.ios-choice-control):not(.rounded-full):not(.flat-capsule) {

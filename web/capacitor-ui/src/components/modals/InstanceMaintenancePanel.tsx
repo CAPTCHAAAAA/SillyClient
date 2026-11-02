@@ -140,7 +140,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
             onClick={() => { setTab(view); void refresh(view); }}>{view === "scan" ? "待处理" : "恢复记录"}</button>)}
         </div>
       </div>
-      <div className="min-h-0 overflow-y-auto px-5 pb-4 scrollbar-subtle" style={{ scrollbarGutter: "stable" }}>
+      <div className="min-h-0 overflow-y-auto px-5 pb-4 scrollbar-hidden">
         {error && <div role="alert" className="text-xs text-red-400 whitespace-pre-wrap break-words mb-3">{error}</div>}
         {summary && <div role="status" className={cn("text-xs mb-3", text)}>{summary}</div>}
         {warnings.map((warning, index) => <div key={index} className={cn("text-[10px] break-words mb-2", subtle)}>{warning}</div>)}

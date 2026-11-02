@@ -14,6 +14,7 @@ import { LAYERS } from "../../constants/layers";
 import type { TavernInstance, ManageTab, BgMode, ThemeStyle } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { instanceLogs } from "../../lib/log-store";
+import { MENU_GLASS_FILTER, menuNestedWash, menuShellBackground, terminalWellSurface } from "../../lib/menu-surface";
 import { CornerResizeCurve } from "./CornerResizeCurve";
 
 const MANAGE_IMAGE_W = 1254;
@@ -70,11 +71,7 @@ function manageRecessedGlass(isLight: boolean): React.CSSProperties {
  */
 function manageReadingWell(isLight: boolean, isDynamic: boolean): React.CSSProperties {
   return {
-    background: isLight
-      ? "rgba(255,255,255,0.46)"
-      : isDynamic
-        ? "rgba(255,255,255,0.12)"
-        : "rgba(255,255,255,0.10)",
+    background: menuNestedWash(isLight, isDynamic),
   };
 }
 
@@ -841,13 +838,9 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         height: isPortrait ? "100%" : shellH / MANAGE_VISUAL_SCALE,
         borderRadius: isPortrait ? 32 : manageEm(49),
         padding: isPortrait ? "14px 14px 12px" : `${manageEm(27)} ${manageEm(27)} ${manageEm(23)}`,
-        background: isLight
-          ? "rgba(255,255,255,0.70)"
-          : isDynamic
-            ? "rgba(28,20,32,0.70)"
-            : "rgba(26,22,37,0.80)",
-        backdropFilter: "blur(40px) saturate(1.8)",
-        WebkitBackdropFilter: "blur(40px) saturate(1.8)",
+        background: menuShellBackground(isLight, isDynamic),
+        backdropFilter: MENU_GLASS_FILTER,
+        WebkitBackdropFilter: MENU_GLASS_FILTER,
       }}
     >
       {/* 顶部统一控制栏 (Movie navigation: 1200px × 49px, 下间距 28px) */}
@@ -1591,12 +1584,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                   className="flex h-full min-h-0 flex-col overflow-hidden text-white/78"
                   style={{
                     borderRadius: manageEm(MANAGE_PANE_RADIUS - MANAGE_NEST_INSET),
-                    background: isLight
-                      ? "rgba(22,18,28,0.90)"
-                      : isDynamic
-                        ? "oklch(0.18 0.014 350 / 0.84)"
-                        : "oklch(0.17 0.008 260 / 0.84)",
-                    boxShadow: "inset 0 1px 1.5px rgba(0,0,0,0.35), inset 0 -0.5px 0 rgba(255,255,255,0.05)",
+                    ...terminalWellSurface(isLight, isDynamic),
                   }}
                 >
                   {mp.type === "remote" ? (
@@ -1656,8 +1644,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                           {log.msg}
                         </div>
                       ))}
-                      <div className="mt-1 flex gap-2">
-                        <span className="select-none text-white/45">
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="flex-shrink-0 select-none text-white/45">
                           {terminalDisplayPrompt}
                         </span>
                         <input
@@ -1693,7 +1681,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                             setTerminalInput("");
                           }}
                           className={cn(
-                            "min-w-0 flex-1 border-none bg-transparent outline-none",
+                            "terminal-command-input flex-1 outline-none",
                             "text-white/82 placeholder:text-white/28"
                           )}
                           placeholder={terminalPlaceholder}

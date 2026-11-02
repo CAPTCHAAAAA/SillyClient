@@ -106,14 +106,14 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn("text-[13px] font-semibold tracking-tight", isLight ? "text-[#1a1625]/90" : "text-white/90")}>
-                新功能：实例维护与隔离恢复
+                拖拽：保留流光，收好边缘
               </span>
               <span className={cn("text-[10px] font-mono", isLight ? "text-[#1a1625]/35" : "text-white/30")}>
                 01
               </span>
             </div>
             <div className={cn("text-[11.5px] leading-relaxed", isLight ? "text-[#1a1625]/65" : "text-white/65")}>
-              按实例扫描疑似未完成扩展、失效禁用记录及归属已核验的下载缓存。疑似扩展默认不选，隔离内容保留恢复记录。
+              长按拖动时，模糊卡片继续跟随底层背景变化，不再透出旁边的卡片；修正边缘细亮线，保留原有抬起与归位动画，运行中的终端卡片不参与拖拽排序。
             </div>
           </div>
 
@@ -126,14 +126,14 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn("text-[13px] font-semibold tracking-tight", isLight ? "text-[#1a1625]/90" : "text-white/90")}>
-                新更新：可选预设安装与受控外链
+                终端：统一材质，专注阅读
               </span>
               <span className={cn("text-[10px] font-mono", isLight ? "text-[#1a1625]/35" : "text-white/30")}>
                 02
               </span>
             </div>
             <div className={cn("text-[11.5px] leading-relaxed", isLight ? "text-[#1a1625]/65" : "text-white/65")}>
-              创建本地实例或复制迁移时可选择主题与扩展，默认关闭。项目与更新页面在系统浏览器打开，不替换当前酒馆。
+              终端沿用设置与实例菜单的玻璃外壳，代码区域统一为深色。标题栏、字号控件和命令输入重新对齐，保留窗口拖动与右下角缩放手柄。
             </div>
           </div>
 
@@ -146,14 +146,14 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className={cn("text-[13px] font-semibold tracking-tight", isLight ? "text-[#1a1625]/90" : "text-white/90")}>
-                新优化：任务取消与运行时保护
+                细节：隐藏滚动条，淡化标签
               </span>
               <span className={cn("text-[10px] font-mono", isLight ? "text-[#1a1625]/35" : "text-white/30")}>
                 03
               </span>
             </div>
             <div className={cn("text-[11.5px] leading-relaxed", isLight ? "text-[#1a1625]/65" : "text-white/65")}>
-              取消与切换实例后拒绝旧任务回包，日志按实例限制容量。维护在停止运行后执行，文件变化或恢复冲突时保留现有内容。
+              启动日志、维护页及其他滚动区域隐藏滚动条，内容仍可正常滚动，不再因滚动条挤压布局。版本标签只去掉细边线，保持原有位置、尺寸与配色。
             </div>
           </div>
 

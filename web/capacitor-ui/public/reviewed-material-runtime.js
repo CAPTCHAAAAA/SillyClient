@@ -371,6 +371,8 @@
             user-select: none;
             max-height: calc(100vh - 32px);
             overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             opacity: 1;
             visibility: visible;
             pointer-events: auto;
@@ -597,7 +599,8 @@
             max-height: 144px;
             margin-top: 5px;
             overflow-y: auto;
-            scrollbar-width: thin;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
           }
 
           .preview-tuning-history-empty {
@@ -752,17 +755,14 @@
           .preview-tuning-panel.preview-tuning-panel--draggable {
             max-height: calc(100vh - 48px);
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
           }
 
           .preview-tuning-panel.preview-tuning-panel--draggable::-webkit-scrollbar {
-            width: 4px;
-          }
-
-          .preview-tuning-panel.preview-tuning-panel--draggable::-webkit-scrollbar-thumb {
-            border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.12);
+            display: none;
+            width: 0;
+            height: 0;
           }
 
           /* 磨砂强度：内凹轨道不动。进度溶进轨道，滑杆是细环，拖动无极跟手。 */

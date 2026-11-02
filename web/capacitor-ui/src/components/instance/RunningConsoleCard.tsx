@@ -5,6 +5,7 @@ import { TarvenEnv } from "../../capacitor-plugin";
 import type { TavernInstance } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { instanceLogs } from "../../lib/log-store";
+import { terminalWellSurface } from "../../lib/menu-surface";
 
 export interface RunningConsoleCardProps {
   instance: TavernInstance;
@@ -83,15 +84,13 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
           { msg: `Daemon active on background`, level: "info" },
         ];
 
+  const isDynamic = Boolean(glassBg?.includes("1c1420"));
+
   return (
     <div
       className={cn(
         "ios-task-surface w-full h-full rounded-[26px] relative flex flex-col justify-between p-3.5 overflow-hidden backdrop-blur-[40px] saturate-180 cursor-default select-text",
-        glassBg
-          ? glassBg
-          : isLight
-            ? "bg-white/85"
-            : "bg-[#1a1625]/90",
+        glassBg,
         isLight && "is-light"
       )}
     >
@@ -107,10 +106,10 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
         </span>
         <span
           className={cn(
-            "px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border flex-shrink-0",
+            "px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border border-transparent flex-shrink-0",
             isLight
-              ? "bg-black/[0.06] text-[#1a1625]/55 border-black/[0.08]"
-              : "bg-white/[0.08] text-white/50 border-white/[0.08]"
+              ? "bg-black/[0.06] text-[#1a1625]/55"
+              : "bg-white/[0.08] text-white/50"
           )}
         >
           {formatDisplayVersion(instance.version)}
@@ -121,11 +120,9 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
       <div
         onClick={() => terminalInputRef.current?.focus()}
         className={cn(
-          "flex-1 min-h-0 mb-3 rounded-lg p-2.5 flex flex-col cursor-text select-text overflow-hidden font-mono text-[10.5px] leading-relaxed relative z-10 transition-colors border",
-          isLight
-            ? "bg-[#e5e0da] border-black/15 shadow-[inset_0_3px_8px_rgba(0,0,0,0.16),inset_0_1px_2px_rgba(0,0,0,0.12),inset_0_-1px_0.5px_rgba(255,255,255,0.9),0_1px_1px_rgba(255,255,255,0.8)]"
-            : "bg-[#09080e] border-black/50 shadow-[inset_0_4px_10px_-1px_rgba(0,0,0,0.85),inset_0_1.5px_3px_rgba(0,0,0,0.95),inset_0_-1px_0.5px_rgba(255,255,255,0.08),0_1px_1px_rgba(255,255,255,0.05)]"
+          "flex-1 min-h-0 mb-3 rounded-lg p-2.5 flex flex-col cursor-text select-text overflow-hidden font-mono text-[10.5px] leading-relaxed relative z-10 border-0"
         )}
+        style={terminalWellSurface(isLight, isDynamic)}
       >
         {/* 日志流与命令行输入 */}
         <div ref={logsContainerRef} data-native-log-list className="flex-1 overflow-y-auto space-y-1 scrollbar-subtle pr-1 font-mono text-[10px]">
@@ -137,8 +134,8 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
                 log.level === "error"
                   ? "text-red-400/90"
                   : log.level === "success"
-                  ? (isLight ? "text-emerald-700 font-semibold" : "text-white/80")
-                  : (isLight ? "text-[#1a1625]/60" : "text-white/60")
+                  ? "text-white/88"
+                  : "text-white/72"
               )}
             >
               {log.msg}
@@ -150,7 +147,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
             <span
               className={cn(
                 "select-none font-semibold flex-shrink-0",
-                isLight ? "text-emerald-700" : "text-emerald-400"
+                "text-white/45"
               )}
             >
               {terminalDisplayPrompt}
@@ -162,12 +159,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
               onChange={(e) => setTerminalInput(e.target.value)}
               onKeyDown={handleTerminalKeyDown}
               placeholder={terminalPlaceholder}
-              className={cn(
-                "min-w-0 flex-1 border-none bg-transparent outline-none font-mono text-[10px]",
-                isLight
-                  ? "text-[#1a1625] placeholder:text-black/25"
-                  : "text-white/90 placeholder:text-white/25"
-              )}
+              className="terminal-command-input flex-1 outline-none text-white/82 placeholder:text-white/28"
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}

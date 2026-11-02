@@ -182,10 +182,10 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
         <div className="self-start flex items-center gap-1.5 w-fit">
           <span
             className={cn(
-              "px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border",
+              "px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border border-transparent",
               isLight
-                ? "bg-black/[0.06] text-[#1a1625]/55 border-black/[0.08]"
-                : "bg-white/[0.08] text-white/50 border-white/[0.08]"
+                ? "bg-black/[0.06] text-[#1a1625]/55"
+                : "bg-white/[0.08] text-white/50"
             )}
           >
             {formatDisplayVersion(instance.version)}
