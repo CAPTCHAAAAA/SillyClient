@@ -1246,7 +1246,7 @@
               transform var(--tilt-dur, 150ms) cubic-bezier(0.16, 1, 0.3, 1) !important;
           }
 
-          .carousel-scrollbar-hidden:not([data-carousel-committing]) > [data-card-motion-managed]:not(.motion-instance-card):not([data-reordering]):not([data-dropping]):not([data-reorder-committing]) {
+          .carousel-scrollbar-hidden:not([data-carousel-committing]) > [data-card-motion-managed]:not(.flip-card):not(.motion-instance-card):not([data-reordering]):not([data-dropping]):not([data-reorder-committing]) {
             transition: transform var(--tilt-dur, 150ms) cubic-bezier(0.16, 1, 0.3, 1) !important;
           }
 
@@ -1300,14 +1300,16 @@
 
           /* 已创建实例卡：去掉源码内联的灰/黑遮罩盖层与 blur 磨砂，
              遮罩统一由内容层的酒红渐变（下方规则）承担 */
-          .motion-instance-card:not([data-create-card]) > div:first-child > div[style*="background"] {
+          .motion-instance-card:not([data-create-card]) > div:first-child > div[style*="background"],
+          .motion-instance-card:not([data-create-card]) > div.absolute.inset-0 > div[style*="background"] {
             background: transparent !important;
             -webkit-backdrop-filter: none !important;
             backdrop-filter: none !important;
           }
 
           /* 源码里 hover 前后的黑色渐变遮罩层（bg-gradient-to-t from-black/...）压成透明 */
-          .motion-instance-card:not([data-create-card]) > div[class*="from-black"] {
+          .motion-instance-card:not([data-create-card]) > div[class*="from-black"],
+          .motion-instance-card:not([data-create-card]) > div[class*="from-white"] {
             background-image: none !important;
             background: transparent !important;
           }
@@ -2126,7 +2128,7 @@
         };
 
         const wireCardTilt = (doc) => {
-          doc.querySelectorAll(".carousel-scrollbar-hidden > [data-slot]").forEach((card) => {
+          doc.querySelectorAll(".carousel-scrollbar-hidden > [data-slot]:not(.flip-card)").forEach((card) => {
             if (card.dataset.cardMotionManaged !== "true") card.dataset.cardMotionManaged = "true";
           });
           if (tiltWiredDoc === doc) return;

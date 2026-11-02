@@ -6,6 +6,14 @@ import { InstanceCard } from "./InstanceCard";
 import { setCarouselSnapLock } from "../../lib/carousel-snap";
 import { createPaginationMotion, paginationCenter, paginationDotOpacity, PAGINATION_REST_WIDTH } from "../../lib/pagination-motion";
 import { FlipCard } from "../common/FlipCard";
+import {
+  fillFrozenPlate,
+  syncFrozenPlatePosition,
+  measureFrozenPlateBase,
+  applyFrozenPlateTransformFromBase,
+  type FrozenPlateBaseMetrics,
+} from "./frozenCoverPlate";
+import { coverTone, coverWash } from "./coverTone";
 
 const REORDER_CURVE = "cubic-bezier(0.22, 0.7, 0.3, 1)";
 const REORDER_SETTLE_MS = 380;
@@ -35,12 +43,116 @@ function gestureVelocity(samples: GestureSample[], now: number) {
 
 function releaseDuration(distance: number, velocity: number) {
   const span = Math.abs(distance);
-  if (span < 1) return 0;
-  const rest = Math.min(460, Math.max(210, 200 + span * 0.9));
+  if (span < 1) return 240;
+  const rest = Math.min(420, Math.max(260, 220 + span * 0.68));
   const toward = Math.sign(velocity) === Math.sign(distance) ? Math.abs(velocity) : 0;
   if (toward < 0.05) return Math.round(rest);
   const matched = (3 * span) / toward;
-  return Math.round(Math.min(480, Math.max(200, Math.min(rest, matched))));
+  return Math.round(Math.min(440, Math.max(240, Math.min(rest, matched))));
+}
+
+function settleLift(progress: number) {
+  const t = Math.max(0, Math.min(1, progress));
+  const s = 1 - t;
+  return s * s * s * (1 + 3 * t + 6 * t * t);
+}
+
+function riseLift(progress: number) {
+  const t = Math.max(0, Math.min(1, progress));
+  const s = 1 - t;
+  return 1 - s * s * s * (1 + 0.6 * t);
+}
+
+/** 拖拽卡片松手回弹位移曲线：起点柔和承接松手速度，终点一阶与二阶导数同时归零（C2 连续），彻底消除起止顿挫。 */
+function dropOffset(progress: number, distance: number, velocity: number, duration: number) {
+  const t = Math.max(0, Math.min(1, progress));
+  if (Math.abs(distance) < 0.5 || duration < 1) return distance * t;
+  const sameWay = velocity !== 0 && Math.sign(velocity) === Math.sign(distance);
+  const normV = sameWay ? (velocity * duration) / distance : 0;
+  const initialSlope = Math.max(1.45, Math.min(2.65, normV > 1.45 ? normV : 1.55));
+  const c1 = 3 - initialSlope;
+  const c2 = 1.15;
+  const s = 1 - t;
+  const remaining = s * s * s * (1 + c1 * t + c2 * t * t);
+  return distance * (1 - remaining);
+}
+
+function CreateCardFace({
+  isLight,
+  isDynamic,
+  isReordering,
+  label,
+  hint,
+}: {
+  isLight: boolean;
+  isDynamic: boolean;
+  isReordering: boolean;
+  label: string;
+  hint: string;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const plateRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const current = rootRef.current;
+    const plate = plateRef.current;
+    if (current && plate) fillFrozenPlate(plate, current, true);
+  }, [isReordering, isLight, isDynamic]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || isReordering) return;
+    let cancelled = false;
+    let timer = 0;
+    const refresh = () => {
+      if (cancelled || isReordering) return;
+      const current = rootRef.current;
+      const plate = plateRef.current;
+      if (!current || !plate) return;
+      fillFrozenPlate(plate, current);
+    };
+    timer = window.setTimeout(refresh, 60);
+    window.addEventListener("resize", refresh);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", refresh);
+    };
+  }, [isReordering, isLight, isDynamic]);
+
+  return (
+    <div
+      ref={rootRef}
+      data-create-card
+      data-frozen-plate=""
+      className={cn(
+        "motion-instance-card relative h-full w-full overflow-hidden rounded-[26px] text-left",
+        isLight && "is-light"
+      )}
+    >
+      <div className="absolute inset-0">
+        <div ref={plateRef} className="cover-frozen-plate" />
+      </div>
+      <div className="relative z-[2] flex h-full flex-col justify-between p-3.5">
+        <div
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg",
+            isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
+          )}
+        >
+          <Play className={cn("h-3.5 w-3.5 fill-current transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/80" : "text-white/40 group-hover:text-white/80")} />
+        </div>
+        <div>
+          <div className={cn("mb-0.5 text-base font-semibold transition-colors", isLight ? "text-[#1a1625]" : "text-white")}>
+            {label}
+          </div>
+          <div className={cn("text-xs transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/75" : "text-white/40 group-hover:text-white/75")}>
+            {hint}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** 起点接上松手速度，终点速度为 0。静止翻页初速靠近临界值，整段持续减速，避免中段匀速平移。 */
@@ -197,16 +309,23 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
 
   // 本地实例列表原子状态：确保拖拽落位在子组件内部同帧原子提交新顺序，杜绝跨组件 props 延迟导致的闪现
   const [localInstances, setLocalInstances] = useState(instances);
+  const [localCreateCardSlot, setLocalCreateCardSlot] = useState(createCardSlotProp);
   // 创建实例卡片的槽位。置顶时固定在最前，否则跟随拖拽结果。
   const createCardSlot = createCardPinned
     ? 0
-    : Math.max(0, Math.min(createCardSlotProp, localInstances.length));
+    : Math.max(0, Math.min(localCreateCardSlot, localInstances.length));
 
   useEffect(() => {
     if (!reorderStateRef.current?.active) {
       setLocalInstances(instances);
     }
   }, [instances]);
+
+  useEffect(() => {
+    if (!reorderStateRef.current?.active) {
+      setLocalCreateCardSlot(createCardSlotProp);
+    }
+  }, [createCardSlotProp]);
 
   const totalSlides = localInstances.length + 1; // 0: 新建实例, 1..N: 实例卡片
 
@@ -426,8 +545,13 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     cards.forEach(card => {
       card.style.transition = "none";
       card.style.transform = "none";
+      card.style.removeProperty("--reorder-lift");
     });
     void el.offsetHeight; // 强制刷新渲染管线，彻底杀灭任何进行中的插值动画
+    el.querySelectorAll<HTMLElement>(".motion-instance-card[data-frozen-plate]").forEach((cardEl) => {
+      const host = cardEl.querySelector<HTMLElement>(".cover-frozen-plate");
+      if (host) fillFrozenPlate(host, cardEl, true);
+    });
   }, [isReorderCommitting]);
 
   const reorderStateRef = useRef(reorderState);
@@ -439,6 +563,10 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   const reorderSamplesRef = useRef<GestureSample[]>([]);
   const dropFrameRef = useRef(0);
   const dropTokenRef = useRef(0);
+  const reorderLiftRef = useRef(1);
+  const liftTokenRef = useRef(0);
+  const dragPlateBaseRef = useRef<FrozenPlateBaseMetrics | null>(null);
+  const slotCardsCacheRef = useRef<HTMLElement[] | null>(null);
 
   // 动态测量卡片槽位物理步长 (240px card + 28px gap = 268px)
   const getCardStride = useCallback(() => {
@@ -479,11 +607,23 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       if (el) {
         setCarouselSnapLock(el, "drag", true);
         el.style.scrollBehavior = "auto";
+        const slotCards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[];
+        slotCardsCacheRef.current = slotCards;
+        const draggedSlotEl = slotCards[slotIndex];
+        if (draggedSlotEl) {
+          const innerCard = draggedSlotEl.querySelector<HTMLElement>(".motion-instance-card[data-frozen-plate]");
+          const host = innerCard?.querySelector<HTMLElement>(".cover-frozen-plate");
+          if (innerCard && host) fillFrozenPlate(host, innerCard, true);
+          dragPlateBaseRef.current = measureFrozenPlateBase(draggedSlotEl);
+        } else {
+          dragPlateBaseRef.current = null;
+        }
       }
 
       dragState.current.isDown = false;
       justReorderedRef.current = true;
       reorderSamplesRef.current = [{ x: start.x, t: performance.now() }];
+      reorderLiftRef.current = 0;
 
       const initial = {
         active: true,
@@ -494,6 +634,19 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       };
       reorderStateRef.current = initial;
       setReorderState(initial);
+      const liftToken = liftTokenRef.current + 1;
+      liftTokenRef.current = liftToken;
+      const liftStarted = performance.now();
+      const rise = (now: number) => {
+        if (liftTokenRef.current !== liftToken) return;
+        if (reorderStateRef.current?.isDropping) return;
+        const progress = Math.min(1, (now - liftStarted) / 280);
+        reorderLiftRef.current = riseLift(progress);
+        const state = reorderStateRef.current;
+        if (state?.active) paintReorder(state.dragOffset);
+        if (progress < 1) requestAnimationFrame(rise);
+      };
+      requestAnimationFrame(rise);
     }, 320);
   }, []);
 
@@ -555,6 +708,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       }
 
       pointerStartRef.current = null;
+      liftTokenRef.current += 1;
+      const releaseLift = reorderLiftRef.current || 1;
       const stride = getCardStride();
       const fromIdx = currentReorder.draggedIndex;
       const toIdx = currentReorder.targetIndex;
@@ -562,9 +717,12 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       const finalOffset = (currentReorder.targetIndex - currentReorder.draggedIndex) * stride;
       const distance = finalOffset - fromOffset;
       const pointerVelocity = gestureVelocity(reorderSamplesRef.current, performance.now());
-      const duration = reducedMotionRef.current ? 0 : releaseDuration(distance, pointerVelocity);
+      const travel = releaseDuration(distance, pointerVelocity);
+      const duration = reducedMotionRef.current ? 0 : travel;
 
       const finishReorder = () => {
+        dragPlateBaseRef.current = null;
+        slotCardsCacheRef.current = null;
         if (fromIdx !== toIdx) {
           const { createCardPinned: pinned, createCardSlot: slot, onCreateCardSlotChange: reportSlot } = reorderDepsRef.current;
           const slots: (TavernInstance | null)[] = [
@@ -574,6 +732,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
           slots.splice(toIdx, 0, moved);
           const next = slots.filter((item): item is TavernInstance => item !== null);
           const nextSlot = slots.findIndex((item) => item === null);
+          const effectiveNextSlot = pinned ? 0 : Math.max(0, nextSlot);
+          setLocalCreateCardSlot(effectiveNextSlot);
           if (!pinned || nextSlot === 0) reportSlot?.(nextSlot);
 
           // 原子更新：在子组件同一个渲染周期中，将本地渲染数据更新为新顺序，彻底消灭跨组件 props 时差闪现
@@ -586,29 +746,34 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         setReorderState(null);
         reorderStateRef.current = null;
 
-        // 双 rAF 跨帧保护：等待 React 完成真实 DOM 节点调换并在首个合成帧绘制完成后，平稳释放冻结
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            const el = carouselRef.current;
-            if (el) {
-              const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[];
-              cards.forEach(card => {
-                card.style.transition = "";
-                card.style.transform = "";
-              });
-            }
-            setIsReorderCommitting(false);
+          const el = carouselRef.current;
+          if (el) {
+            const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[];
+            cards.forEach(card => {
+              card.style.transition = "";
+              card.style.transform = "";
+              card.style.zIndex = "";
+              card.style.removeProperty("--reorder-lift");
+            });
+          }
+          setIsReorderCommitting(false);
 
-            // 在 DOM 彻底稳定后平稳解除原生 Scroll-Snap 锁定，视口完全静止
-            if (el) {
-              setCarouselSnapLock(el, "drag", false);
-              el.style.scrollBehavior = "";
-            }
+          const root = carouselRef.current;
+          if (root) {
+            root.querySelectorAll<HTMLElement>(".motion-instance-card[data-frozen-plate]").forEach((cardEl) => {
+              syncFrozenPlatePosition(cardEl);
+            });
+          }
 
-            setTimeout(() => {
-              justReorderedRef.current = false;
-            }, 200);
-          });
+          if (el) {
+            setCarouselSnapLock(el, "drag", false);
+            el.style.scrollBehavior = "";
+          }
+
+          setTimeout(() => {
+            justReorderedRef.current = false;
+          }, 200);
         });
       };
 
@@ -631,18 +796,16 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         const progress = Math.min(1, (now - started) / duration);
         const offset = progress >= 1
           ? finalOffset
-          : fromOffset + releaseOffset(progress, distance, pointerVelocity, duration);
+          : fromOffset + dropOffset(progress, distance, pointerVelocity, duration);
+        reorderLiftRef.current = progress >= 1 ? 0 : releaseLift * settleLift(progress);
         reorderStateRef.current = { ...reorderStateRef.current!, dragOffset: offset };
         paintReorder(offset);
         if (progress < 1) {
           dropFrameRef.current = requestAnimationFrame(step);
           return;
         }
-        dropFrameRef.current = requestAnimationFrame(() => {
-          dropFrameRef.current = 0;
-          if (dropTokenRef.current !== token) return;
-          finishReorder();
-        });
+        dropFrameRef.current = 0;
+        finishReorder();
       };
       dropFrameRef.current = requestAnimationFrame(step);
     };
@@ -793,8 +956,12 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
     const el = carouselRef.current;
     const state = reorderStateRef.current;
     if (!el || !state?.active) return;
-    const cards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[];
+    const cards =
+      slotCardsCacheRef.current && slotCardsCacheRef.current.length > 0
+        ? slotCardsCacheRef.current
+        : (Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[]);
     const stride = getCardStride();
+    const lift = reorderLiftRef.current;
     cards.forEach((card, slotIndex) => {
       let shift = 0;
       if (slotIndex === state.draggedIndex) shift = offset;
@@ -803,6 +970,16 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       card.style.transform = `translate3d(${shift}px, 0, 0)`;
       card.style.transition = slotIndex === state.draggedIndex || isReorderCommitting ? "none" : reorderTransition;
       card.style.zIndex = slotIndex === state.draggedIndex ? "50" : "";
+      if (slotIndex === state.draggedIndex) card.style.setProperty("--reorder-lift", String(lift));
+      else card.style.removeProperty("--reorder-lift");
+      if (slotIndex === state.draggedIndex) {
+        if (dragPlateBaseRef.current) {
+          applyFrozenPlateTransformFromBase(dragPlateBaseRef.current, offset, lift);
+        } else {
+          const innerCard = card.querySelector<HTMLElement>(".motion-instance-card[data-frozen-plate]");
+          if (innerCard) syncFrozenPlatePosition(innerCard);
+        }
+      }
     });
   };
 
@@ -907,26 +1084,13 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                     if (!event.repeat) onNewInstance();
                   }}
                   front={(
-                    <div data-create-card className="motion-instance-card relative h-full w-full overflow-hidden rounded-[26px] text-left">
-                      <div className="relative z-[2] flex h-full flex-col justify-between p-3.5">
-                        <div
-                          className={cn(
-                            "flex h-8 w-8 items-center justify-center rounded-lg",
-                            isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
-                          )}
-                        >
-                          <Play className={cn("h-3.5 w-3.5 fill-current transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/80" : "text-white/40 group-hover:text-white/80")} />
-                        </div>
-                        <div>
-                          <div className={cn("mb-0.5 text-base font-semibold transition-colors", isLight ? "text-[#1a1625]" : "text-white")}>
-                            {createLabel}
-                          </div>
-                          <div className={cn("text-xs transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/75" : "text-white/40 group-hover:text-white/75")}>
-                            {createHint}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <CreateCardFace
+                      isLight={isLight}
+                      isDynamic={isDynamic}
+                      isReordering={Boolean(reorderState?.active && reorderState.draggedIndex === slotIndex)}
+                      label={createLabel}
+                      hint={createHint}
+                    />
                   )}
                 />
               );
@@ -941,6 +1105,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                 key={instance.id}
                 instance={instance}
                 index={index}
+                slotIndex={slotIndex}
                 style={cardStyle}
                 isReordering={Boolean(reorderState?.active && reorderState.draggedIndex === slotIndex)}
                 isDropping={Boolean(reorderState?.active && reorderState.draggedIndex === slotIndex && reorderState.isDropping)}

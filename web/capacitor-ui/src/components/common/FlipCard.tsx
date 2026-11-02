@@ -166,9 +166,14 @@ export const FlipCard: React.FC<FlipCardProps> = ({
   const [isPressed, setIsPressed] = useState(false);
   const [isLongPressed, setIsLongPressed] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
+  const preLiftTimerRef = useRef<number | null>(null);
   const pointerStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const cancelLongPress = useCallback(() => {
+    if (preLiftTimerRef.current !== null) {
+      clearTimeout(preLiftTimerRef.current);
+      preLiftTimerRef.current = null;
+    }
     if (longPressTimerRef.current !== null) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -232,7 +237,13 @@ export const FlipCard: React.FC<FlipCardProps> = ({
 
     const loop = (now: number) => {
       if (rootRef.current?.getAttribute("data-reordering") === "true") {
+        tiltXSpring.current.jump(0);
+        tiltYSpring.current.jump(0);
+        sinkSpring.current.jump(0);
+        sheenSpring.current.jump(0);
+        renderTransforms(0, 0, 0);
         rafId.current = null;
+        lastTime.current = null;
         return;
       }
       const dt = Math.min((now - (lastTime.current || now)) / 1000, 0.032);
@@ -360,6 +371,15 @@ export const FlipCard: React.FC<FlipCardProps> = ({
     }
 
     cancelLongPress();
+    preLiftTimerRef.current = window.setTimeout(() => {
+      preLiftTimerRef.current = null;
+      tiltXSpring.current.setTarget(0);
+      tiltYSpring.current.setTarget(0);
+      sinkSpring.current.setTarget(0);
+      sheenSpring.current.setTarget(0);
+      startLoop();
+    }, 150);
+    if (!onLongPress) return;
     longPressTimerRef.current = window.setTimeout(() => {
       setIsLongPressed(true);
       // 长按触发准备拖动重排时，跷跷板倾角与机械下沉平滑归零，为进入浮起态做准备
@@ -423,6 +443,21 @@ export const FlipCard: React.FC<FlipCardProps> = ({
     startLoop();
   }, [startLoop]);
 
+  const isReorderingActive = Boolean(
+    (restProps as Record<string, unknown>)["data-reordering"] ||
+    (restProps as Record<string, unknown>)["data-dropping"] ||
+    (restProps as Record<string, unknown>)["data-reorder-committing"]
+  );
+
+  useEffect(() => {
+    if (!isReorderingActive) return;
+    cancelLongPress();
+    setIsPressed(false);
+    setIsLongPressed(false);
+    pointerStartPosRef.current = null;
+    rest();
+  }, [isReorderingActive, cancelLongPress, rest]);
+
   // 受控属性 flipped 监听
   useEffect(() => {
     if (!controlled) return;
@@ -458,7 +493,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
   }, [disabled, rest]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (disabled || e.button !== 0) return;
+    if (disabled || isReorderingActive || e.button !== 0) return;
     startPress(e);
     const r = e.currentTarget.getBoundingClientRect();
     updateTiltFromPointer(e.clientX, e.clientY, r, true);
@@ -485,6 +520,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isReorderingActive) return;
     if (pointerStartPosRef.current && !isLongPressed) {
       const dist = Math.hypot(e.clientX - pointerStartPosRef.current.x, e.clientY - pointerStartPosRef.current.y);
       if (dist > 8) {
@@ -530,6 +566,16 @@ export const FlipCard: React.FC<FlipCardProps> = ({
   };
 
   const release = (e: React.PointerEvent<HTMLDivElement>, cancelled: boolean) => {
+    if (isReorderingActive) {
+      cancelLongPress();
+      setIsPressed(false);
+      setIsLongPressed(false);
+      pointerStartPosRef.current = null;
+      grip.current = null;
+      setDragging(false);
+      rest();
+      return;
+    }
     endPress(e);
     const g = grip.current;
     if (!g || g.id !== e.pointerId) return;
@@ -601,12 +647,13 @@ export const FlipCard: React.FC<FlipCardProps> = ({
         release(e, true);
       }}
       onPointerEnter={e => {
-        if (e.pointerType !== "touch" && !disabled) {
+        if (e.pointerType !== "touch" && !disabled && !isReorderingActive) {
           const r = e.currentTarget.getBoundingClientRect();
           updateTiltFromPointer(e.clientX, e.clientY, r, false);
         }
       }}
       onPointerLeave={() => {
+        if (isReorderingActive) return;
         endPress();
         if (!grip.current) rest();
       }}

@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { Play, MoreVertical, Edit2, Lock } from "lucide-react";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
 import { coverTone, coverWash } from "./coverTone";
+import { coverIsTransparent, fillFrozenPlate } from "./frozenCoverPlate";
 
 export interface InstanceStoppedCardProps {
   instance: TavernInstance;
@@ -19,6 +20,7 @@ export interface InstanceStoppedCardProps {
   onRenameSave: (instanceId: string, newName: string) => void;
   isExternallyRenaming?: boolean;
   onClearExternalRenaming?: () => void;
+  isReordering?: boolean;
 }
 
 function getStatusText(status: TavernInstance["status"]) {
@@ -54,10 +56,50 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
   onRenameSave,
   isExternallyRenaming = false,
   onClearExternalRenaming,
+  isReordering = false,
 }) => {
   const [isEditingInline, setIsEditingInline] = useState(false);
   const [editName, setEditName] = useState(instance.name);
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const plateRef = useRef<HTMLDivElement>(null);
+  const coverSrc = instance.cover || "./tavern-logo.png";
+  const [usePlate, setUsePlate] = useState(() => /cover-clear-|tavern-logo/i.test(coverSrc));
+
+  useLayoutEffect(() => {
+    if (!usePlate) return;
+    const host = plateRef.current;
+    const root = rootRef.current;
+    if (host && root) fillFrozenPlate(host, root, true);
+  }, [usePlate, isReordering, isLight, isDynamic, coverSrc]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const cover = root?.querySelector("img");
+    if (!root || !cover || isReordering) return;
+    let cancelled = false;
+    let timer = 0;
+    const refresh = () => {
+      if (cancelled || isReordering) return;
+      const knownClear = /cover-clear-|tavern-logo/i.test(coverSrc);
+      if (!knownClear && (!cover.complete || !coverIsTransparent(cover))) {
+        setUsePlate(false);
+        return;
+      }
+      setUsePlate(true);
+      const host = plateRef.current;
+      if (host) fillFrozenPlate(host, root);
+    };
+    cover.addEventListener("load", refresh);
+    timer = window.setTimeout(refresh, 60);
+    window.addEventListener("resize", refresh);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      cover.removeEventListener("load", refresh);
+      window.removeEventListener("resize", refresh);
+    };
+  }, [coverSrc, isReordering, isLight, isDynamic]);
 
   useEffect(() => {
     if (isExternallyRenaming) {
@@ -89,12 +131,14 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
 
   return (
     <div
+      ref={rootRef}
       data-slot={String(index + 1)}
       className={cn(
         "motion-instance-card w-full h-full rounded-[26px] relative group cursor-pointer overflow-hidden",
         isLight && "is-light",
         isExpanded && "is-expanded"
       )}
+      data-frozen-plate={usePlate ? "" : undefined}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest("button")) return;
         onToggleExpand();
@@ -102,6 +146,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
     >
       {/* 封面与遮罩：100% 饱满贴合圆角内壁，彻底消除边缘漏边 */}
       <div className="absolute inset-0">
+        {usePlate ? <div ref={plateRef} className="cover-frozen-plate" /> : null}
         <img
           src={instance.cover || "./tavern-logo.png"}
           alt=""

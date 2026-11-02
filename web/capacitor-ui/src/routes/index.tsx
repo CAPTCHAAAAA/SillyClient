@@ -2525,7 +2525,7 @@ function SillyClientLauncher() {
 
       {/* 动态背景光效 */}
       {bgMode === "dynamic" && (
-        <div className={cn("ambient-glow-container", dynamicPaused && "ambient-paused")}>
+        <div data-app-backdrop="ambient" className={cn("ambient-glow-container", dynamicPaused && "ambient-paused")}>
           <div className="ambient-glow ambient-glow-1" />
           <div className="ambient-glow ambient-glow-2" />
           <div className="ambient-glow ambient-glow-3" />
@@ -2536,7 +2536,7 @@ function SillyClientLauncher() {
 
       {/* 自定义壁纸 */}
       {bgMode === "custom" && customWallpaperUrl && (
-        <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${customWallpaperUrl})` }} />
+        <div data-app-backdrop="image" className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${customWallpaperUrl})` }} />
       )}
 
       <input ref={wallpaperInputRef} type="file" accept="image/*" className="hidden" onChange={handleWallpaperUpload} />

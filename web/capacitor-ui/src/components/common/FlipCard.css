@@ -96,16 +96,14 @@
   outline: none !important;
 }
 
-.flip-card[data-reordering="true"]:not([data-dropping="true"]) .flip-card__rotor {
-  transform: translate3d(0, -22px, 0) scale(1.06) !important;
+.flip-card[data-reordering="true"] .flip-card__rotor {
+  transform: perspective(1100px) translate3d(0, calc(var(--reorder-lift, 0) * -18px), 0) scale(calc(1 + var(--reorder-lift, 0) * 0.052)) rotateX(0deg) rotateY(0deg) !important;
   box-shadow:
-    0 24px 50px -8px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.95 + 0.18)),
-    0 12px 24px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.65 + 0.12)) !important;
+    0 calc(var(--sf-sh-y, 7px) + var(--reorder-lift, 0) * 17px) calc(var(--sf-sh-blur, 26px) + var(--reorder-lift, 0) * 24px) rgba(var(--sf-sh-rgb, 7 5 10) / calc(var(--sf-sh-a, 0.375) + var(--reorder-lift, 0) * 0.16)),
+    0 calc(var(--reorder-lift, 0) * 10px) calc(var(--reorder-lift, 0) * 22px) -2px rgba(0, 0, 0, calc(var(--reorder-lift, 0) * 0.16)) !important;
   border: none !important;
   outline: none !important;
-  transition:
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition: none !important;
 }
 
 /* 4. 放手落位平滑吸附过渡 */
@@ -116,13 +114,7 @@
 }
 
 .flip-card[data-dropping="true"] .flip-card__rotor {
-  transform: translate3d(0, 0, 0) scale(1) !important;
-  box-shadow:
-    0 8px 22px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.25)),
-    0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15)) !important;
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1),
-              filter 420ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition: none !important;
   border: none !important;
   outline: none !important;
 }
@@ -130,19 +122,16 @@
 /* 5. 拖拽重排瞬时提交保护（Zero Flicker）：
    在 DOM 节点调换物理顺序的初始帧强制关闭所有过渡与位移，杜绝 DOM 物理换位与 CSS 过渡重叠导致的频闪跳跃 */
 .flip-card[data-reorder-committing="true"],
-.flip-card[data-reorder-committing="true"] *,
-[data-carousel-committing="true"] .flip-card,
-[data-carousel-committing="true"] .flip-card * {
+[data-carousel-committing="true"] .flip-card {
   transform: none !important;
   transition: none !important;
   animation: none !important;
 }
 
-.flip-card[data-reorder-committing="true"] .motion-instance-card img,
-[data-carousel-committing="true"] .flip-card .motion-instance-card img {
+.flip-card[data-reorder-committing="true"] .flip-card__rotor,
+[data-carousel-committing="true"] .flip-card .flip-card__rotor {
   transition:
-    filter 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+    box-shadow 520ms cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
 
@@ -308,9 +297,9 @@ body[data-preview-dark-mode] .flip-card .motion-instance-card[data-create-card]:
 
 .flip-card[data-reordering="true"] .motion-instance-card[data-create-card],
 .flip-card[data-reordering="true"] .motion-instance-card[data-create-card]:hover {
-  background-color: rgba(var(--sf-fog-rgb, 255 250 252) / var(--sf-fog, 0.02)) !important;
-  -webkit-backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
-  backdrop-filter: blur(var(--sf-blur, 1px)) saturate(var(--sf-sat, 1.43)) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
 }
 
 .flip-card:has([data-create-card]) .flip-card__rotor {
@@ -350,47 +339,75 @@ body[data-preview-dark-mode] .flip-card .motion-instance-card[data-create-card]:
     opacity 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 抬起之后封面才虚化。和浮起同一段 420ms，松手落位时再沿着同一条曲线收回。 */
-.flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card,
-body:has(.ambient-glow-container) .flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card {
-  background-color: #1a1625 !important;
+.flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]),
+body:has(.ambient-glow-container) .flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]),
+body[data-preview-dark-mode] .flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]),
+.flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]):hover,
+body:has(.ambient-glow-container) .flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]):hover,
+body[data-preview-dark-mode] .flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]):hover,
+.flip-card[data-reordering="true"]:not(:has([data-frozen-plate])) .flip-card__face {
+  background-color: var(--plate-base, #1a1625) !important;
+  background-image: none !important;
+  border: none !important;
+  outline: none !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   filter: none !important;
   opacity: 1 !important;
-  transition: background-color 420ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition: none !important;
 }
 
-body[data-preview-light] .flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card {
-  background-color: #fbfafc !important;
+body[data-preview-light] .flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]),
+body[data-preview-light] .flip-card[data-reordering="true"] .motion-instance-card:not([data-frozen-plate]):hover,
+body[data-preview-light] .flip-card[data-reordering="true"]:not(:has([data-frozen-plate])) .flip-card__face {
+  background-color: var(--plate-base, #f4f0ed) !important;
+  border: none !important;
+  filter: none !important;
 }
 
-.flip-card .motion-instance-card[data-create-card] > .relative {
-  transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card[data-create-card],
-body:has(.ambient-glow-container) .flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card[data-create-card] {
-  background-color: rgba(16, 12, 24, 0.8) !important;
-  -webkit-backdrop-filter: blur(80px) saturate(1.9) contrast(0.78) brightness(0.74) !important;
-  backdrop-filter: blur(80px) saturate(1.9) contrast(0.78) brightness(0.74) !important;
-}
-
-body[data-preview-light] .flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card[data-create-card] {
-  background-color: rgba(255, 252, 250, 0.84) !important;
-  -webkit-backdrop-filter: blur(80px) saturate(1.55) contrast(0.88) brightness(1.04) !important;
-  backdrop-filter: blur(80px) saturate(1.55) contrast(0.88) brightness(1.04) !important;
-}
-
-.flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card[data-create-card] > .relative {
-  filter: none;
-  opacity: 0;
-}
-
-.flip-card[data-reordering="true"]:not([data-dropping="true"]) .motion-instance-card img {
-  filter: blur(28px) !important;
+.flip-card[data-reordering="true"]:not([data-dropping="true"]) .cover-frozen-plate {
   opacity: 1 !important;
-  transform: scale(1.42) !important;
+}
+
+.flip-card[data-reordering="true"][data-dropping="true"] .cover-frozen-plate {
+  opacity: min(1, calc(var(--reorder-lift, 0) * 3.2)) !important;
+}
+
+.flip-card[data-reordering="true"] .motion-instance-card:not([data-create-card]):not(.is-expanded) > .relative.h-full.flex-col > *:not(.motion-accordion),
+.flip-card[data-reordering="true"] .motion-instance-card:not([data-create-card]).is-expanded > .relative.h-full.flex-col > *:not(.preview-card-status) {
+  filter: blur(calc(var(--reorder-lift, 0) * 20px)) !important;
+  opacity: calc(1 - var(--reorder-lift, 0) * 0.88) !important;
+  transition: none !important;
+}
+
+.flip-card[data-reordering="true"] .motion-instance-card:not([data-create-card]):not(.is-expanded) > .relative.h-full.flex-col > .preview-card-subtitle {
+  opacity: calc(0.94 - var(--reorder-lift, 0) * 0.82) !important;
+}
+
+.flip-card[data-reordering="true"] .motion-instance-card[data-create-card] > .relative > * {
+  filter: blur(calc(var(--reorder-lift, 0) * 14px)) !important;
+  opacity: calc(1 - var(--reorder-lift, 0) * 0.42) !important;
+  transition: none !important;
+}
+
+.flip-card[data-reordering="true"] .motion-instance-card img {
+  filter: brightness(var(--sf-img-bri, 1)) saturate(calc(var(--sf-img-sat, 1) + var(--reorder-lift, 0) * 0.16)) blur(calc(var(--sf-img-blur, 0px) + var(--reorder-lift, 0) * 34px)) !important;
+  opacity: var(--sf-img-op, 1) !important;
+  transform: scale(calc(1 + var(--reorder-lift, 0) * 0.52)) !important;
+  transition: none !important;
+}
+
+.flip-card[data-reordering="true"] .motion-instance-card[data-frozen-plate] img {
+  transform: scale(calc(1 + var(--reorder-lift, 0) * 0.22)) !important;
+  transition: none !important;
+}
+
+.flip-card[data-reordering="true"] .cover-frozen-plate__stage {
+  filter: blur(calc(var(--reorder-lift, 0) * 28px)) saturate(calc(1 + var(--reorder-lift, 0) * 0.18)) !important;
+}
+
+.flip-card[data-reordering="true"] .cover-frozen-plate__veil {
+  opacity: calc(var(--reorder-lift, 0) * 0.04) !important;
 }
 
 .flip-card__face img {

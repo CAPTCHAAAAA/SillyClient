@@ -1008,6 +1008,84 @@ header span[class*="truncate"] {
   transition: filter var(--motion-base) ease;
 }
 
+.cover-frozen-plate {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  background-color: var(--plate-base, #1a1625);
+  opacity: 0;
+}
+
+.cover-frozen-plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 var(--sf-glow1-spread, 41px) -12px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
+    inset 0 0 var(--sf-glow2-spread, 81px) -16px rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05));
+}
+
+.motion-instance-card[data-create-card] .cover-frozen-plate::after {
+  background-color: rgba(var(--sf-fog-rgb, 255 250 252) / var(--sf-fog, 0.02));
+}
+
+.cover-frozen-plate__stage {
+  position: absolute;
+  inset: -36px;
+  overflow: hidden;
+  pointer-events: none;
+  will-change: filter;
+}
+
+.cover-frozen-plate__world {
+  position: absolute;
+  top: 36px;
+  left: 36px;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--plate-base, #1a1625);
+  transform-origin: 0 0;
+  will-change: transform;
+  filter: none;
+}
+
+.cover-frozen-plate__ambient {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.cover-frozen-plate__ambient > .ambient-glow {
+  position: absolute !important;
+}
+
+.cover-frozen-plate__wall {
+  position: absolute;
+  inset: -20px;
+  background-image: var(--plate-wall-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(var(--preview-wallpaper-blur, 7px));
+  transform: scale(1.045);
+}
+
+.cover-frozen-plate__glow {
+  background-image: var(--plate-glow-bg, none);
+}
+
+.cover-frozen-plate__veil {
+  position: absolute;
+  inset: 0;
+  background-color: var(--plate-base, #1a1625);
+  opacity: 0;
+}
+
 .motion-instance-card.is-expanded {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.065),
