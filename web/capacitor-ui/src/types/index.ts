@@ -1,12 +1,9 @@
 import React from "react";
 import type {
-  AppUpdateInfo,
   CompanionPresetSelection,
   PreinstallSelection,
-  ContentOpenMode,
   InstanceConfig,
   InstallPathMode,
-  GithubRelease,
 } from "../capacitor-plugin";
 
 export interface TavernInstance {

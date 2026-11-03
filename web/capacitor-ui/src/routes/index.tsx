@@ -9,7 +9,7 @@ import {
   Cloud,
   Terminal,
 } from "lucide-react";
-import { cn, normalizeStoredVersion, formatDisplayVersion } from "@/lib/utils";
+import { cn, normalizeStoredVersion } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv, DEFAULT_CONFIG, normalizeRenderEngineSettings } from "@/capacitor-plugin";
 import { openExternalUrl } from "@/lib/external-links";
@@ -1380,7 +1380,6 @@ function SillyClientLauncher() {
 
   const createInstance = useCallback(async () => {
     if (operations.busy) return;
-    const now = Date.now();
     const rawGivenName = newInstanceName.trim();
     let instanceDisplayName: string;
     let safeCandidateId: string;
@@ -2657,7 +2656,6 @@ function SillyClientLauncher() {
           glassBg={glassBg}
           hoveredCard={hoveredCard}
           setHoveredCard={setHoveredCard}
-          activeCardMenu={activeCardMenu}
           launchingId={launchingId}
           onLaunch={launchTavern}
           onReturnToTavern={handleReturnToTavern}
@@ -2786,7 +2784,6 @@ function SillyClientLauncher() {
         isLight={isLight}
         glassBg={glassBg}
         isWindows={isWindows}
-        isWeb={isWeb}
         pullToRefresh={pullToRefresh}
         setPullToRefresh={setPullToRefresh}
         renderSettings={renderSettings}
@@ -2938,13 +2935,7 @@ function SillyClientLauncher() {
       <CleanGarbageModal
         isOpen={showCleanPanel}
         isClosing={isCleanPanelClosing}
-        onClose={() => {
-          setIsCleanPanelClosing(true);
-          setTimeout(() => {
-            setShowCleanPanel(false);
-            setIsCleanPanelClosing(false);
-          }, PANEL_EXIT_MS);
-        }}
+        onClose={closeCleanPanel}
         isLight={isLight}
         glassBg={glassBg}
         cleaningGarbage={cleaningGarbage}
@@ -3054,8 +3045,6 @@ function SillyClientLauncher() {
         onClose={closeManagePanel}
         isLight={isLight}
         bgMode={bgMode}
-        themeStyle={themeStyle}
-        glassBg={glassBg}
         isWindows={isWindows}
         allInstances={instances}
         onSelectInstance={(inst) => {
@@ -3072,18 +3061,6 @@ function SillyClientLauncher() {
           launchTavern(inst);
         }}
         launchingId={launchingId}
-        onTriggerRename={(inst) => {
-          closeManagePanel();
-          setRenamingId(inst.id);
-          setRenameValue(inst.subtitle || inst.name);
-          setRenameError(null);
-          setIsRenameClosing(false);
-        }}
-        onTriggerDelete={(inst) => {
-          closeManagePanel();
-          setDeleteInstanceError(null);
-          setPendingDelete(inst);
-        }}
         onPickCover={(inst) => {
           void pickInstanceCover(inst);
         }}

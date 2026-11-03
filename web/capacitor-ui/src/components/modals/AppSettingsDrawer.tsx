@@ -20,7 +20,6 @@ export interface AppSettingsDrawerProps {
   isLight: boolean;
   glassBg: string;
   isWindows: boolean;
-  isWeb: boolean;
   pullToRefresh: boolean;
   setPullToRefresh: (v: boolean) => void;
   renderSettings?: RenderEngineSettings | null;
@@ -131,7 +130,6 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
   isLight,
   glassBg,
   isWindows,
-  isWeb,
   pullToRefresh,
   setPullToRefresh,
   renderSettings,

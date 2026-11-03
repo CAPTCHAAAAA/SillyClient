@@ -11,7 +11,7 @@ import type { InstanceConfig } from "../../capacitor-plugin";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import { coverPlate, coverTone } from "../instance/coverTone";
 import { LAYERS } from "../../constants/layers";
-import type { TavernInstance, ManageTab, BgMode, ThemeStyle } from "../../types";
+import type { TavernInstance, ManageTab, BgMode } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { instanceLogs } from "../../lib/log-store";
 import { MENU_GLASS_FILTER, menuShellBackground } from "../../lib/menu-surface";
@@ -142,15 +142,11 @@ export interface ManageInstanceModalProps {
   onClose: () => void;
   isLight: boolean;
   bgMode?: BgMode;
-  themeStyle?: ThemeStyle;
-  glassBg: string;
   isWindows: boolean;
   allInstances: TavernInstance[];
   onSelectInstance: (instance: TavernInstance) => void;
   onLaunchInstance: (instance: TavernInstance) => void;
   launchingId: string | null;
-  onTriggerRename: (instance: TavernInstance) => void;
-  onTriggerDelete: (instance: TavernInstance) => void;
   onPickCover: (instance: TavernInstance) => void;
   onOpenMaintenance?: (instance: TavernInstance) => void;
   onOpenRelocate?: (instance: TavernInstance) => void;
@@ -476,14 +472,10 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   onClose,
   isLight,
   bgMode = "dynamic",
-  themeStyle = "dark",
-  glassBg,
   allInstances,
   onSelectInstance,
   onLaunchInstance,
   launchingId,
-  onTriggerRename,
-  onTriggerDelete,
   onPickCover,
   onOpenMaintenance,
   onOpenRelocate,
@@ -507,7 +499,6 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
 }) => {
   const [manageTab, setManageTab] = useState<ManageTab>("launch");
   const [manageSearchQuery, setManageSearchQuery] = useState("");
-  const [manageFilter, setManageFilter] = useState<"all" | "local" | "remote">("all");
   const cardListRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [cardListFade, setCardListFade] = useState({ top: false, bottom: false });
@@ -555,7 +546,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     const observer = new ResizeObserver(() => syncCardListFade());
     observer.observe(node);
     return () => observer.disconnect();
-  }, [isOpen, instance?.id, allInstances.length, manageSearchQuery, manageFilter, isPortrait]);
+  }, [isOpen, instance?.id, allInstances.length, manageSearchQuery, isPortrait]);
   const syncRightFade = (event?: React.UIEvent<HTMLDivElement>) => {
     const node = event?.currentTarget ?? rightScrollRef.current;
     if (!node) return;
@@ -691,17 +682,14 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const setTerminalLogs = (value: { msg: string; level?: string }[] | ((previous: { msg: string; level?: string }[]) => { msg: string; level?: string }[])) => {
     if (logKey) instanceLogs.update(logKey, value);
   };
-  const filteredManageInstances = allInstances.filter((inst) => {
-    if (manageFilter === "local" && inst.type !== "local") return false;
-    if (manageFilter === "remote" && inst.type !== "remote") return false;
-    if (!manageSearchQuery.trim()) return true;
-    const query = manageSearchQuery.trim().toLowerCase();
-    return (
-      inst.name.toLowerCase().includes(query) ||
-      (inst.subtitle || "").toLowerCase().includes(query) ||
-      (inst.url || "").toLowerCase().includes(query)
-    );
-  });
+  const manageQuery = manageSearchQuery.trim().toLowerCase();
+  const filteredManageInstances = manageQuery
+    ? allInstances.filter((inst) => (
+        inst.name.toLowerCase().includes(manageQuery) ||
+        (inst.subtitle || "").toLowerCase().includes(manageQuery) ||
+        (inst.url || "").toLowerCase().includes(manageQuery)
+      ))
+    : allInstances;
   filteredIdsRef.current = filteredManageInstances.map((inst) => inst.id);
   useLayoutEffect(() => {
     if (!isOpen || !isPortrait) return;

@@ -10,7 +10,6 @@ import "./RunningConsoleCard.css";
 
 export interface RunningConsoleCardProps {
   instance: TavernInstance;
-  index: number;
   isLight: boolean;
   glassBg?: string;
   onReturnToTavern?: (instance: TavernInstance) => void;
@@ -30,7 +29,6 @@ export { formatDisplayVersion };
  */
 const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
   instance,
-  index,
   isLight,
   glassBg,
   onReturnToTavern,

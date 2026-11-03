@@ -52,7 +52,6 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   const dragCleanup = useRef<(() => void) | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [terminalBox, setTerminalBox] = useState({ w: 640, h: 340 });
-  const resizeDrag = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const resizeCleanup = useRef<(() => void) | null>(null);
 

@@ -14,7 +14,6 @@ export interface InstanceCardProps {
   glassBg?: string;
   hoveredCard: string | null;
   setHoveredCard: (id: string | null) => void;
-  activeCardMenu: string | null;
   launchingId: string | null;
   onLaunch: (instance: TavernInstance) => void;
   onReturnToTavern?: (instance: TavernInstance) => void;
@@ -45,7 +44,6 @@ export interface InstanceCardProps {
 export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   const isRunning = props.instance.status === "running";
   const isExpanded = props.hoveredCard === props.instance.id;
-  const isMenuOpen = props.activeCardMenu === props.instance.id;
   const toggleExpand = React.useCallback(
     () => props.setHoveredCard(isExpanded ? null : props.instance.id),
     [isExpanded, props.instance.id, props.setHoveredCard]
@@ -96,7 +94,6 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           isDynamic={props.isDynamic}
           glassBg={props.glassBg}
           isExpanded={isExpanded}
-          isMenuOpen={isMenuOpen}
           launchingId={props.launchingId}
           onToggleExpand={toggleExpand}
           onLaunch={props.onLaunch}
@@ -110,7 +107,6 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
       back={
         <RunningConsoleCard
           instance={props.instance}
-          index={props.index}
           isLight={props.isLight}
           glassBg={props.glassBg}
           onReturnToTavern={props.onReturnToTavern}

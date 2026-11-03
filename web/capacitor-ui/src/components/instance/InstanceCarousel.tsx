@@ -13,7 +13,6 @@ import {
   applyFrozenPlateTransformFromBase,
   type FrozenPlateBaseMetrics,
 } from "./frozenCoverPlate";
-import { coverTone, coverWash } from "./coverTone";
 import { useFrozenCoverPlate } from "./useFrozenCoverPlate";
 
 const REORDER_CURVE = "cubic-bezier(0.4, 0, 0.2, 1)";
@@ -211,7 +210,6 @@ export interface InstanceCarouselProps {
   glassBg?: string;
   hoveredCard: string | null;
   setHoveredCard: (id: string | null) => void;
-  activeCardMenu: string | null;
   launchingId: string | null;
   onLaunch: (instance: TavernInstance) => void;
   onReturnToTavern?: (instance: TavernInstance) => void;
@@ -250,7 +248,6 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   glassBg,
   hoveredCard,
   setHoveredCard,
-  activeCardMenu,
   launchingId,
   onLaunch,
   onReturnToTavern,
@@ -673,7 +670,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       if (newTarget !== currentReorder.targetIndex) setReorderState(reorderStateRef.current);
     };
 
-    const onPointerUp = (e: PointerEvent) => {
+    const onPointerUp = () => {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
@@ -790,9 +787,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       dropFrameRef.current = requestAnimationFrame(step);
     };
 
-    const onPointerCancel = (e: PointerEvent) => {
-      onPointerUp(e);
-    };
+    const onPointerCancel = () => onPointerUp();
 
     window.addEventListener("pointermove", onPointerMove, { passive: false });
     window.addEventListener("pointerup", onPointerUp);
@@ -1121,7 +1116,6 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                 glassBg={glassBg}
                 hoveredCard={hoveredCard}
                 setHoveredCard={setHoveredCard}
-                activeCardMenu={activeCardMenu}
                 launchingId={launchingId}
                 onLaunch={onLaunch}
                 onReturnToTavern={onReturnToTavern}

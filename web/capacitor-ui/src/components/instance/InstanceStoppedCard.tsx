@@ -12,7 +12,6 @@ export interface InstanceStoppedCardProps {
   isDynamic?: boolean;
   glassBg?: string;
   isExpanded: boolean;
-  isMenuOpen: boolean;
   launchingId: string | null;
   onToggleExpand: () => void;
   onLaunch: (instance: TavernInstance) => void;
@@ -48,7 +47,6 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
   isLight,
   isDynamic = false,
   isExpanded,
-  isMenuOpen,
   launchingId,
   onToggleExpand,
   onLaunch,
