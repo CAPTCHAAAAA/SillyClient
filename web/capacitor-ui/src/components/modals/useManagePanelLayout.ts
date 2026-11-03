@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { ManageTab } from "../../types";
 
@@ -48,6 +48,33 @@ export function useManagePanelLayout({
   const [manualBox, setManualBox] = useState<{ width: number; height: number } | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
+  const pendingBoxRef = useRef<{ width: number; height: number } | null>(null);
+  const latestBoxRef = useRef<{ width: number; height: number } | null>(null);
+  const resizeFrameRef = useRef<number | null>(null);
+
+  const applyResizeBox = useCallback((box: { width: number; height: number }) => {
+    const windowElement = windowRef.current;
+    if (!windowElement) return;
+    windowElement.style.width = `${box.width}px`;
+    windowElement.style.height = `${box.height}px`;
+  }, []);
+
+  const flushResize = useCallback(() => {
+    resizeFrameRef.current = null;
+    const next = pendingBoxRef.current;
+    pendingBoxRef.current = null;
+    if (!next) return;
+    applyResizeBox(next);
+  }, [applyResizeBox]);
+
+  const cancelResizeFrame = useCallback(() => {
+    if (resizeFrameRef.current !== null) {
+      cancelAnimationFrame(resizeFrameRef.current);
+      resizeFrameRef.current = null;
+    }
+    pendingBoxRef.current = null;
+    latestBoxRef.current = null;
+  }, []);
 
   useLayoutEffect(() => {
     if (!visible) return;
@@ -63,10 +90,15 @@ export function useManagePanelLayout({
   useEffect(() => {
     if (visible) return;
     resizeCleanupRef.current?.();
+    setIsResizing(false);
+    cancelResizeFrame();
     setManualBox(null);
-  }, [visible]);
+  }, [cancelResizeFrame, visible]);
 
-  useEffect(() => () => resizeCleanupRef.current?.(), []);
+  useEffect(() => () => {
+    resizeCleanupRef.current?.();
+    cancelResizeFrame();
+  }, [cancelResizeFrame]);
 
   useLayoutEffect(() => {
     if (!visible || !ready || (manualBox && !isPortrait)) return;
@@ -125,23 +157,48 @@ export function useManagePanelLayout({
     const startY = event.clientY;
     const startWidth = bounds.width;
     const startHeight = bounds.height;
-    setManualBox({ width: startWidth, height: startHeight });
+    const initialBox = { width: startWidth, height: startHeight };
+    pendingBoxRef.current = null;
+    latestBoxRef.current = initialBox;
+    setManualBox(initialBox);
     setIsResizing(true);
     const onMove = (moveEvent: PointerEvent) => {
       const available = viewportSize();
-      setManualBox({
+      const nextBox = {
         width: Math.round(Math.min(available.width - VIEW_GUTTER * 2, Math.max(MIN_WIDTH, startWidth + moveEvent.clientX - startX))),
         height: Math.round(Math.min(available.height - VIEW_GUTTER * 2, Math.max(300, startHeight + moveEvent.clientY - startY))),
-      });
+      };
+      latestBoxRef.current = nextBox;
+      pendingBoxRef.current = nextBox;
+      if (resizeFrameRef.current === null) {
+        resizeFrameRef.current = requestAnimationFrame(flushResize);
+      }
     };
-    const onUp = () => {
-      setIsResizing(false);
+    const removeListeners = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+    };
+    const onUp = () => {
+      if (resizeFrameRef.current !== null) {
+        cancelAnimationFrame(resizeFrameRef.current);
+        resizeFrameRef.current = null;
+      }
+      pendingBoxRef.current = null;
+      const finalBox = latestBoxRef.current;
+      latestBoxRef.current = null;
+      if (finalBox) {
+        applyResizeBox(finalBox);
+        setManualBox(finalBox);
+      }
+      setIsResizing(false);
+      removeListeners();
       resizeCleanupRef.current = null;
     };
-    resizeCleanupRef.current = onUp;
+    resizeCleanupRef.current = () => {
+      removeListeners();
+      cancelResizeFrame();
+    };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);

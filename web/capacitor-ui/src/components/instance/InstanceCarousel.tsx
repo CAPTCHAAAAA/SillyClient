@@ -541,6 +541,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   const liftTokenRef = useRef(0);
   const dragPlateBaseRef = useRef<FrozenPlateBaseMetrics | null>(null);
   const slotCardsCacheRef = useRef<HTMLElement[] | null>(null);
+  const reorderStrideRef = useRef<number | null>(null);
+  const paintedTargetIndexRef = useRef<number | null>(null);
 
   // 动态测量卡片槽位物理步长 (240px card + 28px gap = 268px)
   const getCardStride = useCallback(() => {
@@ -583,6 +585,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
         el.style.scrollBehavior = "auto";
         const slotCards = Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[];
         slotCardsCacheRef.current = slotCards;
+        reorderStrideRef.current = getCardStride();
+        paintedTargetIndexRef.current = null;
         const draggedSlotEl = slotCards[slotIndex];
         if (draggedSlotEl) {
           const innerCard = draggedSlotEl.querySelector<HTMLElement>(".motion-instance-card[data-frozen-plate]");
@@ -647,7 +651,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       e.preventDefault();
       const dx = e.clientX - start.x;
       pushGestureSample(reorderSamplesRef.current, e.clientX, performance.now());
-      const stride = getCardStride();
+      const stride = reorderStrideRef.current ?? (reorderStrideRef.current = getCardStride());
       const slotDelta = Math.round(dx / stride);
       const pinned = reorderDepsRef.current.createCardPinned;
       const lastSlot = localInstances.length;
@@ -684,7 +688,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       pointerStartRef.current = null;
       liftTokenRef.current += 1;
       const releaseLift = reorderLiftRef.current || 1;
-      const stride = getCardStride();
+      const stride = reorderStrideRef.current ?? (reorderStrideRef.current = getCardStride());
       const fromIdx = currentReorder.draggedIndex;
       const toIdx = currentReorder.targetIndex;
       const fromOffset = currentReorder.dragOffset;
@@ -697,6 +701,8 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       const finishReorder = () => {
         dragPlateBaseRef.current = null;
         slotCardsCacheRef.current = null;
+        reorderStrideRef.current = null;
+        paintedTargetIndexRef.current = null;
         if (fromIdx !== toIdx) {
           const { createCardPinned: pinned, createCardSlot: slot, onCreateCardSlotChange: reportSlot } = reorderDepsRef.current;
           const slots: (TavernInstance | null)[] = [
@@ -934,27 +940,53 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
       slotCardsCacheRef.current && slotCardsCacheRef.current.length > 0
         ? slotCardsCacheRef.current
         : (Array.from(el.children).filter(c => (c as HTMLElement).hasAttribute("data-slot")) as HTMLElement[]);
-    const stride = getCardStride();
+    const stride = reorderStrideRef.current ?? (reorderStrideRef.current = getCardStride());
     const lift = reorderLiftRef.current;
-    cards.forEach((card, slotIndex) => {
+    const layoutChanged = paintedTargetIndexRef.current !== state.targetIndex;
+    const updateSlot = (slotIndex: number) => {
+      const card = cards[slotIndex];
+      if (!card) return;
       let shift = 0;
       if (slotIndex === state.draggedIndex) shift = offset;
       else if (state.draggedIndex < state.targetIndex && slotIndex > state.draggedIndex && slotIndex <= state.targetIndex) shift = -stride;
       else if (state.draggedIndex > state.targetIndex && slotIndex >= state.targetIndex && slotIndex < state.draggedIndex) shift = stride;
-      card.style.transform = `translate3d(${shift}px, 0, 0)`;
-      card.style.transition = slotIndex === state.draggedIndex || isReorderCommitting ? "none" : reorderTransition;
-      card.style.zIndex = slotIndex === state.draggedIndex ? "50" : "";
-      if (slotIndex === state.draggedIndex) card.style.setProperty("--reorder-lift", String(lift));
-      else card.style.removeProperty("--reorder-lift");
       if (slotIndex === state.draggedIndex) {
-        if (dragPlateBaseRef.current) {
-          applyFrozenPlateTransformFromBase(dragPlateBaseRef.current, offset, lift);
-        } else {
-          const innerCard = card.querySelector<HTMLElement>(".motion-instance-card[data-frozen-plate]");
-          if (innerCard) syncFrozenPlatePosition(innerCard);
-        }
+        card.style.transform = `translate3d(${shift}px, 0, 0)`;
+        card.style.transition = "none";
+        card.style.zIndex = "50";
+        card.style.setProperty("--reorder-lift", String(lift));
+      } else if (layoutChanged || isReorderCommitting) {
+        card.style.transform = `translate3d(${shift}px, 0, 0)`;
+        card.style.transition = isReorderCommitting ? "none" : reorderTransition;
+        card.style.zIndex = "";
+        card.style.removeProperty("--reorder-lift");
       }
-    });
+    };
+
+    updateSlot(state.draggedIndex);
+    if (layoutChanged) {
+      const previousTarget = paintedTargetIndexRef.current ?? state.draggedIndex;
+      const firstAffected = Math.min(state.draggedIndex, previousTarget, state.targetIndex);
+      const lastAffected = Math.max(state.draggedIndex, previousTarget, state.targetIndex);
+      for (let slotIndex = firstAffected; slotIndex <= lastAffected; slotIndex += 1) {
+        if (slotIndex !== state.draggedIndex) updateSlot(slotIndex);
+      }
+    } else if (isReorderCommitting) {
+      cards.forEach((_, slotIndex) => {
+        if (slotIndex !== state.draggedIndex) updateSlot(slotIndex);
+      });
+    }
+
+    const draggedCard = cards[state.draggedIndex];
+    if (draggedCard) {
+      if (dragPlateBaseRef.current) {
+        applyFrozenPlateTransformFromBase(dragPlateBaseRef.current, offset, lift);
+      } else {
+        const innerCard = draggedCard.querySelector<HTMLElement>(".motion-instance-card[data-frozen-plate]");
+        if (innerCard) syncFrozenPlatePosition(innerCard);
+      }
+    }
+    paintedTargetIndexRef.current = state.targetIndex;
   };
 
   useLayoutEffect(() => {
