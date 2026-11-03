@@ -16,7 +16,7 @@ import {
 import { coverTone, coverWash } from "./coverTone";
 import { useFrozenCoverPlate } from "./useFrozenCoverPlate";
 
-const REORDER_CURVE = "cubic-bezier(0.22, 0.7, 0.3, 1)";
+const REORDER_CURVE = "cubic-bezier(0.4, 0, 0.2, 1)";
 const REORDER_SETTLE_MS = 380;
 const RELEASE_ALPHA = 0.84;
 type GestureSample = { x: number; t: number };
@@ -997,11 +997,10 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   return (
     <div className="w-full max-w-6xl mx-auto px-6 md:px-8">
       <div className="relative">
-        {/* 轮播滑动轨道：垂直上下预留 36px+ 充足空间，杜绝全向 3D 体积光阴影被滚动容器边缘裁切分层 */}
         <div
           ref={carouselRef}
           data-carousel-committing={isReorderCommitting ? "true" : undefined}
-          className="carousel-scrollbar-hidden flex gap-7 overflow-x-auto snap-x snap-mandatory px-3 py-9 -mx-2 -my-4"
+          className="carousel-scrollbar-hidden carousel-shadow-viewport flex gap-7 overflow-x-auto snap-x snap-mandatory px-3 -mx-2"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",

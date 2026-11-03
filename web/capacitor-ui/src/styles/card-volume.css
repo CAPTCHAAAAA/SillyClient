@@ -4,14 +4,14 @@
   pointer-events: none;
   border-radius: inherit;
   background-image:
-    radial-gradient(ellipse at 8% 0%, rgba(255, 255, 255, 0.075), transparent 67%),
+    radial-gradient(ellipse at 8% 0%, rgba(255, 255, 255, 0.045), transparent 67%),
     radial-gradient(ellipse at 100% 100%, rgba(7, 5, 12, 0.09), transparent 74%);
   opacity: calc(1 - var(--reorder-lift, 0));
 }
 
 .is-light > .card-volume-wash {
   background-image:
-    radial-gradient(ellipse at 8% 0%, rgba(255, 255, 255, 0.3), transparent 67%),
+    radial-gradient(ellipse at 8% 0%, rgba(255, 255, 255, 0.16), transparent 67%),
     radial-gradient(ellipse at 100% 100%, rgba(39, 29, 48, 0.055), transparent 74%);
 }
 
@@ -20,5 +20,5 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 12px 14px 30px -16px rgba(255, 255, 255, 0.12), inset -12px -16px 32px -16px rgba(7, 5, 12, 0.16);
+  box-shadow: inset 12px 14px 30px -16px rgba(255, 255, 255, 0.065), inset -12px -16px 32px -16px rgba(7, 5, 12, 0.16);
 }

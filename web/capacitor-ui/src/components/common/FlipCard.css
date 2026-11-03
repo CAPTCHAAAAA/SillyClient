@@ -17,6 +17,7 @@
   --fc-shadow: #000000;
   --fc-shadow-o: 0.45;
   --fc-shadow-tone: 1;
+  --fc-rest-shadow-strength: 1.5;
   --fc-edge-light: calc(1 - var(--reorder-lift, 0));
   --fc-glare: 0.06;
   --fc-behind-glow: rgba(130, 155, 220, 0.12);
@@ -42,6 +43,7 @@
 
 [data-theme-tone="light"] .flip-card {
   --fc-shadow-tone: 0.32;
+  --fc-rest-shadow-strength: 5;
 }
 
 /* 1. 普通点击按压（物理 3D 跷跷板式触觉倾斜，彻底杜绝 2D 缩水）：
@@ -203,8 +205,8 @@
   border-radius: var(--fc-radius);
   box-shadow:
     /* 基础淡雅环境光晕（无光标悬停时也自然呼吸，0 分层切边，极淡通透） */
-    0 8px 22px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.25)),
-    0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15)),
+    0 8px 22px -4px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.25 * var(--fc-rest-shadow-strength))),
+    0 2px 6px -1px rgba(0, 0, 0, calc(var(--fc-shadow-o) * 0.15 * var(--fc-rest-shadow-strength))),
     /* 动态主阶体积光投影：受二阶弹簧惯性滞后平滑驱动，淡淡的 3D 立体漫射柔焦 */
     calc((var(--pointer-from-left, 0.5) - 0.5) * 12px)
     calc((var(--pointer-from-top, 0.5) - 0.5) * 14px + 3px)
@@ -470,6 +472,10 @@ body[data-preview-light] .flip-card[data-reordering="true"]:not(:has([data-froze
 .flip-card:not(:hover) .flip-card__behind-glow {
   opacity: 0 !important;
   transition: opacity 160ms ease-out !important;
+}
+
+.flip-card[data-fade] .flip-card__rotor {
+  transform: none !important;
 }
 
 .flip-card[data-fade] .flip-card__face {

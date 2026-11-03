@@ -1,9 +1,10 @@
 @font-face {
-  font-family: "Maple Mono";
-  src: url("/fonts/MapleMono-Variable.woff2") format("woff2");
-  font-weight: 100 800;
+  font-family: "Terminal CJK";
+  src: local("Noto Sans SC"), local("Noto-Sans-SC"), local("PingFangSC-Regular"), local("Hiragino Sans GB W3"), local("Microsoft YaHei UI"), local("Noto Sans CJK SC"), local("NotoSansCJKsc-Regular");
   font-style: normal;
+  font-weight: 400;
   font-display: swap;
+  unicode-range: U+2E80-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-3FFFF;
 }
 
 .terminal-well {
@@ -12,9 +13,24 @@
   --terminal-text-strong: rgba(255, 255, 255, 0.9);
   --terminal-text-muted: rgba(255, 255, 255, 0.46);
   --terminal-text-error: rgba(252, 165, 165, 0.9);
+  --terminal-text-label: rgba(255, 255, 255, 0.55);
+  --terminal-text-placeholder: rgba(255, 255, 255, 0.32);
+  --terminal-tool-color: rgba(255, 255, 255, 0.4);
+  --terminal-tool-hover-color: rgba(255, 255, 255, 0.85);
   border: 0;
   border-radius: 20px;
   color: var(--terminal-text);
+}
+
+.terminal-well[data-terminal-tone="light"] {
+  --terminal-text: rgba(38, 34, 45, 0.86);
+  --terminal-text-strong: rgba(33, 29, 39, 0.94);
+  --terminal-text-muted: rgba(47, 42, 54, 0.78);
+  --terminal-text-error: rgba(139, 46, 60, 0.95);
+  --terminal-text-label: rgba(47, 42, 54, 0.72);
+  --terminal-text-placeholder: rgba(47, 42, 54, 0.76);
+  --terminal-tool-color: rgba(47, 42, 54, 0.68);
+  --terminal-tool-hover-color: rgba(33, 29, 39, 0.94);
 }
 
 .terminal-well--compact {
@@ -23,7 +39,7 @@
 }
 
 .terminal-output {
-  font-family: "Maple Mono", "SFMono-Regular", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
+  font-family: "Terminal CJK", "SFMono-Regular", Consolas, Menlo, Monaco, "Liberation Mono", monospace;
   font-size: var(--terminal-font-size);
   font-weight: 400;
   font-variant-ligatures: none;
@@ -88,7 +104,7 @@
 }
 
 .terminal-command-input::placeholder {
-  color: rgba(255, 255, 255, 0.32);
+  color: var(--terminal-text-placeholder);
 }
 
 .terminal-well .terminal-command-input:focus-visible {

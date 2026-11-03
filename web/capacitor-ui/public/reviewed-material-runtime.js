@@ -1865,7 +1865,7 @@
 
           themeWashAnimations.get(wash)?.cancel();
           if (typeof wash.animate !== "function") return;
-          wash.style.backgroundColor = tone === "light" ? "rgb(var(--app-light-surface-rgb, 242 238 228))" : "#1a1625";
+          wash.style.backgroundColor = tone === "light" ? "rgb(var(--app-light-surface-rgb, 240 236 232))" : "#1a1625";
           themeWashAnimations.set(wash, wash.animate(
             [{ opacity: 0.12 }, { opacity: 0 }],
             {
@@ -2684,7 +2684,7 @@
             glow2Rgb: [255, 255, 255],
             coverRgb: [192, 192, 192],
             gradRgb: [30, 15, 24],
-            lgRgb: [252, 249, 241],
+            lgRgb: [252, 252, 252],
             shRgb: [7, 5, 10],
           },
           dark: {
@@ -2709,7 +2709,7 @@
         // 三种模式各自拥有独立工作区、手动保存槽和历史，任何修改只写入
         // 面板当前模式。旧版 dynamic 裸对象与三个旧槽会按模式一次性兼容读取。
         const SF_STORAGE_VERSION = 3;
-        const SF_BASELINE_REVISION = "20261103-light-warm-v1";
+        const SF_BASELINE_REVISION = "20261103-light-neutral-v1";
         const SF_BASELINE_REVISION_KEY = "sillyclient.sfTuningPreset.baselineRevision";
         const SF_MODE_LABELS = {
           dynamic: "动态",
@@ -2822,10 +2822,11 @@
             const rawDraft = readSfJson(SF_DRAFT_KEYS[mode]);
             const draftVersion = Number(rawDraft && rawDraft.version);
             if (Number.isFinite(draftVersion) && draftVersion >= SF_STORAGE_VERSION) {
-              if (mode === "light" && draftVersion === SF_STORAGE_VERSION &&
+              if (appliedRevision === "20261103-light-warm-v1" &&
+                  mode === "light" && draftVersion === SF_STORAGE_VERSION &&
                   Array.isArray(rawDraft.values?.lgRgb) &&
                   rawDraft.values.lgRgb.length === 3 &&
-                  rawDraft.values.lgRgb.every((channel) => channel === 252)) {
+                  rawDraft.values.lgRgb.every((channel, index) => channel === [252, 249, 241][index])) {
                 rawDraft.values.lgRgb = cloneSfValues(SF_MODE_DEFAULTS.light.lgRgb);
                 writeSfJson(SF_DRAFT_KEYS[mode], rawDraft);
               }

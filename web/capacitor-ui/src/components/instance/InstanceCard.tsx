@@ -46,6 +46,10 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   const isRunning = props.instance.status === "running";
   const isExpanded = props.hoveredCard === props.instance.id;
   const isMenuOpen = props.activeCardMenu === props.instance.id;
+  const toggleExpand = React.useCallback(
+    () => props.setHoveredCard(isExpanded ? null : props.instance.id),
+    [isExpanded, props.instance.id, props.setHoveredCard]
+  );
 
   return (
     <FlipCard
@@ -94,7 +98,7 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           isExpanded={isExpanded}
           isMenuOpen={isMenuOpen}
           launchingId={props.launchingId}
-          onToggleExpand={() => props.setHoveredCard(isExpanded ? null : props.instance.id)}
+          onToggleExpand={toggleExpand}
           onLaunch={props.onLaunch}
           onOpenMenu={props.onOpenMenu}
           onRenameSave={props.onRenameSave || (() => {})}
@@ -112,6 +116,8 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           onReturnToTavern={props.onReturnToTavern}
           onStopInstance={props.onStopInstance}
           onOpenMenu={props.onOpenMenu}
+          isExpanded={isExpanded}
+          onToggleExpand={toggleExpand}
           active={isRunning}
           isWindows={props.isWindows}
         />

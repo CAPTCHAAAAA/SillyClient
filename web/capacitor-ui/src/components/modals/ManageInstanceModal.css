@@ -1,0 +1,41 @@
+.manage-window {
+  transition:
+    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    height var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+.manage-window.is-resizing {
+  transition: none;
+}
+
+.manage-panel-surface {
+  --manage-well-fill: rgba(0, 0, 0, 0.1);
+  --manage-field-fill: rgba(0, 0, 0, 0.09);
+  --manage-action-fill: rgba(255, 255, 255, 0.055);
+  --manage-action-hover: rgba(255, 255, 255, 0.085);
+  --manage-action-pressed: rgba(0, 0, 0, 0.1);
+  --manage-card-height: clamp(96px, 14dvh, 120px);
+}
+
+.manage-panel-surface.is-light {
+  --manage-well-fill: rgba(26, 22, 37, 0.028);
+  --manage-field-fill: rgba(26, 22, 37, 0.045);
+  --manage-action-fill: rgba(26, 22, 37, 0.055);
+  --manage-action-hover: rgba(26, 22, 37, 0.08);
+  --manage-action-pressed: rgba(26, 22, 37, 0.1);
+}
+
+.manage-panel-surface .manage-well {
+  background: var(--manage-well-fill);
+}
+
+.manage-content {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manage-window {
+    transition: none;
+  }
+}

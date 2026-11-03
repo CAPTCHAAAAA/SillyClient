@@ -19,6 +19,7 @@ export const TerminalWell: React.FC<TerminalWellProps> = ({
   <div
     {...props}
     data-terminal-well
+    data-terminal-tone={isLight ? "light" : "dark"}
     className={cn("terminal-well", compact && "terminal-well--compact", className)}
     style={{ ...terminalWellSurface(isLight, isDynamic), ...style }}
   />
