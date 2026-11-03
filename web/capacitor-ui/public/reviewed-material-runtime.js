@@ -1269,14 +1269,14 @@
           }
 
           /* 主题模式差异仅剩发光色；浓度/雾/遮罩统一由调试面板全局变量控制 */
-          body[data-preview-light] .motion-instance-card {
+          body[data-preview-light] .motion-instance-card:not(.flip-card__face *) {
             box-shadow:
               inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 96 84 76) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 110 96 86) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 120 100 80) / var(--sf-sh-a, 0.075)) !important;
           }
 
-          body[data-preview-light] .motion-instance-card:hover {
+          body[data-preview-light] .motion-instance-card:not(.flip-card__face *):hover {
             box-shadow:
               inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 96 84 76) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 110 96 86) / var(--sf-glow2, 0.01)),
@@ -1284,14 +1284,14 @@
           }
 
           /* 黑夜模式（indigo 系，与源码暗夜按钮 indigo-500 同族） */
-          body[data-preview-dark-mode] .motion-instance-card {
+          body[data-preview-dark-mode] .motion-instance-card:not(.flip-card__face *) {
             box-shadow:
               inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 151 171 255) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 120 140 230) / var(--sf-glow2, 0.01)),
               0 var(--sf-sh-y, 3px) var(--sf-sh-blur, 12px) rgba(var(--sf-sh-rgb, 7 5 10) / var(--sf-sh-a, 0.075)) !important;
           }
 
-          body[data-preview-dark-mode] .motion-instance-card:hover {
+          body[data-preview-dark-mode] .motion-instance-card:not(.flip-card__face *):hover {
             box-shadow:
               inset 0 0 var(--sf-glow1-spread, 18px) 0 rgba(var(--sf-glow1-rgb, 151 171 255) / var(--sf-glow1, 0.11)),
               inset 0 0 var(--sf-glow2-spread, 40px) 0 rgba(var(--sf-glow2-rgb, 120 140 230) / var(--sf-glow2, 0.01)),
@@ -1711,7 +1711,7 @@
             return null;
           }
 
-          wallpaper.setAttribute("data-preview-wallpaper", "");
+          if (!wallpaper.hasAttribute("data-preview-wallpaper")) wallpaper.setAttribute("data-preview-wallpaper", "");
           if (wallpaper.style.getPropertyValue("--preview-wallpaper-image") !== wallpaper.style.backgroundImage) {
             wallpaper.style.setProperty("--preview-wallpaper-image", wallpaper.style.backgroundImage);
           }
@@ -1723,16 +1723,16 @@
           const panel = getBackgroundPanel(doc);
           if (!panel) return;
 
-          panel.setAttribute("data-preview-bg-panel", "");
+          if (!panel.hasAttribute("data-preview-bg-panel")) panel.setAttribute("data-preview-bg-panel", "");
 
           const importBtn = Array.from(panel.querySelectorAll("button")).find((node) => {
             const title = node.querySelector("div > div");
             return title && (title.textContent === "导入本地图片" || title.textContent === "已导入壁纸");
           });
           if (importBtn) {
-            importBtn.setAttribute("data-preview-wallpaper-import", "");
-            if (wallpaper) importBtn.setAttribute("data-preview-has-wallpaper", "");
-            else importBtn.removeAttribute("data-preview-has-wallpaper");
+            if (!importBtn.hasAttribute("data-preview-wallpaper-import")) importBtn.setAttribute("data-preview-wallpaper-import", "");
+            if (wallpaper && !importBtn.hasAttribute("data-preview-has-wallpaper")) importBtn.setAttribute("data-preview-has-wallpaper", "");
+            else if (!wallpaper && importBtn.hasAttribute("data-preview-has-wallpaper")) importBtn.removeAttribute("data-preview-has-wallpaper");
           }
 
           const existing = panel.querySelector(".preview-wallpaper-blur-control");
@@ -1849,6 +1849,7 @@
 
         let previewThemeToneDoc = null;
         let previewThemeTone = null;
+        const themeWashAnimations = new WeakMap();
         const playThemeWash = (doc, tone) => {
           const view = doc.defaultView;
           if (!doc.body || !view || view.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
@@ -1862,22 +1863,20 @@
             doc.body.appendChild(wash);
           }
 
-          if (typeof wash.getAnimations === "function") {
-            wash.getAnimations().forEach((animation) => animation.cancel());
-          }
+          themeWashAnimations.get(wash)?.cancel();
           if (typeof wash.animate !== "function") return;
-          wash.style.backgroundColor = tone === "light" ? "#f0ece8" : "#1a1625";
-          wash.animate(
+          wash.style.backgroundColor = tone === "light" ? "rgb(var(--app-light-surface-rgb, 242 238 228))" : "#1a1625";
+          themeWashAnimations.set(wash, wash.animate(
             [{ opacity: 0.12 }, { opacity: 0 }],
             {
               duration: 220,
               easing: "cubic-bezier(0.22, 1, 0.36, 1)",
             },
-          );
+          ));
         };
 
         const syncLightMode = (doc, root) => {
-          const isLight = root.classList.contains("bg-[#f0ece8]");
+          const isLight = root.dataset.themeTone === "light";
           const nextTone = isLight ? "light" : "dark";
           const toneChanged =
             previewThemeToneDoc === doc &&
@@ -1886,14 +1885,14 @@
           previewThemeToneDoc = doc;
           previewThemeTone = nextTone;
 
-          if (isLight) doc.body.dataset.previewLight = "true";
-          else delete doc.body.dataset.previewLight;
+          if (isLight && doc.body.dataset.previewLight !== "true") doc.body.dataset.previewLight = "true";
+          else if (!isLight && doc.body.hasAttribute("data-preview-light")) delete doc.body.dataset.previewLight;
 
           // 黑夜模式 = 深底且无动态光效容器（动态模式才有 ambient-glow-container）
           const isDynamic = !!doc.querySelector(".ambient-glow-container");
           const isDarkNight = !isLight && !isDynamic;
-          if (isDarkNight) doc.body.dataset.previewDarkMode = "true";
-          else delete doc.body.dataset.previewDarkMode;
+          if (isDarkNight && doc.body.dataset.previewDarkMode !== "true") doc.body.dataset.previewDarkMode = "true";
+          else if (!isDarkNight && doc.body.hasAttribute("data-preview-dark-mode")) delete doc.body.dataset.previewDarkMode;
 
           const control = doc.querySelector(".preview-wallpaper-blur-control");
           if (control) {
@@ -2620,11 +2619,11 @@
           const root = doc.querySelector("#root > div");
           if (!root || !doc.body) return;
 
-          root.setAttribute("data-preview-root", "");
+          if (!root.hasAttribute("data-preview-root")) root.setAttribute("data-preview-root", "");
           const main = root.querySelector(":scope > main");
           if (main) {
             const logo = main.querySelector(":scope > div.mb-4.text-center.select-none.cursor-pointer.group");
-            if (logo) logo.setAttribute("data-preview-logo", "");
+            if (logo && !logo.hasAttribute("data-preview-logo")) logo.setAttribute("data-preview-logo", "");
           }
 
           syncLightMode(doc, root);
@@ -2685,7 +2684,7 @@
             glow2Rgb: [255, 255, 255],
             coverRgb: [192, 192, 192],
             gradRgb: [30, 15, 24],
-            lgRgb: [252, 252, 252],
+            lgRgb: [252, 249, 241],
             shRgb: [7, 5, 10],
           },
           dark: {
@@ -2710,7 +2709,7 @@
         // 三种模式各自拥有独立工作区、手动保存槽和历史，任何修改只写入
         // 面板当前模式。旧版 dynamic 裸对象与三个旧槽会按模式一次性兼容读取。
         const SF_STORAGE_VERSION = 3;
-        const SF_BASELINE_REVISION = "20260904-card-reveal-v10";
+        const SF_BASELINE_REVISION = "20261103-light-warm-v1";
         const SF_BASELINE_REVISION_KEY = "sillyclient.sfTuningPreset.baselineRevision";
         const SF_MODE_LABELS = {
           dynamic: "动态",
@@ -2822,7 +2821,16 @@
           for (const mode of SF_MODE_ORDER) {
             const rawDraft = readSfJson(SF_DRAFT_KEYS[mode]);
             const draftVersion = Number(rawDraft && rawDraft.version);
-            if (Number.isFinite(draftVersion) && draftVersion >= SF_STORAGE_VERSION) continue;
+            if (Number.isFinite(draftVersion) && draftVersion >= SF_STORAGE_VERSION) {
+              if (mode === "light" && draftVersion === SF_STORAGE_VERSION &&
+                  Array.isArray(rawDraft.values?.lgRgb) &&
+                  rawDraft.values.lgRgb.length === 3 &&
+                  rawDraft.values.lgRgb.every((channel) => channel === 252)) {
+                rawDraft.values.lgRgb = cloneSfValues(SF_MODE_DEFAULTS.light.lgRgb);
+                writeSfJson(SF_DRAFT_KEYS[mode], rawDraft);
+              }
+              continue;
+            }
             const slot = loadSfSlotRecord(mode);
             writeSfJson(SF_DRAFT_KEYS[mode], {
               version: SF_STORAGE_VERSION,
@@ -3816,9 +3824,6 @@
             const liveRoot = currentDoc.querySelector("#root > div");
             if (!liveRoot) return;
             if (liveRoot !== observedThemeRoot) installThemeRootObserver(currentDoc, liveRoot);
-            if (liveRoot.classList.contains("theme-smoothing")) {
-              liveRoot.classList.remove("theme-smoothing");
-            }
             syncLightMode(currentDoc, liveRoot);
             ensureTuningPanel(currentDoc);
           });

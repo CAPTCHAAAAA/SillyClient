@@ -14,7 +14,8 @@ import { LAYERS } from "../../constants/layers";
 import type { TavernInstance, ManageTab, BgMode, ThemeStyle } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { instanceLogs } from "../../lib/log-store";
-import { MENU_GLASS_FILTER, menuNestedWash, menuShellBackground, terminalWellSurface } from "../../lib/menu-surface";
+import { MENU_GLASS_FILTER, menuNestedWash, menuShellBackground } from "../../lib/menu-surface";
+import { TerminalWell } from "../common/TerminalWell";
 import { CornerResizeCurve } from "./CornerResizeCurve";
 
 const MANAGE_IMAGE_W = 1254;
@@ -54,6 +55,16 @@ function copyManageFaceValues(source: HTMLElement, clone: HTMLElement) {
     target.checked = (node as HTMLInputElement).checked;
   });
   clone.querySelectorAll<HTMLElement>("[id]").forEach((node) => node.removeAttribute("id"));
+  const scrollSelector = ".overflow-y-auto, [data-native-log-list]";
+  const scrollSources = source.querySelectorAll<HTMLElement>(scrollSelector);
+  const scrollClones = clone.querySelectorAll<HTMLElement>(scrollSelector);
+  scrollSources.forEach((node, index) => {
+    const target = scrollClones[index];
+    if (target) {
+      target.scrollTop = node.scrollTop;
+      target.scrollLeft = node.scrollLeft;
+    }
+  });
 }
 
 function manageRecessedGlass(isLight: boolean): React.CSSProperties {
@@ -289,10 +300,12 @@ function manageTextFieldClass(isLight: boolean) {
 }
 
 function ManageToggle({
+  label,
   on,
   onChange,
   isLight,
 }: {
+  label: string;
   on: boolean;
   onChange: (value: boolean) => void;
   isLight: boolean;
@@ -301,6 +314,7 @@ function ManageToggle({
     <button
       type="button"
       role="switch"
+      aria-label={label}
       aria-checked={on}
       onClick={() => onChange(!on)}
       className="relative flex-shrink-0 rounded-full transition-colors duration-200"
@@ -391,7 +405,16 @@ function ManageInstanceCard({
   return (
     <div
       data-manage-card={item.id}
+      role="button"
+      tabIndex={0}
+      aria-label={item.subtitle || item.name}
+      aria-pressed={selected}
       onClick={() => onSelect(item)}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        onSelect(item);
+      }}
       className={cn(
         "motion-instance-card group relative cursor-pointer select-none flex-shrink-0",
         !isPortrait && "w-full",
@@ -424,10 +447,10 @@ function ManageInstanceCard({
         <div className="pointer-events-none absolute left-0 top-0 z-[2] flex items-center gap-1.5" style={{ padding: manageEm(14) }}>
           <span
             className={cn(
-              "rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-wide",
+              "rounded-md px-2 py-0.5 text-[10px] font-medium tracking-wide",
               isLight
-                ? "bg-black/[0.06] text-[#1a1625]/60"
-                : "bg-white/10 text-white/72"
+                ? "bg-black/[0.035] text-[#1a1625]/60"
+                : "bg-white/[0.07] text-white/70"
             )}
           >
             {formatDisplayVersion(item.version)}
@@ -765,10 +788,12 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     if (active && host) {
       host.replaceChildren();
       const clone = active.cloneNode(true) as HTMLElement;
-      copyManageFaceValues(active, clone);
       clone.classList.add("manage-settings-outgoing");
       clone.style.pointerEvents = "none";
+      clone.inert = true;
+      clone.setAttribute("aria-hidden", "true");
       host.appendChild(clone);
+      copyManageFaceValues(active, clone);
       pendingOutgoingRef.current = clone;
     }
     setSettingsFaceEpoch((value) => value + 1);
@@ -868,6 +893,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
           />
           <input
             type="search"
+            aria-label="搜索管理实例"
             value={manageSearchQuery}
             onChange={(e) => setManageSearchQuery(e.target.value)}
             placeholder="搜索实例..."
@@ -887,7 +913,9 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
               <div className="motion-slot-face">
                 <button
                   type="button"
-                                    onClick={() => setManageSearchQuery("")}
+                  aria-label="清空实例搜索"
+                  disabled={!manageSearchQuery}
+                  onClick={() => setManageSearchQuery("")}
                   className={cn(
                     "motion-control rounded-full p-1",
                     isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/85" : "text-white/40 hover:text-white/85"
@@ -1046,6 +1074,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
+                          aria-label="启动端口"
                           value={draftPort}
                           onChange={(e) => {
                             setDraftPort(parseInt(e.target.value) || 8000);
@@ -1056,10 +1085,11 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       </ManageItem>
                       <ManageItem
                         label="允许外部监听"
-                        desc="Android 宿主默认建议关闭，只在明确需要局域网访问时开启"
+                        desc="仅在需要局域网访问时开启"
                         isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
+                          label="允许外部监听"
                           on={draftConfig.listen}
                           onChange={(v) =>
                             setDraftConfig((prev) => ({ ...prev, listen: v }))
@@ -1073,6 +1103,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                         isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
+                          label="启用 IPv4"
                           on={draftConfig.ipv4}
                           onChange={(v) =>
                             setDraftConfig((prev) => ({ ...prev, ipv4: v }))
@@ -1086,6 +1117,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                         isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
+                          label="启用 IPv6"
                           on={draftConfig.ipv6}
                           onChange={(v) =>
                             setDraftConfig((prev) => ({ ...prev, ipv6: v }))
@@ -1099,6 +1131,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                         isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
+                          label="优先使用 IPv6 DNS"
                           on={draftConfig.dnsIpv6}
                           onChange={(v) =>
                             setDraftConfig((prev) => ({ ...prev, dnsIpv6: v }))
@@ -1115,6 +1148,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
+                          aria-label="心跳写入间隔"
                           value={draftConfig.heartbeat}
                           onChange={(e) => {
                             const heartbeat = parseInt(e.target.value) || 0;
@@ -1130,6 +1164,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                         isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
+                          label="启用 HTTP Keep-Alive"
                           on={draftConfig.keepAlive}
                           onChange={(v) =>
                             setDraftConfig((prev) => ({ ...prev, keepAlive: v }))
@@ -1146,6 +1181,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                         isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
+                          label="Basic Auth"
                           on={draftRemoteAuthEnabled}
                           onChange={setDraftRemoteAuthEnabled}
                           isLight={isLight}
@@ -1233,6 +1269,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                         </button>
                       )}
                       <ManageToggle
+                        label="访问密码保护"
                         on={hasPassword || isConfiguringPassword}
                         onChange={(checked) => {
                           if (checked) {
@@ -1580,12 +1617,10 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 aria-hidden={manageTab !== "terminal"}
                 inert={manageTab !== "terminal"}
               >
-                <div
-                  className="flex h-full min-h-0 flex-col overflow-hidden text-white/78"
-                  style={{
-                    borderRadius: manageEm(MANAGE_PANE_RADIUS - MANAGE_NEST_INSET),
-                    ...terminalWellSurface(isLight, isDynamic),
-                  }}
+                <TerminalWell
+                  isLight={isLight}
+                  isDynamic={isDynamic}
+                  className="flex h-full min-h-0 flex-col overflow-hidden"
                 >
                   {mp.type === "remote" ? (
                     <div
@@ -1601,7 +1636,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       style={{ height: manageEm(44), paddingInline: manageEm(18) }}
                     >
                       <span
-                        className="font-medium text-white/55"
+                        className="min-w-0 truncate font-medium text-white/55"
                         style={{ fontSize: manageFont(13) }}
                       >
                         {mp.subtitle || mp.name} · 实例终端
@@ -1609,8 +1644,9 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setTerminalLogs([])}
-                        className="motion-control p-1.5 text-white/40 hover:text-white/85"
+                        className="terminal-tool motion-control ml-2 flex-shrink-0 rounded-full p-1.5 text-white/40 hover:text-white/85"
                         title="清空终端"
+                        aria-label="清空实例终端"
                       >
                         <Eraser className="h-3.5 w-3.5" />
                       </button>
@@ -1626,26 +1662,20 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       ref={terminalLogRef}
                       onScroll={syncRightFade}
                       data-native-log-list
-                      className="h-full overflow-y-auto leading-relaxed [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-                      style={{ padding: `${manageEm(4)} ${manageEm(18)} ${manageEm(16)}`, fontSize: manageFont(13) }}
+                      className="terminal-output h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      style={{ padding: `${manageEm(4)} ${manageEm(18)} ${manageEm(16)}`, fontSize: isPortrait ? 12 : manageFont(15) }}
                     >
                       {terminalLogs.map((log, index) => (
                         <div
                           key={index}
-                          className={cn(
-                            "mb-0.5 whitespace-pre-wrap break-all",
-                            log.level === "error"
-                              ? "text-red-300/90"
-                              : log.level === "success"
-                              ? "text-white/88"
-                              : "text-white/72"
-                          )}
+                          className="terminal-log-line"
+                          data-level={log.level}
                         >
                           {log.msg}
                         </div>
                       ))}
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="flex-shrink-0 select-none text-white/45">
+                      <div className="terminal-command-row">
+                        <span className="terminal-prompt" title={terminalDisplayPrompt}>
                           {terminalDisplayPrompt}
                         </span>
                         <input
@@ -1680,10 +1710,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                             });
                             setTerminalInput("");
                           }}
-                          className={cn(
-                            "terminal-command-input flex-1 outline-none",
-                            "text-white/82 placeholder:text-white/28"
-                          )}
+                          className="terminal-command-input"
+                          aria-label="实例终端命令"
                           placeholder={terminalPlaceholder}
                           autoCapitalize="none"
                           autoCorrect="off"
@@ -1694,7 +1722,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     </div>
                     </>
                   )}
-                </div>
+                </TerminalWell>
               </div>
 
               {/* 关于 */}

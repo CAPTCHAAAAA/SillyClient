@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Play, MoreVertical, Edit2, Lock } from "lucide-react";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
 import { coverTone, coverWash } from "./coverTone";
-import { coverIsTransparent, fillFrozenPlate } from "./frozenCoverPlate";
+import { useFrozenCoverPlate } from "./useFrozenCoverPlate";
 
 export interface InstanceStoppedCardProps {
   instance: TavernInstance;
@@ -61,45 +61,8 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
   const [isEditingInline, setIsEditingInline] = useState(false);
   const [editName, setEditName] = useState(instance.name);
   const inputRef = useRef<HTMLInputElement>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const plateRef = useRef<HTMLDivElement>(null);
   const coverSrc = instance.cover || "./tavern-logo.png";
-  const [usePlate, setUsePlate] = useState(() => /cover-clear-|tavern-logo/i.test(coverSrc));
-
-  useLayoutEffect(() => {
-    if (!usePlate) return;
-    const host = plateRef.current;
-    const root = rootRef.current;
-    if (host && root) fillFrozenPlate(host, root, true);
-  }, [usePlate, isReordering, isLight, isDynamic, coverSrc]);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    const cover = root?.querySelector("img");
-    if (!root || !cover || isReordering) return;
-    let cancelled = false;
-    let timer = 0;
-    const refresh = () => {
-      if (cancelled || isReordering) return;
-      const knownClear = /cover-clear-|tavern-logo/i.test(coverSrc);
-      if (!knownClear && (!cover.complete || !coverIsTransparent(cover))) {
-        setUsePlate(false);
-        return;
-      }
-      setUsePlate(true);
-      const host = plateRef.current;
-      if (host) fillFrozenPlate(host, root);
-    };
-    cover.addEventListener("load", refresh);
-    timer = window.setTimeout(refresh, 60);
-    window.addEventListener("resize", refresh);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-      cover.removeEventListener("load", refresh);
-      window.removeEventListener("resize", refresh);
-    };
-  }, [coverSrc, isReordering, isLight, isDynamic]);
+  const { rootRef, plateRef, usePlate } = useFrozenCoverPlate(isLight, isDynamic, isReordering, coverSrc);
 
   useEffect(() => {
     if (isExternallyRenaming) {
@@ -161,6 +124,8 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
         />
       </div>
 
+      <div className="card-volume-wash" aria-hidden="true" />
+
       <div
         className={cn(
           "absolute inset-0 rounded-[26px] transition-opacity duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-none",
@@ -182,10 +147,10 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
         <div className="self-start flex items-center gap-1.5 w-fit">
           <span
             className={cn(
-              "px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border border-transparent",
+              "px-2 py-0.5 rounded-md text-[10px] font-medium tracking-wide border border-transparent",
               isLight
-                ? "bg-black/[0.06] text-[#1a1625]/55"
-                : "bg-white/[0.08] text-white/50"
+                ? "bg-black/[0.035] text-[#1a1625]/60"
+                : "bg-white/[0.07] text-white/70"
             )}
           >
             {formatDisplayVersion(instance.version)}

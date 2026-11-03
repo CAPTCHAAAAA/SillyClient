@@ -14,6 +14,7 @@ import {
   type FrozenPlateBaseMetrics,
 } from "./frozenCoverPlate";
 import { coverTone, coverWash } from "./coverTone";
+import { useFrozenCoverPlate } from "./useFrozenCoverPlate";
 
 const REORDER_CURVE = "cubic-bezier(0.22, 0.7, 0.3, 1)";
 const REORDER_SETTLE_MS = 380;
@@ -90,35 +91,7 @@ function CreateCardFace({
   label: string;
   hint: string;
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const plateRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const current = rootRef.current;
-    const plate = plateRef.current;
-    if (current && plate) fillFrozenPlate(plate, current, true);
-  }, [isReordering, isLight, isDynamic]);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root || isReordering) return;
-    let cancelled = false;
-    let timer = 0;
-    const refresh = () => {
-      if (cancelled || isReordering) return;
-      const current = rootRef.current;
-      const plate = plateRef.current;
-      if (!current || !plate) return;
-      fillFrozenPlate(plate, current);
-    };
-    timer = window.setTimeout(refresh, 60);
-    window.addEventListener("resize", refresh);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", refresh);
-    };
-  }, [isReordering, isLight, isDynamic]);
+  const { rootRef, plateRef } = useFrozenCoverPlate(isLight, isDynamic, isReordering);
 
   return (
     <div
@@ -133,6 +106,7 @@ function CreateCardFace({
       <div className="absolute inset-0">
         <div ref={plateRef} className="cover-frozen-plate" />
       </div>
+      {isDynamic && <div className="card-volume-wash" aria-hidden="true" />}
       <div className="relative z-[2] flex h-full flex-col justify-between p-3.5">
         <div
           className={cn(

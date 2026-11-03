@@ -26,6 +26,7 @@ import { LegacyMigrationModal, type LegacyMigrationItem } from "@/components/mod
 import { RelocateInstanceModal } from "@/components/modals/RelocateInstanceModal";
 import { LAYERS } from "@/constants/layers";
 import { useLayerStack } from "@/hooks/useLayerStack";
+import { useBackgroundMode } from "@/hooks/useBackgroundMode";
 import { LayerBackdrop } from "@/components/common/LayerBackdrop";
 import { InstanceCarousel, type InstanceCarouselRef } from "@/components/instance/InstanceCarousel";
 import { NewInstanceWizardModal } from "@/components/modals/NewInstanceWizardModal";
@@ -41,7 +42,7 @@ import { VersionDropdownMenu } from "@/components/modals/VersionDropdownMenu";
 import { CardActionMenu } from "@/components/modals/CardActionMenu";
 import { LaunchConsoleModal } from "@/components/modals/LaunchConsoleModal";
 import { UnlockInstanceModal } from "@/components/modals/UnlockInstanceModal";
-import type { TavernInstance, BgMode, ThemeStyle, OperationPurpose } from "@/types";
+import type { TavernInstance, OperationPurpose } from "@/types";
 
 export const Route = createFileRoute("/")({
   component: SillyClientLauncher,
@@ -246,24 +247,7 @@ function SillyClientLauncher() {
   });
   const [showBgPanel, setShowBgPanel] = useState(false);
   const [isPanelClosing, setIsPanelClosing] = useState(false);
-  const [bgMode, setBgMode] = useState<BgMode>(() => {
-    try {
-      const saved = localStorage.getItem("sillyclient.bgMode") || localStorage.getItem("bgMode");
-      if (saved === "dynamic" || saved === "custom") return saved;
-    } catch {}
-    return "dynamic";
-  });
-  const [dynamicPaused, setDynamicPaused] = useState(false);
-  const [themeStyle, setThemeStyle] = useState<ThemeStyle>(() => {
-    try {
-      const saved = localStorage.getItem("sillyclient.themeStyle") || localStorage.getItem("theme");
-      if (saved === "light" || saved === "dark") return saved;
-    } catch {}
-    return "dark";
-  });
-  const [themeSmoothing, setThemeSmoothing] = useState(false);
-  const themeSmoothingTimer = useRef<number | null>(null);
-  const themeSwitchFrame = useRef<number | null>(null);
+  const { bgMode, setBgMode, themeStyle, setThemeStyle, dynamicPaused, setDynamicPaused, switchThemeMode } = useBackgroundMode();
   const [customWallpaperUrl, setCustomWallpaperUrl] = useState<string | null>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const [showTerminal, setShowTerminal] = useState(false);
@@ -740,38 +724,6 @@ function SillyClientLauncher() {
     if (file) setCustomWallpaperUrl(URL.createObjectURL(file));
   };
 
-  useEffect(() => { document.documentElement.classList.add('dark'); }, []);
-
-  useEffect(() => () => {
-    if (themeSmoothingTimer.current !== null) window.clearTimeout(themeSmoothingTimer.current);
-    if (themeSwitchFrame.current !== null) window.cancelAnimationFrame(themeSwitchFrame.current);
-  }, []);
-
-  const switchThemeMode = useCallback((apply: () => void, shedAmbient = false) => {
-    const begin = () => {
-      setThemeSmoothing(true);
-      apply();
-      if (themeSmoothingTimer.current !== null) window.clearTimeout(themeSmoothingTimer.current);
-      themeSmoothingTimer.current = window.setTimeout(() => setThemeSmoothing(false), 1200);
-    };
-    if (themeSwitchFrame.current !== null) window.cancelAnimationFrame(themeSwitchFrame.current);
-    // 只有离开动态壁纸、并且白天已经选中时，才先卸掉五层全屏模糊。
-    // 其它切换不能留下 is-shedding，否则同一节点会一直不显示。
-    const shedAmbientFirst = shedAmbient && bgMode === "dynamic" && themeStyle === "light";
-    if (!shedAmbientFirst) {
-      document.querySelector(".ambient-glow-container")?.classList.remove("is-shedding");
-      begin();
-      return;
-    }
-    document.querySelector(".ambient-glow-container")?.classList.add("is-shedding");
-    themeSwitchFrame.current = window.requestAnimationFrame(() => {
-      themeSwitchFrame.current = window.requestAnimationFrame(() => {
-        themeSwitchFrame.current = null;
-        begin();
-      });
-    });
-  }, [bgMode, themeStyle]);
-
   const switchInstanceMode = useCallback((mode: "local" | "remote" | "import") => {
     if (newInstanceMode === mode) return;
     setNewInstanceMode(mode);
@@ -891,14 +843,6 @@ function SillyClientLauncher() {
     setNewInstanceError(null);
     directoryPickerGeneration.current += 1;
   }, []);
-
-  // 背景模式与主题风格持久化到 localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem("sillyclient.bgMode", bgMode);
-      localStorage.setItem("sillyclient.themeStyle", themeStyle);
-    } catch {}
-  }, [bgMode, themeStyle]);
 
   // 实例列表持久化到 localStorage
   useEffect(() => {
@@ -2401,16 +2345,58 @@ function SillyClientLauncher() {
     if (showRelocateModal) return registerLayer("relocate_modal", closeRelocateModal);
   }, [showRelocateModal, registerLayer, closeRelocateModal]);
 
+  const handleCardMenuOpen = useCallback((instance: TavernInstance, rect: DOMRect) => {
+    setMenuPos({
+      top: Math.min(rect.bottom + 6, window.innerHeight - 200),
+      left: Math.max(12, Math.min(rect.left - 60, window.innerWidth - 160)),
+    });
+    setActiveCardMenu(instance.id);
+    setIsCardMenuClosing(false);
+  }, []);
+
+  const handleCardRenameSave = useCallback(async (instanceId: string, newName: string) => {
+    try {
+      await executeRenameInstance(instanceId, newName);
+      setExternallyRenamingId(null);
+    } catch (error: any) {
+      alert(error?.message || "重命名实例文件夹失败");
+    }
+  }, [executeRenameInstance]);
+
+  const clearExternalRenaming = useCallback(() => setExternallyRenamingId(null), []);
+
+  const openNewInstancePanel = useCallback(() => {
+    if (isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV) {
+      void openExternalUrl("https://github.com/CAPTCHAAAAA/SillyClient/releases/latest").catch(() => {});
+      return;
+    }
+    setNewInstanceMode("local");
+    setNewInstanceName("");
+    setNewInstanceDir("");
+    setNewInstancePathMode("exact");
+    setMigrationTargetPathMode("exact");
+    setNewInstanceUrl("http://");
+    setNewRemoteAuthEnabled(false);
+    setNewRemoteAuthUsername("");
+    setNewRemoteAuthPassword("");
+    setNewInstanceVersion("stable");
+    setNewInstanceCompanionPresetEnabled(false);
+    setNewInstanceExtensionIds([]);
+    setNewInstanceLocalZip(null);
+    setNewInstanceError(null);
+    setShowNewInstancePanel(true);
+  }, [isWeb, isShowcase, isLocalPreview]);
+
   return (
     <div
       ref={scrollRef}
+      data-theme-tone={isLight ? "light" : "dark"}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       className={cn(
         "min-h-screen overflow-y-auto scrollbar-hidden overscroll-none transition-colors duration-900",
-        themeSmoothing && "theme-smoothing",
-        isLight ? "bg-[#f0ece8] text-[#1a1625]" : "bg-[#1a1625] text-white"
+        isLight ? "bg-[rgb(var(--app-light-surface-rgb))] text-[#1a1625]" : "bg-[#1a1625] text-white"
       )}
     >
       {/* 下拉刷新指示器 — 固定在顶部,不跟随拖拽 */}
@@ -2676,24 +2662,10 @@ function SillyClientLauncher() {
           onLaunch={launchTavern}
           onReturnToTavern={handleReturnToTavern}
           onStopInstance={handleStopInstance}
-          onOpenMenu={(inst, rect) => {
-            setMenuPos({
-              top: Math.min(rect.bottom + 6, window.innerHeight - 200),
-              left: Math.max(12, Math.min(rect.left - 60, window.innerWidth - 160)),
-            });
-            setActiveCardMenu(inst.id);
-            setIsCardMenuClosing(false);
-          }}
-          onRenameSave={async (instanceId, newName) => {
-            try {
-              await executeRenameInstance(instanceId, newName);
-              setExternallyRenamingId(null);
-            } catch (err: any) {
-              alert(err?.message || "重命名实例文件夹失败");
-            }
-          }}
+          onOpenMenu={handleCardMenuOpen}
+          onRenameSave={handleCardRenameSave}
           externallyRenamingId={externallyRenamingId}
-          onClearExternalRenaming={() => setExternallyRenamingId(null)}
+          onClearExternalRenaming={clearExternalRenaming}
           onReorderInstances={handleReorderInstances}
           createCardPinned={createCardPinned}
           createCardSlot={createCardSlot}
@@ -2702,27 +2674,7 @@ function SillyClientLauncher() {
           isWeb={isWeb}
           isShowcase={isShowcase}
           isLocalPreview={isLocalPreview}
-          onNewInstance={() => {
-            if (isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV) {
-              void openExternalUrl("https://github.com/CAPTCHAAAAA/SillyClient/releases/latest").catch(() => {});
-              return;
-            }
-            setNewInstanceMode("local");
-            setNewInstanceName("");
-            setNewInstanceDir("");
-            setNewInstancePathMode("exact");
-            setMigrationTargetPathMode("exact");
-            setNewInstanceUrl("http://");
-            setNewRemoteAuthEnabled(false);
-            setNewRemoteAuthUsername("");
-            setNewRemoteAuthPassword("");
-            setNewInstanceVersion("stable");
-            setNewInstanceCompanionPresetEnabled(false);
-            setNewInstanceExtensionIds([]);
-            setNewInstanceLocalZip(null);
-            setNewInstanceError(null);
-            setShowNewInstancePanel(true);
-          }}
+          onNewInstance={openNewInstancePanel}
           activeSlide={activeSlide}
           onActiveSlideChange={setActiveSlide}
         />

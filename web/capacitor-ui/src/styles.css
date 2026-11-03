@@ -1,6 +1,8 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./styles/card-volume.css";
+@import "./styles/terminal.css";
 
 /* Dynamic Display 字体 — 通过 index.html 中的 @font-face 加载 */
 
@@ -60,6 +62,7 @@ select:focus-visible {
 /* 浅色模式 - iOS 黑白灰绿 */
 :root {
   --radius: 1.5rem;
+  --app-light-surface-rgb: 242 238 228;
 
   /* 基础色彩 */
   --background: #e5e7eb;
@@ -735,14 +738,6 @@ header span[class*="truncate"] {
   pointer-events: none;
 }
 
-/* 普通切换：仅在模式变化时临时给整棵树加缓动颜色过渡。 */
-.theme-smoothing,
-.theme-smoothing *:not(.motion-panel-stack):not(.motion-panel-face):not(.carousel-pagination):not(.carousel-pagination *) {
-  transition-property: color, background-color, border-color, box-shadow, fill, stroke !important;
-  transition-duration: 1000ms !important;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
-}
-
 /* 菜单弹出动画 */
 @keyframes popover-in {
   0% {
@@ -1006,8 +1001,8 @@ header span[class*="truncate"] {
   border-radius: inherit;
   pointer-events: none;
   box-shadow:
-    inset 0 0 var(--sf-glow1-spread, 41px) -12px rgba(var(--sf-glow1-rgb, 191 82 90) / var(--sf-glow1, 0.05)),
-    inset 0 0 var(--sf-glow2-spread, 81px) -16px rgba(var(--sf-glow2-rgb, 231 141 167) / var(--sf-glow2, 0.05));
+    inset 0 0 var(--sf-glow1-spread, 41px) -12px rgba(var(--sf-glow1-rgb, 191 82 90) / calc(var(--sf-glow1, 0.05) * var(--fc-edge-light, 1))),
+    inset 0 0 var(--sf-glow2-spread, 81px) -16px rgba(var(--sf-glow2-rgb, 231 141 167) / calc(var(--sf-glow2, 0.05) * var(--fc-edge-light, 1)));
 }
 
 .motion-instance-card[data-create-card] .cover-frozen-plate::after {
@@ -1065,18 +1060,6 @@ header span[class*="truncate"] {
   inset: 0;
   background-color: var(--plate-base, #1a1625);
   opacity: 0;
-}
-
-.terminal-command-input {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  font: inherit;
-  line-height: inherit;
 }
 
 .motion-instance-card.is-expanded {
@@ -1519,8 +1502,6 @@ header span[class*="truncate"] {
   .companion-preset__switch,
   .companion-preset__knob,
   .companion-preset__details,
-  .theme-smoothing,
-  .theme-smoothing *:not(.motion-panel-stack):not(.motion-panel-face):not(.carousel-pagination):not(.carousel-pagination *),
   .overlay-backdrop {
     transition-duration: 1ms !important;
   }
@@ -2971,4 +2952,13 @@ body:has(.ambient-glow-container) .manage-panel-surface:not(.is-light) .manage-c
 .manage-panel-surface aside .motion-instance-card > .absolute,
 .manage-card-clip > .absolute {
   border-radius: 0;
+}
+
+.manage-panel-surface aside .motion-instance-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.42);
+  outline-offset: 3px;
+}
+
+.manage-panel-surface.is-light aside .motion-instance-card:focus-visible {
+  outline-color: rgba(26, 22, 37, 0.42);
 }

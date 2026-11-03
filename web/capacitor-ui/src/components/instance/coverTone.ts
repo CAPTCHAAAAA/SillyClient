@@ -18,7 +18,7 @@ export function coverWash(tone: CoverTone): string {
  * 黑夜沿界面墨色。动态不铺色板，透明封面与创建卡一样透出壁纸。
  */
 export function coverPlate(tone: CoverTone): string {
-  if (tone === "light") return "#fbfafc";
+  if (tone === "light") return "rgb(var(--app-light-surface-rgb, 242 238 228))";
   if (tone === "dynamic") return "transparent";
   return "linear-gradient(168deg, #1f1c2a 0%, #1c1926 52%, #1a1723 100%)";
 }

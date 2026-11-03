@@ -1,7 +1,7 @@
 import React from "react";
 import { Play, LoaderCircle, X } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { menuNestedWash } from "../../lib/menu-surface";
+import { TerminalWell } from "../common/TerminalWell";
 import { LAYERS } from "../../constants/layers";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 
@@ -148,34 +148,24 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
 
       {/* 日志区域 — 色差内凹效果 */}
       <div className="mx-6 mb-5">
-        <div
-          className={cn(
-            "rounded-2xl overflow-hidden max-h-[200px] overflow-y-auto scrollbar-hidden border-0"
-          )}
-          style={{ background: menuNestedWash(isLight, isDynamic) }}
+        <TerminalWell
+          isLight={isLight}
+          isDynamic={isDynamic}
+          compact
+          className="overflow-hidden max-h-[200px] overflow-y-auto scrollbar-hidden"
         >
-          <div data-native-log-list className="px-4 py-3 text-[11px] leading-[1.7] space-y-1">
-            {launchLogs.map((log, i) => (
+          <div data-native-log-list className="terminal-output px-4 py-3">
+            {launchLogs.map((log, index) => (
               <div
-                key={i}
-                className={cn(
-                  "truncate",
-                  log.level === "error"
-                    ? "text-red-400/90"
-                    : log.level === "success"
-                    ? isLight
-                      ? "text-[#1a1625]/65"
-                      : "text-white/65"
-                    : isLight
-                    ? "text-[#1a1625]/50"
-                    : "text-white/50"
-                )}
+                key={index}
+                className="terminal-log-line"
+                data-level={log.level}
               >
                 {log.msg}
               </div>
             ))}
           </div>
-        </div>
+        </TerminalWell>
       </div>
 
       {/* 底部按钮 */}

@@ -6,7 +6,7 @@ import { LAYERS } from "../../constants/layers";
 import type { TavernInstance } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { GLOBAL_LOG_KEY, instanceLogs } from "../../lib/log-store";
-import { terminalWellSurface } from "../../lib/menu-surface";
+import { TerminalWell } from "../common/TerminalWell";
 import { CornerResizeCurve } from "./CornerResizeCurve";
 
 export interface TerminalModalProps {
@@ -157,11 +157,11 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       )}
       style={{
         zIndex: LAYERS.MODAL,
-        top: dragPos ? dragPos.y : `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`,
-        left: dragPos ? dragPos.x : terminalPos.left,
+        top: `clamp(8px, ${dragPos ? `${dragPos.y}px` : `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`}, calc(100vh - min(${terminalBox.h}px, 100vh - 2rem) - 8px))`,
+        left: `clamp(8px, ${dragPos?.x ?? terminalPos.left}px, calc(100vw - min(${terminalBox.w}px, 100vw - 16px) - 8px))`,
         width: terminalBox.w,
         height: terminalBox.h,
-        minWidth: 320,
+        minWidth: "min(320px, calc(100vw - 16px))",
         minHeight: 200,
         maxWidth: "calc(100vw - 16px)",
         maxHeight: "calc(100vh - 2rem)",
@@ -242,7 +242,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             title="清空终端"
             aria-label="清空终端"
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+              "terminal-tool flex h-7 w-7 items-center justify-center rounded-full transition-colors",
               isLight
                 ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
                 : "text-white/40 hover:text-white/85"
@@ -254,7 +254,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             onClick={onClose}
             aria-label="关闭终端"
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+              "terminal-tool flex h-7 w-7 items-center justify-center rounded-full transition-colors",
               isLight
                 ? "text-[#1a1625]/40 hover:text-[#1a1625]/85"
                 : "text-white/40 hover:text-white/85"
@@ -267,33 +267,25 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
 
       {/* 终端内容区 */}
       <div className="flex min-h-0 flex-1 px-2.5 pb-2.5">
-        <div
+        <TerminalWell
+          isLight={isLight}
+          isDynamic={isDynamic}
           data-native-log-list
-          className="h-full min-h-0 w-full overflow-y-auto px-3.5 py-3 font-mono leading-relaxed text-white/78 scrollbar-subtle"
-          style={{
-            ...terminalWellSurface(isLight, isDynamic),
-            fontSize: `${terminalFontSize}px`,
-            borderRadius: "calc(var(--radius-2xl) - 10px)",
-          }}
+          className="terminal-output h-full min-h-0 w-full overflow-y-auto px-3.5 py-3 scrollbar-subtle"
+          style={{ fontSize: `${terminalFontSize}px` }}
         >
-          <div className="mb-1 opacity-50">{terminalDisplayBanner}</div>
-          {terminalLogs.map((log, i) => (
+          <div className="terminal-caption mb-1">{terminalDisplayBanner}</div>
+          {terminalLogs.map((log, index) => (
             <div
-              key={i}
-              className={cn(
-                "mb-0.5 whitespace-pre-wrap break-all",
-                log.level === "error"
-                  ? "text-red-300/90"
-                  : log.level === "success"
-                  ? "font-medium text-white/88"
-                  : "text-white/72"
-              )}
+              key={index}
+              className="terminal-log-line"
+              data-level={log.level}
             >
               {log.msg}
             </div>
           ))}
-          <div className="mt-1 flex items-center gap-2">
-            <span className="flex-shrink-0 select-none text-white/45">
+          <div className="terminal-command-row">
+            <span className="terminal-prompt" title={terminalDisplayPrompt}>
               {terminalDisplayPrompt}
             </span>
             <input
@@ -320,7 +312,8 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
                   setTerminalInput("");
                 }
               }}
-              className="terminal-command-input flex-1 outline-none text-white/82 placeholder:text-white/28"
+              className="terminal-command-input"
+              aria-label="终端命令"
               placeholder={terminalDisplayPlaceholder}
               disabled={!terminalInstance || terminalInstance.type === "remote"}
               autoCapitalize="none"
@@ -328,7 +321,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
               spellCheck={false}
             />
           </div>
-        </div>
+        </TerminalWell>
       </div>
       </div>
 

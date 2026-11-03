@@ -1,0 +1,101 @@
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/MapleMono-Variable.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+.terminal-well {
+  --terminal-font-size: 12px;
+  --terminal-text: rgba(255, 255, 255, 0.76);
+  --terminal-text-strong: rgba(255, 255, 255, 0.9);
+  --terminal-text-muted: rgba(255, 255, 255, 0.46);
+  --terminal-text-error: rgba(252, 165, 165, 0.9);
+  border: 0;
+  border-radius: 20px;
+  color: var(--terminal-text);
+}
+
+.terminal-well--compact {
+  --terminal-font-size: 11px;
+  border-radius: 14px;
+}
+
+.terminal-output {
+  font-family: "Maple Mono", "SFMono-Regular", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
+  font-size: var(--terminal-font-size);
+  font-weight: 400;
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1.65;
+}
+
+.terminal-log-line {
+  margin-bottom: 0.25em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--terminal-text);
+}
+
+.terminal-log-line[data-level="success"] {
+  color: var(--terminal-text-strong);
+  font-weight: 500;
+}
+
+.terminal-log-line[data-level="error"] {
+  color: var(--terminal-text-error);
+}
+
+.terminal-caption,
+.terminal-prompt {
+  color: var(--terminal-text-muted);
+}
+
+.terminal-command-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  min-width: 0;
+  margin-top: 0.35em;
+}
+
+.terminal-prompt {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  user-select: none;
+}
+
+.terminal-command-input {
+  flex: 1 1 0%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--terminal-text-strong);
+  caret-color: var(--terminal-text-strong);
+  font: inherit;
+  line-height: inherit;
+}
+
+.terminal-command-input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.terminal-well .terminal-command-input:focus-visible {
+  outline: none !important;
+}
+
+.terminal-tool:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

@@ -163,6 +163,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
   const shown = controlled ? !!flipped : inner;
   const shownRef = useRef(shown);
   const [facingBack, setFacingBack] = useState(shown);
+  const facingBackRef = useRef(shown);
   const [isPressed, setIsPressed] = useState(false);
   const [isLongPressed, setIsLongPressed] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
@@ -225,7 +226,8 @@ export const FlipCard: React.FC<FlipCardProps> = ({
     }
 
     const currentIsBack = isBack(turn);
-    if (currentIsBack !== shownRef.current) {
+    if (currentIsBack !== facingBackRef.current) {
+      facingBackRef.current = currentIsBack;
       setFacingBack(currentIsBack);
     }
   }, [axis, perspective]);
