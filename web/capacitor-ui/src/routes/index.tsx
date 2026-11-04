@@ -21,7 +21,6 @@ import { OperationCoordinator, OperationCancelledError, type OperationContext } 
 import { APP_VERSION } from "@/constants/app-version";
 import { fetchAppUpdate } from "@/lib/app-update";
 import OnboardingGuide from "@/components/onboarding/OnboardingGuide";
-import { WhatsNewModal } from "@/components/modals/WhatsNewModal";
 import { LegacyMigrationModal, type LegacyMigrationItem } from "@/components/modals/LegacyMigrationModal";
 import { RelocateInstanceModal } from "@/components/modals/RelocateInstanceModal";
 import { LAYERS } from "@/constants/layers";
@@ -55,8 +54,6 @@ const INSTANCES_KEY = "sillyclient.instances";
 const INSTANCES_VERSION_KEY = "sillyclient.instances.version";
 const ONBOARDING_KEY = "sillyclient.onboarding.version";
 const ONBOARDING_VERSION = "3";
-const WHATS_NEW_KEY = "sillyclient.whatsnew.version";
-const WHATS_NEW_VERSION = APP_VERSION;
 const LEGACY_MIGRATION_KEY = "sillyclient.legacy_migration.version";
 const CURRENT_VERSION = 2;
 const BACKGROUND_PANEL_EXIT_MS = 300;
@@ -230,10 +227,6 @@ function SillyClientLauncher() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
   );
-  const [showWhatsNew, setShowWhatsNew] = useState(
-    () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) === ONBOARDING_VERSION && localStorage.getItem(WHATS_NEW_KEY) !== WHATS_NEW_VERSION,
-  );
-  const [isWhatsNewClosing, setIsWhatsNewClosing] = useState(false);
   const [showLegacyMigration, setShowLegacyMigration] = useState(false);
   const [isLegacyMigrationClosing, setIsLegacyMigrationClosing] = useState(false);
   const [legacyMigrationList, setLegacyMigrationList] = useState<LegacyMigrationItem[]>([]);
@@ -2070,30 +2063,7 @@ function SillyClientLauncher() {
   const dismissOnboarding = useCallback(() => {
     localStorage.setItem(ONBOARDING_KEY, ONBOARDING_VERSION);
     setShowOnboarding(false);
-    if (localStorage.getItem(WHATS_NEW_KEY) !== WHATS_NEW_VERSION) {
-      setTimeout(() => setShowWhatsNew(true), 150);
-    } else if (isWindows && localStorage.getItem(LEGACY_MIGRATION_KEY) !== APP_VERSION) {
-      setTimeout(() => {
-        if (TarvenEnv.checkLegacyInstances) {
-          TarvenEnv.checkLegacyInstances()
-            .then(({ instances }) => {
-              setLegacyMigrationList(instances || []);
-              setShowLegacyMigration(true);
-              setIsLegacyMigrationClosing(false);
-            })
-            .catch(() => {
-              setLegacyMigrationList([]);
-              setShowLegacyMigration(true);
-              setIsLegacyMigrationClosing(false);
-            });
-        } else {
-          setLegacyMigrationList([]);
-          setShowLegacyMigration(true);
-          setIsLegacyMigrationClosing(false);
-        }
-      }, 150);
-    }
-  }, [isWindows]);
+  }, []);
 
   const dismissLegacyMigration = useCallback(() => {
     localStorage.setItem(LEGACY_MIGRATION_KEY, APP_VERSION);
@@ -2130,36 +2100,6 @@ function SillyClientLauncher() {
         .catch(() => {});
     }
   }, []);
-
-  const dismissWhatsNew = useCallback(() => {
-    localStorage.setItem(WHATS_NEW_KEY, WHATS_NEW_VERSION);
-    setIsWhatsNewClosing(true);
-    setTimeout(() => {
-      setShowWhatsNew(false);
-      setIsWhatsNewClosing(false);
-
-      // 公告关闭后，弹出旧版路径实例迁移向导 (无论是否有需要迁移的实例均弹出，空则展示优雅空态供审查)
-      if (isWindows) {
-        if (TarvenEnv.checkLegacyInstances) {
-          TarvenEnv.checkLegacyInstances()
-            .then(({ instances }) => {
-              setLegacyMigrationList(instances || []);
-              setShowLegacyMigration(true);
-              setIsLegacyMigrationClosing(false);
-            })
-            .catch(() => {
-              setLegacyMigrationList([]);
-              setShowLegacyMigration(true);
-              setIsLegacyMigrationClosing(false);
-            });
-        } else {
-          setLegacyMigrationList([]);
-          setShowLegacyMigration(true);
-          setIsLegacyMigrationClosing(false);
-        }
-      }
-    }, PANEL_EXIT_MS);
-  }, [isWindows]);
 
   const openRelocateModal = useCallback((target: TavernInstance) => {
     setRelocatingInstance(target);
@@ -2202,14 +2142,6 @@ function SillyClientLauncher() {
     });
   }, []);
 
-  const openWhatsNew = useCallback(() => {
-    closeAppMenu();
-    setTimeout(() => {
-      setShowWhatsNew(true);
-      setIsWhatsNewClosing(false);
-    }, PANEL_EXIT_MS + 20);
-  }, [closeAppMenu]);
-
   // 管理面板打开时初始化本地配置或远程认证状态。
   useEffect(() => {
     if (showManagePanel) {
@@ -2233,11 +2165,10 @@ function SillyClientLauncher() {
     }
   }, [showManagePanel]);
 
-  // 本版本更新后开屏弹窗检测：若无引导与公告，且本版本尚未展示过旧版迁移弹窗，则自动弹出（无旧实例时展示优雅空态供审查）
+  // 本版本更新后开屏弹窗检测：若无引导，且本版本尚未展示过旧版迁移弹窗，则自动弹出（无旧实例时展示优雅空态供审查）
   useEffect(() => {
     if (
       !showOnboarding &&
-      !showWhatsNew &&
       isWindows &&
       localStorage.getItem(LEGACY_MIGRATION_KEY) !== APP_VERSION
     ) {
@@ -2259,7 +2190,7 @@ function SillyClientLauncher() {
         setIsLegacyMigrationClosing(false);
       }
     }
-  }, [showOnboarding, showWhatsNew, isWindows]);
+  }, [showOnboarding, isWindows]);
 
   const openVersionDropdown = useCallback((trigger: HTMLElement) => {
     const r = trigger.getBoundingClientRect();
@@ -2804,7 +2735,6 @@ function SillyClientLauncher() {
         appUpdateInfo={appUpdateInfo}
         checkForAppUpdate={checkForAppUpdate}
         openProjectPage={openProjectPage}
-        onOpenWhatsNew={openWhatsNew}
         onOpenCleanGarbage={async () => {
           closeAppMenu();
           setCleaningGarbage(true);
@@ -3095,15 +3025,6 @@ function SillyClientLauncher() {
         />
       )}
 
-      {/* 版本主要更新画布 (全屏虚化) */}
-      <WhatsNewModal
-        isOpen={showWhatsNew}
-        isClosing={isWhatsNewClosing}
-        onClose={dismissWhatsNew}
-        isLight={isLight}
-        glassBg={glassBg}
-      />
-
       {/* 新版本旧路径实例全屏一键迁移向导 */}
       <LegacyMigrationModal
         isOpen={showLegacyMigration}
@@ -3136,15 +3057,6 @@ function SillyClientLauncher() {
             <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
             <span>调试板 (视觉测试专用)</span>
           </div>
-          <button
-            onClick={() => {
-              setShowWhatsNew(true);
-              setIsWhatsNewClosing(false);
-            }}
-            className="motion-control h-7 px-3 rounded-full border border-white/10 bg-white/10 text-white/70 hover:text-white active:bg-white/25 font-medium transition-colors"
-          >
-            更新画布
-          </button>
           <button
             onClick={() => {
               setShowLegacyMigration(true);
