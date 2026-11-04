@@ -78,6 +78,11 @@ function mergeInstanceBackup(existing: TavernInstance[], incoming: StoredInstanc
   return Array.from(map.values());
 }
 
+function stripOneShotCreationParams(instance: TavernInstance): TavernInstance {
+  const { zipballUrl: _zipballUrl, localZipPath: _localZipPath, preinstall: _preinstall, companionPreset: _companionPreset, ...rest } = instance;
+  return rest as TavernInstance;
+}
+
 /** 从 localStorage 读取已持久化的实例列表;版本不匹配时清空旧数据。 */
 function loadInstances(): TavernInstance[] {
   // 版本不匹配说明是旧版残留数据,清空
@@ -90,7 +95,9 @@ function loadInstances(): TavernInstance[] {
   try {
     const raw = localStorage.getItem(INSTANCES_KEY);
     if (raw) {
-      return normalizeStoredInstances(JSON.parse(raw), { resetStatus: true }).map(hydrateInstance);
+      return normalizeStoredInstances(JSON.parse(raw), { resetStatus: true })
+        .map(hydrateInstance)
+        .map(stripOneShotCreationParams);
     }
   } catch {
     /* ignore */
@@ -1051,18 +1058,27 @@ function SillyClientLauncher() {
 
   useEffect(() => () => { operations.cancel(); }, [operations]);
 
-  // 配置并启动本地实例。创建流程只在确认服务可访问后写入卡片。
-  const doLaunch = useCallback(async (instance: TavernInstance, operation: OperationContext, enterWhenReady = true) => {
+  // 配置并启动本地实例。创建流程只在确认服务可访问后写入卡片；
+  // createIntent 仅创建向导为 true：安装源与预装项只随创建下发，启动既有实例绝不携带，
+  // 后端据此在目录丢失/损坏时拒绝静默重装顶替用户数据。
+  const lastLaunchCreateIntentRef = useRef(false);
+  const doLaunch = useCallback(async (
+    instance: TavernInstance,
+    operation: OperationContext,
+    enterWhenReady = true,
+    createIntent = false
+  ) => {
     operation.assertCurrent();
+    lastLaunchCreateIntentRef.current = createIntent;
     const port = instance.port ?? 8000;
     const instanceId = instance.installDir || instance.id;
     const version = instance.version || "stable";
     const config = instance.config ?? DEFAULT_CONFIG;
-    const zipballUrl = instance.zipballUrl;
-    const localZipPath = instance.localZipPath;
+    const zipballUrl = createIntent ? instance.zipballUrl : undefined;
+    const localZipPath = createIntent ? instance.localZipPath : undefined;
     const installPath = instance.installPath;
-    const companionPreset = instance.companionPreset;
-    const preinstall = instance.preinstall;
+    const companionPreset = createIntent ? instance.companionPreset : undefined;
+    const preinstall = createIntent ? instance.preinstall : undefined;
 
     setLaunchProgress({ pct: 0, text: "初始化" });
     setLaunchError(null);
@@ -1112,8 +1128,19 @@ function SillyClientLauncher() {
 
       // 调用原生 provision
       const provisionResult = await operation.wait(TarvenEnv.provisionAndStart({
-        port, instanceId, operationId: operation.id, version, zipballUrl, localZipPath,
-        installPath, installPathMode: instance.installPathMode, companionPreset, preinstall, config,
+        port,
+        instanceId,
+        instanceName: instance.subtitle || instance.name,
+        operationId: operation.id,
+        version,
+        createIntent,
+        zipballUrl,
+        localZipPath,
+        installPath,
+        installPathMode: instance.installPathMode,
+        companionPreset,
+        preinstall,
+        config,
       }));
       if (provisionResult?.ready === false) {
         throw new Error(errorMsg || "实例未能启动，请检查安装日志");
@@ -1324,18 +1351,21 @@ function SillyClientLauncher() {
       return;
     }
 
-    const result = await doLaunch(instance, operation, false);
+    const result = await doLaunch(instance, operation, false, true);
     const info = await operation.wait(TarvenEnv.getInstanceInfo({
       instanceId: instance.installDir || instance.id,
       installPath: instance.installPathMode === "root" ? undefined : instance.installPath,
       port: result.port,
     }));
     if (!info.path) throw new Error("原生未确认实例的实际安装目录，创建未完成");
-    setLastLaunchParams({ ...instance, installPath: info.path, installPathMode: "exact", port: result.port });
+    // 安装源（zipballUrl/localZipPath）与预装项是一次性创建参数，绝不持久化到卡片。
+    // 后端以 createIntent 区分创建与启动意图，卡片残留安装源会导致数据丢失时被静默重装顶替。
+    const { zipballUrl: _zipballUrl, localZipPath: _localZipPath, preinstall: _preinstall, companionPreset: _companionPreset, ...persistedInstance } = instance;
+    setLastLaunchParams({ ...persistedInstance, installPath: info.path, installPathMode: "exact", port: result.port });
     setInstances(prev => prev.some(t => t.id === instance.id)
       ? prev
       : [...prev, {
-          ...instance,
+          ...persistedInstance,
           status: "running",
           port: result.port,
           version: info.version && info.version !== "unknown" ? normalizeStoredVersion(info.version) : instance.version,
@@ -1688,7 +1718,7 @@ function SillyClientLauncher() {
         setInstances(prev => prev.map(t => t.id === lastLaunchParams.id ? { ...t, status: "online" } : t));
         operation.schedule(() => { setShowLaunchPanel(false); setLaunchProgress(null); }, 500);
       } else {
-        const result = await doLaunch(lastLaunchParams, operation);
+        const result = await doLaunch(lastLaunchParams, operation, true, lastLaunchCreateIntentRef.current);
         setInstances(prev => prev.map(t => t.id === lastLaunchParams.id ? { ...t, status: "running", port: result.port } : t));
         operation.schedule(() => { setShowLaunchPanel(false); setLaunchProgress(null); }, 800);
       }
