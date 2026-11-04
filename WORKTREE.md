@@ -34,6 +34,7 @@
 
 | 日期 | 操作人 / 提交 | 改动摘要与内部验证结果 | 状态 |
 | :--- | :--- | :--- | :---: |
+| 2026-11-04 | Agent | 同步版本更新记录（release/CHANGELOG.md）：登记 v1.13.2 与 v1.14.0 变更日志，暂不提交发布文案及 Release 等待统一发布 | 已合入主仓 |
 | 2026-11-04 | Agent (`2321eff`) | 用户已授权提交、推送、合并与更新记录。完整删除应用内新版本内容公告：删除 `WhatsNewModal`、首次启动/引导后自动弹出、维护页查看入口、DEV 调试按钮、状态/回调/常量与预览已读标记。首次引导只维护自身状态，Windows 迁移继续由既有独立 effect 触发，移除公告链路中的重复迁移调度；自动/手动版本检查、下载/项目发布页及其它菜单保留。交付前重跑 typecheck、build、diff及源码/生产包残留扫描通过；8768及本轮 JS/CSS 均 HTTP 200，更新库/外链/引导/迁移组件与桥接无改动。复核6组 Chromium 浏览器/mock 回归全部通过、0 pageerror，覆盖生产桌面/390px、Windows升级/首次引导、Android首次引导完成、iOS已有记录，检查成功/失败、下载入口、引导重播/跳过、单次迁移与旧公告键不再写入；非原生验收。脚本/报告已归档至 `Local/evidence/common-frontend-20261104-remove-announcement/`。`lts/common-frontend` 与 `SillyClient_Main/main` 已推送至 `2321eff`；未同步 Android / Windows / iOS，没有新 Release，不动8767、拖拽和Windows既有52个dirty路径。 | 已合入主仓 |
 | 2026-11-04 | Agent (`fa95ac6`) | 完成一次源码级残留清理：删除不可达 `ActivityCapsule` 与 `LAYERS.ACTIVITY_CAPSULE`，移除旧 `liquid-glass`、拟物胶囊、无引用菜单动画、冻结高光、管理缩略样式及对应 reduced-motion 条目；删除 common frontend 未引用的 `Daydream` 字体与两张废弃 onboarding 图片。保留运行时动态样式、拖拽/动态采样/翻页/归位链路、Maple Mono 资产和封面兼容资源。计入 CSS `@import` 后源码 import 图闭合；`tsc --noEmit`、`vite build`、`git diff --check` 与工作区守卫通过。8768 当前返回的是生成的 `docs/app` 快照，本轮不改生成物；已推送 `lts/common-frontend`，并快进合入 `main` 推送；未同步 Android / Windows / iOS，不动 8767。 | 已合入主仓 |
 | 2026-11-04 | Agent | 清理一轮已确认的前端残留：移除未使用的卡片菜单/索引/平台参数、管理菜单失效筛选状态、终端缩放残留 ref、无调用的关闭逻辑重复实现及多余类型导入；保留真实调用链和视觉/交互。开启 `noUnusedLocals` 与 `noUnusedParameters` 后 `tsc --noEmit` 全绿，vite build、8768 HTTP/页面快照、git diff检查通过；未推送/合并/同步平台，不动8767。 | 待合并后续审查 |
