@@ -1,9 +1,12 @@
 import React from "react";
-import { Play, LoaderCircle, X } from "lucide-react";
+import { Play } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { ActionButton } from "../common/ActionButton";
 import { TerminalWell } from "../common/TerminalWell";
 import { LAYERS } from "../../constants/layers";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
+import "../common/console-card.css";
+import "./LaunchConsoleModal.css";
 
 export interface LaunchConsoleModalProps {
   isOpen: boolean;
@@ -45,14 +48,33 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
   onEnterTavern,
 }) => {
   const launchLogs = useInstanceLogs(logKey, isOpen || isClosing);
+  const visibleLaunchLogs = launchLogs.filter((log, index) => {
+    if (launchError || !launchProgress?.text || index !== launchLogs.length - 1) return true;
+    return log.msg.trim() !== launchProgress.text.trim();
+  });
   const isDynamic = glassBg.includes("1c1420");
+  const titleId = React.useId();
+  const statusId = React.useId();
   if (!isOpen && !isClosing) return null;
 
+  const progress = Math.min(100, Math.max(0, launchProgress?.pct || 0));
+  const progressText = launchProgress?.text?.trim() || "初始化";
+  const progressLabel =
+    progressText.replace(/\s*(?:[·•]\s*)?\d{1,3}%\s*$/, "").trim() || "处理中";
+  const instanceName = lastLaunchParams?.name || "实例";
+  const title = launchError
+    ? operationPurpose === "create" ? "创建失败" : "启动失败"
+    : operationPurpose === "create"
+      ? launchProgress?.pct === 100 ? "实例创建完成" : "正在创建实例"
+      : "启动中";
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      data-launch-console={operationPurpose}
       className={cn(
-        "ios-task-surface fixed rounded-3xl overflow-hidden backdrop-blur-[40px] saturate-180",
-        "shadow-[0_24px_80px_rgba(0,0,0,0.4),0_0_0_0.5px_rgba(255,255,255,0.06),inset_0_0.5px_0_rgba(255,255,255,0.08)]",
+        "launch-console-card console-card ios-task-surface fixed flex flex-col rounded-[26px] px-3 pt-2 pb-3 overflow-hidden backdrop-blur-[40px] saturate-180",
         glassBg,
         isLight && "is-light",
         isClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
@@ -62,212 +84,114 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: "min(360px, calc(100vw - 2rem))",
       }}
     >
-      {/* 标题栏与内联最小化操作 */}
-      <div className="px-6 pt-6 pb-4">
-        <div className="flex items-center justify-between">
-          <h3
-            className={cn(
-              "text-[17px] font-bold tracking-tight",
-              isLight ? "text-[#1a1625]" : "text-white"
-            )}
-          >
-            {launchError
-              ? operationPurpose === "create"
-                ? "创建失败"
-                : "启动失败"
-              : operationPurpose === "create"
-              ? launchProgress?.pct === 100
-                ? "实例创建完成"
-                : "正在创建实例"
-              : "启动中"}
-          </h3>
-
-          {launchProgress && !launchError && (
-            <span
-              className={cn(
-                "text-[14px] font-medium tabular-nums tracking-tight",
-                isLight ? "text-[#8b3a52]" : "text-[#c4788e]"
-              )}
-            >
-              {launchProgress.pct}%
-            </span>
-          )}
-        </div>
-
-        <p
-          className={cn(
-            "text-[12px] mt-1",
-            isLight ? "text-[#1a1625]/40" : "text-white/40"
-          )}
-        >
-          {lastLaunchParams?.name || "实例"}
-        </p>
+      <div className="launch-console-card__header relative z-10">
+        <h3 id={titleId} className="launch-console-card__title">{title}</h3>
+        <span className="launch-console-card__name" title={instanceName}>
+          {instanceName}
+        </span>
       </div>
 
-      {/* 进度条 */}
-      <div className="px-6 pb-4">
-        <div
-          className={cn(
-            "h-[3px] rounded-full overflow-hidden relative",
-            isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
-          )}
-        >
-          <div
-            className={cn(
-              "h-full rounded-full transition-[width,background-color] duration-500 ease-out relative overflow-hidden",
-              launchError
-                ? "bg-red-500/80"
-                : isLight
-                ? "bg-[#8b3a52]"
-                : "bg-gradient-to-r from-[#7a3245] via-[#a04860] to-[#8b3a52]"
-            )}
-            style={{
-              width: `${launchError ? 100 : launchProgress?.pct || 0}%`,
-            }}
-          >
-            {!launchError &&
-              launchProgress &&
-              launchProgress.pct > 0 &&
-              launchProgress.pct < 100 && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
-              )}
-          </div>
-        </div>
-        <p
-          className={cn(
-            "text-[12px] mt-2 font-medium truncate",
-            isLight ? "text-[#1a1625]/50" : "text-white/50"
-          )}
-        >
-          {launchError ? launchError : launchProgress?.text || "初始化"}
-        </p>
-      </div>
-
-      {/* 日志区域 — 色差内凹效果 */}
-      <div className="mx-6 mb-5">
-        <TerminalWell
-          isLight={isLight}
-          isDynamic={isDynamic}
-          compact
-          className="overflow-hidden max-h-[200px] overflow-y-auto scrollbar-hidden"
-        >
-          <div data-native-log-list className="terminal-output px-4 py-3">
-            {launchLogs.map((log, index) => (
-              <div
-                key={index}
-                className="terminal-log-line"
-                data-level={log.level}
-              >
-                {log.msg}
-              </div>
-            ))}
-          </div>
-        </TerminalWell>
-      </div>
-
-      {/* 底部按钮 */}
-      <div className="px-6 pb-6 flex gap-2.5">
-        {launchError ? (
-          <>
-            <button
-              onClick={onRetry}
-              disabled={!!launchingId}
-              className={cn(
-                "flat-capsule motion-control flex-1 h-9 rounded-full text-xs font-semibold border-0 disabled:opacity-50",
-                isLight
-                  ? "text-[#1a1625]/70 hover:text-[#1a1625]"
-                  : "text-white/70 hover:text-white"
-              )}
-            >
-              重试
-            </button>
-            <button
-              onClick={onClose}
-              className={cn(
-                "flat-capsule motion-control flex-1 h-9 rounded-full text-xs font-medium border-0",
-                isLight
-                  ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                  : "text-white/60 hover:text-white"
-              )}
-            >
-              关闭
-            </button>
-          </>
-        ) : operationPurpose === "create" ? (
-          launchProgress?.pct === 100 ? (
-            <div className="w-full flex items-center gap-2">
-              <button
-                onClick={async () => {
-                  if (onEnterTavern && lastLaunchParams) {
-                    await onEnterTavern(lastLaunchParams);
-                  } else {
-                    onClose();
-                  }
-                }}
-                className={cn(
-                  "flat-capsule motion-control flex-1 h-9 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 border-0",
-                  isLight
-                    ? "text-[#1a1625]/70 hover:text-[#1a1625]"
-                    : "text-white/70 hover:text-white"
-                )}
-              >
-                <Play className="w-3 h-3 fill-current" />
-                <span>进入酒馆</span>
-              </button>
-              <button
-                onClick={onClose}
-                className={cn(
-                  "flat-capsule motion-control px-4 h-9 rounded-full text-xs font-medium border-0",
-                  isLight
-                    ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                    : "text-white/60 hover:text-white"
-                )}
-              >
-                稍后
-              </button>
-            </div>
-          ) : (
+      <TerminalWell
+        isLight={isLight}
+        isDynamic={isDynamic}
+        compact
+        className="launch-console-card__terminal relative z-10"
+      >
+        <div data-native-log-list className="launch-console-card__logs terminal-output scrollbar-hidden">
+          {visibleLaunchLogs.map((log, index) => (
             <div
-              className={cn(
-                "w-full h-10 rounded-xl flex items-center justify-center gap-2 text-[12px] font-medium transition-all duration-300",
-                isLight
-                  ? "bg-black/[0.04] text-[#1a1625]/45"
-                  : "bg-white/[0.06] text-white/45"
-              )}
+              key={index}
+              className="terminal-log-line"
+              data-level={log.level}
             >
-              <LoaderCircle className="h-4 w-4 animate-spin text-current" />
-              <span>完成前请保持应用打开</span>
-              <button
-                type="button"
+              {log.msg}
+            </div>
+          ))}
+        </div>
+      </TerminalWell>
+
+      <div className={cn("launch-console-card__actions relative z-10", launchError && "is-error")}>
+        <div className="launch-console-card__progress">
+          <div className="launch-console-card__status">
+            <span id={statusId} role="status" className="launch-console-card__status-text">
+              {launchError || progressLabel}
+            </span>
+            {!launchError && launchProgress && (
+              <span className="launch-console-card__percent">{progress}%</span>
+            )}
+          </div>
+          <div
+            role="progressbar"
+            aria-label={operationPurpose === "create" ? "实例创建进度" : "实例启动进度"}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={launchError ? undefined : progress}
+            aria-describedby={statusId}
+            className="launch-console-card__track"
+          >
+            <div
+              className="launch-console-card__fill"
+              style={{ transform: `scaleX(${launchError ? 1 : progress / 100})` }}
+            />
+          </div>
+        </div>
+        <div className="launch-console-card__button-group">
+          {launchError ? (
+            <>
+              <ActionButton
+                onClick={onRetry}
+                disabled={!!launchingId}
+              >
+                重试
+              </ActionButton>
+              <ActionButton
+                onClick={onClose}
+                tone="danger"
+              >
+                关闭
+              </ActionButton>
+            </>
+          ) : operationPurpose === "create" ? (
+            launchProgress?.pct === 100 ? (
+              <>
+                <ActionButton
+                  onClick={async () => {
+                    if (onEnterTavern && lastLaunchParams) {
+                      await onEnterTavern(lastLaunchParams);
+                    } else {
+                      onClose();
+                    }
+                  }}
+                >
+                  <Play className="w-3 h-3 shrink-0 fill-current" />
+                  <span>进入酒馆</span>
+                </ActionButton>
+                <ActionButton
+                  onClick={onClose}
+                >
+                  稍后
+                </ActionButton>
+              </>
+            ) : (
+              <ActionButton
                 onClick={onClose}
                 title="取消创建"
                 aria-label="取消创建"
-                className={cn(
-                  "flat-capsule motion-control flex h-8 flex-shrink-0 items-center gap-1.5 rounded-full border-0 px-3",
-                  isLight ? "text-[#1a1625]/70 hover:text-[#1a1625]" : "text-white/70 hover:text-white"
-                )}
+                tone="danger"
               >
-                <X className="h-3 w-3" />
                 <span>取消</span>
-              </button>
-            </div>
-          )
-        ) : (
-          <button
-            onClick={onMinimize || onClose}
-            className={cn(
-              "flat-capsule motion-control h-10 rounded-full px-5 text-[13px] font-semibold border-0",
-              isLight
-                ? "text-[#1a1625]/70 hover:text-[#1a1625]"
-                : "text-white/70 hover:text-white"
-            )}
-          >
-            隐藏
-          </button>
-        )}
+              </ActionButton>
+            )
+          ) : (
+            <ActionButton
+              onClick={onMinimize || onClose}
+            >
+              隐藏
+            </ActionButton>
+          )}
+        </div>
       </div>
     </div>
   );

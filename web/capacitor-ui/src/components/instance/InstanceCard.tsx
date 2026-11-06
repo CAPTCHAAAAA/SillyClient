@@ -4,6 +4,7 @@ import { InstanceStoppedCard } from "./InstanceStoppedCard";
 import { coverPlate, coverTone } from "./coverTone";
 import { RunningConsoleCard } from "./RunningConsoleCard";
 import { FlipCard } from "../common/FlipCard";
+import type { InstanceRenameState } from "./InstanceRenameField";
 
 export interface InstanceCardProps {
   instance: TavernInstance;
@@ -19,9 +20,7 @@ export interface InstanceCardProps {
   onReturnToTavern?: (instance: TavernInstance) => void;
   onStopInstance?: (instance: TavernInstance) => void;
   onOpenMenu: (instance: TavernInstance, rect: DOMRect) => void;
-  onRenameSave?: (instanceId: string, newName: string) => void;
-  isExternallyRenaming?: boolean;
-  onClearExternalRenaming?: () => void;
+  rename?: InstanceRenameState;
   isWindows?: boolean;
   onLongPress?: (instance: TavernInstance) => void;
   style?: React.CSSProperties;
@@ -45,8 +44,14 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
   const isRunning = props.instance.status === "running";
   const isExpanded = props.hoveredCard === props.instance.id;
   const toggleExpand = React.useCallback(
-    () => props.setHoveredCard(isExpanded ? null : props.instance.id),
-    [isExpanded, props.instance.id, props.setHoveredCard]
+    () => {
+      if (!isRunning && props.rename) {
+        if (!props.rename.saving) props.rename.onCancel();
+        return;
+      }
+      props.setHoveredCard(isExpanded ? null : props.instance.id);
+    },
+    [isExpanded, isRunning, props.instance.id, props.setHoveredCard, props.rename]
   );
 
   return (
@@ -98,9 +103,7 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           onToggleExpand={toggleExpand}
           onLaunch={props.onLaunch}
           onOpenMenu={props.onOpenMenu}
-          onRenameSave={props.onRenameSave || (() => {})}
-          isExternallyRenaming={props.isExternallyRenaming}
-          onClearExternalRenaming={props.onClearExternalRenaming}
+          rename={!isRunning ? props.rename : undefined}
           isReordering={props.isReordering}
         />
       }

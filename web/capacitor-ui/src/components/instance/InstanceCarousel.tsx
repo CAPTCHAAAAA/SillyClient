@@ -3,6 +3,7 @@ import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
 import { InstanceCard } from "./InstanceCard";
+import type { InstanceRenameState } from "./InstanceRenameField";
 import { setCarouselSnapLock } from "../../lib/carousel-snap";
 import { createPaginationMotion, paginationCenter, paginationDotOpacity, PAGINATION_REST_WIDTH } from "../../lib/pagination-motion";
 import { FlipCard } from "../common/FlipCard";
@@ -215,9 +216,7 @@ export interface InstanceCarouselProps {
   onReturnToTavern?: (instance: TavernInstance) => void;
   onStopInstance?: (instance: TavernInstance) => void;
   onOpenMenu: (instance: TavernInstance, rect: DOMRect) => void;
-  onRenameSave: (instanceId: string, newName: string) => void;
-  externallyRenamingId?: string | null;
-  onClearExternalRenaming?: () => void;
+  rename?: InstanceRenameState;
   isWindows?: boolean;
   isWeb?: boolean;
   isShowcase?: boolean;
@@ -253,9 +252,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   onReturnToTavern,
   onStopInstance,
   onOpenMenu,
-  onRenameSave,
-  externallyRenamingId,
-  onClearExternalRenaming,
+  rename,
   isWindows = false,
   isWeb = false,
   isShowcase = false,
@@ -1121,9 +1118,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                 onReturnToTavern={onReturnToTavern}
                 onStopInstance={onStopInstance}
                 onOpenMenu={onOpenMenu}
-                onRenameSave={onRenameSave}
-                isExternallyRenaming={externallyRenamingId === instance.id}
-                onClearExternalRenaming={onClearExternalRenaming}
+                rename={rename?.instanceId === instance.id ? rename : undefined}
                 isWindows={isWindows}
                 onLongPress={onLongPressCard}
               />

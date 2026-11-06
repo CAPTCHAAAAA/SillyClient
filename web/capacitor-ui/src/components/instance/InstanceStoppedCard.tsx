@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Play, MoreVertical, Edit2, Lock } from "lucide-react";
+import React from "react";
+import { Play, MoreVertical, Lock } from "lucide-react";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import type { TavernInstance } from "../../types";
 import { coverTone, coverWash } from "./coverTone";
 import { useFrozenCoverPlate } from "./useFrozenCoverPlate";
+import { InstanceCardDrawer } from "./InstanceCardDrawer";
+import { InstanceRenameField, type InstanceRenameState } from "./InstanceRenameField";
 
 export interface InstanceStoppedCardProps {
   instance: TavernInstance;
@@ -16,9 +18,7 @@ export interface InstanceStoppedCardProps {
   onToggleExpand: () => void;
   onLaunch: (instance: TavernInstance) => void;
   onOpenMenu: (instance: TavernInstance, rect: DOMRect) => void;
-  onRenameSave: (instanceId: string, newName: string) => void;
-  isExternallyRenaming?: boolean;
-  onClearExternalRenaming?: () => void;
+  rename?: InstanceRenameState;
   isReordering?: boolean;
 }
 
@@ -39,7 +39,7 @@ function getStatusText(status: TavernInstance["status"]) {
 
 /**
  * 停止态实例卡片组件 (InstanceStoppedCard)
- * 高内聚：专注表达静止态扁平拟物材质、封面、标题（支持双击就地内联重命名）及点击展开详情抽屉
+ * 高内聚：专注表达静止态扁平拟物材质、封面、标题及点击展开详情抽屉
  */
 export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
   instance,
@@ -51,44 +51,11 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
   onToggleExpand,
   onLaunch,
   onOpenMenu,
-  onRenameSave,
-  isExternallyRenaming = false,
-  onClearExternalRenaming,
+  rename,
   isReordering = false,
 }) => {
-  const [isEditingInline, setIsEditingInline] = useState(false);
-  const [editName, setEditName] = useState(instance.name);
-  const inputRef = useRef<HTMLInputElement>(null);
   const coverSrc = instance.cover || "./tavern-logo.png";
   const { rootRef, plateRef, usePlate } = useFrozenCoverPlate(isLight, isDynamic, isReordering, coverSrc);
-
-  useEffect(() => {
-    if (isExternallyRenaming) {
-      setIsEditingInline(true);
-      setEditName(instance.subtitle || instance.name);
-      onClearExternalRenaming?.();
-    }
-  }, [isExternallyRenaming, instance.name, instance.subtitle, onClearExternalRenaming]);
-
-  useEffect(() => {
-    if (isEditingInline) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }
-  }, [isEditingInline]);
-
-  const handleSave = () => {
-    const trimmed = editName.trim();
-    if (trimmed && trimmed !== (instance.subtitle || instance.name)) {
-      onRenameSave(instance.id, trimmed);
-    }
-    setIsEditingInline(false);
-  };
-
-  const handleCancel = () => {
-    setEditName(instance.subtitle || instance.name);
-    setIsEditingInline(false);
-  };
 
   return (
     <div
@@ -171,47 +138,23 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
 
         <div className="flex-1" />
 
-        {/* 标题（支持双击就地内联编辑） */}
-        {isEditingInline ? (
-          <div className="mb-2" onClick={(e) => e.stopPropagation()}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSave();
-                if (e.key === "Escape") handleCancel();
-              }}
-              className={cn(
-                "w-full h-7 px-2 rounded-lg border text-sm font-medium leading-snug transition-colors outline-none",
-                isLight
-                  ? "bg-white/90 border-black/20 text-[#1a1625]"
-                  : "bg-black/80 border-white/25 text-white"
-              )}
-            />
-          </div>
-        ) : (
-          <div
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setIsEditingInline(true);
-              setEditName(instance.subtitle || instance.name);
-            }}
-            title="双击直接内联重命名"
-            className={cn(
-              "text-sm font-medium leading-snug mb-2 flex items-center justify-between group/title",
-              isLight ? "text-[#1a1625]/75" : "text-white/80"
-            )}
-          >
-            <span className="truncate">{instance.subtitle || instance.name}</span>
-            <Edit2 className="w-3 h-3 opacity-0 group-hover/title:opacity-40 transition-opacity flex-shrink-0 ml-1" />
-          </div>
-        )}
+        <div
+          title={rename ? undefined : instance.subtitle || instance.name}
+          data-renaming={rename ? "true" : undefined}
+          style={rename ? { width: "100%" } : undefined}
+          className={cn(
+            "preview-card-subtitle relative text-sm font-medium leading-snug mb-2 flex items-center justify-between",
+            isLight ? "text-[#1a1625]/75" : "text-white/80"
+          )}
+        >
+          <span aria-hidden={Boolean(rename && !rename.closing)} className="instance-rename-label truncate">
+            {instance.subtitle || instance.name}
+          </span>
+          {rename && <InstanceRenameField state={rename} isLight={isLight} />}
+        </div>
 
         {/* 类型与状态指示 */}
-        <div className="flex items-center justify-between mt-1.5">
+        <div className="preview-card-status flex items-center justify-between mt-1.5">
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
@@ -259,11 +202,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
         </div>
 
         {/* 鼠标点击展开的详情抽屉 */}
-        <div
-          className={cn("motion-accordion", isExpanded && "is-open")}
-          aria-hidden={!isExpanded}
-        >
-          <div className="motion-accordion-inner">
+        <InstanceCardDrawer isOpen={isExpanded}>
             <div className="pt-2 space-y-1">
               <div className="flex items-center justify-between text-[11px]">
                 <span
@@ -353,8 +292,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </InstanceCardDrawer>
       </div>
     </div>
   );

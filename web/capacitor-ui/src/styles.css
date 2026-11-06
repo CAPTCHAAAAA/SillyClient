@@ -2186,22 +2186,28 @@ select option {
   }
 }
 
-.app-settings-action {
+.action-button {
+  --manage-action-fill: rgba(255, 255, 255, 0.06);
+  --manage-action-hover: rgba(255, 255, 255, 0.1);
+  --manage-action-pressed: rgba(255, 255, 255, 0.035);
   min-width: 55px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.15);
   color: rgba(255, 255, 255, 0.62);
 }
 
-.ios-task-surface.is-light .app-settings-action {
+.ios-task-surface.is-light .action-button {
+  --manage-action-fill: rgba(255, 255, 255, 0.34);
+  --manage-action-hover: rgba(26, 22, 37, 0.075);
+  --manage-action-pressed: rgba(26, 22, 37, 0.09);
   color: rgba(26, 22, 37, 0.5);
 }
 
-.app-settings-action.is-warning {
+.action-button.is-warning {
   color: rgba(235, 182, 108, 0.72);
 }
 
-.app-settings-action.is-danger {
+.action-button.is-danger {
   color: rgba(238, 127, 151, 0.74);
 }
 
@@ -2291,19 +2297,19 @@ select option {
     color: rgba(26, 22, 37, 0.9);
   }
 
-  .app-settings-action:hover {
+  .action-button:hover {
     color: rgba(255, 255, 255, 0.9);
   }
 
-  .ios-task-surface.is-light .app-settings-action:hover {
+  .ios-task-surface.is-light .action-button:hover {
     color: rgba(26, 22, 37, 0.9);
   }
 
-  .app-settings-action.is-warning:hover {
+  .action-button.is-warning:hover {
     color: rgba(244, 194, 124, 0.98);
   }
 
-  .app-settings-action.is-danger:hover {
+  .action-button.is-danger:hover {
     color: rgba(246, 145, 166, 0.98);
   }
 }
@@ -2314,7 +2320,7 @@ select option {
     gap: 14px;
   }
 
-  .app-settings-action {
+  .action-button {
     min-width: 48px;
     padding-inline: 13px;
   }

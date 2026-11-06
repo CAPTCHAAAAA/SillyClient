@@ -6,6 +6,8 @@ import type { TavernInstance } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { instanceLogs } from "../../lib/log-store";
 import { TerminalWell } from "../common/TerminalWell";
+import { InstanceCardDrawer } from "./InstanceCardDrawer";
+import "../common/console-card.css";
 import "./RunningConsoleCard.css";
 
 export interface RunningConsoleCardProps {
@@ -110,7 +112,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
   return (
     <div
       className={cn(
-        "running-console-card ios-task-surface w-full h-full rounded-[26px] relative flex flex-col px-3 pt-2 pb-2.5 overflow-hidden backdrop-blur-[40px] saturate-180 cursor-pointer select-text",
+        "running-console-card console-card ios-task-surface w-full h-full rounded-[26px] relative flex flex-col px-3 pt-2 pb-2.5 overflow-hidden backdrop-blur-[40px] saturate-180 cursor-pointer select-text",
         glassBg,
         isLight && "is-light"
       )}
@@ -206,13 +208,11 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
         </div>
       </TerminalWell>
 
-      <div
+      <InstanceCardDrawer
         id={actionsId}
-        className={cn("running-console-card__action-drawer motion-accordion relative z-10 -mx-0.5 shrink-0", isExpanded && "is-open")}
-        aria-hidden={!isExpanded}
-        inert={!isExpanded}
+        isOpen={isExpanded}
+        className="running-console-card__action-drawer relative z-10 -mx-0.5 shrink-0"
       >
-        <div className="motion-accordion-inner">
           <div className="running-console-card__actions flex items-center gap-1.5 pt-1.5">
             <button
               type="button"
@@ -220,12 +220,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
                 e.stopPropagation();
                 onReturnToTavern?.(instance);
               }}
-              className={cn(
-                "flat-capsule motion-control flex-auto px-3 h-8 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap border-0",
-                isLight
-                  ? "text-[#1a1625]/75 hover:text-[#1a1625]"
-                  : "text-white/75 hover:text-white"
-              )}
+              className="console-card__action console-card__action--primary flat-capsule motion-control"
             >
               <Play className="w-3 h-3 shrink-0 fill-current" />
               返回酒馆
@@ -237,7 +232,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
                 e.stopPropagation();
                 onStopInstance?.(instance);
               }}
-              className="running-console-card__stop flat-capsule motion-control flex-auto px-3 h-8 flex items-center justify-center cursor-pointer rounded-full text-xs font-medium whitespace-nowrap border-0"
+              className="console-card__action console-card__action--quiet console-card__destructive flat-capsule motion-control ml-auto"
             >
               关闭
             </button>
@@ -251,7 +246,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
                 onOpenMenu(instance, event.currentTarget.getBoundingClientRect());
               }}
               className={cn(
-                "flat-capsule motion-control w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer border-0",
+                "console-card__action flat-capsule motion-control !h-8 !w-8 !min-h-0 !p-0 rounded-full flex items-center justify-center shrink-0 cursor-pointer border-0",
                 isLight
                   ? "text-[#1a1625]/65 hover:text-[#1a1625]"
                   : "text-white/50 hover:text-white"
@@ -260,8 +255,7 @@ const RunningConsoleCardComponent: React.FC<RunningConsoleCardProps> = ({
               <MoreVertical className="w-3.5 h-3.5 text-current transition-colors" />
             </button>
           </div>
-        </div>
-      </div>
+      </InstanceCardDrawer>
     </div>
   );
 };

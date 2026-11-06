@@ -1076,7 +1076,7 @@
             background-color: rgb(var(--preview-danger-rgb) / 0.055) !important;
           }
 
-          .app-settings-action.is-danger {
+          .action-button.is-danger {
             background: rgb(var(--preview-danger-rgb) / 0.045) !important;
             color: rgb(var(--preview-danger-rgb) / 0.66) !important;
           }
@@ -1095,7 +1095,7 @@
               color: rgb(var(--preview-danger-rgb) / 0.84) !important;
             }
 
-            .app-settings-action.is-danger:hover {
+            .action-button.is-danger:hover {
               background: rgb(var(--preview-danger-rgb) / 0.09) !important;
               color: rgb(var(--preview-danger-rgb) / 0.84) !important;
             }
@@ -1459,38 +1459,10 @@
             right: 14px;
             bottom: 14px;
             display: block !important;
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transform: translate3d(0, 18px, 0) !important;
-            transform-origin: bottom center;
-            will-change: opacity, transform;
-            transition:
-              opacity 240ms var(--card-fade-ease),
-              transform 300ms var(--card-focus-ease),
-              visibility 0s linear 300ms !important;
-          }
-
-          .motion-instance-card:not([data-create-card]) .motion-accordion.is-open {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-            transform: translate3d(0, 0, 0) !important;
-            transition:
-              opacity 360ms var(--card-fade-ease) 100ms,
-              transform 430ms var(--card-focus-ease) 75ms,
-              visibility 0s linear 0s !important;
           }
 
           .motion-instance-card:not([data-create-card]) .motion-accordion-inner {
-            min-height: 0;
             overflow: visible;
-            opacity: 1 !important;
-            transform: none !important;
-            filter: none !important;
-            transition: none !important;
-            -webkit-mask-image: none !important;
-            mask-image: none !important;
           }
 
           @media (prefers-reduced-motion: reduce) {
@@ -2092,7 +2064,6 @@
             if (!accordion || accordionIndex < 2) return;
 
             const subtitle = contentChildren[accordionIndex - 2];
-            const status = contentChildren[accordionIndex - 1];
             const detailList = accordion.querySelector('.motion-accordion-inner > div');
             if (!detailList) return;
 
@@ -2102,16 +2073,10 @@
             const rawTitleLift = detailTop - 8 - expandedTitleHeight - subtitle.offsetTop;
             const titleLift = Math.max(-96, Math.min(-60, Math.round(rawTitleLift)));
             const titleLiftValue = `${titleLift}px`;
-            pendingWrites.push({ content, accordion, subtitle, status, titleLiftValue });
+            pendingWrites.push({ content, accordion, titleLiftValue });
           });
 
-          for (const { content, accordion, subtitle, status, titleLiftValue } of pendingWrites) {
-            if (!subtitle.classList.contains('preview-card-subtitle')) {
-              subtitle.classList.add('preview-card-subtitle');
-            }
-            if (!status.classList.contains('preview-card-status')) {
-              status.classList.add('preview-card-status');
-            }
+          for (const { content, accordion, titleLiftValue } of pendingWrites) {
             if (content.style.getPropertyValue('--card-title-lift') !== titleLiftValue) {
               content.style.setProperty('--card-title-lift', titleLiftValue);
             }

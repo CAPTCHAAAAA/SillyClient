@@ -1,0 +1,52 @@
+.instance-card-drawer.motion-accordion {
+  --card-focus-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --card-fade-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, 18px, 0);
+  transform-origin: bottom center;
+  will-change: opacity, transform;
+  transition:
+    grid-template-rows 300ms var(--card-focus-ease),
+    opacity 240ms var(--card-fade-ease),
+    transform 300ms var(--card-focus-ease),
+    visibility 0s linear 300ms;
+}
+
+.instance-card-drawer.motion-accordion.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  transition:
+    grid-template-rows 430ms var(--card-focus-ease) 75ms,
+    opacity 360ms var(--card-fade-ease) 100ms,
+    transform 430ms var(--card-focus-ease) 75ms,
+    visibility 0s linear;
+}
+
+.instance-card-drawer.motion-accordion > .instance-card-drawer__content.motion-accordion-inner {
+  opacity: 1;
+  visibility: inherit;
+  transform: none;
+  filter: none;
+  will-change: auto;
+  transition: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instance-card-drawer.motion-accordion,
+  .instance-card-drawer.motion-accordion.is-open {
+    transform: none;
+    will-change: auto;
+    transition: none !important;
+  }
+
+  .instance-card-drawer.motion-accordion > .instance-card-drawer__content.motion-accordion-inner {
+    transition: none !important;
+  }
+}

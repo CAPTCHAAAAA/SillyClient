@@ -1,0 +1,137 @@
+.console-card {
+  --console-text: rgba(255, 255, 255, 0.8);
+  --console-text-muted: rgba(255, 255, 255, 0.5);
+  --console-action-text: rgba(255, 255, 255, 0.75);
+  --console-action-hover: #fff;
+  --console-progress: rgba(164, 92, 111, 0.76);
+  --manage-action-fill: rgba(255, 255, 255, 0.045);
+  --manage-action-hover: rgba(255, 255, 255, 0.09);
+  --manage-action-pressed: rgba(255, 255, 255, 0.035);
+}
+
+.console-card.ios-task-surface::before {
+  content: none;
+}
+
+.console-card.is-light {
+  --console-text: rgba(26, 22, 37, 0.8);
+  --console-text-muted: rgba(26, 22, 37, 0.65);
+  --console-action-text: rgba(26, 22, 37, 0.75);
+  --console-action-hover: #1a1625;
+  --console-progress: rgba(139, 58, 82, 0.72);
+  --manage-action-fill: rgba(26, 22, 37, 0.055);
+  --manage-action-hover: rgba(26, 22, 37, 0.09);
+  --manage-action-pressed: rgba(26, 22, 37, 0.045);
+  background-color: rgba(238, 237, 235, 0.92);
+}
+
+.console-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(255, 255, 255, 0.045), transparent 64%),
+    linear-gradient(160deg, transparent 40%, rgba(7, 5, 12, 0.09));
+}
+
+.console-card.is-light::after {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(255, 255, 255, 0.06), transparent 64%),
+    linear-gradient(160deg, transparent 40%, rgba(34, 34, 34, 0.035));
+}
+
+.console-card .terminal-well {
+  --terminal-font-size: 11.5px;
+}
+
+.console-card .terminal-output {
+  line-height: 1.75;
+}
+
+.console-card .terminal-log-line[data-level="success"] {
+  color: var(--terminal-text);
+  font-weight: 400;
+}
+
+.console-card .terminal-prompt {
+  font-weight: 400;
+}
+
+.console-card__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 5px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9999px;
+  color: var(--console-action-text);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 150ms var(--motion-ease-out),
+    background-color 180ms var(--motion-ease-out),
+    box-shadow 180ms var(--motion-ease-out),
+    color 180ms var(--motion-ease-out);
+}
+
+.console-card button.console-card__action {
+  background: var(--manage-action-fill) !important;
+  box-shadow: none !important;
+}
+
+.console-card button.console-card__action:active:not(:disabled) {
+  transform: none !important;
+  box-shadow: none !important;
+  transition-duration: 90ms;
+}
+
+.console-card__action--primary {
+  --manage-action-fill: rgba(255, 255, 255, 0.095);
+}
+
+.console-card.is-light .console-card__action--primary {
+  --manage-action-fill: rgba(26, 22, 37, 0.06);
+}
+
+.console-card__action--quiet {
+  --manage-action-fill: rgba(255, 255, 255, 0.05);
+}
+
+.console-card.is-light .console-card__action--quiet {
+  --manage-action-fill: rgba(26, 22, 37, 0.04);
+}
+
+.console-card__action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.console-card__destructive {
+  color: color-mix(in srgb, var(--destructive) 65%, transparent);
+}
+
+.console-card.is-light .console-card__destructive {
+  color: color-mix(in srgb, var(--destructive) 82%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .console-card__action:hover {
+    color: var(--console-action-hover);
+  }
+
+  .console-card__destructive:hover {
+    color: color-mix(in srgb, var(--destructive) 80%, transparent);
+  }
+
+  .console-card.is-light .console-card__destructive:hover {
+    color: color-mix(in srgb, var(--destructive) 94%, transparent);
+  }
+}

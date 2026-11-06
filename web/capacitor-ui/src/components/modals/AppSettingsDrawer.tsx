@@ -5,6 +5,7 @@ import { TarvenEnv } from "../../capacitor-plugin";
 import type { ContentOpenMode, AppUpdateInfo, RenderEngineSettings } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
+import { ActionButton } from "../common/ActionButton";
 import { ToggleSwitch } from "../common/ToggleSwitch";
 import { SegmentedSwitch } from "../common/SegmentedSwitch";
 import type { TavernInstance } from "../../types";
@@ -89,29 +90,6 @@ function AppSettingsLinkRow({
       <div className="app-settings-control">
         <ChevronRight className="w-4 h-4 opacity-35" />
       </div>
-    </button>
-  );
-}
-
-function AppSettingsAction({
-  children,
-  onClick,
-  tone = "default",
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  tone?: "default" | "warning" | "danger";
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "app-settings-action flat-capsule motion-control h-9 px-3 rounded-full text-[11px] font-medium border-0 flex-shrink-0",
-        tone !== "default" && `is-${tone}`
-      )}
-    >
-      {children}
     </button>
   );
 }
@@ -468,17 +446,17 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                 desc={`${displayInstancesRoot} · 实例以此处一级子目录存放`}
               >
                 <div className="app-settings-actions">
-                  <AppSettingsAction
+                  <ActionButton
                     onClick={() => { void chooseInstancesRoot(); }}
                   >
                     更改
-                  </AppSettingsAction>
+                  </ActionButton>
                   {configuredInstancesRoot !== null && (
-                    <AppSettingsAction
+                    <ActionButton
                       onClick={() => { void resetInstancesRoot(); }}
                     >
                       默认
-                    </AppSettingsAction>
+                    </ActionButton>
                   )}
                 </div>
               </AppSettingsRow>
@@ -487,7 +465,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                 desc="迁移实例列表与应用设置"
               >
                 <div className="app-settings-actions">
-                  <AppSettingsAction
+                  <ActionButton
                     onClick={async () => {
                       if (Capacitor.isNativePlatform()) {
                         try {
@@ -504,8 +482,8 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                     }}
                   >
                     导入
-                  </AppSettingsAction>
-                  <AppSettingsAction
+                  </ActionButton>
+                  <ActionButton
                     onClick={async () => {
                       const data = createInstanceBackup(instances);
                       const fileName = `sillyclient-backup-${new Date()
@@ -537,18 +515,18 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                     }}
                   >
                     导出
-                  </AppSettingsAction>
+                  </ActionButton>
                 </div>
               </AppSettingsRow>
               <AppSettingsRow
                 label="浏览数据"
                 desc="清除应用内网页缓存"
               >
-                <AppSettingsAction
+                <ActionButton
                   onClick={() => TarvenEnv.clearWebViewData().catch(() => {})}
                 >
                   清除
-                </AppSettingsAction>
+                </ActionButton>
               </AppSettingsRow>
               <AppSettingsPlaceholder />
             </div>
@@ -582,16 +560,16 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                 }
               >
                 <div className="app-settings-actions">
-                  <AppSettingsAction
+                  <ActionButton
                     onClick={() => {
                       void checkForAppUpdate();
                     }}
                   >
                     {appUpdateState === "checking" ? "检查中" : "检查"}
-                  </AppSettingsAction>
+                  </ActionButton>
                   {appUpdateInfo?.updateAvailable &&
                     appUpdateInfo.releaseUrl && (
-                      <AppSettingsAction
+                      <ActionButton
                         onClick={() => {
                           const url = appUpdateInfo.releaseUrl!;
                           onClose();
@@ -599,7 +577,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                         }}
                       >
                         查看
-                      </AppSettingsAction>
+                      </ActionButton>
                     )}
                 </div>
               </AppSettingsRow>
@@ -607,7 +585,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                 label="临时文件"
                 desc="扫描可以安全移除的缓存"
               >
-                <AppSettingsAction
+                <ActionButton
                   tone="warning"
                   onClick={() => {
                     onClose();
@@ -615,13 +593,13 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                   }}
                 >
                   检查
-                </AppSettingsAction>
+                </ActionButton>
               </AppSettingsRow>
               <AppSettingsRow
                 label="重置 SillyClient"
                 desc="清除实例列表与本地数据"
               >
-                <AppSettingsAction
+                <ActionButton
                   tone="danger"
                   onClick={() => {
                     if (
@@ -634,7 +612,7 @@ export const AppSettingsDrawer: React.FC<AppSettingsDrawerProps> = ({
                   }}
                 >
                   重置
-                </AppSettingsAction>
+                </ActionButton>
               </AppSettingsRow>
               <AppSettingsLinkRow
                 label="项目发布页"

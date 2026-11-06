@@ -1,0 +1,119 @@
+.motion-instance-card .preview-card-subtitle[data-renaming] {
+  z-index: 30;
+}
+
+.motion-instance-card.is-expanded .preview-card-subtitle[data-renaming] {
+  transform: translate3d(0, var(--card-title-lift), 0) scale(1) !important;
+}
+
+.instance-rename-label {
+  transition:
+    opacity 200ms linear,
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.preview-card-subtitle:has(> .instance-rename-field:is([data-state="opening"], [data-state="open"])) > .instance-rename-label {
+  opacity: 0;
+  transform: translate3d(10px, 0, 0);
+  pointer-events: none;
+}
+
+.instance-rename-field {
+  --rename-ink: rgba(255, 255, 255, 0.82);
+  --rename-fill: rgba(255, 255, 255, 0.085);
+  --rename-error-fill: rgba(40, 35, 42, 0.96);
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--rename-ink);
+  opacity: 0;
+  transform: translate3d(0, -50%, 0);
+}
+
+.instance-rename-field.is-light {
+  --rename-ink: rgba(26, 22, 37, 0.8);
+  --rename-fill: rgba(26, 22, 37, 0.075);
+  --rename-error-fill: rgba(238, 237, 235, 0.97);
+}
+
+.instance-rename-field[data-state="opening"],
+.instance-rename-field[data-state="open"] {
+  opacity: 1;
+}
+
+.instance-rename-field[data-state="opening"] {
+  transition: opacity 200ms linear;
+}
+
+.instance-rename-field[data-state="closing"] {
+  pointer-events: none;
+  transition: opacity 200ms linear;
+}
+
+.instance-rename-field__input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--rename-fill);
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+}
+
+.instance-rename-field__input::placeholder {
+  color: currentColor;
+  opacity: 0.5;
+}
+
+.instance-rename-field__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.instance-rename-field__input:disabled,
+.instance-rename-field__action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.instance-rename-field__error {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 6px);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--rename-error-fill);
+  color: var(--destructive);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instance-rename-field[data-state],
+  .instance-rename-label {
+    transition: none;
+  }
+
+  .instance-rename-field .animate-spin {
+    animation: none;
+  }
+}

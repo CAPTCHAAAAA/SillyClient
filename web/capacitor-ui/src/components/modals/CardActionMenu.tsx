@@ -20,7 +20,7 @@ export interface CardActionMenuProps {
 
 /**
  * 实例卡片操作悬浮菜单 (CardActionMenu)
- * 支持返回酒馆、停止、管理、双击/点击内联重命名、更换插图与删除。
+ * 支持返回酒馆、停止、管理、重命名、更换插图与删除。
  */
 export const CardActionMenu: React.FC<CardActionMenuProps> = ({
   instance,
@@ -120,21 +120,22 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
         >
           管理
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-            onRename(instance);
-          }}
-          className={cn(
-            "motion-menu-item w-full px-3 py-2.5 text-left text-sm transition-colors",
-            isLight
-              ? "text-[#1a1625]/50 hover:text-[#1a1625]/80"
-              : "text-white/50 hover:text-white/80"
-          )}
-        >
-          重命名
-        </button>
+        {instance.status !== "running" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRename(instance);
+            }}
+            className={cn(
+              "motion-menu-item w-full px-3 py-2.5 text-left text-sm transition-colors",
+              isLight
+                ? "text-[#1a1625]/50 hover:text-[#1a1625]/80"
+                : "text-white/50 hover:text-white/80"
+            )}
+          >
+            重命名
+          </button>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();

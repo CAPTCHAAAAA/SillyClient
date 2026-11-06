@@ -704,7 +704,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
           className="flip-card__face flip-card__face--front"
           style={{ visibility: facingBack ? "hidden" : "visible" }}
           aria-hidden={facingBack}
-          {...({ inert: facingBack ? "" : undefined } as Record<string, unknown>)}
+          inert={facingBack}
         >
           {front}
           {glare ? <span className="flip-card__glare" aria-hidden="true" /> : null}
@@ -713,7 +713,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
           className="flip-card__face flip-card__face--back"
           style={{ visibility: facingBack ? "visible" : "hidden" }}
           aria-hidden={!facingBack}
-          {...({ inert: !facingBack ? "" : undefined } as Record<string, unknown>)}
+          inert={!facingBack}
         >
           {back}
           {glare ? <span className="flip-card__glare" aria-hidden="true" /> : null}
