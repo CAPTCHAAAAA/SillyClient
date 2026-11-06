@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import {
   Menu,
   ChevronDown,
@@ -20,7 +20,6 @@ import { GLOBAL_LOG_KEY, instanceLogs, type LogLine } from "@/lib/log-store";
 import { OperationCoordinator, OperationCancelledError, type OperationContext } from "@/lib/operation-coordinator";
 import { APP_VERSION } from "@/constants/app-version";
 import { fetchAppUpdate } from "@/lib/app-update";
-import OnboardingGuide from "@/components/onboarding/OnboardingGuide";
 import { LegacyMigrationModal, type LegacyMigrationItem } from "@/components/modals/LegacyMigrationModal";
 import { RelocateInstanceModal } from "@/components/modals/RelocateInstanceModal";
 import { LAYERS } from "@/constants/layers";
@@ -42,6 +41,8 @@ import { CardActionMenu } from "@/components/modals/CardActionMenu";
 import { LaunchConsoleModal } from "@/components/modals/LaunchConsoleModal";
 import { UnlockInstanceModal } from "@/components/modals/UnlockInstanceModal";
 import type { TavernInstance, OperationPurpose } from "@/types";
+
+const OnboardingGuide = lazy(() => import("@/components/onboarding/OnboardingGuide"));
 
 export const Route = createFileRoute("/")({
   component: SillyClientLauncher,
@@ -3285,11 +3286,14 @@ function SillyClientLauncher() {
 
       {/* 首次引导 */}
       {showOnboarding && (
-        <OnboardingGuide
-          isLight={isLight}
-          onComplete={dismissOnboarding}
-          onSkip={dismissOnboarding}
-        />
+        <Suspense fallback={null}>
+          <OnboardingGuide
+            isLight={isLight}
+            platform={isWindows ? "windows" : isAndroid ? "android" : isIOS ? "ios" : "web"}
+            onComplete={dismissOnboarding}
+            onSkip={dismissOnboarding}
+          />
+        </Suspense>
       )}
 
       {/* 新版本旧路径实例全屏一键迁移向导 */}

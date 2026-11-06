@@ -1,432 +1,328 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { ActionButton } from "@/components/common/ActionButton";
+import { getGuideChapters, getGuideImage, type GuidePlatform } from "./guide-content";
 import "./OnboardingGuide.css";
 
 interface OnboardingGuideProps {
   isLight: boolean;
+  platform: GuidePlatform;
   onComplete: () => void;
   onSkip: () => void;
 }
 
-interface GuideView {
-  label: string;
-  description: string;
-  image: string;
-  imageAlt: string;
-  imageClass: string;
-}
-
-const STEP_EXIT_MS = 210;
-const STEP_ENTER_MS = 380;
-const CLOSE_MS = 270;
-const REDUCED_STEP_EXIT_MS = 100;
-const REDUCED_STEP_ENTER_MS = 110;
-const REDUCED_CLOSE_MS = 100;
-
 type TransitionPhase = "idle" | "leaving" | "entering";
 
-interface GuideStep {
-  title: string;
-  views: GuideView[];
+const platformNames: Record<GuidePlatform, string> = {
+  web: "网页演示",
+  windows: "Windows",
+  android: "Android",
+  ios: "iOS",
+};
+
+function getFocusableElements(root: HTMLElement) {
+  return Array.from(root.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+  )).filter((element) => element.getClientRects().length > 0
+    && getComputedStyle(element).visibility === "visible"
+    && !element.closest("[inert]"));
 }
 
-const guideSteps: GuideStep[] = [
-  {
-    title: "新建实例",
-    views: [
-      {
-        label: "入口",
-        description: "从首页的新建实例卡片开始，创建本地实例或添加远程连接。",
-        image: "./onboarding/create-instance.webp",
-        imageAlt: "首页中的新建实例卡片",
-        imageClass: "is-card",
-      },
-      {
-        label: "创建面板",
-        description: "填写名称并选择本地或远程连接。本地版本可使用内置版，也可从版本一栏右侧导入 ZIP。",
-        image: "./onboarding/create-open.webp",
-        imageAlt: "展开后的新建实例面板",
-        imageClass: "is-panel",
-      },
-      {
-        label: "预设安装",
-        description: "创建本地实例时可启用 SC Bordeaux，安装完成后会自动应用主题预设与配套壁纸。",
-        image: "./onboarding/theme-preset-open.webp",
-        imageAlt: "新建实例面板中的 SC Bordeaux 主题预设",
-        imageClass: "is-panel",
-      },
-    ],
-  },
-  {
-    title: "实例卡片",
-    views: [
-      {
-        label: "展开后",
-        description: "轻触实例卡片可查看创建时间、上次使用、累计使用和启动；再次轻触即可收回。",
-        image: "./onboarding/instance-card-default-expanded.webp",
-        imageAlt: "使用默认封面的展开实例卡片",
-        imageClass: "is-card",
-      },
-    ],
-  },
-  {
-    title: "密码保护",
-    views: [
-      {
-        label: "私密锁定",
-        description: "开启访问密码后，实例卡片会显示「锁定」。启动前需要先在本地解锁。",
-        image: "./onboarding/instance-card-locked.webp",
-        imageAlt: "带有锁定标记的私密实例卡片",
-        imageClass: "is-card",
-      },
-      {
-        label: "本地解锁",
-        description: "启动受保护实例时输入本地密码，确认后会解锁并启动。校验只在本机完成，不需要联网。",
-        image: "./onboarding/password-unlock.webp",
-        imageAlt: "本地免联网密码解锁面板",
-        imageClass: "is-panel",
-      },
-    ],
-  },
-  {
-    title: "数据迁移",
-    views: [
-      {
-        label: "无损迁移",
-        description: "在实例管理的「存储路径」里点「迁移目录」，可以把实例搬到新目录或软件默认路径。跨卷迁移会保留原数据并做校验。",
-        image: "./onboarding/storage-migrate.webp",
-        imageAlt: "单实例存储路径无损重定位与迁移面板",
-        imageClass: "is-panel",
-      },
-    ],
-  },
-  {
-    title: "实例终端",
-    views: [
-      {
-        label: "入口",
-        description: "点击顶部控制岛左侧的终端按钮，打开或收起当前实例的终端。",
-        image: "./onboarding/console-button.webp",
-        imageAlt: "顶部控制岛左侧的终端按钮",
-        imageClass: "is-toolbar",
-      },
-      {
-        label: "实时日志",
-        description: "启动、安装和报错会留在这个终端里，用来确认实例现在走到哪一步。",
-        image: "./onboarding/terminal-open.webp",
-        imageAlt: "展开后的实例终端",
-        imageClass: "is-terminal",
-      },
-    ],
-  },
-  {
-    title: "背景与主题",
-    views: [
-      {
-        label: "入口",
-        description: "点击顶部控制岛中间区域，切换动态、黑夜与白天模式，或设置本地壁纸和磨砂强度。",
-        image: "./onboarding/background-button.webp",
-        imageAlt: "顶部控制岛中间的背景与主题入口",
-        imageClass: "is-toolbar",
-      },
-    ],
-  },
-  {
-    title: "APP 设置",
-    views: [
-      {
-        label: "入口",
-        description: "点击顶部控制岛右侧的菜单，打开 APP 设置。",
-        image: "./onboarding/settings-button.webp",
-        imageAlt: "顶部控制岛右侧的 APP 设置入口",
-        imageClass: "is-toolbar",
-      },
-      {
-        label: "设置内容",
-        description: "设置按通用、数据与维护分类。重新演示引导位于通用页，需要时可随时再次打开。",
-        image: "./onboarding/settings-open.webp",
-        imageAlt: "展开后的 APP 设置面板",
-        imageClass: "is-panel",
-      },
-    ],
-  },
-];
-
-export default function OnboardingGuide({
-  isLight,
-  onComplete,
-  onSkip,
-}: OnboardingGuideProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [currentView, setCurrentView] = useState(0);
-  const [transitionDirection, setTransitionDirection] = useState<"forward" | "backward">("forward");
+export default function OnboardingGuide({ isLight, platform, onComplete, onSkip }: OnboardingGuideProps) {
+  const chapters = useMemo(() => getGuideChapters(platform), [platform]);
+  const lessons = useMemo(() => chapters.flatMap((chapter, chapterIndex) =>
+    chapter.lessons.map((lesson, viewIndex) => ({ ...lesson, chapter, chapterIndex, viewIndex })),
+  ), [chapters]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>("idle");
-  const [isEntryActive, setIsEntryActive] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const [panelHeight, setPanelHeight] = useState<number | null>(null);
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
+  const [entryActive, setEntryActive] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const panelContentRef = useRef<HTMLDivElement>(null);
-  const stepRootRef = useRef<HTMLDivElement>(null);
-  const stepTimerRef = useRef<number | null>(null);
-  const enterTimerRef = useRef<number | null>(null);
-  const closeTimerRef = useRef<number | null>(null);
-  const entryFrameRef = useRef<number | null>(null);
-  const restorePanelTransitionFrameRef = useRef<number | null>(null);
-  const transitionTokenRef = useRef(0);
-  const isTransitioningRef = useRef(false);
-  const isClosingRef = useRef(false);
-  const hasMeasuredRef = useRef(false);
-  const reduceMotionRef = useRef(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const step = guideSteps[currentStep];
-  const view = step.views[currentView];
+  const readerRef = useRef<HTMLDivElement>(null);
+  const stepRef = useRef<HTMLDivElement>(null);
+  const figureButtonRef = useRef<HTMLButtonElement>(null);
+  const imageDialogRef = useRef<HTMLDivElement>(null);
+  const closeActionRef = useRef<(() => void) | null>(null);
+  const navigationRef = useRef(0);
+  const targetIndexRef = useRef(0);
+  const navigatingRef = useRef(false);
+  const mountedRef = useRef(true);
+  const restorePageFocusRef = useRef(false);
+  const previousImageOpenRef = useRef(false);
+  const lesson = lessons[currentIndex];
+  const image = getGuideImage(lesson.image);
 
-  const requestClose = useCallback((action: () => void) => {
-    if (isClosingRef.current) return;
-    isClosingRef.current = true;
-    isTransitioningRef.current = false;
-    transitionTokenRef.current += 1;
-    if (stepTimerRef.current !== null) window.clearTimeout(stepTimerRef.current);
-    if (enterTimerRef.current !== null) window.clearTimeout(enterTimerRef.current);
-    if (entryFrameRef.current !== null) window.cancelAnimationFrame(entryFrameRef.current);
-    setIsClosing(true);
-    closeTimerRef.current = window.setTimeout(
-      action,
-      reduceMotionRef.current ? REDUCED_CLOSE_MS : CLOSE_MS,
-    );
-  }, []);
+  const requestClose = useCallback((complete = false) => {
+    if (closeActionRef.current) return;
+    closeActionRef.current = complete ? onComplete : onSkip;
+    navigationRef.current += 1;
+    setClosing(true);
+  }, [onComplete, onSkip]);
 
-  const transitionTo = useCallback((nextStep: number, nextView: number) => {
-    if (
-      isTransitioningRef.current ||
-      isClosingRef.current ||
-      (nextStep === currentStep && nextView === currentView)
-    ) return;
-    const currentOrder = currentStep * 10 + currentView;
-    const nextOrder = nextStep * 10 + nextView;
-    const token = transitionTokenRef.current + 1;
-    transitionTokenRef.current = token;
-    isTransitioningRef.current = true;
-    setTransitionDirection(nextOrder >= currentOrder ? "forward" : "backward");
-    setIsEntryActive(false);
+  const navigateTo = useCallback(async (index: number) => {
+    if (closeActionRef.current || navigatingRef.current) return;
+    const target = Math.max(0, Math.min(lessons.length - 1, index));
+    if (target === currentIndex) return;
+    navigatingRef.current = true;
+    targetIndexRef.current = target;
+    const token = ++navigationRef.current;
+    setPending(true);
+    const nextImage = new Image();
+    nextImage.src = getGuideImage(lessons[target].image).src;
+    await nextImage.decode().catch(() => undefined);
+    if (!mountedRef.current || token !== navigationRef.current) return;
+    restorePageFocusRef.current = stepRef.current?.contains(document.activeElement) ?? false;
+    setPending(false);
+    setDirection(target > currentIndex ? "forward" : "backward");
     setTransitionPhase("leaving");
-    if (stepTimerRef.current !== null) window.clearTimeout(stepTimerRef.current);
-    stepTimerRef.current = window.setTimeout(() => {
-      if (token !== transitionTokenRef.current || isClosingRef.current) return;
-      setCurrentStep(nextStep);
-      setCurrentView(nextView);
-      setTransitionPhase("entering");
-    }, reduceMotionRef.current ? REDUCED_STEP_EXIT_MS : STEP_EXIT_MS);
-  }, [currentStep, currentView]);
+  }, [currentIndex, lessons]);
 
   useLayoutEffect(() => {
-    if (transitionPhase !== "entering") return;
-    const stepRoot = stepRootRef.current;
-    if (!stepRoot) return;
-    const token = transitionTokenRef.current;
-
-    void stepRoot.offsetWidth;
-    entryFrameRef.current = window.requestAnimationFrame(() => {
-      if (token !== transitionTokenRef.current || isClosingRef.current) return;
-      setIsEntryActive(true);
+    const step = stepRef.current;
+    if (!step || transitionPhase === "idle" || closing) return;
+    if (transitionPhase === "entering" && !entryActive) {
+      void step.offsetWidth;
+      const frame = requestAnimationFrame(() => setEntryActive(true));
+      return () => cancelAnimationFrame(frame);
+    }
+    let cancelled = false;
+    const token = navigationRef.current;
+    void Promise.allSettled(step.getAnimations().map((animation) => animation.finished)).then(() => {
+      if (cancelled || token !== navigationRef.current) return;
+      if (transitionPhase === "leaving") {
+        setCurrentIndex(targetIndexRef.current);
+        setEntryActive(false);
+        setTransitionPhase("entering");
+      } else {
+        navigatingRef.current = false;
+        setTransitionPhase("idle");
+        setEntryActive(false);
+      }
     });
-    enterTimerRef.current = window.setTimeout(() => {
-      if (token !== transitionTokenRef.current || isClosingRef.current) return;
-      setTransitionPhase("idle");
-      setIsEntryActive(false);
-      isTransitioningRef.current = false;
-    }, reduceMotionRef.current ? REDUCED_STEP_ENTER_MS : STEP_ENTER_MS);
+    return () => { cancelled = true; };
+  }, [transitionPhase, entryActive, closing]);
 
-    return () => {
-      if (entryFrameRef.current !== null) window.cancelAnimationFrame(entryFrameRef.current);
-      if (enterTimerRef.current !== null) window.clearTimeout(enterTimerRef.current);
-    };
-  }, [currentStep, currentView, transitionPhase]);
+  useLayoutEffect(() => {
+    if (!closing) return;
+    let cancelled = false;
+    const animations = rootRef.current?.getAnimations({ subtree: true }) ?? [];
+    void Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
+      if (!cancelled) closeActionRef.current?.();
+    });
+    return () => { cancelled = true; };
+  }, [closing]);
 
   useEffect(() => {
+    mountedRef.current = true;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousDocumentOverflow = document.documentElement.style.overflow;
     const previousBodyOverflow = document.body.style.overflow;
+    const isolated: { element: HTMLElement; inert: boolean }[] = [];
+    let ancestor: HTMLElement | null = rootRef.current;
+    while (ancestor?.parentElement) {
+      for (const sibling of Array.from(ancestor.parentElement.children)) {
+        if (sibling instanceof HTMLElement && sibling !== ancestor && !["SCRIPT", "STYLE", "LINK"].includes(sibling.tagName)) {
+          isolated.push({ element: sibling, inert: sibling.inert });
+          sibling.inert = true;
+        }
+      }
+      if (ancestor.parentElement === document.body) break;
+      ancestor = ancestor.parentElement;
+    }
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
-
+    rootRef.current?.focus({ preventScroll: true });
     return () => {
+      mountedRef.current = false;
+      navigationRef.current += 1;
+      isolated.forEach(({ element, inert }) => { element.inert = inert; });
       document.documentElement.style.overflow = previousDocumentOverflow;
       document.body.style.overflow = previousBodyOverflow;
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") requestClose(onSkip);
-      if (event.key === "ArrowLeft") {
-        transitionTo(Math.max(0, currentStep - 1), 0);
-      }
-      if (event.key === "ArrowRight") {
-        transitionTo(Math.min(guideSteps.length - 1, currentStep + 1), 0);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [currentStep, onSkip, requestClose, transitionTo]);
-
-  useEffect(() => {
-    return () => {
-      if (stepTimerRef.current !== null) window.clearTimeout(stepTimerRef.current);
-      if (enterTimerRef.current !== null) window.clearTimeout(enterTimerRef.current);
-      if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);
-      if (entryFrameRef.current !== null) window.cancelAnimationFrame(entryFrameRef.current);
-      if (restorePanelTransitionFrameRef.current !== null) {
-        window.cancelAnimationFrame(restorePanelTransitionFrameRef.current);
-      }
+      const restoreFocus = previousFocus?.isConnected && previousFocus !== document.body
+        ? previousFocus
+        : document.querySelector<HTMLElement>("header button");
+      if (restoreFocus && !restoreFocus.closest("[inert]")) restoreFocus.focus({ preventScroll: true });
     };
   }, []);
 
   useLayoutEffect(() => {
-    const root = rootRef.current;
-    const panel = panelRef.current;
-    const content = panelContentRef.current;
-    if (!root || !panel || !content) return;
+    readerRef.current?.scrollTo({ top: 0 });
+  }, [currentIndex]);
 
-    const measure = () => {
-      const rootStyle = window.getComputedStyle(root);
-      const panelStyle = window.getComputedStyle(panel);
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const rootInsets =
-        Number.parseFloat(rootStyle.paddingTop) +
-        Number.parseFloat(rootStyle.paddingBottom);
-      const panelChrome =
-        Number.parseFloat(panelStyle.paddingTop) +
-        Number.parseFloat(panelStyle.paddingBottom) +
-        Number.parseFloat(panelStyle.borderTopWidth) +
-        Number.parseFloat(panelStyle.borderBottomWidth);
-      const contentHeight = Math.max(content.getBoundingClientRect().height, content.scrollHeight);
-      const availableHeight = Math.max(0, viewportHeight - rootInsets);
+  useEffect(() => {
+    for (const index of [currentIndex - 1, currentIndex + 1]) {
+      if (!lessons[index]) continue;
+      const neighbor = new Image();
+      neighbor.src = getGuideImage(lessons[index].image).src;
+    }
+  }, [currentIndex, lessons]);
 
-      const targetHeight = Math.ceil(Math.min(contentHeight + panelChrome, availableHeight));
-      if (!hasMeasuredRef.current) {
-        hasMeasuredRef.current = true;
-        panel.style.transition = "none";
-        setPanelHeight(targetHeight);
-        restorePanelTransitionFrameRef.current = window.requestAnimationFrame(() => {
-          panel.style.removeProperty("transition");
-        });
-        return;
-      }
-      setPanelHeight(targetHeight);
-    };
+  useLayoutEffect(() => {
+    if (transitionPhase !== "idle" || !restorePageFocusRef.current || closing) return;
+    restorePageFocusRef.current = false;
+    stepRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.focus({ preventScroll: true });
+  }, [transitionPhase, closing]);
 
-    const frame = window.requestAnimationFrame(measure);
-    const resizeObserver = new ResizeObserver(measure);
-    resizeObserver.observe(content);
-    const images = Array.from(content.querySelectorAll("img"));
-    images.forEach((image) => image.addEventListener("load", measure));
-    window.addEventListener("resize", measure);
-    window.visualViewport?.addEventListener("resize", measure);
+  useLayoutEffect(() => {
+    if (previousImageOpenRef.current && !imageOpen) figureButtonRef.current?.focus({ preventScroll: true });
+    previousImageOpenRef.current = imageOpen;
+  }, [imageOpen]);
 
-    return () => {
-      resizeObserver.disconnect();
-      window.cancelAnimationFrame(frame);
-      images.forEach((image) => image.removeEventListener("load", measure));
-      window.removeEventListener("resize", measure);
-      window.visualViewport?.removeEventListener("resize", measure);
-    };
-  }, [currentStep, currentView]);
+  useEffect(() => {
+    if (!imageOpen) return;
+    getFocusableElements(imageDialogRef.current!)[0]?.focus({ preventScroll: true });
+  }, [imageOpen]);
 
-  const goNext = () => {
-    if (currentStep === guideSteps.length - 1) {
-      requestClose(onComplete);
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (imageOpen) setImageOpen(false);
+      else requestClose();
       return;
     }
-    transitionTo(currentStep + 1, 0);
+    if (event.key === "Tab") {
+      const focusRoot = imageDialogRef.current ?? panelRef.current;
+      if (!focusRoot) return;
+      const focusable = getFocusableElements(focusRoot);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first) {
+        event.preventDefault();
+        return;
+      }
+      if (event.shiftKey && (!focusable.includes(document.activeElement as HTMLElement) || document.activeElement === first)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (!focusable.includes(document.activeElement as HTMLElement) || document.activeElement === last)) {
+        event.preventDefault();
+        first.focus();
+      }
+      return;
+    }
+    if (!imageOpen && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      event.stopPropagation();
+      void navigateTo(currentIndex + (event.key === "ArrowLeft" ? -1 : 1));
+    }
   };
 
   const stepMotionClass = transitionPhase === "leaving"
-    ? `is-review-leaving ${transitionDirection === "forward" ? "to-left" : "to-right"}`
+    ? `is-review-leaving ${direction === "forward" ? "to-left" : "to-right"}`
     : transitionPhase === "entering"
-      ? `is-review-entering ${transitionDirection === "forward" ? "from-right" : "from-left"} ${isEntryActive ? "is-review-active" : ""}`
+      ? `is-review-entering ${direction === "forward" ? "from-right" : "from-left"}${entryActive ? " is-review-active" : ""}`
       : "";
 
   return (
     <div
       ref={rootRef}
-      className={`sc-onboarding ${isLight ? "is-light" : "is-dark"} ${isClosing ? "is-closing" : ""}`}
+      className={`sc-onboarding ${isLight ? "is-light" : "is-dark"}${closing ? " is-closing" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-label="SillyClient 使用引导"
+      aria-labelledby="sc-onboarding-title"
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
     >
-      <div className="sc-onboarding-backdrop" aria-hidden />
-      <div
-        ref={panelRef}
-        className="sc-onboarding-panel"
-        style={panelHeight === null ? undefined : { height: `${panelHeight}px` }}
-      >
-        <div ref={panelContentRef} className="sc-onboarding-panel-content">
-          <header className="sc-onboarding-header">
-            <div>
-              <strong>SillyClient</strong>
-              <span>使用引导</span>
-            </div>
-            <button type="button" onClick={() => requestClose(onSkip)}>跳过</button>
-          </header>
+      <div className="sc-onboarding-backdrop" aria-hidden="true" />
+      <div ref={panelRef} className="sc-onboarding-panel" inert={imageOpen || closing} aria-hidden={imageOpen || undefined}>
+        <header className="sc-onboarding-header">
+          <div><strong>SillyClient</strong><span id="sc-onboarding-title">使用引导</span></div>
+          <button type="button" onClick={() => requestClose()} aria-label="跳过使用引导">跳过</button>
+        </header>
 
-          <div
-            ref={stepRootRef}
-            className={`sc-onboarding-step ${stepMotionClass}`}
-            key={`${currentStep}-${currentView}`}
-          >
-            <figure className={`sc-onboarding-shot ${view.imageClass}`}>
-              <img src={view.image} alt={view.imageAlt} />
-            </figure>
-            {step.views.length > 1 && (
-              <div className="sc-onboarding-subnav" aria-label={`${step.title}详细页面`}>
-                {step.views.map((item, index) => (
-                  <button
-                    type="button"
-                    key={item.label}
-                    className={index === currentView ? "is-current" : ""}
-                    aria-current={index === currentView ? "page" : undefined}
-                    onClick={() => transitionTo(currentStep, index)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            )}
+        <div ref={readerRef} className="sc-onboarding-reader" aria-busy={pending || transitionPhase !== "idle"}>
+          <div ref={stepRef} className={`sc-onboarding-step ${stepMotionClass}`} inert={transitionPhase !== "idle"}>
             <div className="sc-onboarding-copy">
-              <span>{String(currentStep + 1).padStart(2, "0")}</span>
-              <h2>{step.title}</h2>
-              <p>{view.description}</p>
+              <span>第 {String(lesson.chapterIndex + 1).padStart(2, "0")} 章 · {lesson.chapter.title} · 本章 {lesson.viewIndex + 1} / {lesson.chapter.lessons.length}</span>
+              <h2 id="sc-onboarding-lesson-title">{lesson.title}</h2>
+              <p>{lesson.summary}</p>
+              {lesson.note && <p className="sc-onboarding-note">{lesson.note}</p>}
+              {lesson.platforms && <span className="sc-onboarding-platform">{lesson.platforms.map((item) => platformNames[item]).join(" · ")} 专属</span>}
             </div>
-          </div>
-
-          <footer className="sc-onboarding-footer">
-            <div className="sc-onboarding-dots" aria-label={`第 ${currentStep + 1} 步，共 ${guideSteps.length} 步`}>
-              {guideSteps.map((item, index) => (
+            <figure className={`sc-onboarding-shot is-${lesson.image}`}>
+              <button ref={figureButtonRef} type="button" onClick={() => setImageOpen(true)} aria-label={`放大界面图：${image.alt}`}>
+                <img
+                  src={image.src}
+                  width={image.width}
+                  height={image.height}
+                  alt={image.alt}
+                  onError={() => setFailedImage(image.src)}
+                  onLoad={() => setFailedImage((failed) => failed === image.src ? null : failed)}
+                />
+              </button>
+              <figcaption>{failedImage === image.src ? "图片暂不可用，仍可阅读说明" : "点击放大"}</figcaption>
+            </figure>
+            <nav className="sc-onboarding-subnav" aria-label={`${lesson.chapter.title}详细页面`}>
+              {lesson.chapter.lessons.map((item) => (
                 <button
                   type="button"
-                  key={item.title}
-                  className={index === currentStep ? "is-current" : ""}
-                  aria-label={`查看第 ${index + 1} 步：${item.title}`}
-                  aria-current={index === currentStep ? "step" : undefined}
-                  onClick={() => transitionTo(index, 0)}
-                />
+                  key={item.id}
+                  className={item.id === lesson.id ? "is-current" : ""}
+                  aria-current={item.id === lesson.id ? "page" : undefined}
+                  aria-label={item.title}
+                  onClick={() => { void navigateTo(lessons.findIndex((entry) => entry.id === item.id)); }}
+                >{item.label}</button>
               ))}
-            </div>
-            <div className="sc-onboarding-actions">
-              {currentStep > 0 && (
-                <button type="button" className="is-back" onClick={() => transitionTo(currentStep - 1, 0)}>
-                  上一步
-                </button>
-              )}
-              <button type="button" className="is-next" onClick={goNext}>
-                {currentStep === guideSteps.length - 1 ? "完成" : "下一步"}
-              </button>
-            </div>
-          </footer>
+            </nav>
+          </div>
         </div>
+
+        <footer className="sc-onboarding-footer">
+          <div className="sc-onboarding-progress">
+            <span className="sc-onboarding-progress-count" aria-hidden="true">
+              {String(currentIndex + 1).padStart(2, "0")}<span> / {String(lessons.length).padStart(2, "0")}</span>
+            </span>
+            <div
+              className="sc-onboarding-progress-track"
+              role="progressbar"
+              aria-label="教程阅读进度"
+              aria-valuemin={0}
+              aria-valuemax={lessons.length}
+              aria-valuenow={currentIndex + 1}
+            >
+              <span style={{ width: `${((currentIndex + 1) / lessons.length) * 100}%` }} />
+            </div>
+          </div>
+          <nav className="sc-onboarding-dots" aria-label="引导章节">
+            {chapters.map((chapter, chapterIndex) => (
+              <button
+                type="button"
+                key={chapter.id}
+                className={chapterIndex === lesson.chapterIndex ? "is-current" : ""}
+                aria-label={`查看第 ${chapterIndex + 1} 章：${chapter.title}`}
+                aria-current={chapterIndex === lesson.chapterIndex ? "step" : undefined}
+                title={chapter.title}
+                onClick={() => { void navigateTo(lessons.findIndex((entry) => entry.chapterIndex === chapterIndex)); }}
+              ><span /></button>
+            ))}
+          </nav>
+          <span className="sr-only" role="status" aria-live="polite">第 {lesson.chapterIndex + 1} 章，{lesson.chapter.title}，本章第 {lesson.viewIndex + 1} 页，共 {lesson.chapter.lessons.length} 页；教程总进度 {currentIndex + 1} / {lessons.length}</span>
+          <div className="sc-onboarding-actions">
+            {currentIndex > 0 && <ActionButton className="is-back" onClick={() => { void navigateTo(currentIndex - 1); }}>上一步</ActionButton>}
+            <ActionButton className="is-next" onClick={() => {
+              if (navigatingRef.current) return;
+              if (currentIndex === lessons.length - 1) requestClose(true);
+              else void navigateTo(currentIndex + 1);
+            }}>{currentIndex === lessons.length - 1 ? "完成" : "下一步"}</ActionButton>
+          </div>
+        </footer>
       </div>
+      {imageOpen && (
+        <div ref={imageDialogRef} className="sc-onboarding-lightbox" role="dialog" aria-modal="true" aria-label="放大的教程界面图">
+          <div className="sc-onboarding-lightbox-bar">
+            <span>{lesson.title}</span>
+            <ActionButton onClick={() => setImageOpen(false)} aria-label="关闭放大图片">返回</ActionButton>
+          </div>
+          <div className="sc-onboarding-lightbox-scroll">
+            <img src={image.src} width={image.width} height={image.height} alt={image.alt} />
+          </div>
+          <p>可滚动查看原图 · Esc 返回引导</p>
+        </div>
+      )}
     </div>
   );
 }

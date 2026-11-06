@@ -1,10 +1,12 @@
 .sc-onboarding {
   --guide-panel: rgba(28, 19, 31, 0.94);
   --guide-surface: rgba(255, 255, 255, 0.025);
+  --guide-selected: rgba(255, 255, 255, 0.1);
   --guide-edge: rgba(255, 255, 255, 0.075);
   --guide-text: rgba(255, 255, 255, 0.9);
-  --guide-muted: rgba(255, 255, 255, 0.43);
-  --guide-faint: rgba(255, 255, 255, 0.25);
+  --guide-secondary: rgba(255, 255, 255, 0.78);
+  --guide-muted: rgba(255, 255, 255, 0.57);
+  --guide-faint: rgba(255, 255, 255, 0.47);
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -17,15 +19,18 @@
     max(0.75rem, env(safe-area-inset-left));
   color: var(--guide-text);
   font-family: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
+  outline: none;
 }
 
 .sc-onboarding.is-light {
   --guide-panel: rgba(244, 240, 242, 0.97);
   --guide-surface: rgba(31, 21, 34, 0.025);
+  --guide-selected: rgba(31, 21, 34, 0.075);
   --guide-edge: rgba(31, 21, 34, 0.08);
   --guide-text: rgba(31, 21, 34, 0.9);
-  --guide-muted: rgba(31, 21, 34, 0.46);
-  --guide-faint: rgba(31, 21, 34, 0.27);
+  --guide-secondary: rgba(31, 21, 34, 0.78);
+  --guide-muted: rgba(31, 21, 34, 0.62);
+  --guide-faint: rgba(31, 21, 34, 0.55);
 }
 
 .sc-onboarding-backdrop {
@@ -39,12 +44,13 @@
 
 .sc-onboarding-panel {
   position: relative;
-  width: min(34rem, calc(100vw - 1.25rem));
-  max-height: calc(100dvh - 1.25rem);
-  padding: 1rem;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  width: min(46rem, 100%);
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  padding: 1.35rem;
   border: 1px solid var(--guide-edge);
   border-radius: 1.4rem;
   background: var(--guide-panel);
@@ -54,22 +60,15 @@
   backdrop-filter: blur(32px) saturate(120%);
   -webkit-backdrop-filter: blur(32px) saturate(120%);
   animation: sc-guide-enter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  transition: height 380ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sc-onboarding-panel::-webkit-scrollbar {
-  display: none;
-}
-
-.sc-onboarding-panel-content {
-  min-width: 0;
 }
 
 .sc-onboarding-header,
 .sc-onboarding-footer {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .sc-onboarding-header {
@@ -85,37 +84,59 @@
 
 .sc-onboarding-header strong {
   color: var(--guide-text);
-  font-size: 0.76rem;
-  font-weight: 680;
+  font-size: 0.84rem;
+  font-weight: 650;
 }
 
 .sc-onboarding-header span,
 .sc-onboarding-header button {
-  color: var(--guide-faint);
-  font-size: 0.64rem;
+  color: var(--guide-muted);
+  font-size: 0.72rem;
   font-weight: 560;
 }
 
 .sc-onboarding-header button {
+  min-height: 2rem;
   padding: 0.32rem 0.44rem;
   border-radius: 0.5rem;
 }
 
 .sc-onboarding-header button:hover {
-  color: var(--guide-muted);
+  color: var(--guide-secondary);
   background: var(--guide-surface);
 }
 
+.sc-onboarding-reader,
+.sc-onboarding-lightbox-scroll {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  scrollbar-gutter: stable;
+}
+
+.sc-onboarding-reader::-webkit-scrollbar,
+.sc-onboarding-lightbox-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .sc-onboarding-step {
+  display: grid;
+  grid-template-areas:
+    "copy shot"
+    "subnav shot";
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: center;
+  gap: 0 1.25rem;
   opacity: 1;
   transform: translate3d(0, 0, 0);
   filter: blur(0);
-  will-change: opacity, transform, filter;
 }
 
 .sc-onboarding-step.is-review-leaving {
   opacity: 0;
   pointer-events: none;
+  will-change: opacity, transform, filter;
   transition:
     opacity 210ms cubic-bezier(0.4, 0, 1, 1),
     transform 230ms cubic-bezier(0.4, 0, 1, 1),
@@ -135,6 +156,7 @@
 .sc-onboarding-step.is-review-entering {
   opacity: 0;
   pointer-events: none;
+  will-change: opacity, transform, filter;
 }
 
 .sc-onboarding-step.is-review-entering.from-right {
@@ -158,14 +180,25 @@
 }
 
 .sc-onboarding-shot {
+  grid-area: shot;
   display: grid;
   place-items: center;
-  min-height: 17rem;
+  align-content: center;
+  gap: 0.55rem;
+  min-height: 18rem;
   margin: 0;
-  padding: 1.35rem;
-  overflow: hidden;
-  border-radius: 1rem;
+  padding: 1rem;
+  border-radius: 1.15rem;
   background: var(--guide-surface);
+}
+
+.sc-onboarding-shot > button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  border-radius: 0.5rem;
+  cursor: zoom-in;
 }
 
 .sc-onboarding-shot img {
@@ -173,108 +206,177 @@
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 16rem;
+  max-height: 18rem;
   object-fit: contain;
 }
 
+.sc-onboarding-shot figcaption {
+  color: var(--guide-muted);
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
 .sc-onboarding-shot.is-toolbar {
-  min-height: 10rem;
+  min-height: 7rem;
 }
 
 .sc-onboarding-shot.is-toolbar img {
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 4.25rem;
+  max-height: 3.5rem;
 }
 
-.sc-onboarding-shot.is-card img {
-  height: 15rem;
-}
-
-.sc-onboarding-shot.is-terminal img {
-  width: 100%;
-  max-height: none;
-}
-
-.sc-onboarding-shot.is-panel img {
-  height: 16rem;
+.sc-onboarding-shot:is(.is-card, .is-running, .is-rename) img {
+  height: 14rem;
 }
 
 .sc-onboarding-subnav {
+  grid-area: subnav;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  min-height: 2rem;
-  margin-top: 0.35rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.3rem;
+  min-height: 2.2rem;
+  margin-top: 1rem;
 }
 
 .sc-onboarding-subnav button {
-  padding: 0.3rem 0.55rem;
+  flex-shrink: 0;
+  padding: 0.36rem 0.62rem;
   border-radius: 999px;
-  color: var(--guide-faint);
-  font-size: 0.6rem;
-  font-weight: 580;
+  color: var(--guide-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  font-weight: 520;
+  white-space: nowrap;
   transition: color 160ms ease, background-color 160ms ease;
 }
 
+.sc-onboarding-subnav button:hover {
+  color: var(--guide-secondary);
+}
+
 .sc-onboarding-subnav button.is-current {
-  color: var(--guide-muted);
-  background: var(--guide-surface);
+  color: var(--guide-text);
+  background: var(--guide-selected);
 }
 
 .sc-onboarding-copy {
-  padding: 1.15rem 0.15rem 0.35rem;
+  grid-area: copy;
+  align-self: end;
+  padding: 0.45rem 0.1rem 0;
 }
 
 .sc-onboarding-copy > span {
-  color: var(--guide-faint);
-  font-size: 0.58rem;
+  display: block;
+  color: var(--guide-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  font-weight: 560;
+  letter-spacing: 0.015em;
   font-variant-numeric: tabular-nums;
 }
 
 .sc-onboarding h2 {
-  margin: 0.25rem 0 0;
+  margin: 0.55rem 0 0;
   color: var(--guide-text);
-  font-size: 1.45rem;
-  line-height: 1.25;
-  font-weight: 680;
+  font-size: 2.15rem;
+  line-height: 1.22;
+  font-weight: 670;
   letter-spacing: 0;
 }
 
 .sc-onboarding-copy p {
-  max-width: 28rem;
-  margin: 0.65rem 0 0;
+  margin: 0.8rem 0 0;
+  color: var(--guide-secondary);
+  font-size: 1rem;
+  line-height: 1.8;
+  font-weight: 450;
+}
+
+.sc-onboarding-copy .sc-onboarding-note {
+  margin-top: 0.65rem;
   color: var(--guide-muted);
-  font-size: 0.75rem;
-  line-height: 1.65;
-  font-weight: 480;
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+
+.sc-onboarding-copy .sc-onboarding-platform {
+  margin-top: 0.5rem;
 }
 
 .sc-onboarding-footer {
-  min-height: 2.7rem;
-  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  row-gap: 0.25rem;
+  min-height: 4.6rem;
+  margin-top: 0.7rem;
+}
+
+.sc-onboarding-progress {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.sc-onboarding-progress-count {
+  flex-shrink: 0;
+  color: var(--guide-text);
+  font-size: 0.82rem;
+  line-height: 1;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-onboarding-progress-count > span {
+  color: var(--guide-muted);
+  font-weight: 480;
+}
+
+.sc-onboarding-progress-track {
+  height: 0.3rem;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--guide-surface);
+}
+
+.sc-onboarding-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--guide-text);
+  transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sc-onboarding-dots {
   display: flex;
   align-items: center;
-  gap: 0.42rem;
   padding-left: 0.15rem;
+  gap: 0.05rem;
 }
 
 .sc-onboarding-dots button {
-  width: 0.32rem;
-  height: 0.32rem;
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 2.25rem;
+}
+
+.sc-onboarding-dots span {
+  width: 0.38rem;
+  height: 0.38rem;
   border-radius: 999px;
   background: var(--guide-faint);
   transition: width 180ms ease, background-color 180ms ease;
 }
 
-.sc-onboarding-dots button.is-current {
+.sc-onboarding-dots button.is-current span {
   width: 1rem;
-  background: var(--guide-muted);
+  background: var(--guide-text);
 }
 
 .sc-onboarding-actions {
@@ -283,27 +385,74 @@
   gap: 0.35rem;
 }
 
-.sc-onboarding-actions button {
-  height: 2.2rem;
-  padding: 0 0.85rem;
-  border-radius: 999px;
-  color: var(--guide-muted);
-  font-size: 0.68rem;
-  font-weight: 620;
+.sc-onboarding .action-button {
+  color: var(--guide-text);
 }
 
 .sc-onboarding-actions .is-back {
+  color: var(--guide-muted);
   background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.sc-onboarding-actions .is-next {
-  color: var(--guide-text);
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+.sc-onboarding-actions .is-back:hover {
+  color: var(--guide-secondary);
 }
 
-.is-light .sc-onboarding-actions .is-next {
-  background: rgba(31, 21, 34, 0.07);
+.sc-onboarding-lightbox {
+  position: fixed;
+  inset:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1rem;
+  border-radius: 1.4rem;
+  background: var(--guide-panel);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.3);
+  backdrop-filter: blur(32px) saturate(120%);
+  -webkit-backdrop-filter: blur(32px) saturate(120%);
+}
+
+.sc-onboarding-lightbox-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.sc-onboarding-lightbox-scroll {
+  flex: 1;
+  border-radius: 0.7rem;
+  background: var(--guide-surface);
+}
+
+.sc-onboarding-lightbox-scroll img {
+  display: block;
+  width: auto;
+  max-width: none;
+  height: auto;
+  margin-inline: auto;
+}
+
+.sc-onboarding-lightbox > p {
+  margin: 0.7rem 0 0;
+  color: var(--guide-muted);
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+.sc-onboarding button:focus-visible {
+  outline: 2px solid var(--guide-muted);
+  outline-offset: 3px;
 }
 
 @keyframes sc-guide-enter {
@@ -329,41 +478,65 @@
   opacity: 0;
 }
 
-.sc-onboarding.is-closing .sc-onboarding-panel {
+.sc-onboarding.is-closing .sc-onboarding-panel,
+.sc-onboarding.is-closing .sc-onboarding-lightbox {
   animation: sc-guide-exit 260ms ease-in both;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 700px) {
+  .sc-onboarding-step {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sc-onboarding-copy {
+    align-self: auto;
+    padding: 0.2rem 0.1rem 0.75rem;
+  }
+
   .sc-onboarding-panel {
-    width: calc(100vw - 1rem);
-    max-height: calc(100dvh - 1rem);
-    padding: 0.85rem;
+    padding: 1rem;
     border-radius: 1.25rem;
   }
 
   .sc-onboarding-shot {
-    min-height: 13rem;
-    padding: 1rem;
+    min-height: 12rem;
+    padding: 0.75rem 0.8rem;
   }
 
   .sc-onboarding-shot.is-toolbar {
-    min-height: 8rem;
+    min-height: 7rem;
   }
 
-  .sc-onboarding-shot.is-card img {
-    height: 12rem;
+  .sc-onboarding-shot:is(.is-card, .is-running, .is-rename) img {
+    height: 11rem;
+    max-height: 11rem;
   }
 
-  .sc-onboarding-shot.is-panel img {
-    height: 12rem;
+  .sc-onboarding-subnav {
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.55rem;
   }
 
   .sc-onboarding h2 {
-    font-size: 1.3rem;
+    font-size: 1.8rem;
   }
 
-  .sc-onboarding-copy {
-    padding-top: 0.9rem;
+  .sc-onboarding-copy p {
+    margin-top: 0.6rem;
+    font-size: 0.98rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .sc-onboarding-dots button {
+    width: 1rem;
+  }
+
+  .sc-onboarding-subnav button {
+    padding-inline: 0.52rem;
   }
 }
 
@@ -372,37 +545,38 @@
     min-height: 10rem;
   }
 
-  .sc-onboarding-shot img {
-    max-height: 9rem;
+  .sc-onboarding-shot img,
+  .sc-onboarding-shot:is(.is-card, .is-running, .is-rename) img {
+    max-height: 8rem;
+    height: auto;
   }
 
   .sc-onboarding-shot.is-toolbar {
-    min-height: 6rem;
+    min-height: 5.5rem;
   }
 
-  .sc-onboarding-shot.is-card img {
-    height: 9rem;
-  }
-
-  .sc-onboarding-shot.is-panel img {
-    height: 9rem;
+  .sc-onboarding-footer {
+    min-height: 3.9rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sc-onboarding-panel,
-  .sc-onboarding.is-closing .sc-onboarding-panel {
+  .sc-onboarding.is-closing .sc-onboarding-panel,
+  .sc-onboarding.is-closing .sc-onboarding-lightbox {
     animation: none;
-    transition: none;
   }
 
-  .sc-onboarding-backdrop {
+  .sc-onboarding-backdrop,
+  .sc-onboarding-dots span,
+  .sc-onboarding-progress-track > span {
     transition: none;
   }
 
   .sc-onboarding-step.is-review-leaving.to-left,
   .sc-onboarding-step.is-review-leaving.to-right,
-  .sc-onboarding-step.is-review-entering.is-review-active {
+  .sc-onboarding-step.is-review-entering.from-left,
+  .sc-onboarding-step.is-review-entering.from-right {
     transform: none;
     filter: none;
     transition: opacity 110ms linear;
@@ -410,13 +584,15 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .sc-onboarding-panel {
+  .sc-onboarding-panel,
+  .sc-onboarding-lightbox {
     background: #211723;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 
-  .sc-onboarding.is-light .sc-onboarding-panel {
+  .sc-onboarding.is-light .sc-onboarding-panel,
+  .sc-onboarding.is-light .sc-onboarding-lightbox {
     background: #f4f0f2;
   }
 }
