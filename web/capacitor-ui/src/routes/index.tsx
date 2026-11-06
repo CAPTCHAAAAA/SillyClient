@@ -175,7 +175,7 @@ const DEBUG_OPEN_INSTANCE: TavernInstance = {
   id: "debug-open-instance",
   name: "演示打开实例",
   subtitle: "打开实例 · 调试预览",
-  version: "1.14.0",
+  version: "1.14.1",
   port: 8003,
 };
 const DEBUG_CREATE_INSTANCE: TavernInstance = {
@@ -183,7 +183,7 @@ const DEBUG_CREATE_INSTANCE: TavernInstance = {
   id: "debug-create-instance",
   name: "演示创建实例",
   subtitle: "创建实例 · 调试预览",
-  version: "1.14.0",
+  version: "1.14.1",
   port: 8004,
 };
 
@@ -2033,12 +2033,12 @@ function SillyClientLauncher() {
     const logs = purpose === "create"
       ? [
           { msg: "创建实例 · 演示环境", level: "info" },
-          { msg: "准备安装 SillyTavern 1.14.0", level: "info" },
+          { msg: "准备安装 SillyTavern 1.14.1", level: "info" },
           { msg: "正在下载当前版本 · 68%", level: "info" },
         ]
       : [
           { msg: "打开实例 · 正在启动", level: "info" },
-          { msg: "SillyTavern 1.14.0", level: "success" },
+          { msg: "SillyTavern 1.14.1", level: "success" },
           { msg: "正在确认实例可运行", level: "info" },
         ];
     instanceLogs.update(DEBUG_LAUNCH_LOG_KEY, logs);
@@ -2482,7 +2482,9 @@ function SillyClientLauncher() {
     }, PANEL_EXIT_MS);
   }, []);
 
-  const handleInstanceRelocated = useCallback((instanceId: string, newPath: string) => {
+  const handleInstanceRelocated = useCallback((instanceId: string, resultOrPath: any) => {
+    const newPath = typeof resultOrPath === "string" ? resultOrPath : resultOrPath?.newPath || "";
+    if (!newPath) return;
     setInstances((prev) => {
       const updated = prev.map((inst) => {
         if (inst.id === instanceId || inst.installDir === instanceId) {
