@@ -14,7 +14,9 @@ import { Capacitor } from "@capacitor/core";
 import { TarvenEnv, DEFAULT_CONFIG, normalizeRenderEngineSettings } from "@/capacitor-plugin";
 import { openExternalUrl } from "@/lib/external-links";
 import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, InstallPathMode, GithubRelease, GarbageItem, TarvenEvent, PreinstalledExtensionId, RenderEngineSettings } from "@/capacitor-plugin";
-import { buildInstanceSubfolder, cleanInstallPath, installationSelection, sanitizeFolderName } from "@/lib/install-location";
+import { buildInstanceSubfolder, cleanInstallPath, installationSelection, instanceParentPath, sanitizeFolderName } from "@/lib/install-location";
+import { humanizeNativeError } from "@/lib/native-errors";
+import { selectTavernRelease } from "@/lib/tavern-release";
 import { normalizeStoredInstances, serializeInstanceRecords, parseInstanceBackup, type StoredInstance } from "@/lib/instance-persistence";
 import { GLOBAL_LOG_KEY, instanceLogs, type LogLine } from "@/lib/log-store";
 import { OperationCoordinator, OperationCancelledError, type OperationContext } from "@/lib/operation-coordinator";
@@ -258,12 +260,14 @@ function SillyClientLauncher() {
   const isMobile = isAndroid || isIOS;
   const isDemoPreview = isWeb && !isWindows && !isShowcase && !isNativePreview
     && (import.meta.env.DEV || (isLocalPreview && window.location.port === "8768"));
-  const terminalTitle = isWindows ? "Windows 控制台" : "Android 终端";
-  const terminalPrompt = isWindows ? "C:\\>" : "~ $";
+  const terminalTitle = isWindows ? "Windows 控制台" : isIOS ? "iOS 控制台" : "Android 终端";
+  const terminalPrompt = isWindows ? "C:\\>" : isIOS ? "ios >" : "~ $";
   const terminalBanner = isWindows
     ? `SillyClient ${APP_VERSION} · Windows · cmd.exe`
+    : isIOS
+    ? `SillyClient ${APP_VERSION} · iOS · NodeMobile`
     : `SillyClient ${APP_VERSION} · Android shell`;
-  const terminalPlaceholder = isWindows ? "输入 Windows 命令" : "输入 Android shell 命令";
+  const terminalPlaceholder = isWindows ? "输入 Windows 命令" : isIOS ? "输入 iOS 命令" : "输入 Android shell 命令";
   const [showOnboarding, setShowOnboarding] = useState(
     () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
   );
@@ -544,7 +548,7 @@ function SillyClientLauncher() {
     ? `${terminalInstance.subtitle || terminalInstance.name} · 实例终端`
     : terminalTitle;
   const terminalDisplayPrompt = terminalInstance
-    ? (isWindows ? `${terminalInstance.installDir || terminalInstance.id}>` : "~ $")
+    ? (isWindows ? `${terminalInstance.installDir || terminalInstance.id}>` : isIOS ? "ios >" : "~ $")
     : terminalPrompt;
   const terminalDisplayBanner = terminalInstance
     ? `${terminalInstance.subtitle || terminalInstance.name} · ${terminalInstance.type === "local" ? "本地实例" : "远程实例"}`
@@ -795,12 +799,43 @@ function SillyClientLauncher() {
     return () => { directoryPickerGeneration.current += 1; };
   }, [showNewInstancePanel, newInstanceMode, migrationAccessMode]);
 
+  useEffect(() => {
+    if (!showNewInstancePanel) return;
+    let cancelled = false;
+    TarvenEnv.getAppSettings()
+      .then(settings => {
+        if (cancelled) return;
+        const saved = settings.configuredInstancesRoot?.trim();
+        if (!saved) return;
+        setNewInstanceDir(current => (current.trim() ? current : saved));
+        setNewInstancePathMode(current => (current === "exact" ? "root" : current));
+      })
+      .catch(() => { /* 读取失败时保持必选流程 */ });
+    return () => { cancelled = true; };
+  }, [showNewInstancePanel]);
+
   const handleSetNewInstanceDir = useCallback((value: string) => {
     const clean = value.replace(/^["']|["']$/g, "").trim();
     setNewInstanceDir(clean);
-    setNewInstancePathMode("exact");
+    setNewInstancePathMode("root");
     setNewInstanceError(null);
     directoryPickerGeneration.current += 1;
+  }, []);
+
+  // 向导中的存放位置一律是"实例存放文件夹"（父目录）：先落成实例根；
+  // 再取它的一级子目录作为实例目录。根更新失败时抛中文原因，绝不静默继续。
+  const resolveInstanceParent = useCallback(async (
+    rawValue: string, emptyMessage: string, instanceName: string,
+  ): Promise<string> => {
+    const parent = instanceParentPath(rawValue);
+    if (!parent) throw new Error(emptyMessage);
+    try {
+      await TarvenEnv.setInstancesRoot({ path: parent });
+    } catch (error) {
+      const reason = humanizeNativeError(error instanceof Error ? error.message : String(error));
+      throw new Error(`该文件夹不能作为实例存放位置：${reason}`);
+    }
+    return buildInstanceSubfolder(parent, instanceName);
   }, []);
 
   const handlePickInstallFolder = useCallback(async () => {
@@ -811,12 +846,21 @@ function SillyClientLauncher() {
       setNewInstanceDir(selection.path);
       setNewInstancePathMode(selection.mode);
       setNewInstanceError(null);
+      if (isAndroid) {
+        try {
+          await TarvenEnv.setInstancesRoot({ path: selection.path });
+        } catch (error) {
+          const reason = humanizeNativeError(error instanceof Error ? error.message : String(error));
+          setNewInstanceDir("");
+          setNewInstanceError(`该文件夹不能作为实例存放位置：${reason}`);
+        }
+      }
     } catch (error) {
       if (generation !== directoryPickerGeneration.current) return;
       const message = error instanceof Error ? error.message : String(error);
       if (!/cancel/i.test(message)) setNewInstanceError(message);
     }
-  }, []);
+  }, [isAndroid]);
 
   const handlePickTargetFolder = useCallback(async () => {
     const generation = ++directoryPickerGeneration.current;
@@ -1463,7 +1507,14 @@ function SillyClientLauncher() {
   }, [setLaunchLogs]);
 
   const createInstance = useCallback(async () => {
-    if (operations.busy) return;
+    if (operations.busy) {
+      setNewInstanceError("请先等待当前任务完成，再创建新实例");
+      return;
+    }
+    if (isAndroid && newInstanceMode === "local" && !newInstanceDir.trim()) {
+      setNewInstanceError("请先选择实例存放文件夹（必选）：点击「浏览」选择后，实例会创建在该文件夹下");
+      return;
+    }
     const rawGivenName = newInstanceName.trim();
     let instanceDisplayName: string;
     let safeCandidateId: string;
@@ -1514,11 +1565,9 @@ function SillyClientLauncher() {
       const installDir = instanceId;
       pendingInstanceId = instanceId;
       const customParentDir = cleanInstallPath(newInstanceDir);
-      let resolvedCustomPath: string | undefined = undefined;
-      if (customParentDir) {
-        // 统一在指定父目录下生成以实例名命名的子文件夹
-        resolvedCustomPath = buildInstanceSubfolder(customParentDir, instanceDisplayName);
-      }
+      const resolvedCustomPath = (newInstanceMode === "local" && isAndroid)
+        ? await resolveInstanceParent(newInstanceDir, "请先选择实例存放文件夹（必选）：点击「浏览」选择后，实例会创建在该文件夹下", instanceDisplayName)
+        : (customParentDir ? buildInstanceSubfolder(customParentDir, instanceDisplayName) : undefined);
       let selectedVersion = newInstanceVersion;
       let selectedZipballUrl: string | undefined;
 
@@ -1531,16 +1580,12 @@ function SillyClientLauncher() {
             setReleases(availableReleases);
           } catch (error) {
             if (error instanceof OperationCancelledError) throw error;
-            availableReleases = [{ tag: "1.12.0", prerelease: false, zipballUrl: "" }];
-            setReleases(availableReleases);
+            throw new Error("无法获取 SillyTavern 版本，请重新获取列表或导入本地 ZIP");
           }
         }
-        const selectedRelease = selectedVersion === "stable"
-          ? availableReleases.find(release => !release.prerelease) || availableReleases[0]
-          : availableReleases.find(release => release.tag === selectedVersion) || availableReleases[0];
-        if (!selectedRelease && !isWeb) throw new Error("无法获取当前 SillyTavern 版本，请检查网络后重试");
-        selectedVersion = selectedRelease?.tag || "1.12.0";
-        selectedZipballUrl = selectedRelease?.zipballUrl;
+        const selectedRelease = selectTavernRelease(availableReleases, selectedVersion);
+        selectedVersion = selectedRelease.tag;
+        selectedZipballUrl = selectedRelease.zipballUrl;
       }
 
       let port = 8000;
@@ -1752,6 +1797,7 @@ function SillyClientLauncher() {
     migrationIncludeSecrets,
     provisionCreatedInstance,
     migrateCreatedInstance,
+    resolveInstanceParent,
     setLaunchLogs,
     releases,
   ]);

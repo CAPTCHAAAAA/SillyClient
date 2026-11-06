@@ -32,8 +32,10 @@ export const DEFAULT_CONFIG: InstanceConfig = {
 /** GitHub release 条目(来自 SillyTavern/SillyTavern releases)。 */
 export interface GithubRelease {
   tag: string
+  name?: string
   zipballUrl: string
   prerelease: boolean
+  isBranch?: boolean
 }
 
 /** SillyClient 应用自身的更新检查结果。 */
@@ -239,6 +241,28 @@ export interface TarvenEnvPlugin {
   /** Windows: 获取和保存酒馆内容的全局打开方式。 */
   getContentOpenMode(): Promise<{ mode: ContentOpenMode }>
   setContentOpenMode(options: { mode: ContentOpenMode }): Promise<{ mode: ContentOpenMode }>
+
+  /** 只读预检：压缩包里有多少用户数据会被导入、多少依赖/程序文件会被忽略。 */
+  inspectImportArchive(options: { archivePath: string }): Promise<{
+    importEntries: number
+    importBytes: number
+    skippedEntries: number
+    skippedBytes: number
+    hasSecrets: boolean
+    hasConfig: boolean
+    importable: boolean
+  }>
+
+  /** 把压缩包里的用户数据无损导入到已有实例：只覆盖用户数据，依赖与程序文件永不写入。 */
+  importInstanceData(options: {
+    installPath?: string
+    archivePath: string
+    includeOptional?: boolean
+    operationId?: string
+  }): Promise<{ imported: number; bytes: number; skipped: number }>
+
+  /** 导出实例为 ZIP（支持弹窗选择保存位置），返回保存路径与字节数。若用户取消则 cancelled: true。 */
+  exportInstance(options: { instanceId: string; installPath?: string; targetZipPath?: string }): Promise<{ path: string; bytes: number; cancelled?: boolean }>
 
   /** 将远程实例的 Basic Auth 凭据写入平台安全存储。password 省略时保留现有密码。 */
   setRemoteBasicAuth(options: {

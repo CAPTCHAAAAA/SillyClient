@@ -184,6 +184,18 @@ export const nativePreview: TarvenEnvPlugin = {
   },
   async reloadTavern() { record("reloadTavern"); },
   async clearWebViewData() { record("clearWebViewData"); },
+  async exportInstance(options: { instanceId: string; installPath?: string; targetZipPath?: string }) {
+    record("exportInstance", options);
+    return { path: options.targetZipPath || `C:\\exports\\${options.instanceId}.zip`, bytes: 1024 };
+  },
+  async inspectImportArchive(options: { archivePath: string }) {
+    record("inspectImportArchive", options);
+    return { importEntries: 10, importBytes: 2048, skippedEntries: 0, skippedBytes: 0, hasSecrets: false, hasConfig: true, importable: true };
+  },
+  async importInstanceData(options: { installPath?: string; archivePath: string; includeOptional?: boolean; operationId?: string }) {
+    record("importInstanceData", options);
+    return { imported: 10, bytes: 2048, skipped: 0 };
+  },
   async getSafeInsets() { return { top: 0, bottom: 0, left: 0, right: 0 }; },
   async setPullToRefresh() {},
   async getRenderEngineSettings() { return { ...renderEngineSettings }; },
