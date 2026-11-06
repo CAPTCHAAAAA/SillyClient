@@ -267,7 +267,7 @@ function SillyClientLauncher() {
     : isIOS
     ? `SillyClient ${APP_VERSION} · iOS · NodeMobile`
     : `SillyClient ${APP_VERSION} · Android shell`;
-  const terminalPlaceholder = isWindows ? "输入 Windows 命令" : isIOS ? "输入 iOS 命令" : "输入 Android shell 命令";
+  const terminalPlaceholder = isWindows ? "输入 Windows 命令" : isIOS ? "iOS 进程内环境（可查看服务运行日志）" : "输入 Android shell 命令";
   const [showOnboarding, setShowOnboarding] = useState(
     () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
   );
@@ -548,7 +548,7 @@ function SillyClientLauncher() {
     ? `${terminalInstance.subtitle || terminalInstance.name} · 实例终端`
     : terminalTitle;
   const terminalDisplayPrompt = terminalInstance
-    ? (isWindows ? `${terminalInstance.installDir || terminalInstance.id}>` : isIOS ? "ios >" : "~ $")
+    ? (isWindows ? `${terminalInstance.installDir || terminalInstance.id}>` : (isIOS ? "ios >" : "~ $"))
     : terminalPrompt;
   const terminalDisplayBanner = terminalInstance
     ? `${terminalInstance.subtitle || terminalInstance.name} · ${terminalInstance.type === "local" ? "本地实例" : "远程实例"}`

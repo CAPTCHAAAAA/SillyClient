@@ -472,6 +472,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   onClose,
   isLight,
   bgMode = "dynamic",
+  isWindows,
   allInstances,
   onSelectInstance,
   onLaunchInstance,
@@ -993,7 +994,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       </ManageItem>
                       <ManageItem
                         label="允许外部监听"
-                        desc="仅在需要局域网访问时开启"
+                        desc={isWindows ? "仅在需要局域网访问时开启" : "移动宿主默认建议关闭，只在明确需要局域网访问时开启"}
                         isLight={isLight} isPortrait={isPortrait}
                       >
                         <ManageToggle
