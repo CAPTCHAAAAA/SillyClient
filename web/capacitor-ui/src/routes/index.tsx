@@ -407,9 +407,6 @@ function SillyClientLauncher() {
     }
   }, [createCardPinned, createCardSlot, instances.length, isShowcase, setCreateCardSlot]);
 
-  useEffect(() => {
-    TarvenEnv.setPullToRefresh({ enabled: pullToRefresh }).catch(() => {});
-  }, [pullToRefresh]);
   const canPreviewRenderSettings = isWeb && isLocalPreview && !isWindows;
   const [renderSettings, setRenderSettings] = useState<RenderEngineSettings | null>(
     () => (canPreviewRenderSettings ? normalizeRenderEngineSettings(null) : null),
@@ -505,6 +502,45 @@ function SillyClientLauncher() {
   const [pendingDelete, setPendingDelete] = useState<TavernInstance | null>(null);
   const [isDeletingInstance, setIsDeletingInstance] = useState(false);
   const [deleteInstanceError, setDeleteInstanceError] = useState<string | null>(null);
+
+  const isBackgroundInteractionBlocked = Boolean(
+    showOnboarding
+      || showRelocateModal
+      || isRelocateModalClosing
+      || showBgPanel
+      || isPanelClosing
+      || showTerminal
+      || isTerminalClosing
+      || showLaunchPanel
+      || isLaunchPanelClosing
+      || isUnlockModalOpen
+      || isUnlockModalClosing
+      || activeCardMenu
+      || isCardMenuClosing
+      || showManagePanel
+      || isManagePanelClosing
+      || showAppMenu
+      || isAppMenuClosing
+      || showNewInstancePanel
+      || isNewInstancePanelClosing
+      || isCreatingInstance
+      || verDropdownOpen
+      || isVerDropdownClosing
+      || showCleanPanel
+      || isCleanPanelClosing
+      || pendingDelete
+      || maintenanceInstance
+  );
+  const isPullGestureBlocked = isBackgroundInteractionBlocked || Boolean(renamingId || isRenameClosing);
+
+  useEffect(() => {
+    TarvenEnv.setPullToRefresh({
+      enabled: pullToRefresh && !isPullGestureBlocked,
+    }).catch(() => {});
+    if (!isPullGestureBlocked) return;
+    isPulling.current = false;
+    setPullDistance(current => current === 0 ? current : 0);
+  }, [pullToRefresh, isPullGestureBlocked]);
 
   const isLight = bgMode === "custom" && themeStyle === "light";
   const isDynamic = bgMode === "dynamic";
@@ -914,9 +950,7 @@ function SillyClientLauncher() {
 
   // touch 事件处理:仅当滚动到顶部且开启下拉刷新且无弹窗时触发下拉,整个内容跟随拖拽(iOS 原生风格)
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!pullToRefresh || isRefreshing) return;
-    // 有弹窗/面板打开时不触发下拉刷新
-    if (renamingId || showNewInstancePanel || showManagePanel || activeCardMenu) return;
+    if (!pullToRefresh || isRefreshing || isPullGestureBlocked) return;
     // 输入框/文本域/内容可编辑元素不触发下拉刷新
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
@@ -925,9 +959,15 @@ function SillyClientLauncher() {
     touchStartY.current = e.touches[0].clientY;
     touchStartX.current = e.touches[0].clientX;
     isPulling.current = true;
-  }, [pullToRefresh, isRefreshing, renamingId, showNewInstancePanel, showManagePanel, activeCardMenu]);
+  }, [pullToRefresh, isRefreshing, isPullGestureBlocked]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (isPullGestureBlocked) {
+      e.preventDefault();
+      isPulling.current = false;
+      setPullDistance(current => current === 0 ? current : 0);
+      return;
+    }
     if (!pullToRefresh || !isPulling.current || isRefreshing) return;
     const deltaY = e.touches[0].clientY - touchStartY.current;
     const deltaX = Math.abs(e.touches[0].clientX - touchStartX.current);
@@ -939,10 +979,10 @@ function SillyClientLauncher() {
       const damped = Math.pow(deltaY, 0.7) * 1.2;
       setPullDistance(Math.min(damped, 120));
     }
-  }, [pullToRefresh, isRefreshing]);
+  }, [pullToRefresh, isRefreshing, isPullGestureBlocked]);
 
   const onTouchEnd = useCallback(() => {
-    if (!pullToRefresh) {
+    if (!pullToRefresh || isPullGestureBlocked) {
       isPulling.current = false;
       setPullDistance(0);
       return;
@@ -954,7 +994,7 @@ function SillyClientLauncher() {
     } else {
       setPullDistance(0);
     }
-  }, [pullToRefresh, pullDistance, handlePullRefresh]);
+  }, [pullToRefresh, pullDistance, handlePullRefresh, isPullGestureBlocked]);
 
   // 监听原生插件事件:日志 / 就绪 / 模式变化
   useEffect(() => {
@@ -2693,6 +2733,14 @@ function SillyClientLauncher() {
           />
         );
       })()}
+
+      {/* 统一背景交互锁：浮层打开或退场期间，背景不可点击、不可滚动触发刷新。 */}
+      <LayerBackdrop
+        isOpen={isBackgroundInteractionBlocked}
+        blur={false}
+        zIndex={LAYERS.DRAWER_BACKDROP}
+        className="!bg-transparent touch-none"
+      />
 
       {/* 解耦业务组件: 背景设置抽屉 (昼夜级平滑自适应高度跟随) */}
       <BackgroundSettingsDrawer
