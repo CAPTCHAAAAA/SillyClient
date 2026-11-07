@@ -1,13 +1,12 @@
-import React, { useState, useRef, useLayoutEffect } from "react";
-import { ChevronDown, AlertTriangle, LoaderCircle, Info } from "lucide-react";
+import React, { useLayoutEffect, useRef, useState } from "react";
+import { AlertTriangle, ChevronDown, Info, LoaderCircle } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
+import type { PreinstalledExtensionId } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { PreinstallOptions } from "../instance/PreinstallOptions";
-import type { PreinstalledExtensionId } from "../../capacitor-plugin";
 
-
-export type WizardMode = "local" | "remote" | "import";
+export type WizardMode = "local" | "remote";
 
 export interface DiscoveredTavern {
   name: string;
@@ -23,56 +22,40 @@ export interface NewInstanceWizardModalProps {
   glassBg: string;
   isWindows: boolean;
   newInstanceName: string;
-  setNewInstanceName: (v: string) => void;
+  setNewInstanceName: (value: string) => void;
   newInstanceMode: WizardMode;
   switchInstanceMode: (mode: WizardMode) => void;
   newInstanceDir: string;
-  setNewInstanceDir: (v: string) => void;
+  setNewInstanceDir: (value: string) => void;
   onPickInstallFolder: () => void;
   newInstanceVersion: string;
-  setNewInstanceVersion: (v: string) => void;
+  setNewInstanceVersion: (value: string) => void;
   newInstanceLocalZip: string | null;
-  setNewInstanceLocalZip: (v: string | null) => void;
+  setNewInstanceLocalZip: (value: string | null) => void;
   newInstanceCompanionPresetEnabled: boolean;
   setNewInstanceCompanionPresetEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   newInstanceExtensionIds: PreinstalledExtensionId[];
   setNewInstanceExtensionIds: React.Dispatch<React.SetStateAction<PreinstalledExtensionId[]>>;
   newInstanceUrl: string;
-  setNewInstanceUrl: (v: string) => void;
+  setNewInstanceUrl: (value: string) => void;
   newRemoteAuthEnabled: boolean;
-  setNewRemoteAuthEnabled: (v: boolean) => void;
+  setNewRemoteAuthEnabled: (value: boolean) => void;
   newRemoteAuthUsername: string;
-  setNewRemoteAuthUsername: (v: string) => void;
+  setNewRemoteAuthUsername: (value: string) => void;
   newRemoteAuthPassword: string;
-  setNewRemoteAuthPassword: (v: string) => void;
-  // 数据迁移配置
-  migrationAccessMode?: "copy" | "takeover";
-  setMigrationAccessMode?: (m: "copy" | "takeover") => void;
-  migrationSourcePath?: string;
-  setMigrationSourcePath?: (p: string) => void;
-  migrationIncludeSecrets?: boolean;
-  setMigrationIncludeSecrets?: (inc: boolean) => void;
-  migrationCustomDest?: string;
-  setMigrationCustomDest?: (dest: string) => void;
-  onPickSourceFolder?: () => void;
-  onPickSourceZip?: () => void;
-  onPickTargetFolder?: () => void;
-  migrationPreflight?: {
-    version?: string;
-    nativePlugins?: string[];
-  } | null;
+  setNewRemoteAuthPassword: (value: string) => void;
   newInstanceError: string | null;
   isCreatingInstance: boolean;
   createInstance: () => void;
   releases: any[];
-  setReleases: (r: any[]) => void;
+  setReleases: (releases: any[]) => void;
   fetchingReleases: boolean;
-  setFetchingReleases: (v: boolean) => void;
+  setFetchingReleases: (value: boolean) => void;
   verDropdownOpen: boolean;
   isVerDropdownClosing: boolean;
   openVersionDropdown: (trigger: HTMLElement) => void;
   closeVersionDropdown: () => void;
-  addTerminalLog: (msg: string, level?: string) => void;
+  addTerminalLog: (message: string, level?: string) => void;
 }
 
 interface InfoBadgeButtonProps {
@@ -106,11 +89,11 @@ function InfoBadgeButton({
           : readTitle || "点击查看说明"
       }
       className={cn(
-        "motion-control relative w-4 h-4 rounded-full flex items-center justify-center transition-colors duration-200",
+        "motion-control relative flex h-4 w-4 items-center justify-center rounded-full transition-colors duration-200",
         isUnread
           ? isLight
-            ? "bg-rose-500/10 border border-rose-500/30 text-rose-600/75 hover:text-rose-600"
-            : "bg-rose-500/15 border border-rose-500/30 text-rose-400/75 hover:text-rose-400"
+            ? "border border-rose-500/30 bg-rose-500/10 text-rose-600/75 hover:text-rose-600"
+            : "border border-rose-500/30 bg-rose-500/15 text-rose-400/75 hover:text-rose-400"
           : isOpen
           ? isLight
             ? "bg-black/10 text-[#1a1625]"
@@ -123,14 +106,14 @@ function InfoBadgeButton({
       {isUnread ? (
         <span
           className={cn(
-            "text-[10px] font-bold font-mono leading-none select-none",
+            "select-none font-mono text-[10px] font-bold leading-none",
             isLight ? "text-rose-600" : "text-rose-400"
           )}
         >
           !
         </span>
       ) : (
-        <Info className="w-2.5 h-2.5" />
+        <Info className="h-2.5 w-2.5" />
       )}
     </button>
   );
@@ -158,12 +141,12 @@ function NewInstanceField({
 
   const handleToggle = () => {
     if (!hasBeenRead) setHasBeenRead(true);
-    setShowInfo(!showInfo);
+    setShowInfo((current) => !current);
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="mb-1.5 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span
             className={cn(
@@ -188,7 +171,7 @@ function NewInstanceField({
       {desc && !info && (
         <div
           className={cn(
-            "text-[10px] mb-2",
+            "mb-2 text-[10px]",
             isLight ? "text-[#1a1625]/30" : "text-white/30"
           )}
         >
@@ -204,10 +187,10 @@ function NewInstanceField({
           <div className="motion-accordion-inner">
             <div
               className={cn(
-                "mb-2.5 p-2.5 rounded-xl border text-[11px] leading-relaxed",
+                "mb-2.5 rounded-xl border p-2.5 text-[11px] leading-relaxed",
                 isLight
-                  ? "bg-black/[0.03] border-black/[0.06] text-[#1a1625]/65"
-                  : "bg-white/[0.03] border-white/[0.06] text-white/65"
+                  ? "border-black/[0.06] bg-black/[0.03] text-[#1a1625]/65"
+                  : "border-white/[0.06] bg-white/[0.03] text-white/65"
               )}
             >
               {info}
@@ -221,12 +204,6 @@ function NewInstanceField({
   );
 }
 
-/**
- * 新建实例向导模态框 (NewInstanceWizardModal)
- * 1. 严格绝对居中；
- * 2. 本地模式与远程模式同位驻留 DOM，实现“白天黑夜级”平滑自适应高度跟随与交叉溶变过渡；
- * 3. 输入框聚焦彻底扁平无光，无任何绿色光圈。
- */
 export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   isOpen,
   isClosing = false,
@@ -242,9 +219,9 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   setNewInstanceDir,
   onPickInstallFolder,
   newInstanceVersion,
-  setNewInstanceLocalZip,
-  newInstanceLocalZip,
   setNewInstanceVersion,
+  newInstanceLocalZip,
+  setNewInstanceLocalZip,
   newInstanceCompanionPresetEnabled,
   setNewInstanceCompanionPresetEnabled,
   newInstanceExtensionIds,
@@ -257,18 +234,6 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   setNewRemoteAuthUsername,
   newRemoteAuthPassword,
   setNewRemoteAuthPassword,
-  migrationAccessMode = "copy",
-  setMigrationAccessMode = () => {},
-  migrationSourcePath = "",
-  setMigrationSourcePath = () => {},
-  migrationIncludeSecrets = false,
-  setMigrationIncludeSecrets = () => {},
-  migrationCustomDest = "",
-  setMigrationCustomDest = () => {},
-  onPickSourceFolder = () => {},
-  onPickSourceZip = () => {},
-  onPickTargetFolder = () => {},
-  migrationPreflight = null,
   newInstanceError,
   isCreatingInstance,
   createInstance,
@@ -285,61 +250,41 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   const wizardContainerRef = useRef<HTMLDivElement>(null);
   const wizardLocalRef = useRef<HTMLDivElement>(null);
   const wizardRemoteRef = useRef<HTMLDivElement>(null);
-  const wizardImportRef = useRef<HTMLDivElement>(null);
-  const importCopyRef = useRef<HTMLDivElement>(null);
-  const importTakeoverRef = useRef<HTMLDivElement>(null);
-  const [wizardHeight, setWizardHeight] = useState<number | null>(null);
   const wizardBodyRef = useRef<HTMLDivElement>(null);
-  const [wizardBodyFade, setWizardBodyFade] = useState({ top: false, bottom: false });
+  const [wizardHeight, setWizardHeight] = useState<number | null>(null);
+  const [wizardBodyFade, setWizardBodyFade] = useState({
+    top: false,
+    bottom: false,
+  });
 
-  const [showPreflightInfo, setShowPreflightInfo] = useState(false);
-  const [hasReadPreflight, setHasReadPreflight] = useState(false);
-  const [showSecretsInfo, setShowSecretsInfo] = useState(false);
-  const [hasReadSecrets, setHasReadSecrets] = useState(false);
-  const [showAccessModeInfo, setShowAccessModeInfo] = useState(false);
-  const [hasReadAccessMode, setHasReadAccessMode] = useState(false);
-
-  // 同步测量当前激活模式的实际高度，在同一浏览器渲染帧提交以保证无闪烁、无空白跳跃的平滑流体溶变
   useLayoutEffect(() => {
     if (!isOpen) return;
     const targetEl =
       newInstanceMode === "local"
         ? wizardLocalRef.current
-        : newInstanceMode === "remote"
-        ? wizardRemoteRef.current
-        : wizardImportRef.current;
+        : wizardRemoteRef.current;
     if (!targetEl) return;
 
     const measureHeight = (entry?: ResizeObserverEntry) => {
-      const h = entry?.borderBoxSize?.[0]?.blockSize ?? targetEl.offsetHeight;
-      if (h > 0) {
-        setWizardHeight(Math.ceil(h));
-      }
+      const borderBoxSize = entry?.borderBoxSize;
+      const measured = Array.isArray(borderBoxSize)
+        ? (borderBoxSize[0] as ResizeObserverSize | undefined)?.blockSize
+        : (borderBoxSize as ResizeObserverSize | undefined)?.blockSize;
+      const height = measured ?? targetEl.offsetHeight;
+      if (height > 0) setWizardHeight(Math.ceil(height));
     };
 
     measureHeight();
-
-    if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(([entry]) => {
-        measureHeight(entry);
-      });
-      ro.observe(targetEl);
-      return () => ro.disconnect();
-    }
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => measureHeight(entry));
+    observer.observe(targetEl);
+    return () => observer.disconnect();
   }, [
+    isOpen,
     newInstanceMode,
     newInstanceCompanionPresetEnabled,
     newInstanceExtensionIds,
     newRemoteAuthEnabled,
-    migrationAccessMode,
-    migrationSourcePath,
-    migrationCustomDest,
-    migrationPreflight,
-    showPreflightInfo,
-    showSecretsInfo,
-    showAccessModeInfo,
-    migrationIncludeSecrets,
-    isOpen,
   ]);
 
   const syncWizardBodyFade = () => {
@@ -347,9 +292,11 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     if (!node) return;
     const top = node.scrollTop > 2;
     const bottom = node.scrollHeight - node.clientHeight - node.scrollTop > 2;
-    setWizardBodyFade((current) => (
-      current.top === top && current.bottom === bottom ? current : { top, bottom }
-    ));
+    setWizardBodyFade((current) =>
+      current.top === top && current.bottom === bottom
+        ? current
+        : { top, bottom }
+    );
   };
 
   useLayoutEffect(() => {
@@ -368,11 +315,6 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     newInstanceError,
     newInstanceCompanionPresetEnabled,
     newRemoteAuthEnabled,
-    migrationAccessMode,
-    showPreflightInfo,
-    showSecretsInfo,
-    showAccessModeInfo,
-    migrationIncludeSecrets,
   ]);
 
   const handleSwitchMode = (mode: WizardMode) => {
@@ -385,14 +327,20 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
 
   if (!isOpen && !isClosing) return null;
 
-  const wizardBodyMask = wizardBodyFade.top || wizardBodyFade.bottom
-    ? `linear-gradient(to bottom, ${wizardBodyFade.top ? "transparent" : "#000"} 0, #000 36px, #000 calc(100% - 36px), ${wizardBodyFade.bottom ? "transparent" : "#000"} 100%)`
-    : undefined;
+  const wizardBodyMask =
+    wizardBodyFade.top || wizardBodyFade.bottom
+      ? `linear-gradient(to bottom, ${
+          wizardBodyFade.top ? "transparent" : "#000"
+        } 0, #000 36px, #000 calc(100% - 36px), ${
+          wizardBodyFade.bottom ? "transparent" : "#000"
+        } 100%)`
+      : undefined;
 
   return (
     <div
+      data-platform={isWindows ? "windows" : "other"}
       className={cn(
-        "ios-task-surface reading-flat-surface fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
+        "ios-task-surface reading-flat-surface fixed flex flex-col overflow-hidden rounded-2xl backdrop-blur-[40px] saturate-180",
         glassBg,
         isLight && "is-light",
         isClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
@@ -406,10 +354,9 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
         maxHeight: "min(85vh, calc(100vh - 4rem))",
       }}
     >
-      {/* 头部 */}
       <div
         className={cn(
-          "flex items-center px-5 h-12 flex-shrink-0 border-b",
+          "flex h-12 flex-shrink-0 items-center border-b px-5",
           isLight ? "border-black/[0.06]" : "border-white/[0.06]"
         )}
       >
@@ -424,874 +371,337 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
       </div>
 
       <div
+        className="flex min-h-0 flex-col overflow-hidden"
         style={{
           flex: "1 1 auto",
           WebkitMaskImage: wizardBodyMask,
           maskImage: wizardBodyMask,
         }}
-        className="flex min-h-0 flex-col overflow-hidden"
       >
-      <div
-        ref={wizardBodyRef}
-        onScroll={syncWizardBodyFade}
-        className="min-h-0 overflow-y-auto p-5 space-y-5 scrollbar-hidden"
-        style={{ flex: "1 1 auto" }}
-      >
-        {/* 实例名称 */}
-        <NewInstanceField label="名称" isLight={isLight}>
-          <input
-            type="text"
-            value={newInstanceName}
-            onChange={(e) => setNewInstanceName(e.target.value)}
-            placeholder="我的酒馆"
-            className={cn(
-              "w-full h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
-              isLight
-                ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-            )}
-          />
-        </NewInstanceField>
-
-        {/* 实例模式 */}
-        <div>
-          <div
-            className={cn(
-              "text-xs font-medium mb-2",
-              isLight ? "text-[#1a1625]/70" : "text-white/70"
-            )}
-          >
-            实例模式
-          </div>
-          <div className="ios-choice-track" role="group" aria-label="实例模式">
-            <button
-              type="button"
-              onClick={() => handleSwitchMode("local")}
-              aria-pressed={newInstanceMode === "local"}
-              className={cn(
-                "ios-choice-control py-2 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              )}
-            >
-              本地实例
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchMode("remote")}
-              aria-pressed={newInstanceMode === "remote"}
-              className={cn(
-                "ios-choice-control py-2 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              )}
-            >
-              远程连接
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchMode("import")}
-              aria-pressed={newInstanceMode === "import"}
-              className={cn(
-                "ios-choice-control py-2 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              )}
-            >
-              数据迁移
-            </button>
-          </div>
-        </div>
-
-        {/* 模式配置切换容器（平滑高度自适应 + 统一 500ms 高斯模糊与位移交叉溶变） */}
         <div
-          ref={wizardContainerRef}
-          className="motion-panel-stack"
-          style={{ height: wizardHeight ? `${wizardHeight}px` : undefined }}
+          ref={wizardBodyRef}
+          onScroll={syncWizardBodyFade}
+          className="scrollbar-hidden min-h-0 space-y-5 overflow-y-auto p-5"
+          style={{ flex: "1 1 auto" }}
         >
-          {/* 本地模式配置 */}
-          <div
-            ref={wizardLocalRef}
-            className={cn(
-              "motion-panel-face w-full space-y-5",
-              newInstanceMode === "local"
-                ? "is-active relative pointer-events-auto"
-                : "absolute inset-x-0 top-0 pointer-events-none select-none"
-            )}
-            aria-hidden={newInstanceMode !== "local"}
-            inert={newInstanceMode !== "local"}
-          >
-            <NewInstanceField label="安装目录" isLight={isLight}>
-              <div className="flex items-center gap-2 w-full">
-                <input
-                  type="text"
-                  value={newInstanceDir}
-                  onChange={(e) => setNewInstanceDir(e.target.value)}
-                  placeholder="选择或输入路径"
-                  className={cn(
-                    "flex-1 h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
-                    isLight
-                      ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                      : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                  )}
-                />
-                <button
-                  onClick={onPickInstallFolder}
-                  className={cn(
-                    "flat-capsule motion-control h-9 px-3 rounded-full text-[11px] font-medium border-0 flex-shrink-0",
-                    isLight
-                      ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                      : "text-white/60 hover:text-white"
-                  )}
-                >
-                  浏览
-                </button>
-              </div>
-            </NewInstanceField>
+          <NewInstanceField label="名称" isLight={isLight}>
+            <input
+              type="text"
+              value={newInstanceName}
+              onChange={(event) => setNewInstanceName(event.target.value)}
+              placeholder="我的酒馆"
+              className={cn(
+                "h-9 w-full rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                isLight
+                  ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                  : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+              )}
+            />
+          </NewInstanceField>
 
-            <NewInstanceField label="版本" isLight={isLight}>
-              <div className="flex items-center gap-2 w-full">
-                <button
-                  id="ver-trigger"
-                  onClick={async () => {
-                    if (verDropdownOpen) {
-                      closeVersionDropdown();
-                    } else {
+          <div>
+            <div
+              className={cn(
+                "mb-2 text-xs font-medium",
+                isLight ? "text-[#1a1625]/70" : "text-white/70"
+              )}
+            >
+              实例模式
+            </div>
+            <div className="ios-choice-track" role="group" aria-label="实例模式">
+              <button
+                type="button"
+                onClick={() => handleSwitchMode("local")}
+                aria-pressed={newInstanceMode === "local"}
+                className="ios-choice-control flex items-center justify-center gap-1.5 border py-2 text-xs font-medium transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              >
+                本地实例
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchMode("remote")}
+                aria-pressed={newInstanceMode === "remote"}
+                className="ios-choice-control flex items-center justify-center gap-1.5 border py-2 text-xs font-medium transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              >
+                远程连接
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={wizardContainerRef}
+            className="motion-panel-stack"
+            style={{ height: wizardHeight ? `${wizardHeight}px` : undefined }}
+          >
+            <div
+              ref={wizardLocalRef}
+              className={cn(
+                "motion-panel-face w-full space-y-5",
+                newInstanceMode === "local"
+                  ? "is-active relative pointer-events-auto"
+                  : "absolute inset-x-0 top-0 pointer-events-none select-none"
+              )}
+              aria-hidden={newInstanceMode !== "local"}
+              inert={newInstanceMode !== "local"}
+            >
+              <NewInstanceField label="安装目录" isLight={isLight}>
+                <div className="flex w-full items-center gap-2">
+                  <input
+                    type="text"
+                    value={newInstanceDir}
+                    onChange={(event) => setNewInstanceDir(event.target.value)}
+                    placeholder="选择或输入路径"
+                    className={cn(
+                      "h-9 min-w-0 flex-1 rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                      isLight
+                        ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                        : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={onPickInstallFolder}
+                    className={cn(
+                      "flat-capsule motion-control h-9 flex-shrink-0 rounded-full border-0 px-3 text-[11px] font-medium",
+                      isLight
+                        ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                        : "text-white/60 hover:text-white"
+                    )}
+                  >
+                    浏览
+                  </button>
+                </div>
+              </NewInstanceField>
+
+              <NewInstanceField label="版本" isLight={isLight}>
+                <div className="flex w-full items-center gap-2">
+                  <button
+                    id="ver-trigger"
+                    type="button"
+                    onClick={async () => {
+                      if (verDropdownOpen) {
+                        closeVersionDropdown();
+                        return;
+                      }
                       if (releases.length === 0 && !fetchingReleases) {
                         setFetchingReleases(true);
                         try {
-                          const { releases: r } = await TarvenEnv.fetchReleases();
-                          setReleases(r);
+                          const { releases: fetchedReleases } =
+                            await TarvenEnv.fetchReleases();
+                          setReleases(fetchedReleases);
                         } catch {
-                          /* 网络失败,保留默认选项 */
+                          addTerminalLog("> 获取版本列表失败，使用内置版", "info");
+                        } finally {
+                          setFetchingReleases(false);
                         }
-                        setFetchingReleases(false);
                       }
                       const trigger = document.getElementById("ver-trigger");
-                      if (trigger) {
-                        openVersionDropdown(trigger);
-                      }
-                    }
-                  }}
-                  className={cn(
-                    "ios-field-control motion-control flex-1 min-w-0 h-9 px-3 rounded-xl border text-sm text-left flex items-center justify-between transition-colors",
-                    isLight
-                      ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625]"
-                      : "bg-white/[0.04] border-white/[0.08] text-white"
-                  )}
-                >
-                  <span className="truncate">
-                    {fetchingReleases
-                      ? "获取版本中"
-                      : newInstanceLocalZip
-                      ? "本地 ZIP"
-                      : newInstanceVersion === "stable"
-                      ? "内置版"
-                      : newInstanceVersion}
-                  </span>
-                  <ChevronDown
+                      if (trigger) openVersionDropdown(trigger);
+                    }}
                     className={cn(
-                      "w-3.5 h-3.5 flex-shrink-0 opacity-40 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      verDropdownOpen && !isVerDropdownClosing && "rotate-180"
-                    )}
-                  />
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      const { path, sizeBytes } = await TarvenEnv.pickZipFile();
-                      setNewInstanceLocalZip(path);
-                      setNewInstanceVersion("local");
-                      addTerminalLog(
-                        `> 已选择本地文件 (${(sizeBytes / 1048576).toFixed(1)}MB)`,
-                        "info"
-                      );
-                    } catch {
-                      /* 取消 */
-                    }
-                  }}
-                  className={cn(
-                    "flat-capsule motion-control h-9 px-3 rounded-full text-[11px] font-medium border-0 flex-shrink-0",
-                    isLight
-                      ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                      : "text-white/60 hover:text-white"
-                  )}
-                >
-                  {newInstanceLocalZip ? "更换" : "导入 ZIP"}
-                </button>
-              </div>
-            </NewInstanceField>
-
-            <PreinstallOptions
-              isLight={isLight}
-              themeEnabled={newInstanceCompanionPresetEnabled}
-              setThemeEnabled={setNewInstanceCompanionPresetEnabled}
-              extensionIds={newInstanceExtensionIds}
-              setExtensionIds={setNewInstanceExtensionIds}
-            />
-          </div>
-
-          {/* 远程模式配置 */}
-          <div
-            ref={wizardRemoteRef}
-            className={cn(
-              "motion-panel-face w-full space-y-5",
-              newInstanceMode === "remote"
-                ? "is-active relative pointer-events-auto"
-                : "absolute inset-x-0 top-0 pointer-events-none select-none"
-            )}
-            aria-hidden={newInstanceMode !== "remote"}
-            inert={newInstanceMode !== "remote"}
-          >
-            <NewInstanceField label="连接地址" isLight={isLight}>
-              <input
-                type="url"
-                value={newInstanceUrl}
-                onChange={(e) => setNewInstanceUrl(e.target.value)}
-                placeholder="https://example.com"
-                autoCapitalize="none"
-                autoCorrect="off"
-                className={cn(
-                  "w-full h-9 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
-                  isLight
-                    ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                    : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                )}
-              />
-            </NewInstanceField>
-
-            <div
-              className={cn(
-                "border-t pt-3",
-                isLight ? "border-black/[0.04]" : "border-white/[0.04]"
-              )}
-            >
-              <div className="setting-row flex items-center justify-between gap-4">
-                <div>
-                  <div
-                    className={cn(
-                      "setting-label text-xs font-medium",
-                      isLight ? "text-[#1a1625]/70" : "text-white/70"
+                      "ios-field-control motion-control flex h-9 min-w-0 flex-1 items-center justify-between rounded-xl border px-3 text-left text-sm transition-colors",
+                      isLight
+                        ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625]"
+                        : "border-white/[0.08] bg-white/[0.04] text-white"
                     )}
                   >
-                    Basic Auth
-                  </div>
-                  <div
-                    className={cn(
-                      "mt-0.5 text-[10px]",
-                      isLight ? "text-[#1a1625]/35" : "text-white/35"
-                    )}
-                  >
-                    用于受 HTTP 基本认证保护的远程地址
-                  </div>
-                </div>
-                <div className={cn("companion-preset flex-shrink-0 ml-3", isLight && "is-light")}>
+                    <span className="truncate">
+                      {fetchingReleases
+                        ? "获取版本中"
+                        : newInstanceLocalZip
+                        ? "本地 ZIP"
+                        : newInstanceVersion === "stable"
+                        ? "内置版"
+                        : newInstanceVersion}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 flex-shrink-0 opacity-40 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                        verDropdownOpen &&
+                          !isVerDropdownClosing &&
+                          "rotate-180"
+                      )}
+                    />
+                  </button>
                   <button
                     type="button"
-                    role="switch"
-                    aria-label="启用 Basic Auth"
-                    aria-checked={newRemoteAuthEnabled}
-                    onClick={() => setNewRemoteAuthEnabled(!newRemoteAuthEnabled)}
-                    className="companion-preset__switch motion-control"
+                    onClick={async () => {
+                      try {
+                        const { path, sizeBytes } =
+                          await TarvenEnv.pickZipFile();
+                        setNewInstanceLocalZip(path);
+                        setNewInstanceVersion("local");
+                        addTerminalLog(
+                          `> 已选择本地文件 (${(sizeBytes / 1048576).toFixed(
+                            1
+                          )}MB)`,
+                          "info"
+                        );
+                      } catch {
+                        return;
+                      }
+                    }}
+                    className={cn(
+                      "flat-capsule motion-control h-9 flex-shrink-0 rounded-full border-0 px-3 text-[11px] font-medium",
+                      isLight
+                        ? "text-[#1a1625]/60 hover:text-[#1a1625]"
+                        : "text-white/60 hover:text-white"
+                    )}
                   >
-                    <span className="companion-preset__knob" />
+                    {newInstanceLocalZip ? "更换" : "导入 ZIP"}
                   </button>
                 </div>
-              </div>
+              </NewInstanceField>
+
+              <PreinstallOptions
+                isLight={isLight}
+                themeEnabled={newInstanceCompanionPresetEnabled}
+                setThemeEnabled={setNewInstanceCompanionPresetEnabled}
+                extensionIds={newInstanceExtensionIds}
+                setExtensionIds={setNewInstanceExtensionIds}
+              />
+            </div>
+
+            <div
+              ref={wizardRemoteRef}
+              className={cn(
+                "motion-panel-face w-full space-y-5",
+                newInstanceMode === "remote"
+                  ? "is-active relative pointer-events-auto"
+                  : "absolute inset-x-0 top-0 pointer-events-none select-none"
+              )}
+              aria-hidden={newInstanceMode !== "remote"}
+              inert={newInstanceMode !== "remote"}
+            >
+              <NewInstanceField label="连接地址" isLight={isLight}>
+                <input
+                  type="url"
+                  value={newInstanceUrl}
+                  onChange={(event) => setNewInstanceUrl(event.target.value)}
+                  placeholder="https://example.com"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  className={cn(
+                    "h-9 w-full rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                    isLight
+                      ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                      : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                  )}
+                />
+              </NewInstanceField>
 
               <div
                 className={cn(
-                  "motion-accordion",
-                  newRemoteAuthEnabled && "is-open"
+                  "border-t pt-3",
+                  isLight ? "border-black/[0.04]" : "border-white/[0.04]"
                 )}
-                aria-hidden={!newRemoteAuthEnabled}
               >
-                <div className="motion-accordion-inner">
-                  <div className="pt-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={newRemoteAuthUsername}
-                        onChange={(e) =>
-                          setNewRemoteAuthUsername(e.target.value)
-                        }
-                        placeholder="用户名"
-                        autoCapitalize="none"
-                        autoCorrect="off"
-                        autoComplete="username"
-                        disabled={!newRemoteAuthEnabled}
-                        className={cn(
-                          "h-9 min-w-0 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
-                          isLight
-                            ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                            : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                        )}
-                      />
-                      <input
-                        type="password"
-                        value={newRemoteAuthPassword}
-                        onChange={(e) =>
-                          setNewRemoteAuthPassword(e.target.value)
-                        }
-                        placeholder="密码"
-                        autoComplete="current-password"
-                        disabled={!newRemoteAuthEnabled}
-                        className={cn(
-                          "h-9 min-w-0 px-3 rounded-xl border text-sm focus:outline-none focus:ring-0 transition-colors",
-                          isLight
-                            ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                            : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                        )}
-                      />
-                    </div>
-                    <p
+                <div className="setting-row flex items-center justify-between gap-4">
+                  <div>
+                    <div
                       className={cn(
-                        "mt-2 text-[10px] leading-relaxed",
+                        "setting-label text-xs font-medium",
+                        isLight ? "text-[#1a1625]/70" : "text-white/70"
+                      )}
+                    >
+                      Basic Auth
+                    </div>
+                    <div
+                      className={cn(
+                        "mt-0.5 text-[10px]",
                         isLight ? "text-[#1a1625]/35" : "text-white/35"
                       )}
                     >
-                      密码由系统安全存储保管，不会写入连接地址。公网连接建议使用
-                      HTTPS。
-                    </p>
+                      用于受 HTTP 基本认证保护的远程地址
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 数据迁移模式配置 */}
-          <div
-            ref={wizardImportRef}
-            className={cn(
-              "motion-panel-face w-full space-y-4",
-              newInstanceMode === "import"
-                ? "is-active relative pointer-events-auto"
-                : "absolute inset-x-0 top-0 pointer-events-none select-none"
-            )}
-            aria-hidden={newInstanceMode !== "import"}
-            inert={newInstanceMode !== "import"}
-          >
-            {/* 1. 接入方式 */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <span
+                  <div
                     className={cn(
-                      "text-xs font-medium",
-                      isLight ? "text-[#1a1625]/70" : "text-white/70"
+                      "companion-preset flex-shrink-0 ml-3",
+                      isLight && "is-light"
                     )}
                   >
-                    接入方式
-                  </span>
-                  <InfoBadgeButton
-                    isOpen={showAccessModeInfo}
-                    onToggle={() => {
-                      if (!hasReadAccessMode) setHasReadAccessMode(true);
-                      setShowAccessModeInfo(!showAccessModeInfo);
-                    }}
-                    hasBeenRead={hasReadAccessMode}
-                    isLight={isLight}
-                    title="重要提示：点击查看运行机制与文件处理说明"
-                    readTitle="点击查看说明"
-                  />
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-label="启用 Basic Auth"
+                      aria-checked={newRemoteAuthEnabled}
+                      onClick={() =>
+                        setNewRemoteAuthEnabled(!newRemoteAuthEnabled)
+                      }
+                      className="companion-preset__switch motion-control"
+                    >
+                      <span className="companion-preset__knob" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="ios-choice-track" role="group" aria-label="接入方式">
-                <button
-                  type="button"
-                  onClick={() => setMigrationAccessMode("copy")}
-                  aria-pressed={migrationAccessMode === "copy"}
+                <div
                   className={cn(
-                    "ios-choice-control py-2.5 px-3 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    "motion-accordion",
+                    newRemoteAuthEnabled && "is-open"
                   )}
+                  aria-hidden={!newRemoteAuthEnabled}
                 >
-                  复制迁移
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMigrationAccessMode("takeover")}
-                  aria-pressed={migrationAccessMode === "takeover"}
-                  className={cn(
-                    "ios-choice-control py-2.5 px-3 text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                  )}
-                >
-                  原地接管
-                </button>
-              </div>
-
-              {/* 红色感叹号展开说明 */}
-              <div
-                className={cn("motion-accordion", showAccessModeInfo && "is-open")}
-                aria-hidden={!showAccessModeInfo}
-              >
-                <div className="motion-accordion-inner">
-                  <div
-                    className={cn(
-                      "mt-2 p-2.5 rounded-xl border text-[11px] leading-relaxed space-y-1 transition-colors",
-                      isLight
-                        ? "bg-black/[0.02] border-black/[0.05] text-[#1a1625]/65"
-                        : "bg-white/[0.02] border-white/[0.05] text-white/65"
-                    )}
-                  >
-                    {migrationAccessMode === "copy" ? (
-                      <>
-                        <div>• <strong>运行机制</strong>：将数据完整复制到目标目录，作为独立的新实例运行。</div>
-                        <div>• <strong>来源文件</strong>：来源路径下的原有文件不会被做任何修改、移动或删除。</div>
-                        <div>• <strong>用户决策</strong>：复制完成后新旧相互独立。原目录是由您继续保留作为备份，还是在确认无误后自行手动删除，均由您自行决定。</div>
-                      </>
-                    ) : (
-                      <>
-                        <div>• <strong>运行机制</strong>：直接复用原目录作为运行路径，不产生额外文件副本。</div>
-                        <div>• <strong>来源文件</strong>：后续运行时将直接读写该目录。</div>
-                        <div>• <strong>用户决策</strong>：若后续在 SillyClient 中移除该实例，仅解除客户端对该目录的登记关联，绝不会删除原目录中的任何物理文件；如需彻底清理数据，需由您自行在系统文件管理器中删除。</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 子模式流体同位溶变容器 */}
-            <div className="relative">
-              {/* 子模式 1: 复制迁移 */}
-              <div
-                ref={importCopyRef}
-                className={cn(
-                  "motion-panel-face w-full space-y-4",
-                  migrationAccessMode === "copy"
-                    ? "is-active relative"
-                    : "absolute inset-x-0 top-0",
-                  newInstanceMode === "import" && migrationAccessMode === "copy"
-                    ? "pointer-events-auto"
-                    : "pointer-events-none select-none"
-                )}
-                aria-hidden={newInstanceMode !== "import" || migrationAccessMode !== "copy"}
-                inert={newInstanceMode !== "import" || migrationAccessMode !== "copy"}
-              >
-                {/* 2. 旧酒馆来源 */}
-                <NewInstanceField
-                  label="旧酒馆来源位置"
-                  desc="支持选择文件夹或 ZIP 备份文件"
-                  isLight={isLight}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <input
-                      type="text"
-                      value={migrationSourcePath}
-                      onChange={(e) => setMigrationSourcePath(e.target.value)}
-                      placeholder="选择文件夹或 ZIP 文件路径"
-                      className={cn(
-                        "flex-1 h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
-                        isLight
-                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                      )}
-                    />
-                    <button
-                      type="button"
-                      onClick={onPickSourceFolder}
-                      className={cn(
-                        "flat-capsule motion-control px-3 h-9 rounded-full text-xs font-medium border-0 flex-shrink-0",
-                        isLight
-                          ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                          : "text-white/60 hover:text-white"
-                      )}
-                    >
-                      浏览
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onPickSourceZip}
-                      className={cn(
-                        "flat-capsule motion-control px-3 h-9 rounded-full text-xs font-medium border-0 flex-shrink-0",
-                        isLight
-                          ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                          : "text-white/60 hover:text-white"
-                      )}
-                    >
-                      ZIP包
-                    </button>
-                  </div>
-                </NewInstanceField>
-
-                {/* 3. 目标保存路径 */}
-                <NewInstanceField
-                  label="目标保存位置"
-                  desc="新实例数据的独立存放目录"
-                  rightAction={
-                    migrationCustomDest ? (
-                      <button
-                        type="button"
-                        onClick={() => setMigrationCustomDest("")}
-                        className={cn(
-                          "motion-control text-[11px] font-normal transition-colors",
-                          isLight
-                            ? "text-[#1a1625]/45 hover:text-[#1a1625]/80"
-                            : "text-white/45 hover:text-white/80"
-                        )}
-                      >
-                        恢复默认路径
-                      </button>
-                    ) : undefined
-                  }
-                  isLight={isLight}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <input
-                      type="text"
-                      value={migrationCustomDest}
-                      onChange={(e) => setMigrationCustomDest(e.target.value)}
-                      placeholder={isWindows ? "默认目录或完整路径" : "默认目录"}
-                      className={cn(
-                        "flex-1 h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
-                        isLight
-                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                      )}
-                    />
-                    <button
-                      type="button"
-                      onClick={onPickTargetFolder}
-                      className={cn(
-                        "flat-capsule motion-control px-3 h-9 rounded-full text-xs font-medium border-0 flex-shrink-0",
-                        isLight
-                          ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                          : "text-white/60 hover:text-white"
-                      )}
-                    >
-                      浏览
-                    </button>
-                  </div>
-                </NewInstanceField>
-
-                {/* 4. 私有凭据处理 (secrets.json) */}
-                <div className="py-1">
-                  <div className="setting-row flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={cn(
-                          "setting-label text-xs font-medium",
-                          isLight ? "text-[#1a1625]/75" : "text-white/75"
-                        )}
-                      >
-                        包含私有凭据 (secrets.json)
-                      </span>
-                      <InfoBadgeButton
-                        isOpen={showSecretsInfo}
-                        onToggle={() => {
-                          if (!hasReadSecrets) setHasReadSecrets(true);
-                          setShowSecretsInfo(!showSecretsInfo);
-                        }}
-                        hasBeenRead={hasReadSecrets}
-                        isLight={isLight}
-                        title="重要提示：点击查看私有凭据说明"
-                        readTitle="点击查看说明"
-                      />
-                    </div>
-                    <div className={cn("companion-preset flex-shrink-0 ml-3", isLight && "is-light")}>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-label="包含敏感凭据"
-                        aria-checked={migrationIncludeSecrets}
-                        onClick={() =>
-                          setMigrationIncludeSecrets(!migrationIncludeSecrets)
-                        }
-                        className="companion-preset__switch motion-control"
-                      >
-                        <span className="companion-preset__knob" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div
-                    className={cn("motion-accordion", showSecretsInfo && "is-open")}
-                    aria-hidden={!showSecretsInfo}
-                  >
-                    <div className="motion-accordion-inner">
-                      <div
-                        className={cn(
-                          "mt-2 p-2.5 rounded-xl border text-[11px] leading-relaxed",
-                          isLight
-                            ? "bg-black/[0.03] border-black/[0.06] text-[#1a1625]/65"
-                            : "bg-white/[0.03] border-white/[0.06] text-white/65"
-                        )}
-                      >
-                        为安全起见默认排除 secrets.json，以防止历史 API Key 或第三方密钥意外泄露；开启后将随同导入已有密钥与私有认证配置。
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 5. 数据检测结果 */}
-                {migrationSourcePath && (
-                  <div
-                    className={cn(
-                      "rounded-xl border px-3 py-2 text-xs transition-colors",
-                      isLight
-                        ? "bg-black/[0.02] border-black/[0.06]"
-                        : "bg-white/[0.02] border-white/[0.06]"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span
+                  <div className="motion-accordion-inner">
+                    <div className="pt-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={newRemoteAuthUsername}
+                          onChange={(event) =>
+                            setNewRemoteAuthUsername(event.target.value)
+                          }
+                          placeholder="用户名"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          autoComplete="username"
+                          disabled={!newRemoteAuthEnabled}
                           className={cn(
-                            "font-medium text-xs",
-                            isLight ? "text-[#1a1625]/75" : "text-white/75"
+                            "h-9 min-w-0 rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                            isLight
+                              ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
                           )}
-                        >
-                          数据检测结果
-                        </span>
-                        <InfoBadgeButton
-                          isOpen={showPreflightInfo}
-                          onToggle={() => {
-                            if (!hasReadPreflight) setHasReadPreflight(true);
-                            setShowPreflightInfo(!showPreflightInfo);
-                          }}
-                          hasBeenRead={hasReadPreflight}
-                          isLight={isLight}
-                          title="点击查看检测详情"
-                          readTitle="点击收起详情"
+                        />
+                        <input
+                          type="password"
+                          value={newRemoteAuthPassword}
+                          onChange={(event) =>
+                            setNewRemoteAuthPassword(event.target.value)
+                          }
+                          placeholder="密码"
+                          autoComplete="current-password"
+                          disabled={!newRemoteAuthEnabled}
+                          className={cn(
+                            "h-9 min-w-0 rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                            isLight
+                              ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                          )}
                         />
                       </div>
-                      <span
+                      <p
                         className={cn(
-                          "font-mono text-[11px]",
-                          isLight ? "text-[#1a1625]/45" : "text-white/45"
+                          "mt-2 text-[10px] leading-relaxed",
+                          isLight ? "text-[#1a1625]/35" : "text-white/35"
                         )}
                       >
-                        SillyTavern v{migrationPreflight?.version || "1.12.8"}
-                      </span>
-                    </div>
-
-                    <div
-                      className={cn("motion-accordion", showPreflightInfo && "is-open")}
-                      aria-hidden={!showPreflightInfo}
-                    >
-                      <div className="motion-accordion-inner">
-                        <div
-                          className={cn(
-                            "pt-2 mt-2 border-t text-[11px] leading-relaxed space-y-1",
-                            isLight
-                              ? "border-black/[0.04] text-[#1a1625]/60"
-                              : "border-white/[0.04] text-white/60"
-                          )}
-                        >
-                          <div>• 待迁移项目：聊天记录、角色预设、世界书与扩展插件。</div>
-                          <div>• 自动排除项：.git 版本历史与 node_modules 依赖缓存将自动排除，由内置运行时按需适配。</div>
-                          {migrationPreflight?.nativePlugins &&
-                            migrationPreflight.nativePlugins.length > 0 && (
-                              <div
-                                className={cn(
-                                  "pt-0.5",
-                                  isLight ? "text-[#1a1625]/45" : "text-white/45"
-                                )}
-                              >
-                                检测到原生模块 ({migrationPreflight.nativePlugins.join(", ")})，首次启动将自动重构。
-                              </div>
-                            )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <PreinstallOptions
-                  isLight={isLight}
-                  themeEnabled={newInstanceCompanionPresetEnabled}
-                  setThemeEnabled={setNewInstanceCompanionPresetEnabled}
-                  extensionIds={newInstanceExtensionIds}
-                  setExtensionIds={setNewInstanceExtensionIds}
-                />
-              </div>
-
-              {/* 子模式 2: 原地接管 */}
-              <div
-                ref={importTakeoverRef}
-                className={cn(
-                  "motion-panel-face w-full space-y-4",
-                  migrationAccessMode === "takeover"
-                    ? "is-active relative"
-                    : "absolute inset-x-0 top-0",
-                  newInstanceMode === "import" && migrationAccessMode === "takeover"
-                    ? "pointer-events-auto"
-                    : "pointer-events-none select-none"
-                )}
-                aria-hidden={newInstanceMode !== "import" || migrationAccessMode !== "takeover"}
-                inert={newInstanceMode !== "import" || migrationAccessMode !== "takeover"}
-              >
-                {/* 2. 旧酒馆来源 */}
-                <NewInstanceField
-                  label="旧酒馆来源位置"
-                  desc="选择包含旧酒馆的本地文件夹"
-                  isLight={isLight}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <input
-                      type="text"
-                      value={migrationSourcePath}
-                      onChange={(e) => setMigrationSourcePath(e.target.value)}
-                      placeholder="选择旧酒馆本地目录"
-                      className={cn(
-                        "flex-1 h-9 px-3 rounded-xl border text-xs focus:outline-none focus:ring-0 transition-colors",
-                        isLight
-                          ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                          : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25"
-                      )}
-                    />
-                    <button
-                      type="button"
-                      onClick={onPickSourceFolder}
-                      className={cn(
-                        "flat-capsule motion-control px-3 h-9 rounded-full text-xs font-medium border-0 flex-shrink-0",
-                        isLight
-                          ? "text-[#1a1625]/60 hover:text-[#1a1625]"
-                          : "text-white/60 hover:text-white"
-                      )}
-                    >
-                      浏览
-                    </button>
-                  </div>
-                </NewInstanceField>
-
-                {/* 3. 私有凭据处理 (secrets.json) */}
-                <div className="py-1">
-                  <div className="setting-row flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={cn(
-                          "setting-label text-xs font-medium",
-                          isLight ? "text-[#1a1625]/75" : "text-white/75"
-                        )}
-                      >
-                        包含私有凭据 (secrets.json)
-                      </span>
-                      <InfoBadgeButton
-                        isOpen={showSecretsInfo}
-                        onToggle={() => {
-                          if (!hasReadSecrets) setHasReadSecrets(true);
-                          setShowSecretsInfo(!showSecretsInfo);
-                        }}
-                        hasBeenRead={hasReadSecrets}
-                        isLight={isLight}
-                        title="重要提示：点击查看私有凭据说明"
-                        readTitle="点击查看说明"
-                      />
-                    </div>
-                    <div className={cn("companion-preset flex-shrink-0 ml-3", isLight && "is-light")}>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-label="包含敏感凭据"
-                        aria-checked={migrationIncludeSecrets}
-                        onClick={() =>
-                          setMigrationIncludeSecrets(!migrationIncludeSecrets)
-                        }
-                        className="companion-preset__switch motion-control"
-                      >
-                        <span className="companion-preset__knob" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div
-                    className={cn("motion-accordion", showSecretsInfo && "is-open")}
-                    aria-hidden={!showSecretsInfo}
-                  >
-                    <div className="motion-accordion-inner">
-                      <div
-                        className={cn(
-                          "mt-2 p-2.5 rounded-xl border text-[11px] leading-relaxed",
-                          isLight
-                            ? "bg-black/[0.03] border-black/[0.06] text-[#1a1625]/65"
-                            : "bg-white/[0.03] border-white/[0.06] text-white/65"
-                        )}
-                      >
-                        为安全起见默认排除 secrets.json，以防止历史 API Key 或第三方密钥意外泄露；开启后将随同导入已有密钥与私有认证配置。
-                      </div>
+                        密码由系统安全存储保管，不会写入连接地址。公网连接建议使用
+                        HTTPS。
+                      </p>
                     </div>
                   </div>
                 </div>
-
-                {/* 4. 数据检测结果 */}
-                {migrationSourcePath && (
-                  <div
-                    className={cn(
-                      "rounded-xl border px-3 py-2 text-xs transition-colors",
-                      isLight
-                        ? "bg-black/[0.02] border-black/[0.06]"
-                        : "bg-white/[0.02] border-white/[0.06]"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "font-medium text-xs",
-                            isLight ? "text-[#1a1625]/75" : "text-white/75"
-                          )}
-                        >
-                          数据检测结果
-                        </span>
-                        <InfoBadgeButton
-                          isOpen={showPreflightInfo}
-                          onToggle={() => {
-                            if (!hasReadPreflight) setHasReadPreflight(true);
-                            setShowPreflightInfo(!showPreflightInfo);
-                          }}
-                          hasBeenRead={hasReadPreflight}
-                          isLight={isLight}
-                          title="点击查看检测详情"
-                          readTitle="点击收起详情"
-                        />
-                      </div>
-                      <span
-                        className={cn(
-                          "font-mono text-[11px]",
-                          isLight ? "text-[#1a1625]/45" : "text-white/45"
-                        )}
-                      >
-                        SillyTavern v{migrationPreflight?.version || "1.12.8"}
-                      </span>
-                    </div>
-
-                    <div
-                      className={cn("motion-accordion", showPreflightInfo && "is-open")}
-                      aria-hidden={!showPreflightInfo}
-                    >
-                      <div className="motion-accordion-inner">
-                        <div
-                          className={cn(
-                            "pt-2 mt-2 border-t text-[11px] leading-relaxed space-y-1",
-                            isLight
-                              ? "border-black/[0.04] text-[#1a1625]/60"
-                              : "border-white/[0.04] text-white/60"
-                          )}
-                        >
-                          <div>• 待迁移项目：聊天记录、角色预设、世界书与扩展插件。</div>
-                          <div>• 自动排除项：.git 版本历史与 node_modules 依赖缓存将自动排除，由内置运行时按需适配。</div>
-                          {migrationPreflight?.nativePlugins &&
-                            migrationPreflight.nativePlugins.length > 0 && (
-                              <div
-                                className={cn(
-                                  "pt-0.5",
-                                  isLight ? "text-[#1a1625]/45" : "text-white/45"
-                                )}
-                              >
-                                检测到原生模块 ({migrationPreflight.nativePlugins.join(", ")})，首次启动将自动重构。
-                              </div>
-                            )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
       </div>
-      </div>
 
-      {/* 底部按钮 */}
       <div
         className={cn(
-          "px-5 py-3 border-t flex-shrink-0",
+          "flex-shrink-0 border-t px-5 py-3",
           isLight ? "border-black/[0.06]" : "border-white/[0.06]"
         )}
       >
@@ -1310,13 +720,14 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
         )}
         <div className="flex items-center justify-end gap-2">
           <button
+            type="button"
             disabled={isCreatingInstance}
             onClick={() => {
               closeVersionDropdown();
               onClose();
             }}
             className={cn(
-              "flat-capsule motion-control px-4 h-8 rounded-full text-xs font-medium border-0",
+              "flat-capsule motion-control h-8 rounded-full border-0 px-4 text-xs font-medium",
               "disabled:pointer-events-none disabled:opacity-40",
               isLight
                 ? "text-[#1a1625]/60 hover:text-[#1a1625]"
@@ -1326,10 +737,11 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             取消
           </button>
           <button
+            type="button"
             onClick={createInstance}
             disabled={isCreatingInstance}
             className={cn(
-              "flat-capsule motion-control px-5 h-8 rounded-full text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 flex items-center gap-1.5 border-0",
+              "flat-capsule motion-control flex h-8 items-center gap-1.5 rounded-full border-0 px-5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50",
               isLight
                 ? "text-[#1a1625]/70 hover:text-[#1a1625]"
                 : "text-white/70 hover:text-white"
@@ -1341,13 +753,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
             {isCreatingInstance
               ? newInstanceMode === "remote"
                 ? "验证连接"
-                : newInstanceMode === "import"
-                ? "正在启动迁移..."
                 : "获取当前版本"
-              : newInstanceMode === "import"
-              ? migrationAccessMode === "takeover"
-                ? "开始接管"
-                : "开始复制"
               : "创建"}
           </button>
         </div>

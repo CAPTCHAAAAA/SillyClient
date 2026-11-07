@@ -73,6 +73,16 @@ export interface InstanceInfo {
   status: string
 }
 
+export interface ImportArchiveSummary {
+  importEntries: number
+  importBytes: number
+  skippedEntries: number
+  skippedBytes: number
+  hasSecrets: boolean
+  hasConfig: boolean
+  importable: boolean
+}
+
 /** 垃圾清理项。 */
 export interface GarbageItem {
   path: string
@@ -204,14 +214,13 @@ export interface TarvenEnvPlugin {
   /** 调用系统图片选择器,把图片复制到 covers/{instanceId},返回可加载的文件路径。 */
   pickImage(options: { instanceId: string }): Promise<{ path: string; url?: string }>
 
-  /** 调用系统文件选择器,选择 SillyTavern zip 文件,复制到 tmp 并返回路径。 */
-  pickZipFile(): Promise<{ path: string; sizeBytes: number }>
-
-  /** 调用系统保存位置选择器,写入文本/JSON 文件。 */
-  saveTextFile(options: { fileName: string; mimeType: string; content: string }): Promise<void>
-
-  /** 调用系统文件选择器,读取小型文本/JSON 文件内容。 */
-  readTextFile(options?: { mimeType?: string }): Promise<{ content: string; fileName: string }>
+  /** 调用系统文件选择器，选择 SillyTavern ZIP；数据导入可保留文档 URI。 */
+  pickZipFile(options?: { purpose?: "instanceSource" | "dataImport" }): Promise<{
+    path: string
+    sizeBytes: number
+    uri?: string
+    direct?: boolean
+  }>
 
   /** 自检:扫描本地已存在的酒馆实例目录。 */
   scanInstances(): Promise<{ instances: ScannedInstance[] }>
@@ -243,26 +252,20 @@ export interface TarvenEnvPlugin {
   setContentOpenMode(options: { mode: ContentOpenMode }): Promise<{ mode: ContentOpenMode }>
 
   /** 只读预检：压缩包里有多少用户数据会被导入、多少依赖/程序文件会被忽略。 */
-  inspectImportArchive(options: { archivePath: string }): Promise<{
-    importEntries: number
-    importBytes: number
-    skippedEntries: number
-    skippedBytes: number
-    hasSecrets: boolean
-    hasConfig: boolean
-    importable: boolean
-  }>
+  inspectImportArchive(options: { archivePath?: string; archiveUri?: string }): Promise<ImportArchiveSummary>
 
   /** 把压缩包里的用户数据无损导入到已有实例：只覆盖用户数据，依赖与程序文件永不写入。 */
   importInstanceData(options: {
+    instanceId: string
     installPath?: string
-    archivePath: string
+    archivePath?: string
+    archiveUri?: string
     includeOptional?: boolean
     operationId?: string
   }): Promise<{ imported: number; bytes: number; skipped: number }>
 
-  /** 导出实例为 ZIP（支持弹窗选择保存位置），返回保存路径与字节数。若用户取消则 cancelled: true。 */
-  exportInstance(options: { instanceId: string; installPath?: string; targetZipPath?: string }): Promise<{ path: string; bytes: number; cancelled?: boolean }>
+  /** 导出实例为 ZIP（支持弹窗选择保存位置），返回保存路径与字节数；取消可能由平台返回 canceled 或 reject。 */
+  exportInstance(options: { instanceId: string; installPath?: string; targetZipPath?: string }): Promise<{ path: string; bytes: number; canceled?: boolean; cancelled?: boolean }>
 
   /** 将远程实例的 Basic Auth 凭据写入平台安全存储。password 省略时保留现有密码。 */
   setRemoteBasicAuth(options: {
@@ -314,52 +317,17 @@ export interface TarvenEnvPlugin {
     installPath?: string
   }): Promise<{ success: boolean; recoveryId?: string; relativePath?: string; error?: string }>
 
-  /** 数据迁移：将旧酒馆目录或 ZIP 压缩包迁入新实例 */
-  migrateInstance(options: {
-    sourcePath: string
-    targetPath?: string
-    instanceId: string
-    operationId?: string
-    mode?: 'copy' | 'takeover'
-    includeSecrets?: boolean
-    preinstall?: PreinstallSelection
-  }): Promise<{ success: boolean; instanceId: string; targetPath?: string }>
-
-  /** 检测保存在旧版路径（如 C 盘 AppData）的待迁移实例 */
-  checkLegacyInstances(): Promise<{
-    instances: Array<{
-      instanceId: string
-      name: string
-      currentPath: string
-      targetPath: string
-      version?: string
-    }>
-  }>
-
   /** 单个实例无损迁移 / 路径重定位 */
   relocateInstance(options: {
     instanceId: string
     targetPath?: string
+    installPath?: string
   }): Promise<{
     success: boolean
     instanceId: string
     oldPath: string
     newPath: string
     unchanged?: boolean
-  }>
-
-  /** 一键批量无损迁移旧路径实例至当前客户端默认实例目录 */
-  migrateLegacyInstances(options?: {
-    instanceIds?: string[]
-  }): Promise<{
-    success: boolean
-    results: Array<{
-      success: boolean
-      instanceId: string
-      oldPath: string
-      newPath: string
-      unchanged?: boolean
-    }>
   }>
 
   /** 重命名实例并同步修改底层物理存储文件夹与注册表 */
