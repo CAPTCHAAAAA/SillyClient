@@ -7,7 +7,7 @@ import {
   Lock,
 } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
-import type { InstanceConfig } from "../../capacitor-plugin";
+import type { ImportArchiveSummary, InstanceConfig } from "../../capacitor-plugin";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import { coverPlate, coverTone } from "../instance/coverTone";
 import { LAYERS } from "../../constants/layers";
@@ -259,6 +259,24 @@ function manageTextFieldClass(isLight: boolean) {
       ? "text-[#1a1625] placeholder:text-[#1a1625]/30"
       : "text-white placeholder:text-white/35"
   );
+}
+
+function formatArchiveBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function isNativeCancelError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message?: unknown }).message || "")
+          : "";
+  return /cancel(?:led|ed)?|取消|cancel/i.test(message);
 }
 
 function ManageToggle({
@@ -519,6 +537,18 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches
   ));
   const isPortraitRef = useRef(isPortrait);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [importArchive, setImportArchive] = useState<{
+    archivePath?: string;
+    archiveUri?: string;
+    label: string;
+    summary: ImportArchiveSummary;
+  } | null>(null);
+  const [importIncludeOptional, setImportIncludeOptional] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [isInspectingImport, setIsInspectingImport] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   isPortraitRef.current = isPortrait;
   const portraitScrollMode = useRef<ScrollBehavior>("auto");
   useEffect(() => {
@@ -674,6 +704,16 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     return () => { active = false; };
   }, [isOpen, instance?.id, instance?.installPath, instance?.installDir]);
 
+  useEffect(() => {
+    setExportStatus(null);
+    setIsExporting(false);
+    setImportArchive(null);
+    setImportIncludeOptional(false);
+    setImportStatus(null);
+    setIsInspectingImport(false);
+    setIsImporting(false);
+  }, [instance?.id]);
+
   const logKey = instance?.installDir || instance?.id;
   const terminalLogs = useInstanceLogs(logKey, (isOpen || isClosing) && manageTab === "terminal");
   useLayoutEffect(() => {
@@ -702,6 +742,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   if (!instance || (!isOpen && !isClosing)) return null;
 
   const mp = instance;
+  const isLocalInstance = mp.type === "local";
+  const isInstanceRunning = mp.status === "running" || mp.status === "online";
   const effectiveInstancePath =
     mp.type === "local"
       ? (aboutInfo?.path || localAboutInfo?.path || mp.installPath || (mp.installDir && (mp.installDir.includes("/") || mp.installDir.includes("\\")) ? mp.installDir : null) || "—")
@@ -726,6 +768,99 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     setSettingsFaceEpoch((value) => value + 1);
     setSettingsFaceReady(false);
     onSelectInstance(item);
+  };
+
+  const selectImportArchive = async () => {
+    if (isInspectingImport || isImporting) return;
+    setIsInspectingImport(true);
+    setImportStatus("正在检查 ZIP…");
+    try {
+      const selected = await TarvenEnv.pickZipFile({ purpose: "dataImport" });
+      const archivePath = selected.path?.trim() || undefined;
+      const archiveUri = selected.uri?.trim() || undefined;
+      if (!archivePath && !archiveUri) throw new Error("未选择 ZIP 文件");
+      const summary = await TarvenEnv.inspectImportArchive({
+        ...(archivePath ? { archivePath } : {}),
+        ...(archiveUri ? { archiveUri } : {}),
+      });
+      const label =
+        archivePath?.split(/[/\\]/).pop() ||
+        (archiveUri ? "已选择 ZIP 文件" : "未命名 ZIP 文件");
+      setImportArchive({ archivePath, archiveUri, label, summary });
+      setImportStatus(
+        summary.importable
+          ? `已检查：${summary.importEntries} 项 · ${formatArchiveBytes(summary.importBytes)}`
+          : "压缩包中没有可导入的用户数据"
+      );
+    } catch (error) {
+      setImportArchive(null);
+      setImportStatus(
+        isNativeCancelError(error)
+          ? null
+          : error instanceof Error
+            ? error.message
+            : "检查 ZIP 失败，请重试"
+      );
+    } finally {
+      setIsInspectingImport(false);
+    }
+  };
+
+  const importSelectedArchive = async () => {
+    if (isImporting || !isLocalInstance || isInstanceRunning || !importArchive?.summary.importable) return;
+    setIsImporting(true);
+    setImportStatus("正在导入…");
+    try {
+      const result = await TarvenEnv.importInstanceData({
+        instanceId: mp.installDir || mp.id,
+        installPath: mp.installPath,
+        ...(importArchive.archivePath ? { archivePath: importArchive.archivePath } : {}),
+        ...(importArchive.archiveUri ? { archiveUri: importArchive.archiveUri } : {}),
+        includeOptional: importIncludeOptional,
+      });
+      setImportStatus(
+        `已导入 ${result.imported} 项 · ${formatArchiveBytes(result.bytes)}`
+      );
+      setLocalAboutInfo(null);
+    } catch (error) {
+      setImportStatus(
+        isNativeCancelError(error)
+          ? null
+          : error instanceof Error
+            ? error.message
+            : "导入失败，请重试"
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const exportInstanceArchive = async () => {
+    if (isExporting || !isLocalInstance) return;
+    setIsExporting(true);
+    setExportStatus("正在打包…");
+    try {
+      const result = await TarvenEnv.exportInstance({
+        instanceId: mp.installDir || mp.id,
+        installPath: mp.installPath,
+      });
+      if (result.cancelled || result.canceled) {
+        setExportStatus(null);
+        return;
+      }
+      const label = result.path.split(/[/\\]/).pop() || result.path;
+      setExportStatus(`已导出：${label}`);
+    } catch (error) {
+      setExportStatus(
+        isNativeCancelError(error)
+          ? null
+          : error instanceof Error
+            ? error.message
+            : "导出失败，请重试"
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const isDynamic = bgMode === "dynamic";
@@ -1487,7 +1622,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                   {mp.type === "local" && onOpenRelocate && (
                     <ManageItem
                       label="存储迁移"
-                      desc="无损搬迁至新目录或软件默认路径"
+                      desc="无损搬迁至你选择的新目录"
                       isLight={isLight} isPortrait={isPortrait}
                     >
                       <button
@@ -1498,6 +1633,98 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       >
                         迁移目录
                       </button>
+                    </ManageItem>
+                  )}
+                  {mp.type === "local" && (
+                    <ManageItem
+                      label="导出实例（ZIP）"
+                      desc={exportStatus || "打包实例文件，由系统选择保存位置"}
+                      isLight={isLight} isPortrait={isPortrait}
+                    >
+                      <button
+                        type="button"
+                        disabled={isExporting}
+                        onClick={exportInstanceArchive}
+                        className={manageCapsuleButtonClass(isLight)}
+                        style={{ fontSize: 16 }}
+                      >
+                        {isExporting ? "导出中..." : "导出"}
+                      </button>
+                    </ManageItem>
+                  )}
+                  {mp.type === "local" && (
+                    <ManageItem
+                      label="导入数据（ZIP）"
+                      desc={
+                        isInstanceRunning
+                          ? "请先停止实例，再覆盖导入用户数据"
+                          : importStatus || "先创建实例，再从 ZIP 覆盖导入用户数据"
+                      }
+                      isLight={isLight} isPortrait={isPortrait}
+                    >
+                      <div className="flex min-w-0 flex-col items-end gap-2">
+                        <button
+                          type="button"
+                          disabled={isInspectingImport || isImporting || isInstanceRunning}
+                          onClick={selectImportArchive}
+                          className={manageCapsuleButtonClass(isLight)}
+                          style={{ fontSize: 16 }}
+                        >
+                          {isInspectingImport ? "检查中..." : "选择 ZIP"}
+                        </button>
+                        {importArchive && (
+                          <div className="flex min-w-0 max-w-full flex-col items-end gap-1.5">
+                            <span
+                              className={cn(
+                                "max-w-full truncate text-[11px] font-medium",
+                                isLight ? "text-[#1a1625]/65" : "text-white/65"
+                              )}
+                              title={importArchive.label}
+                            >
+                              {importArchive.label}
+                            </span>
+                            <span
+                              className={cn(
+                                "text-[10px] text-right leading-snug",
+                                isLight ? "text-[#1a1625]/45" : "text-white/45"
+                              )}
+                            >
+                              {importArchive.summary.importEntries} 项 ·{" "}
+                              {formatArchiveBytes(importArchive.summary.importBytes)}
+                              {importArchive.summary.skippedEntries > 0
+                                ? ` · 忽略 ${importArchive.summary.skippedEntries} 项`
+                                : ""}
+                            </span>
+                            {(importArchive.summary.hasConfig || importArchive.summary.hasSecrets) && (
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={cn(
+                                    "text-[11px]",
+                                    isLight ? "text-[#1a1625]/55" : "text-white/55"
+                                  )}
+                                >
+                                  包含配置与密钥
+                                </span>
+                                <ManageToggle
+                                  label="导入配置与密钥"
+                                  on={importIncludeOptional}
+                                  onChange={setImportIncludeOptional}
+                                  isLight={isLight}
+                                />
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              disabled={isImporting || !importArchive.summary.importable || isInstanceRunning}
+                              onClick={importSelectedArchive}
+                              className={manageCapsuleButtonClass(isLight)}
+                              style={{ fontSize: 16 }}
+                            >
+                              {isImporting ? "导入中..." : "导入"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </ManageItem>
                   )}
                   {mp.type === "local" && onOpenMaintenance && (

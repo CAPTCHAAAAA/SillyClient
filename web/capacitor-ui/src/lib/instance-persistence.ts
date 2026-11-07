@@ -5,7 +5,6 @@ import { normalizeStoredVersion } from "./utils";
 export type StoredInstance = Omit<TavernInstance, "icon">;
 
 const MAX_INSTANCES = 2000;
-const MAX_BACKUP_LENGTH = 5 * 1024 * 1024;
 const MAX_HEARTBEAT = 2_147_483_647;
 const STATUSES = new Set(["running", "stopped", "error", "online", "offline"]);
 const PREINSTALL_IDS = new Set(["tavern-helper", "littlewhitebox", "prompt-template", "dice"]);
@@ -156,28 +155,4 @@ export function normalizeStoredInstances(
 
 export function serializeInstanceRecords(instances: readonly unknown[]): StoredInstance[] {
   return normalizeStoredInstances(instances);
-}
-
-export function parseInstanceBackup(content: string): StoredInstance[] {
-  if (content.length > MAX_BACKUP_LENGTH) throw new Error("Instance backup is too large");
-  const backup = record(JSON.parse(content));
-  if (!backup || !Array.isArray(backup.instances)) throw new Error("Invalid instance backup");
-  if (backup.version !== undefined && backup.version !== 1 && backup.version !== 2) {
-    throw new Error("Unsupported instance backup version");
-  }
-  const instances = normalizeStoredInstances(backup.instances, { resetStatus: true });
-  if (backup.instances.length > 0 && instances.length === 0) {
-    throw new Error("Instance backup contains no valid records");
-  }
-  return instances;
-}
-
-export function createInstanceBackup(instances: readonly unknown[]): string {
-  const content = JSON.stringify({
-    version: 2,
-    instances: normalizeStoredInstances(instances, { resetStatus: true }),
-    exportedAt: new Date().toISOString(),
-  }, null, 2);
-  if (content.length > MAX_BACKUP_LENGTH) throw new Error("Instance backup is too large");
-  return content;
 }

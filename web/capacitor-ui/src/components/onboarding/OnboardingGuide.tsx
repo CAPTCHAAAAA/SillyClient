@@ -12,13 +12,6 @@ interface OnboardingGuideProps {
 
 type TransitionPhase = "idle" | "leaving" | "entering";
 
-const platformNames: Record<GuidePlatform, string> = {
-  web: "网页演示",
-  windows: "Windows",
-  android: "Android",
-  ios: "iOS",
-};
-
 function getFocusableElements(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>(
     'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
@@ -223,25 +216,29 @@ export default function OnboardingGuide({ isLight, platform, onComplete, onSkip 
       className={`sc-onboarding ${isLight ? "is-light" : "is-dark"}${closing ? " is-closing" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="sc-onboarding-title"
+      aria-label="使用引导"
       tabIndex={-1}
       onKeyDown={handleKeyDown}
     >
       <div className="sc-onboarding-backdrop" aria-hidden="true" />
       <div ref={panelRef} className="sc-onboarding-panel" inert={imageOpen || closing} aria-hidden={imageOpen || undefined}>
-        <header className="sc-onboarding-header">
-          <div><strong>SillyClient</strong><span id="sc-onboarding-title">使用引导</span></div>
-          <button type="button" onClick={() => requestClose()} aria-label="跳过使用引导">跳过</button>
-        </header>
-
         <div ref={readerRef} className="sc-onboarding-reader" aria-busy={pending || transitionPhase !== "idle"}>
           <div ref={stepRef} className={`sc-onboarding-step ${stepMotionClass}`} inert={transitionPhase !== "idle"}>
             <div className="sc-onboarding-copy">
-              <span>第 {String(lesson.chapterIndex + 1).padStart(2, "0")} 章 · {lesson.chapter.title} · 本章 {lesson.viewIndex + 1} / {lesson.chapter.lessons.length}</span>
+              <div
+                className="sc-onboarding-chapter"
+                aria-label={`第 ${lesson.chapterIndex + 1} 章：${lesson.chapter.title}，本章第 ${lesson.viewIndex + 1} 页，共 ${lesson.chapter.lessons.length} 页`}
+              >
+                <span className="sc-onboarding-chapter-number" aria-hidden="true">
+                  {String(lesson.chapterIndex + 1).padStart(2, "0")}
+                </span>
+                <span className="sc-onboarding-chapter-name">{lesson.chapter.title}</span>
+                <span className="sc-onboarding-chapter-page" aria-hidden="true">
+                  {String(lesson.viewIndex + 1).padStart(2, "0")} / {String(lesson.chapter.lessons.length).padStart(2, "0")}
+                </span>
+              </div>
               <h2 id="sc-onboarding-lesson-title">{lesson.title}</h2>
               <p>{lesson.summary}</p>
-              {lesson.note && <p className="sc-onboarding-note">{lesson.note}</p>}
-              {lesson.platforms && <span className="sc-onboarding-platform">{lesson.platforms.map((item) => platformNames[item]).join(" · ")} 专属</span>}
             </div>
             <figure className={`sc-onboarding-shot is-${lesson.image}`}>
               <button ref={figureButtonRef} type="button" onClick={() => setImageOpen(true)} aria-label={`放大界面图：${image.alt}`}>
@@ -254,24 +251,15 @@ export default function OnboardingGuide({ isLight, platform, onComplete, onSkip 
                   onLoad={() => setFailedImage((failed) => failed === image.src ? null : failed)}
                 />
               </button>
-              <figcaption>{failedImage === image.src ? "图片暂不可用，仍可阅读说明" : "点击放大"}</figcaption>
+              {failedImage === image.src && <figcaption>图片暂不可用，仍可阅读说明</figcaption>}
             </figure>
-            <nav className="sc-onboarding-subnav" aria-label={`${lesson.chapter.title}详细页面`}>
-              {lesson.chapter.lessons.map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  className={item.id === lesson.id ? "is-current" : ""}
-                  aria-current={item.id === lesson.id ? "page" : undefined}
-                  aria-label={item.title}
-                  onClick={() => { void navigateTo(lessons.findIndex((entry) => entry.id === item.id)); }}
-                >{item.label}</button>
-              ))}
-            </nav>
           </div>
         </div>
 
         <footer className="sc-onboarding-footer">
+          <button type="button" className="sc-onboarding-skip" onClick={() => requestClose()} aria-label="跳过使用引导">
+            跳过
+          </button>
           <div className="sc-onboarding-progress">
             <span className="sc-onboarding-progress-count" aria-hidden="true">
               {String(currentIndex + 1).padStart(2, "0")}<span> / {String(lessons.length).padStart(2, "0")}</span>
@@ -287,19 +275,6 @@ export default function OnboardingGuide({ isLight, platform, onComplete, onSkip 
               <span style={{ width: `${((currentIndex + 1) / lessons.length) * 100}%` }} />
             </div>
           </div>
-          <nav className="sc-onboarding-dots" aria-label="引导章节">
-            {chapters.map((chapter, chapterIndex) => (
-              <button
-                type="button"
-                key={chapter.id}
-                className={chapterIndex === lesson.chapterIndex ? "is-current" : ""}
-                aria-label={`查看第 ${chapterIndex + 1} 章：${chapter.title}`}
-                aria-current={chapterIndex === lesson.chapterIndex ? "step" : undefined}
-                title={chapter.title}
-                onClick={() => { void navigateTo(lessons.findIndex((entry) => entry.chapterIndex === chapterIndex)); }}
-              ><span /></button>
-            ))}
-          </nav>
           <span className="sr-only" role="status" aria-live="polite">第 {lesson.chapterIndex + 1} 章，{lesson.chapter.title}，本章第 {lesson.viewIndex + 1} 页，共 {lesson.chapter.lessons.length} 页；教程总进度 {currentIndex + 1} / {lessons.length}</span>
           <div className="sc-onboarding-actions">
             {currentIndex > 0 && <ActionButton className="is-back" onClick={() => { void navigateTo(currentIndex - 1); }}>上一步</ActionButton>}
