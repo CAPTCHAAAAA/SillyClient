@@ -1,4 +1,5 @@
 import { registerPlugin, PluginListenerHandle } from '@capacitor/core'
+import { isOnboardingSandbox } from './lib/onboarding-mode'
 import { type RenderEngineSettings, normalizeRenderEngineSettings } from './lib/render-settings'
 
 export { type RenderEngineSettings, normalizeRenderEngineSettings }
@@ -404,8 +405,21 @@ export interface TarvenEvent {
   totalUsageMs?: number
 }
 
-export const TarvenEnv = registerPlugin<TarvenEnvPlugin>('TarvenEnv',
+const nativeEnvironment = registerPlugin<TarvenEnvPlugin>('TarvenEnv',
   import.meta.env.DEV && new URLSearchParams(window.location.search).get('nativePreview') === '1'
     ? { web: async () => (await import('./dev/native-preview')).nativePreview }
     : undefined,
 )
+
+export const TarvenEnv: TarvenEnvPlugin = isOnboardingSandbox
+  ? new Proxy({} as TarvenEnvPlugin, {
+      get(_target, property) {
+        if (property === 'then') return undefined
+        return async (...args: unknown[]) => {
+          const { onboardingEnvironment } = await import('./components/onboarding/onboarding-runtime')
+          const method = onboardingEnvironment[property as keyof TarvenEnvPlugin]
+          return Reflect.apply(method, onboardingEnvironment, args)
+        }
+      },
+    })
+  : nativeEnvironment

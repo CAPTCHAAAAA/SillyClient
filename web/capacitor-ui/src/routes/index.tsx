@@ -22,6 +22,8 @@ import { GLOBAL_LOG_KEY, instanceLogs, type LogLine } from "@/lib/log-store";
 import { OperationCoordinator, OperationCancelledError, type OperationContext } from "@/lib/operation-coordinator";
 import { APP_VERSION } from "@/constants/app-version";
 import { fetchAppUpdate } from "@/lib/app-update";
+import { isOnboardingSandbox } from "@/lib/onboarding-mode";
+import type { GuideStep } from "@/components/onboarding/guide-content";
 import { RelocateInstanceModal } from "@/components/modals/RelocateInstanceModal";
 import { LAYERS } from "@/constants/layers";
 import { useLayerStack } from "@/hooks/useLayerStack";
@@ -44,6 +46,7 @@ import { UnlockInstanceModal } from "@/components/modals/UnlockInstanceModal";
 import type { TavernInstance, OperationPurpose } from "@/types";
 
 const OnboardingGuide = lazy(() => import("@/components/onboarding/OnboardingGuide"));
+const OnboardingSession = lazy(() => import("@/components/onboarding/OnboardingSession"));
 
 export const Route = createFileRoute("/")({
   component: SillyClientLauncher,
@@ -55,7 +58,7 @@ export const Route = createFileRoute("/")({
 const INSTANCES_KEY = "sillyclient.instances";
 const INSTANCES_VERSION_KEY = "sillyclient.instances.version";
 const ONBOARDING_KEY = "sillyclient.onboarding.version";
-const ONBOARDING_VERSION = "3";
+const ONBOARDING_VERSION = "6";
 const CREATE_CARD_SLOT_KEY = "sillyclient.createCardSlot";
 const CURRENT_VERSION = 2;
 const BACKGROUND_PANEL_EXIT_MS = 300;
@@ -261,7 +264,7 @@ function SillyClientLauncher() {
     : `SillyClient ${APP_VERSION} · Android shell`;
   const terminalPlaceholder = isWindows ? "输入 Windows 命令" : isIOS ? "iOS 进程内环境（可查看服务运行日志）" : "输入 Android shell 命令";
   const [showOnboarding, setShowOnboarding] = useState(
-    () => (!isWeb || isWindows) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION,
+    () => isOnboardingSandbox || ((!isWeb || isWindows || isDemoPreview) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION),
   );
   const [relocatingInstance, setRelocatingInstance] = useState<TavernInstance | null>(null);
   const [showRelocateModal, setShowRelocateModal] = useState(false);
@@ -407,7 +410,7 @@ function SillyClientLauncher() {
     }
   }, [createCardPinned, createCardSlot, instances.length, isShowcase, setCreateCardSlot]);
 
-  const canPreviewRenderSettings = isWeb && isLocalPreview && !isWindows;
+  const canPreviewRenderSettings = ((isWeb && isLocalPreview) || isOnboardingSandbox) && !isWindows;
   const [renderSettings, setRenderSettings] = useState<RenderEngineSettings | null>(
     () => (canPreviewRenderSettings ? normalizeRenderEngineSettings(null) : null),
   );
@@ -504,8 +507,7 @@ function SillyClientLauncher() {
   const [deleteInstanceError, setDeleteInstanceError] = useState<string | null>(null);
 
   const isBackgroundInteractionBlocked = Boolean(
-    showOnboarding
-      || showRelocateModal
+    showRelocateModal
       || isRelocateModalClosing
       || showBgPanel
       || isPanelClosing
@@ -531,7 +533,9 @@ function SillyClientLauncher() {
       || pendingDelete
       || maintenanceInstance
   );
-  const isPullGestureBlocked = isBackgroundInteractionBlocked || Boolean(renamingId || isRenameClosing);
+  const isPullGestureBlocked = isBackgroundInteractionBlocked
+    || showOnboarding
+    || Boolean(renamingId || isRenameClosing);
 
   useEffect(() => {
     TarvenEnv.setPullToRefresh({
@@ -590,6 +594,7 @@ function SillyClientLauncher() {
   }, [isWindows]);
 
   const checkForAppUpdate = useCallback(async () => {
+    if (isOnboardingSandbox) return null;
     setAppUpdateState("checking");
     try {
       const result = await fetchAppUpdate(APP_VERSION, isWindows ? "windows" : Capacitor.getPlatform() === "ios" ? "ios" : isWeb ? "web" : "android");
@@ -2257,9 +2262,27 @@ function SillyClientLauncher() {
   }, [closeAppMenu]);
 
   const dismissOnboarding = useCallback(() => {
+    if (isOnboardingSandbox) {
+      void import("@/components/onboarding/onboarding-runtime").then(({ finishOnboardingSandbox }) => finishOnboardingSandbox());
+      return;
+    }
     localStorage.setItem(ONBOARDING_KEY, ONBOARDING_VERSION);
     setShowOnboarding(false);
   }, []);
+
+  const prepareOnboardingStep = useCallback((step: GuideStep) => {
+    if (!isOnboardingSandbox) return;
+    if (step.id === "create-submit") {
+      setNewInstanceDir(localStorage.getItem("sillyclient.onboarding.instancesRoot") || "");
+    }
+    if (step.id === "card-reorder" || step.id === "card-expand" || step.id === "running-card" || step.id === "create-open") {
+      if (step.id === "running-card") setHoveredCard(null);
+      const targetId = step.id === "create-open" ? null : "onboarding-stopped";
+      const targetIndex = targetId === null ? createCardSlot : instances.findIndex((instance) => instance.id === targetId);
+      const slot = targetId === null ? targetIndex : targetIndex < createCardSlot ? targetIndex : targetIndex + 1;
+      if (slot >= 0) carouselRef.current?.goToSlide(slot);
+    }
+  }, [createCardSlot, instances]);
 
   const openRelocateModal = useCallback((target: TavernInstance) => {
     setRelocatingInstance(target);
@@ -2502,6 +2525,7 @@ function SillyClientLauncher() {
                 if (isDemoPreview) event.preventDefault();
               }}
               aria-label={isDemoPreview ? "打开终端，长按查看打开实例控制台" : "打开终端"}
+              data-onboarding-target="terminal"
               className={cn(
                 "ios-glass-btn px-3 h-8 flex items-center justify-center text-xs font-medium transition-all",
                 isLight ? "text-[#1a1625]/70 hover:text-[#1a1625]" : "text-white/70 hover:text-white"
@@ -2522,6 +2546,7 @@ function SillyClientLauncher() {
                 if (isDemoPreview) event.preventDefault();
               }}
               aria-label={isDemoPreview ? "打开背景设置，长按查看创建实例控制台" : "打开背景设置"}
+              data-onboarding-target="background"
               className={cn("group flex items-center gap-2 px-4 py-1.5 rounded-full transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] max-w-[200px] border", isLight ? "border-black/10 text-[#1a1625]/80 hover:text-[#1a1625] shadow-[inset_0_1px_2px_rgba(0,0,0,0.05),0_1px_2px_rgba(255,255,255,0.5)]" : "border-white/10 text-white/80 hover:text-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.2),0_1px_2px_rgba(255,255,255,0.1)]")}
             >
               <span className="text-sm font-medium truncate">
@@ -2546,6 +2571,7 @@ function SillyClientLauncher() {
               "motion-control ios-glass-btn px-4 h-9 flex items-center justify-center text-xs font-medium flex-shrink-0",
               isLight ? "text-[#1a1625]/70 hover:text-[#1a1625]" : "text-white/70 hover:text-white"
             )}
+            data-onboarding-target="settings"
           >
             <Menu className="w-4 h-4" />
           </button>
@@ -3066,12 +3092,23 @@ function SillyClientLauncher() {
       {/* 首次引导 */}
       {showOnboarding && (
         <Suspense fallback={null}>
-          <OnboardingGuide
-            isLight={isLight}
-            platform={isWindows ? "windows" : isAndroid ? "android" : isIOS ? "ios" : "web"}
-            onComplete={dismissOnboarding}
-            onSkip={dismissOnboarding}
-          />
+          {isOnboardingSandbox ? (
+            <OnboardingGuide
+              isLight={isLight}
+              platform={isWindows ? "windows" : isAndroid ? "android" : isIOS ? "ios" : "web"}
+              onStepChange={prepareOnboardingStep}
+              onComplete={dismissOnboarding}
+              onSkip={dismissOnboarding}
+            />
+          ) : (
+            <OnboardingSession
+              platform={isWindows ? "windows" : isAndroid ? "android" : isIOS ? "ios" : "web"}
+              bgMode={bgMode}
+              themeStyle={themeStyle}
+              safeInsetTop={safeInsetTop}
+              onComplete={dismissOnboarding}
+            />
+          )}
         </Suspense>
       )}
 
@@ -3087,7 +3124,7 @@ function SillyClientLauncher() {
       />
 
       {/* 【视觉与动效测试专用】底部悬浮调试板：仅在本地开发走查环境可见，用于设计验收与过渡动效测试，在任何正式生产构建（Windows/Android/Pages）中自动剔除 */}
-      {import.meta.env.DEV && !isNativePreview && (
+      {import.meta.env.DEV && !isNativePreview && !isOnboardingSandbox && (
         <div
           title="【视觉测试专用】仅用于本地开发、设计走查与过渡动效测试，正式生产原生端不包含"
           className="fixed bottom-4 right-4 z-[99] flex flex-wrap items-center gap-1.5 p-1.5 rounded-full border backdrop-blur-[32px] saturate-180 shadow-[0_8px_32px_rgba(0,0,0,0.4)] select-none text-[11px] transition-all bg-[#14101e]/85 border-white/10"

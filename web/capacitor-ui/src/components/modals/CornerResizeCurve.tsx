@@ -21,6 +21,9 @@ const FULL_ARC_DEG = 78;
 const ARC_START_DEG = 6;
 const REST_STROKE = 2.6;
 const HOT_STROKE = 3.4;
+const HIT_STROKE = 24;
+
+export const CORNER_RESIZE_SAFE_INSET = OUTSET + HIT_STROKE / 2;
 
 const MOTION = "320ms cubic-bezier(0.22, 1, 0.36, 1)";
 
@@ -94,7 +97,7 @@ export function CornerResizeCurve({
         d={path}
         fill="none"
         stroke="transparent"
-        strokeWidth={24}
+        strokeWidth={HIT_STROKE}
         strokeLinecap="round"
         pointerEvents="stroke"
         className="cursor-nwse-resize"

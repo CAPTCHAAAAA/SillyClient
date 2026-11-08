@@ -103,6 +103,7 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
           </span>
           <button
             onClick={onClose}
+            data-onboarding-target="background-close"
             className={cn(
               "p-1 rounded-lg transition-colors",
               isLight

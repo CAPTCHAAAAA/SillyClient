@@ -18,8 +18,12 @@ interface ManagePanelLayoutOptions {
   paneRef: RefObject<HTMLElement | null>;
 }
 
-function viewportSize() {
-  return { width: window.innerWidth, height: window.innerHeight };
+function viewportSize(isPortrait = false) {
+  const viewport = isPortrait ? window.visualViewport : null;
+  if (viewport && viewport.scale === 1) {
+    return { width: viewport.width, height: viewport.height, left: viewport.offsetLeft, top: viewport.offsetTop };
+  }
+  return { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
 }
 
 function intrinsicHeight(content: HTMLElement) {
@@ -43,7 +47,7 @@ export function useManagePanelLayout({
   paneRef,
 }: ManagePanelLayoutOptions) {
   const windowRef = useRef<HTMLDivElement>(null);
-  const [viewport, setViewport] = useState(viewportSize);
+  const [viewport, setViewport] = useState(() => viewportSize(isPortrait));
   const [contentHeight, setContentHeight] = useState(460);
   const [manualBox, setManualBox] = useState<{ width: number; height: number } | null>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -78,14 +82,31 @@ export function useManagePanelLayout({
 
   useLayoutEffect(() => {
     if (!visible) return;
+    let frame: number | null = null;
     const sync = () => setViewport(current => {
-      const next = viewportSize();
-      return current.width === next.width && current.height === next.height ? current : next;
+      const next = viewportSize(isPortrait);
+      return current.width === next.width && current.height === next.height
+        && current.left === next.left && current.top === next.top ? current : next;
     });
+    const schedule = () => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        sync();
+      });
+    };
+    const visualViewport = isPortrait ? window.visualViewport : null;
     sync();
-    window.addEventListener("resize", sync);
-    return () => window.removeEventListener("resize", sync);
-  }, [visible]);
+    window.addEventListener("resize", schedule);
+    visualViewport?.addEventListener("resize", schedule);
+    visualViewport?.addEventListener("scroll", schedule);
+    return () => {
+      window.removeEventListener("resize", schedule);
+      visualViewport?.removeEventListener("resize", schedule);
+      visualViewport?.removeEventListener("scroll", schedule);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [visible, isPortrait]);
 
   useEffect(() => {
     if (visible) return;
@@ -141,9 +162,11 @@ export function useManagePanelLayout({
     return () => observer.disconnect();
   }, [visible, ready, isPortrait, isLocal, tab, instanceId, Boolean(manualBox), surfaceRef, paneRef]);
 
-  const maxWidth = Math.max(1, viewport.width - (isPortrait ? 28 : VIEW_GUTTER * 2));
-  const maxHeight = Math.max(1, Math.min(isPortrait ? 720 : Infinity, viewport.height - (isPortrait ? 48 : VIEW_GUTTER * 2)));
-  const width = Math.min(maxWidth, isPortrait ? 440 : manualBox?.width ?? DEFAULT_WIDTH);
+  const maxWidth = Math.max(1, viewport.width - (isPortrait ? 32 : VIEW_GUTTER * 2));
+  const maxHeight = Math.max(1, isPortrait
+    ? Math.min(720, viewport.height * 0.85, viewport.height - VIEW_GUTTER * 2)
+    : viewport.height - VIEW_GUTTER * 2);
+  const width = Math.min(maxWidth, isPortrait ? 460 : manualBox?.width ?? DEFAULT_WIDTH);
   const height = Math.min(maxHeight, !isPortrait && manualBox ? manualBox.height : contentHeight);
 
   const onResizePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -204,5 +227,5 @@ export function useManagePanelLayout({
     window.addEventListener("pointercancel", onUp);
   };
 
-  return { windowRef, width, height, isResizing, onResizePointerDown };
+  return { windowRef, width, height, viewport, isResizing, onResizePointerDown };
 }

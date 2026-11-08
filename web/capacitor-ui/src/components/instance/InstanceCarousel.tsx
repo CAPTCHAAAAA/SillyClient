@@ -594,6 +594,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
 
       dragState.current.isDown = false;
       justReorderedRef.current = true;
+      carouselRef.current?.setAttribute("data-carousel-click-blocked", "true");
       reorderSamplesRef.current = [{ x: start.x, t: performance.now() }];
       reorderLiftRef.current = 0;
 
@@ -747,6 +748,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
 
           setTimeout(() => {
             justReorderedRef.current = false;
+            carouselRef.current?.removeAttribute("data-carousel-click-blocked");
           }, 200);
         });
       };

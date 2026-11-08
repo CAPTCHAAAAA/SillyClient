@@ -1,170 +1,156 @@
 export type GuidePlatform = "web" | "windows" | "android" | "ios";
 
-export const guideImages = {
-  home: { file: "home", width: 1280, height: 900, alt: "启动器首页，顶部控制岛、实例搜索、卡片与底部分页" },
-  toolbar: { file: "toolbar", width: 672, height: 48, alt: "顶部控制岛，左侧终端、中间时间与背景设置、右侧应用设置" },
-  card: { file: "card", width: 240, height: 321, alt: "展开的普通实例卡片，显示版本、名称、使用信息、启动与更多按钮" },
-  menu: { file: "card-menu", width: 176, height: 176, alt: "实例更多菜单：管理、更换插图、删除实例" },
-  running: { file: "running", width: 240, height: 321, alt: "运行态卡片，上方名称与版本，中间终端，下方返回酒馆、关闭与更多" },
-  manage: { file: "manage-launch", width: 630, height: 612, alt: "实例管理的启动参数页，左侧实例列表，右侧端口、网络、保活与密码设置" },
-  storage: { file: "manage-storage", width: 630, height: 494, alt: "存储路径页：实例位置、占用空间、ZIP 导入导出、插图与维护扫描" },
-  instanceTerminal: { file: "manage-terminal", width: 630, height: 458, alt: "实例管理中的实例终端分类与日志区" },
-  terminal: { file: "terminal", width: 641, height: 340, alt: "独立终端窗口，顶部字号滑杆、清空与关闭，下方日志区" },
-  background: { file: "background-basic", width: 288, height: 193, alt: "背景设置的基础模式与动态壁纸开关" },
-  general: { file: "settings-general", width: 460, height: 594, alt: "应用通用设置，含下拉刷新、移动端取色与光效、重新演示引导和创建卡片置顶" },
-  maintenance: { file: "settings-maintenance", width: 460, height: 520, alt: "应用维护设置：检查新版本、临时文件检查、重置和项目发布页" },
-} as const;
+export type GuideInteraction = "click" | "drag";
 
-export interface GuideLesson {
+export interface GuideStep {
   id: string;
   title: string;
   summary: string;
-  image: keyof typeof guideImages;
+  target: string;
+  interaction?: GuideInteraction;
   platforms?: readonly GuidePlatform[];
 }
 
-export interface GuideChapter {
-  id: string;
-  title: string;
-  lessons: readonly GuideLesson[];
-}
-
-export const guideChapters: readonly GuideChapter[] = [
+export const guideSteps: readonly GuideStep[] = [
   {
-    id: "basics",
-    title: "先记住这几处",
-    lessons: [
-      {
-        id: "top-entries",
-        title: "顶部三个入口",
-        summary: "左侧打开终端，中间调整背景，右侧进入应用设置。",
-        image: "toolbar",
-      },
-      {
-        id: "card-expand",
-        title: "卡片展开",
-        summary: "点卡片查看操作，再点一次收起。",
-        image: "card",
-      },
-      {
-        id: "page-switch",
-        title: "滑动与翻页",
-        summary: "左右滑动或点分页切换；桌面也可用方向键。",
-        image: "home",
-      },
-    ],
+    id: "terminal-open",
+    title: "打开终端",
+    summary: "点左上角，查看全局日志与命令。",
+    target: '[data-onboarding-target="terminal"]',
   },
   {
-    id: "subtle",
-    title: "容易忽略的操作",
-    lessons: [
-      {
-        id: "card-menu",
-        title: "三点菜单",
-        summary: "管理、插图和删除等操作都藏在卡片的三点菜单里。",
-        image: "menu",
-      },
-      {
-        id: "reorder-cards",
-        title: "拖动排序",
-        summary: "长按未运行卡片，抬起后拖动排序。",
-        image: "home",
-      },
-      {
-        id: "create-card-pinning",
-        title: "创建卡片置顶",
-        summary: "设置 → 通用；关闭后新建卡片也能参与排序。",
-        image: "general",
-      },
-      {
-        id: "running-card",
-        title: "运行态展开",
-        summary: "运行卡默认只显示状态与终端，点卡片后展开底部操作。",
-        image: "running",
-      },
-      {
-        id: "terminal-window",
-        title: "终端可以移动",
-        summary: "拖标题栏移动，拖右下角调整大小；关闭终端不会停止实例。",
-        image: "terminal",
-      },
-    ],
+    id: "terminal-drag",
+    title: "移动终端",
+    summary: "按住左侧标题区域，拖动窗口。",
+    target: '[data-onboarding-target="terminal-drag"]',
+    interaction: "drag",
   },
   {
-    id: "manage",
-    title: "实例管理",
-    lessons: [
-      {
-        id: "manage-navigation",
-        title: "管理页切换",
-        summary: "三点 → 管理；左侧换实例，上方换分类，右下角可缩放。",
-        image: "manage",
-      },
-      {
-        id: "instance-terminal",
-        title: "实例终端",
-        summary: "管理 → 实例终端查看当前实例日志；运行卡同步显示运行日志。",
-        image: "instanceTerminal",
-      },
-      {
-        id: "storage-transfer",
-        title: "导入与导出",
-        summary: "迁移不在创建页完成：先建新实例，再到管理 → 存储路径导入或导出 ZIP。",
-        image: "storage",
-      },
-    ],
+    id: "terminal-resize",
+    title: "调整大小",
+    summary: "拖右下角弧线调整终端尺寸。",
+    target: '[aria-label="拖动缩放终端"]',
+    interaction: "drag",
   },
   {
-    id: "settings",
-    title: "设置里的细节",
-    lessons: [
-      {
-        id: "settings-pages",
-        title: "设置分两页",
-        summary: "通用与维护分开；列表较长时继续下滑，隐藏开关都在这里。",
-        image: "general",
-      },
-      {
-        id: "mobile-color",
-        title: "顶栏取色与光效",
-        summary: "移动端设置里可分别开关顶栏取色、取色频率与点击光效。",
-        image: "general",
-        platforms: ["android", "ios"],
-      },
-      {
-        id: "maintenance",
-        title: "维护入口",
-        summary: "维护里检查更新和临时文件；通用里可重新打开本引导。",
-        image: "maintenance",
-      },
-    ],
+    id: "terminal-close",
+    title: "收起终端",
+    summary: "关闭窗口，不会停止实例。",
+    target: '[data-onboarding-target="terminal-close"]',
   },
   {
-    id: "appearance",
-    title: "背景入口",
-    lessons: [
-      {
-        id: "background-settings",
-        title: "切换背景",
-        summary: "点击顶部中间入口，切换基础流光或自定义背景与明暗模式。",
-        image: "background",
-      },
-    ],
+    id: "background-open",
+    title: "打开背景",
+    summary: "点中间时间入口，切换背景与明暗。",
+    target: '[data-onboarding-target="background"]',
+  },
+  {
+    id: "background-close",
+    title: "收起背景",
+    summary: "看完设置，从右上角收起面板。",
+    target: '[data-onboarding-target="background-close"]',
+  },
+  {
+    id: "card-reorder",
+    title: "长按排序",
+    summary: "长按卡片后拖动，松手完成排序。",
+    target: '[data-instance-id="onboarding-stopped"]',
+    interaction: "drag",
+  },
+  {
+    id: "card-expand",
+    title: "展开实例卡片",
+    summary: "点卡片查看详情与启动入口。",
+    target: '[data-instance-id="onboarding-stopped"]',
+  },
+  {
+    id: "card-menu",
+    title: "打开卡片菜单",
+    summary: "点三点菜单，找到「管理」。",
+    target: '[data-instance-id="onboarding-stopped"] .flip-card__face--front .instance-card-drawer.is-open button[aria-label="操作菜单"]',
+  },
+  {
+    id: "card-manage",
+    title: "进入实例管理",
+    summary: "导入已有数据，要先新建实例，再打开它的管理菜单。",
+    target: '[data-onboarding-target="card-manage"]',
+  },
+  {
+    id: "manage-storage",
+    title: "导入已有实例",
+    summary: "打开「存储路径」，找到「导入数据（ZIP）」。",
+    target: '[data-onboarding-target="manage-storage"]',
+  },
+  {
+    id: "manage-import-select",
+    title: "选择旧实例备份",
+    summary: "选择旧实例的 ZIP 备份，这里使用练习文件。",
+    target: '[data-onboarding-target="manage-import-select"]',
+  },
+  {
+    id: "manage-import-confirm",
+    title: "导入数据",
+    summary: "检查后点「导入」，覆盖新实例的用户数据。",
+    target: '[data-onboarding-target="manage-import-confirm"]',
+  },
+  {
+    id: "manage-close",
+    title: "回到卡片",
+    summary: "关闭管理面板，回到首页。",
+    target: '[data-onboarding-target="manage-close"]',
+  },
+  {
+    id: "launch-card",
+    title: "启动实例",
+    summary: "从卡片详情点击启动，进入进度卡片。",
+    target: '[data-instance-id="onboarding-stopped"] .instance-card-drawer.is-open button:first-child',
+  },
+  {
+    id: "launch-progress",
+    title: "启动进度",
+    summary: "日志和进度都在这里。隐藏窗口不会中断启动。",
+    target: '[data-launch-console="launch"] .launch-console-card__button-group button',
+  },
+  {
+    id: "running-card",
+    title: "展开运行态",
+    summary: "运行时卡片保持轻量，点开才显示操作。",
+    target: '[data-instance-id="onboarding-stopped"][data-card-running="true"]',
+  },
+  {
+    id: "running-return",
+    title: "返回酒馆",
+    summary: "回到正在运行的酒馆，不用重新启动。",
+    target: '[data-instance-id="onboarding-stopped"] .running-console-card__actions .console-card__action--primary',
+  },
+  {
+    id: "running-stop",
+    title: "停止实例",
+    summary: "关闭会停止这个实例，与隐藏窗口不同。",
+    target: '[data-instance-id="onboarding-stopped"] .running-console-card__actions .console-card__destructive',
+  },
+  {
+    id: "create-open",
+    title: "创建实例",
+    summary: "点创建卡片，新建一个独立的酒馆。",
+    target: '[data-create-card]',
+  },
+  {
+    id: "create-submit",
+    title: "开始创建",
+    summary: "练习目录已备好，点创建看看后续流程。",
+    target: '[data-onboarding-target="create-submit"]',
+  },
+  {
+    id: "create-progress",
+    title: "创建进度",
+    summary: "这里显示安装日志与进度。点取消，结束本次练习。",
+    target: '[data-launch-console="create"] button[aria-label="取消创建"]',
   },
 ];
 
-export function getGuideChapters(platform: GuidePlatform): GuideChapter[] {
-  return guideChapters
-    .map((chapter) => ({
-      ...chapter,
-      lessons: chapter.lessons.filter((lesson) =>
-        platform === "web" || !lesson.platforms || lesson.platforms.includes(platform),
-      ),
-    }))
-    .filter((chapter) => chapter.lessons.length > 0);
-}
-
-export function getGuideImage(image: keyof typeof guideImages) {
-  const details = guideImages[image];
-  return { ...details, src: `./onboarding/v4/${details.file}.webp` };
+export function getGuideSteps(platform: GuidePlatform) {
+  return guideSteps.filter((step) =>
+    !step.platforms || step.platforms.includes(platform),
+  );
 }

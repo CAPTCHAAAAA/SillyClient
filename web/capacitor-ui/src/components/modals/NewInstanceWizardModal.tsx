@@ -739,6 +739,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           <button
             type="button"
             onClick={createInstance}
+            data-onboarding-target="create-submit"
             disabled={isCreatingInstance}
             className={cn(
               "flat-capsule motion-control flex h-8 items-center gap-1.5 rounded-full border-0 px-5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50",

@@ -7,7 +7,10 @@ import type { TavernInstance } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { GLOBAL_LOG_KEY, instanceLogs } from "../../lib/log-store";
 import { TerminalWell } from "../common/TerminalWell";
-import { CornerResizeCurve } from "./CornerResizeCurve";
+import { CornerResizeCurve, CORNER_RESIZE_SAFE_INSET } from "./CornerResizeCurve";
+
+const VIEWPORT_PADDING = 8;
+const VIEWPORT_SPACING = VIEWPORT_PADDING + CORNER_RESIZE_SAFE_INSET;
 
 export interface TerminalModalProps {
   isOpen: boolean;
@@ -61,8 +64,8 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   }, []);
 
   const clampBox = (next: { w: number; h: number }) => ({
-    w: Math.round(Math.min(window.innerWidth - 16, Math.max(320, next.w))),
-    h: Math.round(Math.min(window.innerHeight - 16, Math.max(200, next.h))),
+    w: Math.round(Math.min(window.innerWidth - VIEWPORT_SPACING, Math.max(320, next.w))),
+    h: Math.round(Math.min(window.innerHeight - VIEWPORT_SPACING, Math.max(200, next.h))),
   });
 
   const onResizePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -73,8 +76,9 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
 
     const startX = event.clientX;
     const startY = event.clientY;
-    const startW = terminalBox.w;
-    const startH = terminalBox.h;
+    const rect = modalRef.current?.getBoundingClientRect();
+    const startW = rect?.width ?? terminalBox.w;
+    const startH = rect?.height ?? terminalBox.h;
 
     setIsResizing(true);
 
@@ -117,11 +121,11 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       const deltaX = ev.clientX - startX;
       const deltaY = ev.clientY - startY;
 
-      const maxLeft = Math.max(8, window.innerWidth - terminalBox.w - 8);
-      const maxTop = Math.max(8, window.innerHeight - terminalBox.h - 8);
+      const maxLeft = Math.max(VIEWPORT_PADDING, window.innerWidth - rect.width - CORNER_RESIZE_SAFE_INSET);
+      const maxTop = Math.max(VIEWPORT_PADDING, window.innerHeight - rect.height - CORNER_RESIZE_SAFE_INSET);
 
-      const nextX = Math.max(8, Math.min(maxLeft, initialLeft + deltaX));
-      const nextY = Math.max(8, Math.min(maxTop, initialTop + deltaY));
+      const nextX = Math.max(VIEWPORT_PADDING, Math.min(maxLeft, initialLeft + deltaX));
+      const nextY = Math.max(VIEWPORT_PADDING, Math.min(maxTop, initialTop + deltaY));
 
       setDragPos({ x: nextX, y: nextY });
     };
@@ -156,14 +160,14 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       )}
       style={{
         zIndex: LAYERS.MODAL,
-        top: `clamp(8px, ${dragPos ? `${dragPos.y}px` : `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`}, calc(100vh - min(${terminalBox.h}px, 100vh - 2rem) - 8px))`,
-        left: `clamp(8px, ${dragPos?.x ?? terminalPos.left}px, calc(100vw - min(${terminalBox.w}px, 100vw - 16px) - 8px))`,
+        top: `clamp(${VIEWPORT_PADDING}px, ${dragPos ? `${dragPos.y}px` : `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`}, calc(100vh - min(${terminalBox.h}px, 100vh - ${VIEWPORT_SPACING}px) - ${CORNER_RESIZE_SAFE_INSET}px))`,
+        left: `clamp(${VIEWPORT_PADDING}px, ${dragPos?.x ?? terminalPos.left}px, calc(100vw - min(${terminalBox.w}px, 100vw - ${VIEWPORT_SPACING}px) - ${CORNER_RESIZE_SAFE_INSET}px))`,
         width: terminalBox.w,
         height: terminalBox.h,
-        minWidth: "min(320px, calc(100vw - 16px))",
+        minWidth: `min(320px, calc(100vw - ${VIEWPORT_SPACING}px))`,
         minHeight: 200,
-        maxWidth: "calc(100vw - 16px)",
-        maxHeight: "calc(100vh - 2rem)",
+        maxWidth: `calc(100vw - ${VIEWPORT_SPACING}px)`,
+        maxHeight: `calc(100vh - ${VIEWPORT_SPACING}px)`,
       }}
     >
       {/* 毛玻璃卡片本体，裁剪只作用在这里，不牵连外面的手柄 */}
@@ -179,7 +183,10 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
           isDragging ? "cursor-grabbing" : "cursor-grab"
         )}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 pointer-events-none">
+        <div
+          data-onboarding-target="terminal-drag"
+          className="flex min-w-0 flex-1 self-stretch items-center gap-2 rounded-lg"
+        >
           <Terminal
             className={cn(
               "w-3.5 h-3.5 flex-shrink-0",
@@ -252,6 +259,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
           <button
             onClick={onClose}
             aria-label="关闭终端"
+            data-onboarding-target="terminal-close"
             className={cn(
               "terminal-tool flex h-7 w-7 items-center justify-center rounded-full transition-colors",
               isLight

@@ -14,7 +14,6 @@
   --manage-action-fill: rgba(255, 255, 255, 0.055);
   --manage-action-hover: rgba(255, 255, 255, 0.085);
   --manage-action-pressed: rgba(0, 0, 0, 0.1);
-  --manage-card-height: clamp(96px, 14dvh, 120px);
 }
 
 .manage-panel-surface.is-light {
@@ -32,6 +31,31 @@
 .manage-content {
   flex: 0 0 auto;
   min-width: 0;
+}
+
+.manage-panel-surface.is-portrait {
+  --manage-card-height: clamp(68px, calc(var(--manage-viewport-height) * 0.11), 84px);
+  --manage-value-size: 13px;
+  --manage-action-size: 12px;
+  --manage-action-height: 32px;
+}
+
+.manage-panel-surface.is-portrait .manage-number-field {
+  width: 88px;
+}
+
+.manage-panel-surface.is-portrait.is-keyboard-open:has(section input:focus, section textarea:focus) aside {
+  display: none;
+}
+
+.manage-item.is-stacked {
+  --manage-value-size: 13px;
+}
+
+.manage-item.is-stacked .setting-value {
+  text-align: start;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
 }
 
 @media (prefers-reduced-motion: reduce) {

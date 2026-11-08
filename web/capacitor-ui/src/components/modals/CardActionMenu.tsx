@@ -106,6 +106,7 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
           </>
         )}
         <button
+          data-onboarding-target="card-manage"
           onClick={(e) => {
             e.stopPropagation();
             onClose();

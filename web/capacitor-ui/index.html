@@ -4,6 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <title>SillyClient 酒馆启动器</title>
+    <script>
+      if (window.parent !== window && new URLSearchParams(window.location.search).get("onboardingSandbox") === "1") {
+        var policy = document.createElement("meta");
+        policy.httpEquiv = "Content-Security-Policy";
+        policy.content = "connect-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'";
+        document.head.appendChild(policy);
+        ["localStorage", "sessionStorage"].forEach(function(name) {
+          var values = new Map();
+          Object.defineProperty(window, name, {
+            configurable: true,
+            value: {
+              get length() { return values.size; },
+              clear: function() { values.clear(); },
+              getItem: function(key) { return values.get(String(key)) ?? null; },
+              key: function(index) { return Array.from(values.keys())[index] ?? null; },
+              removeItem: function(key) { values.delete(String(key)); },
+              setItem: function(key, value) { values.set(String(key), String(value)); }
+            }
+          });
+        });
+      }
+    </script>
     <style>
       /* Dynamic Display 字体 */
       @font-face {
