@@ -24,19 +24,6 @@ export function normalizeStoredVersion(ver?: string): string {
  * - 占位符或未知返回 "—"。
  */
 export function formatDisplayVersion(ver?: string): string {
-  if (ver === undefined || ver === null) return "v1.12.4";
-  const trimmed = ver.trim();
-  if (!trimmed || trimmed === "unknown" || trimmed === "—") return "—";
-
-  // 先清洗掉可能误累加的前导 v/V
-  const clean = trimmed.replace(/^v+/i, "").trim();
-  if (!clean) return "—";
-
-  // 若以数字开头（如 1.19.0, 1.12.4, 2.0.1 等），统一加上单一标准的 'v' 前缀
-  if (/^\d/.test(clean)) {
-    return `v${clean}`;
-  }
-
-  // 非纯数字版本（如 stable, local, dev 等），原样输出，绝不变成 vstable 或 vlocal
-  return clean;
+  const clean = normalizeStoredVersion(ver);
+  return /^\d/.test(clean) ? `v${clean}` : clean;
 }

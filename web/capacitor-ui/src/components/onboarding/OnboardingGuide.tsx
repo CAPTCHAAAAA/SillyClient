@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { getGuideSteps, type GuidePlatform, type GuideStep } from "./guide-content";
-import { completeOnboardingOperation } from "./onboarding-runtime";
+import { completeOnboardingOperation, notifyOnboardingStarted } from "./onboarding-runtime";
 import { useOnboardingTarget, type TargetGeometry } from "./useOnboardingTarget";
 import "./OnboardingGuide.css";
 
@@ -67,6 +67,7 @@ export default function OnboardingGuide({
   const closeTimerRef = useRef<number | null>(null);
   const pendingAdvanceRef = useRef(false);
   const closingRef = useRef(false);
+  const startedRef = useRef(false);
   const prepareStepRef = useRef(onStepChange);
   prepareStepRef.current = onStepChange;
 
@@ -82,6 +83,12 @@ export default function OnboardingGuide({
     tracking,
     ready,
   } = useOnboardingTarget(targetStep.target, targetStep.id);
+
+  useEffect(() => {
+    if (!inputReady || startedRef.current) return;
+    startedRef.current = true;
+    notifyOnboardingStarted();
+  }, [inputReady]);
 
   useLayoutEffect(() => {
     if (!presentation) return;

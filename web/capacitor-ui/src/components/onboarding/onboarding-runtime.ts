@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import type { TarvenEnvPlugin, TarvenEvent } from "../../capacitor-plugin";
 import { normalizeRenderEngineSettings } from "../../lib/render-settings";
-import { ONBOARDING_CHANNEL, type OnboardingSeed } from "../../lib/onboarding-mode";
+import { ONBOARDING_CHANNEL, onboardingSessionId, postOnboardingMessage, type OnboardingSeed } from "../../lib/onboarding-mode";
 
 type EventName = Parameters<TarvenEnvPlugin["addListener"]>[0];
 type ProvisionOptions = Parameters<TarvenEnvPlugin["provisionAndStart"]>[0];
@@ -11,6 +11,12 @@ const instances = new Map<string, { path: string; version: string; running: bool
 let seed: OnboardingSeed;
 let renderSettings = normalizeRenderEngineSettings(null);
 let activeOperation: { options: ProvisionOptions; resolve: (value: { ready: boolean }) => void } | null = null;
+let started = false;
+
+export function notifyOnboardingStarted() {
+  started = true;
+  postOnboardingMessage("started");
+}
 
 function emit(name: EventName, event: TarvenEvent) {
   listeners.get(name)?.forEach((listener) => listener(event));
@@ -132,16 +138,28 @@ export const onboardingEnvironment = new Proxy({} as TarvenEnvPlugin, {
 
 export async function installOnboardingSandbox() {
   seed = await new Promise<OnboardingSeed>((resolve) => {
+    let initialized = false;
     const initialize = (event: MessageEvent) => {
       if (event.source !== window.parent || event.origin !== window.location.origin) return;
       if (event.data?.channel !== ONBOARDING_CHANNEL || event.data.type !== "initialize") return;
-      window.removeEventListener("message", initialize);
-      resolve(event.data.seed);
+      const next = event.data.seed as OnboardingSeed | undefined;
+      if (!next || next.sessionId !== onboardingSessionId
+        || !["web", "windows", "android", "ios"].includes(next.platform)
+        || !["dynamic", "custom"].includes(next.bgMode)
+        || !["light", "dark"].includes(next.themeStyle)
+        || !Number.isFinite(next.safeInsetTop)) return;
+      if (!initialized) {
+        initialized = true;
+        resolve(next);
+      } else if (started) {
+        postOnboardingMessage("started");
+      }
     };
     window.addEventListener("message", initialize);
-    window.parent.postMessage({
-      channel: ONBOARDING_CHANNEL, type: "ready",
-    }, window.location.origin === "null" ? "*" : window.location.origin);
+    window.addEventListener("pagehide", () => {
+      window.removeEventListener("message", initialize);
+    }, { once: true });
+    postOnboardingMessage("ready");
   });
 
   const root = seed.platform === "windows" ? "C:\\Tutorial\\Instances" : "/tutorial/instances";
@@ -168,7 +186,5 @@ export async function installOnboardingSandbox() {
 }
 
 export function finishOnboardingSandbox() {
-  window.parent.postMessage({
-    channel: ONBOARDING_CHANNEL, type: "finish", sessionId: seed.sessionId,
-  }, window.location.origin === "null" ? "*" : window.location.origin);
+  postOnboardingMessage("finish");
 }

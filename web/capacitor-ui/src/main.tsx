@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
 import "./styles.css";
-import { isOnboardingSandbox } from "./lib/onboarding-mode";
+import { isOnboardingSandbox, postOnboardingMessage } from "./lib/onboarding-mode";
 
 async function mountApplication() {
   if (isOnboardingSandbox) {
@@ -24,4 +24,10 @@ async function mountApplication() {
   );
 }
 
-void mountApplication();
+void mountApplication().catch((error: unknown) => {
+  if (isOnboardingSandbox) {
+    postOnboardingMessage("error");
+    return;
+  }
+  throw error;
+});

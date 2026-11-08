@@ -24,6 +24,7 @@ import { APP_VERSION } from "@/constants/app-version";
 import { fetchAppUpdate } from "@/lib/app-update";
 import { isOnboardingSandbox } from "@/lib/onboarding-mode";
 import type { GuideStep } from "@/components/onboarding/guide-content";
+import OnboardingSession from "@/components/onboarding/OnboardingSession";
 import { RelocateInstanceModal } from "@/components/modals/RelocateInstanceModal";
 import { LAYERS } from "@/constants/layers";
 import { useLayerStack } from "@/hooks/useLayerStack";
@@ -46,7 +47,6 @@ import { UnlockInstanceModal } from "@/components/modals/UnlockInstanceModal";
 import type { TavernInstance, OperationPurpose } from "@/types";
 
 const OnboardingGuide = lazy(() => import("@/components/onboarding/OnboardingGuide"));
-const OnboardingSession = lazy(() => import("@/components/onboarding/OnboardingSession"));
 
 export const Route = createFileRoute("/")({
   component: SillyClientLauncher,
@@ -2270,6 +2270,8 @@ function SillyClientLauncher() {
     setShowOnboarding(false);
   }, []);
 
+  const cancelOnboarding = useCallback(() => setShowOnboarding(false), []);
+
   const prepareOnboardingStep = useCallback((step: GuideStep) => {
     if (!isOnboardingSandbox) return;
     if (step.id === "create-submit") {
@@ -3107,6 +3109,7 @@ function SillyClientLauncher() {
               themeStyle={themeStyle}
               safeInsetTop={safeInsetTop}
               onComplete={dismissOnboarding}
+              onCancel={cancelOnboarding}
             />
           )}
         </Suspense>

@@ -35,12 +35,6 @@ const MANAGE_FACE_EXIT_MS = 860;
 const manageEm = (px: number) => `${px / MANAGE_FONT_PX}em`;
 /** 字号用。保持缩小菜单之前的像素大小。 */
 const manageFont = (px: number) => `${px * MANAGE_TYPE_SCALE}px`;
-/**
- * 毛玻璃选择组件的内凹轨道。几何按 44px 母版 × 49/44。
- * 文件里的暗边只有黑 10% + overlay 8%，亮边是白 25% 的 1px 内阴影。
- * 导出的示意图几乎是平的，不能再把这些 alpha 加成深槽。
- * 模糊取 GLASS radius 11.58 × 49/44。没有外投影，也不压 brightness。
- */
 function copyManageFaceValues(source: HTMLElement, clone: HTMLElement) {
   const from = source.querySelectorAll("input, textarea");
   const to = clone.querySelectorAll("input, textarea");
@@ -126,16 +120,10 @@ function ManageTabTrack({
 const MANAGE_PANE_RADIUS = 30;
 const MANAGE_NEST_INSET = 14;
 
-const MANAGE_VIEW_GUTTER = 32;
 const PORTRAIT_CTRL = 44;
 const PORTRAIT_CARD_W = 148;
 const PORTRAIT_CARD_ACTIVE_W = 168;
 const PORTRAIT_CARD_GAP = 12;
-
-export const manageMenuMinWindowCss = () => ({
-  width: 580 + MANAGE_VIEW_GUTTER * 2,
-  height: 300 + MANAGE_VIEW_GUTTER * 2,
-});
 
 export interface ManageInstanceModalProps {
   instance: TavernInstance | null;

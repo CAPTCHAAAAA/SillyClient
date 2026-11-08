@@ -23,8 +23,6 @@ export interface RunningConsoleCardProps {
   isWindows?: boolean;
 }
 
-export { formatDisplayVersion };
-
 /**
  * 运行态控制台卡片组件 (RunningConsoleCard)
  * 高内聚：完全对齐 LaunchConsoleModal 纯正实色轻拟物风格，负责终端日志展示、命令交互投递与就地状态操作
