@@ -2,15 +2,16 @@
 
 这里只保留已经发布版本的用户可见变化。完整说明以各版本 Release 正文为准。写法与 v1.13.0 相同：先写各端一句摘要，再按端列变更。
 
-## 1.14.1 - 2026-11-07
+## 1.14.1 - 2026-11-10
 
-> 通用前端：上线卡片内联重命名与抽屉式控制台，首屏图文引导升级 v4 架构。Android：同步最新前端产物，加固 SAF 存储与变色龙渲染（versionCode 76）。Windows：守护强类型 IPC 契约与纯净领域服务门面，支持存储页签 ZIP 导入导出。iOS：升版至 1.14.1（Build 39），守卫原生沙盒与独立终端提示符。
+> 通用前端：上线 22 步隔离实战引导与视口级 SVG Mask 硬件遮罩（彻底根治高刷屏撕裂频闪），卡片内联重命名与抽屉控制台，内置 SC Bordeaux 主题预设终态（Rev 3）。Android：WebView 硬件管线优化，新增可逆「酒馆性能优化」拨杆，实例时长统计接管，加固 SAF 存储与变色龙引擎（versionCode 76）。Windows：终态解耦后端与强类型 IPC 契约守护，Storage 页签 ZIP 导入导出。iOS：升版至 1.14.1（Build 39），守卫 NodeMobile 原生沙盒与独立终端提示符。
 
+- 通用前端：彻底下线旧版迁移向导，落地 22 步隔离实战新手引导（`OnboardingSession`）；采用视口级 SVG Mask 矢量挖孔硬件遮罩取代大阴影，彻底消除 120Hz/144Hz 高刷屏画面撕裂与频闪，帧光栅化耗时降低 99.6%；沙箱加载平滑交错淡入淡出，弹层开启全局背景交互锁。
 - 通用前端：卡片标题就地双向内联重命名（`InstanceRenameField`），卡片展开抽屉（`InstanceCardDrawer`），下线独立弹窗 `RenameModal`。
-- 首屏图文新手教程重构为 v4 体系（21 张新 webp 资产，动态平台分流，Suspense 懒加载代码分割）。
-- 补齐多端原生契约辅助库与类型（`native-errors.ts` / `tavern-release.ts` / `instanceParentPath`）。
-- Android（versionCode 76）与 Windows（1.14.1）生产构建通过并完成安装包归档校验。
-- iOS 原生工程与 CI 流水线对齐 1.14.1（Build 39），自动化测试套件全绿。
+- 主题预设：内置 `SC Bordeaux`（波尔多红酒）升级终态 Revision 3，高斯模糊调谐至 14，更纯正深邃的深红宝石液态玻璃质感。
+- Android：WebView 硬件管线优化，新增「酒馆性能优化」专属设置拨杆；`InstanceUsageStore` 接管实例运行时间统计与持久化；恪守 SAF 存储契约与目录自选铁律（versionCode 76）。
+- Windows：坚守强类型 IPC 契约与纯净门面，Storage 页签支持原生 ZIP 导入预检与导出，安装包体积优化（118.8 MB）。
+- iOS：原生工程与 CI 流水线对齐 1.14.1（Build 39），守卫 UIDocumentPicker 文件夹选择指引与沙盒隔离，独立终端提示符（`ios >`）。
 
 ## 1.14.0 - 2026-11-04
 
