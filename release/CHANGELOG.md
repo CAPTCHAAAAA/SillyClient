@@ -2,6 +2,16 @@
 
 这里只保留已经发布版本的用户可见变化。完整说明以各版本 Release 正文为准。写法与 v1.13.0 相同：先写各端一句摘要，再按端列变更。
 
+## 1.14.3 - 2026-11-14
+
+> iOS：紧急修复文件夹与文件选择全链路（选择器下滑关闭卡死、外置目录 Bookmark 易失/陈旧拒用、非安装类选择缺少文件协调与前端错误吞咽），Build 48。Windows / Android：本版按紧急补丁跳过，继续使用 v1.14.1（后续统一整合）。
+
+- iOS：`UIDocumentPickerViewController` 补齐 `UIAdaptivePresentationControllerDelegate` 下滑/外部点击关闭清理与退场过渡重试，返回 `PICKER_CANCELLED` 错误码，解决取消后后续所有选择锁死问题。
+- iOS：外置目录 bookmark 改用 `options: []` 与 `.withoutChanges` 协调读取，并在 `select` 协调作用域内生成书签；`stale == true` 且目录身份一致时自动刷新持久化书签，能力探针纳入 `NSFileCoordinator` 写协调；源目录/ZIP/封面/文本选择均补齐文件协调，源目录作用域队列支持 FIFO 淘汰（保留 8 个），`getAppSettings` 自动清理失效预设根。
+- iOS：前端迁移弹窗改用 `shouldShowDirectoryPickerError` 停止吞咽包含 `cancel` 的系统报错；首页目录与封面选择接入中文诊断翻译（覆盖 iCloud 未下载、`ENOTSUP`、bookmark 丢失等）。
+- iOS：原生工程与前端升版至 `1.14.3`（Build `48`），GitHub Actions Run `43494192516` 全绿交付未签名 IPA。
+- Windows / Android：本版跳过，继续使用 v1.14.1。
+
 ## 1.14.2 - 2026-11-11
 
 > iOS：紧急修复新建实例安装目录选择与路径回填链路，确保 iOS 权限与目录持久化 100% 畅通（Build 40）。Windows / Android：本版无更新，继续使用 v1.14.1。
