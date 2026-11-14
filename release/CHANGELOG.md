@@ -2,6 +2,15 @@
 
 这里只保留已经发布版本的用户可见变化。完整说明以各版本 Release 正文为准。写法与 v1.13.0 相同：先写各端一句摘要，再按端列变更。
 
+## 1.14.4 - 2026-11-14
+
+> iOS：紧急修复留空/中文/含空格实例名创建校验失败与外置文件选择器同步安全作用域获取问题（Build 49）。Windows / Android：本版按紧急补丁跳过，继续使用 v1.14.1（后续统一整合）。
+
+- iOS：恢复 `normalizeInstanceIdentity` 安全目录 ID 生成与 `-${counter++}` 后缀，解决未填名称（「新实例」）、中文或含空格实例名触发 `An explicit valid instance identity is required` 失败的问题，同时保留用户设定的展示名称。
+- iOS：`UIDocumentPickerViewController` 选择回调改为在返回 UIKit 前同步锁定安全作用域（`preScoped`）后再入后台队列执行文件协调与 bookmark 保存；修正 `modalPresentationStyle = .formSheet` 与 presentation delegate 设置顺序，并取消非安装目录类选择器的沙盒 `Documents` 起始路径限制。
+- iOS：补充实例目录标识错误中文提示并在创建、启动、迁移选择出口统一接入 `humanizeNativeError`，升版至 `1.14.4`（Build `49`），GitHub Actions Run `43585628585` 全绿交付未签名 IPA（仅含 CI 构建与模拟器无 UI 交互检验，未覆盖真实设备）。
+- Windows / Android：本版跳过，继续使用 v1.14.1。
+
 ## 1.14.3 - 2026-11-14
 
 > iOS：紧急修复文件夹与文件选择全链路（选择器下滑关闭卡死、外置目录 Bookmark 易失/陈旧拒用、非安装类选择缺少文件协调与前端错误吞咽），Build 48。Windows / Android：本版按紧急补丁跳过，继续使用 v1.14.1（后续统一整合）。
