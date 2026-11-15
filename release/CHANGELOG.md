@@ -2,6 +2,15 @@
 
 这里只保留已经发布版本的用户可见变化。完整说明以各版本 Release 正文为准。写法与 v1.13.0 相同：先写各端一句摘要，再按端列变更。
 
+## 1.14.5 - 2026-11-15
+
+> iOS：紧急修复系统文件选择器点击「打开」后静默丢弃结果及误粘贴界面显示名称导致英文报错的问题（Build 50）。Windows / Android：本版按紧急补丁跳过，继续使用 v1.14.1（后续统一整合）。
+
+- iOS：`TarvenEnvPlugin.swift` 移除覆盖 `UIDocumentPickerViewController` 内部代理的 `presentationController?.delegate = self` 与 `.formSheet` 强制设置，恢复 `.automatic` 默认呈现，并用主队列分离检测定时器在异常关闭时明确返回 `PICKER_DISMISSED_WITHOUT_RESULT` 提示，不再按取消静默吞掉；清理 `AppDelegate.swift` 与 `packageClassList` 重复插件注册。
+- iOS：新增 `validateInstallPathInput` 在创建实例与迁移确认前直接拦截「我的 iPhone ▸ ...」显示名称、相对路径与 URL 链接输入；`native-errors.ts` 补齐对应中文化错误提示。
+- iOS：升版至 `1.14.5`（Build `50`），GitHub Actions Run `43715908309`（attempt 2）全绿交付未签名 IPA（仅含 CI 构建与模拟器无 UI 交互检验，未覆盖真实设备）。
+- Windows / Android：本版跳过，继续使用 v1.14.1。
+
 ## 1.14.4 - 2026-11-14
 
 > iOS：紧急修复留空/中文/含空格实例名创建校验失败与外置文件选择器同步安全作用域获取问题（Build 49）。Windows / Android：本版按紧急补丁跳过，继续使用 v1.14.1（后续统一整合）。
