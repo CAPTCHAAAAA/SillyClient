@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Terminal, Eraser, X } from "lucide-react";
+import { Terminal, Eraser, Flag, X } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
+import { getAppliedUiScale, toUnscaledPx } from "../../lib/ui-scale";
 import { LAYERS } from "../../constants/layers";
+import { reportGlobalError } from "../../lib/global-error-store";
+import { humanizeNativeError } from "../../lib/native-errors";
 import type { TavernInstance } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import { GLOBAL_LOG_KEY, instanceLogs } from "../../lib/log-store";
@@ -49,6 +52,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   const [terminalInput, setTerminalInput] = useState("");
   const logKey = terminalInstance?.installDir || terminalInstance?.id || GLOBAL_LOG_KEY;
   const terminalLogs = useInstanceLogs(logKey, isOpen || isClosing);
+  const latestTerminalError = [...terminalLogs].reverse().find(log => log.level === "error") ?? null;
   // 拖动定位与状态
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -64,8 +68,8 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
   }, []);
 
   const clampBox = (next: { w: number; h: number }) => ({
-    w: Math.round(Math.min(window.innerWidth - VIEWPORT_SPACING, Math.max(320, next.w))),
-    h: Math.round(Math.min(window.innerHeight - VIEWPORT_SPACING, Math.max(200, next.h))),
+    w: Math.round(Math.min(toUnscaledPx(window.innerWidth) - VIEWPORT_SPACING, Math.max(320, next.w))),
+    h: Math.round(Math.min(toUnscaledPx(window.innerHeight) - VIEWPORT_SPACING, Math.max(200, next.h))),
   });
 
   const onResizePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -74,18 +78,19 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     event.stopPropagation();
     resizeCleanup.current?.();
 
+    const scale = getAppliedUiScale();
     const startX = event.clientX;
     const startY = event.clientY;
     const rect = modalRef.current?.getBoundingClientRect();
-    const startW = rect?.width ?? terminalBox.w;
-    const startH = rect?.height ?? terminalBox.h;
+    const startW = rect ? rect.width / scale : terminalBox.w;
+    const startH = rect ? rect.height / scale : terminalBox.h;
 
     setIsResizing(true);
 
     const onMove = (moveEvent: PointerEvent) => {
       setTerminalBox(clampBox({
-        w: startW + (moveEvent.clientX - startX),
-        h: startH + (moveEvent.clientY - startY),
+        w: startW + (moveEvent.clientX - startX) / scale,
+        h: startH + (moveEvent.clientY - startY) / scale,
       }));
     };
     const onUp = () => {
@@ -109,20 +114,21 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     const modalEl = modalRef.current;
     if (!modalEl) return;
 
+    const scale = getAppliedUiScale();
     const rect = modalEl.getBoundingClientRect();
     const startX = e.clientX;
     const startY = e.clientY;
-    const initialLeft = rect.left;
-    const initialTop = rect.top;
+    const initialLeft = rect.left / scale;
+    const initialTop = rect.top / scale;
 
     setIsDragging(true);
 
     const onPointerMove = (ev: PointerEvent) => {
-      const deltaX = ev.clientX - startX;
-      const deltaY = ev.clientY - startY;
+      const deltaX = (ev.clientX - startX) / scale;
+      const deltaY = (ev.clientY - startY) / scale;
 
-      const maxLeft = Math.max(VIEWPORT_PADDING, window.innerWidth - rect.width - CORNER_RESIZE_SAFE_INSET);
-      const maxTop = Math.max(VIEWPORT_PADDING, window.innerHeight - rect.height - CORNER_RESIZE_SAFE_INSET);
+      const maxLeft = Math.max(VIEWPORT_PADDING, (window.innerWidth - rect.width) / scale - CORNER_RESIZE_SAFE_INSET);
+      const maxTop = Math.max(VIEWPORT_PADDING, (window.innerHeight - rect.height) / scale - CORNER_RESIZE_SAFE_INSET);
 
       const nextX = Math.max(VIEWPORT_PADDING, Math.min(maxLeft, initialLeft + deltaX));
       const nextY = Math.max(VIEWPORT_PADDING, Math.min(maxTop, initialTop + deltaY));
@@ -160,14 +166,14 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       )}
       style={{
         zIndex: LAYERS.MODAL,
-        top: `clamp(${VIEWPORT_PADDING}px, ${dragPos ? `${dragPos.y}px` : `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`}, calc(100vh - min(${terminalBox.h}px, 100vh - ${VIEWPORT_SPACING}px) - ${CORNER_RESIZE_SAFE_INSET}px))`,
-        left: `clamp(${VIEWPORT_PADDING}px, ${dragPos?.x ?? terminalPos.left}px, calc(100vw - min(${terminalBox.w}px, 100vw - ${VIEWPORT_SPACING}px) - ${CORNER_RESIZE_SAFE_INSET}px))`,
+        top: `clamp(${VIEWPORT_PADDING}px, ${dragPos ? `${dragPos.y}px` : `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 5.5rem)`}, calc(var(--ui-vh, 100vh) - min(${terminalBox.h}px, var(--ui-vh, 100vh) - ${VIEWPORT_SPACING}px) - ${CORNER_RESIZE_SAFE_INSET}px))`,
+        left: `clamp(${VIEWPORT_PADDING}px, ${dragPos?.x ?? terminalPos.left}px, calc(var(--ui-vw, 100vw) - min(${terminalBox.w}px, var(--ui-vw, 100vw) - ${VIEWPORT_SPACING}px) - ${CORNER_RESIZE_SAFE_INSET}px))`,
         width: terminalBox.w,
         height: terminalBox.h,
-        minWidth: `min(320px, calc(100vw - ${VIEWPORT_SPACING}px))`,
+        minWidth: `min(320px, calc(var(--ui-vw, 100vw) - ${VIEWPORT_SPACING}px))`,
         minHeight: 200,
-        maxWidth: `calc(100vw - ${VIEWPORT_SPACING}px)`,
-        maxHeight: `calc(100vh - ${VIEWPORT_SPACING}px)`,
+        maxWidth: `calc(var(--ui-vw, 100vw) - ${VIEWPORT_SPACING}px)`,
+        maxHeight: `calc(var(--ui-vh, 100vh) - ${VIEWPORT_SPACING}px)`,
       }}
     >
       {/* 毛玻璃卡片本体，裁剪只作用在这里，不牵连外面的手柄 */}
@@ -243,6 +249,31 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
               A
             </span>
           </div>
+          {latestTerminalError && (
+            <button
+              type="button"
+              onClick={() => {
+                const friendly = humanizeNativeError(latestTerminalError.msg);
+                reportGlobalError(latestTerminalError.msg, {
+                  area: "terminal",
+                  stage: "terminal-log",
+                  userMessage: `终端运行报错：${friendly}`,
+                  extraSecrets: [terminalInstance?.subtitle, terminalInstance?.name, terminalInstance?.installPath],
+                  force: true,
+                });
+              }}
+              title="反馈终端异常"
+              aria-label="反馈终端异常"
+              className={cn(
+                "terminal-tool flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+                isLight
+                  ? "text-[#783047]/70 hover:text-[#783047]"
+                  : "text-[#e8a2b5]/75 hover:text-[#f2c4d1]"
+              )}
+            >
+              <Flag className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={() => instanceLogs.update(logKey, [])}
             title="清空终端"
@@ -311,9 +342,16 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
                     terminalInstance.installDir || terminalInstance.id;
                   instanceLogs.append(logKey, { msg: `${terminalDisplayPrompt} ${cmd}`, level: "info" });
                   TarvenEnv.sendCommand({ text: cmd, instanceId }).catch(error => {
+                    const friendly = humanizeNativeError(error);
                     instanceLogs.append(instanceId, {
-                      msg: `命令失败: ${error instanceof Error ? error.message : String(error)}`,
+                      msg: `命令失败: ${friendly}`,
                       level: "error",
+                    });
+                    reportGlobalError(error, {
+                      area: "terminal",
+                      stage: "send-command",
+                      userMessage: `终端命令失败：${friendly}`,
+                      extraSecrets: [terminalInstance?.subtitle, terminalInstance?.name, terminalInstance?.installPath],
                     });
                   });
                   setTerminalInput("");

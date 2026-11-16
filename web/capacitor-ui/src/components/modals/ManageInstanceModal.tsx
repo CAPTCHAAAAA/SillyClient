@@ -17,6 +17,14 @@ import { instanceLogs } from "../../lib/log-store";
 import { MENU_GLASS_FILTER, menuShellBackground } from "../../lib/menu-surface";
 import { TerminalWell } from "../common/TerminalWell";
 import { ToggleSwitch } from "../common/ToggleSwitch";
+import { ErrorReportAlert } from "../common/ErrorReportAlert";
+import { reportGlobalError } from "../../lib/global-error-store";
+import {
+  createDiagnosticContext,
+  humanizeNativeError,
+  isUserCancellationError,
+  type DiagnosticContext,
+} from "../../lib/native-errors";
 import { CornerResizeCurve } from "./CornerResizeCurve";
 import { MANAGE_VISUAL_SCALE, useManagePanelLayout } from "./useManagePanelLayout";
 import "./ManageInstanceModal.css";
@@ -105,7 +113,7 @@ function ManageTabTrack({
             className="ios-choice-control motion-control flex select-none items-center justify-center whitespace-nowrap border font-medium"
             style={{
               width: isPortrait ? undefined : manageEm(109),
-              fontSize: isPortrait ? 12 : manageFont(16),
+              fontSize: isPortrait ? undefined : manageFont(16),
             }}
           >
             {tab.label}
@@ -155,6 +163,8 @@ export interface ManageInstanceModalProps {
   setDraftRemoteAuthPassword: (v: string) => void;
   isSavingManagePanel: boolean;
   manageSaveError: string | null;
+  manageSaveDiagnostic?: DiagnosticContext | null;
+  isIOS?: boolean;
   onSaveManagedInstance: () => Promise<void>;
   // 终端日志
   terminalDisplayPrompt: string;
@@ -511,6 +521,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   setDraftRemoteAuthPassword,
   isSavingManagePanel,
   manageSaveError,
+  manageSaveDiagnostic,
+  isIOS = false,
   onSaveManagedInstance,
   terminalDisplayPrompt,
   terminalPlaceholder,
@@ -547,6 +559,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   } | null>(null);
   const [importIncludeOptional, setImportIncludeOptional] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [storageDiagnostic, setStorageDiagnostic] = useState<DiagnosticContext | null>(null);
   const [isInspectingImport, setIsInspectingImport] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   isPortraitRef.current = isPortrait;
@@ -669,6 +682,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const [passwordNew, setPasswordNew] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordDiagnostic, setPasswordDiagnostic] = useState<DiagnosticContext | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
@@ -679,6 +693,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     setPasswordNew("");
     setPasswordConfirm("");
     setPasswordError(null);
+    setPasswordDiagnostic(null);
     setPasswordSuccess(null);
   }, [instance?.id, instance?.hasPassword]);
 
@@ -710,6 +725,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     setImportArchive(null);
     setImportIncludeOptional(false);
     setImportStatus(null);
+    setStorageDiagnostic(null);
     setIsInspectingImport(false);
     setIsImporting(false);
   }, [instance?.id]);
@@ -773,6 +789,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const selectImportArchive = async () => {
     if (isInspectingImport || isImporting) return;
     setIsInspectingImport(true);
+    setStorageDiagnostic(null);
     setImportStatus("正在检查 ZIP…");
     try {
       const selected = await TarvenEnv.pickZipFile({ purpose: "dataImport" });
@@ -794,13 +811,28 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       );
     } catch (error) {
       setImportArchive(null);
-      setImportStatus(
-        isNativeCancelError(error)
-          ? null
-          : error instanceof Error
-            ? error.message
-            : "检查 ZIP 失败，请重试"
-      );
+      if (isNativeCancelError(error) || isUserCancellationError(error, isIOS)) {
+        setImportStatus(null);
+        setStorageDiagnostic(null);
+      } else {
+        const friendly = humanizeNativeError(error);
+        const context = createDiagnosticContext(error, {
+          area: "import",
+          platform: isIOS ? "ios" : undefined,
+          userMessage: friendly,
+          extraSecrets: [mp.subtitle, mp.name, mp.installPath],
+        });
+        setImportStatus(friendly);
+        setStorageDiagnostic(context);
+        reportGlobalError(error, {
+          area: "import",
+          stage: "pick-import-archive",
+          platform: isIOS ? "ios" : undefined,
+          userMessage: friendly,
+          diagnostic: context,
+          extraSecrets: [mp.subtitle, mp.name, mp.installPath],
+        });
+      }
     } finally {
       setIsInspectingImport(false);
     }
@@ -809,6 +841,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const importSelectedArchive = async () => {
     if (isImporting || !isLocalInstance || isInstanceRunning || !importArchive?.summary.importable) return;
     setIsImporting(true);
+    setStorageDiagnostic(null);
     setImportStatus("正在导入…");
     try {
       const result = await TarvenEnv.importInstanceData({
@@ -823,13 +856,28 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       );
       setLocalAboutInfo(null);
     } catch (error) {
-      setImportStatus(
-        isNativeCancelError(error)
-          ? null
-          : error instanceof Error
-            ? error.message
-            : "导入失败，请重试"
-      );
+      if (isNativeCancelError(error) || isUserCancellationError(error, isIOS)) {
+        setImportStatus(null);
+        setStorageDiagnostic(null);
+      } else {
+        const friendly = humanizeNativeError(error);
+        const context = createDiagnosticContext(error, {
+          area: "import",
+          platform: isIOS ? "ios" : undefined,
+          userMessage: friendly,
+          extraSecrets: [mp.subtitle, mp.name, mp.installPath, importArchive.archivePath],
+        });
+        setImportStatus(friendly);
+        setStorageDiagnostic(context);
+        reportGlobalError(error, {
+          area: "import",
+          stage: "import-archive",
+          platform: isIOS ? "ios" : undefined,
+          userMessage: friendly,
+          diagnostic: context,
+          extraSecrets: [mp.subtitle, mp.name, mp.installPath, importArchive.archivePath],
+        });
+      }
     } finally {
       setIsImporting(false);
     }
@@ -838,6 +886,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const exportInstanceArchive = async () => {
     if (isExporting || !isLocalInstance) return;
     setIsExporting(true);
+    setStorageDiagnostic(null);
     setExportStatus("正在打包…");
     try {
       const result = await TarvenEnv.exportInstance({
@@ -851,13 +900,28 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       const label = result.path.split(/[/\\]/).pop() || result.path;
       setExportStatus(`已导出：${label}`);
     } catch (error) {
-      setExportStatus(
-        isNativeCancelError(error)
-          ? null
-          : error instanceof Error
-            ? error.message
-            : "导出失败，请重试"
-      );
+      if (isNativeCancelError(error) || isUserCancellationError(error, isIOS)) {
+        setExportStatus(null);
+        setStorageDiagnostic(null);
+      } else {
+        const friendly = humanizeNativeError(error);
+        const context = createDiagnosticContext(error, {
+          area: "export",
+          platform: isIOS ? "ios" : undefined,
+          userMessage: friendly,
+          extraSecrets: [mp.subtitle, mp.name, mp.installPath],
+        });
+        setExportStatus(friendly);
+        setStorageDiagnostic(context);
+        reportGlobalError(error, {
+          area: "export",
+          stage: "export-archive",
+          platform: isIOS ? "ios" : undefined,
+          userMessage: friendly,
+          diagnostic: context,
+          extraSecrets: [mp.subtitle, mp.name, mp.installPath],
+        });
+      }
     } finally {
       setIsExporting(false);
     }
@@ -885,8 +949,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         zIndex: LAYERS.MODAL_SURFACE,
         top: isPortrait ? viewport.top : 0,
         left: isPortrait ? viewport.left : 0,
-        width: isPortrait ? viewport.width : "100vw",
-        height: isPortrait ? viewport.height : "100dvh",
+        width: isPortrait ? viewport.width : "var(--ui-vw, 100vw)",
+        height: isPortrait ? viewport.height : "var(--ui-dvh, 100dvh)",
         alignItems: "center",
         justifyContent: "center",
         pointerEvents: "none",
@@ -1418,13 +1482,18 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                           />
                         )}
 
-                        {passwordError && (
-                          <p className="text-[11px] text-red-500 font-medium">
-                            {passwordError}
-                          </p>
-                        )}
+                        <ErrorReportAlert
+                          error={passwordError}
+                          diagnostic={passwordDiagnostic}
+                          area="auth"
+                          stage="instance-password"
+                          platform={isIOS ? "ios" : undefined}
+                          isLight={isLight}
+                          compact
+                          extraSecrets={[mp.subtitle, mp.name, mp.installPath, passwordOld, passwordNew]}
+                        />
                         {passwordSuccess && (
-                          <p className="text-[11px] text-emerald-500 font-medium">
+                          <p className={cn("text-[11px] font-medium", isLight ? "text-[#1a1625]/70" : "text-white/75")}>
                             {passwordSuccess}
                           </p>
                         )}
@@ -1435,6 +1504,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                             onClick={() => {
                               setIsConfiguringPassword(false);
                               setPasswordError(null);
+                              setPasswordDiagnostic(null);
                               setPasswordSuccess(null);
                             }}
                             disabled={passwordSaving}
@@ -1456,22 +1526,26 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                               if (!instance) return;
                               setPasswordSaving(true);
                               setPasswordError(null);
+                              setPasswordDiagnostic(null);
                               setPasswordSuccess(null);
                               try {
                                 if (passwordMode === "set") {
                                   const cleanNew = passwordNew.trim();
                                   if (!cleanNew) {
                                     setPasswordError("新密码不能为空");
+                                    setPasswordDiagnostic(null);
                                     setPasswordSaving(false);
                                     return;
                                   }
                                   if (cleanNew !== passwordConfirm.trim()) {
                                     setPasswordError("两次输入的密码不一致");
+                                    setPasswordDiagnostic(null);
                                     setPasswordSaving(false);
                                     return;
                                   }
                                   if (hasPassword && !passwordOld.trim()) {
                                     setPasswordError("请输入原密码");
+                                    setPasswordDiagnostic(null);
                                     setPasswordSaving(false);
                                     return;
                                   }
@@ -1487,6 +1561,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                                 } else {
                                   if (!passwordOld.trim()) {
                                     setPasswordError("请输入原密码");
+                                    setPasswordDiagnostic(null);
                                     setPasswordSaving(false);
                                     return;
                                   }
@@ -1500,7 +1575,25 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                                   onUpdateInstancePasswordStatus?.(instance.id, false);
                                 }
                               } catch (err: any) {
-                                setPasswordError(err?.message || "操作失败");
+                                const friendly = humanizeNativeError(err);
+                                const stage = passwordMode === "set" ? "set-password" : "clear-password";
+                                const context = createDiagnosticContext(err, {
+                                  area: "auth",
+                                  stage,
+                                  platform: isIOS ? "ios" : undefined,
+                                  userMessage: friendly,
+                                  extraSecrets: [mp.subtitle, mp.name, mp.installPath, passwordOld, passwordNew],
+                                });
+                                setPasswordError(friendly);
+                                setPasswordDiagnostic(context);
+                                reportGlobalError(err, {
+                                  area: "auth",
+                                  stage,
+                                  platform: isIOS ? "ios" : undefined,
+                                  userMessage: friendly,
+                                  diagnostic: context,
+                                  extraSecrets: [mp.subtitle, mp.name, mp.installPath, passwordOld, passwordNew],
+                                });
                               } finally {
                                 setPasswordSaving(false);
                               }
@@ -1531,15 +1624,17 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                     </div>
                   </div>
                 {manageSaveError && (
-                  <p
-                    className={cn(
-                      "font-medium leading-snug",
-                      isLight ? "text-red-900/70" : "text-red-300/80"
-                    )}
-                    style={{ marginTop: manageEm(16), fontSize: isPortrait ? 11 : manageFont(13) }}
-                  >
-                    {manageSaveError}
-                  </p>
+                  <div style={{ marginTop: manageEm(16) }}>
+                    <ErrorReportAlert
+                      error={manageSaveError}
+                      diagnostic={manageSaveDiagnostic}
+                      area="manage"
+                      stage="save-instance"
+                      platform={isIOS ? "ios" : undefined}
+                      isLight={isLight}
+                      extraSecrets={[mp.subtitle, mp.name, mp.installPath]}
+                    />
+                  </div>
                 )}
                 </div>
                 </div>
@@ -1748,6 +1843,18 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                       </div>
                     </ManageItem>
                   )}
+                  {mp.type === "local" && storageDiagnostic && (
+                    <ErrorReportAlert
+                      error={storageDiagnostic.userMessage || importStatus || exportStatus || "导入或备份未能完成"}
+                      diagnostic={storageDiagnostic}
+                      area={storageDiagnostic.area}
+                      stage={storageDiagnostic.stage}
+                      platform={isIOS ? "ios" : undefined}
+                      isLight={isLight}
+                      compact
+                      extraSecrets={[mp.subtitle, mp.name, mp.installPath, importArchive?.archivePath]}
+                    />
+                  )}
                   {mp.type === "local" && onOpenMaintenance && (
                     <ManageItem label="实例维护" isLight={isLight} isPortrait={isPortrait}>
                       <button
@@ -1860,9 +1967,17 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                               text: command,
                               instanceId,
                             }).catch(error => {
+                              const message = humanizeNativeError(error);
                               instanceLogs.append(instanceId, {
-                                msg: `命令失败: ${error instanceof Error ? error.message : String(error)}`,
+                                msg: `命令失败: ${message}`,
                                 level: "error",
+                              });
+                              reportGlobalError(error, {
+                                area: "terminal",
+                                stage: "send-command",
+                                platform: isIOS ? "ios" : undefined,
+                                userMessage: `终端命令失败：${message}`,
+                                extraSecrets: [mp.subtitle, mp.name, mp.installPath],
                               });
                             });
                             setTerminalInput("");

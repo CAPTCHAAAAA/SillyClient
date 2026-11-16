@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
+import { createDiagnosticDevPlugin } from "./vite-diagnostic-middleware.mjs";
 
 export default defineConfig({
   base: "./",
@@ -11,6 +12,7 @@ export default defineConfig({
     TanStackRouterVite(),
     viteReact(),
     tsConfigPaths(),
+    createDiagnosticDevPlugin(),
   ],
   server: {
     host: "0.0.0.0",

@@ -51,7 +51,7 @@
 .sc-onboarding-callout {
   position: fixed;
   z-index: 3;
-  width: min(292px, calc(100vw - 32px));
+  width: min(292px, calc(var(--ui-vw, 100vw) - 32px));
   min-height: 132px;
   padding: 14px 16px 15px;
   border-radius: 18px;

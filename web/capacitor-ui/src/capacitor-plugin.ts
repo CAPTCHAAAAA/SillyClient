@@ -37,6 +37,7 @@ export interface GithubRelease {
   zipballUrl: string
   prerelease: boolean
   isBranch?: boolean
+  isBundled?: boolean
 }
 
 /** SillyClient 应用自身的更新检查结果。 */
@@ -46,6 +47,7 @@ export interface AppUpdateInfo {
   updateAvailable: boolean
   releaseUrl?: string
   publishedAt?: string
+  releaseSummary?: string
 }
 
 export type ContentOpenMode = 'webview' | 'browser'
@@ -161,6 +163,80 @@ export interface PreinstallSelection {
 
 export type InstallPathMode = "root" | "exact"
 
+export interface LegacyInstanceLocation {
+  instanceId: string
+  name: string
+  currentPath: string
+  targetPath: string
+  version?: string
+}
+
+export interface InstanceRelocationResult {
+  success: boolean
+  instanceId: string
+  oldPath: string
+  newPath: string
+  unchanged?: boolean
+  retainedSourcePath?: string
+}
+
+export type DiagnosticArea =
+  | 'picker'
+  | 'create'
+  | 'launch'
+  | 'relocate'
+  | 'import'
+  | 'export'
+  | 'manage'
+  | 'settings'
+  | 'maintenance'
+  | 'cleanup'
+  | 'rename'
+  | 'terminal'
+  | 'auth'
+  | 'update'
+  | 'onboarding'
+  | 'runtime'
+
+export interface DiagnosticReportInput {
+  /** 问题发生的业务模块 */
+  area: DiagnosticArea
+  /** 失败阶段（如 coordinate-selected-directory、provision、start、picker-dismiss 等） */
+  stage?: string
+  /** 原生或运行态错误码/域（如 NSCocoaErrorDomain:257、PICKER_ABNORMAL_DISMISS、EACCES 等） */
+  errorCode?: string
+  /** 经客户端脱敏后的技术摘要（已剥离本机路径、用户名、URL、实例名与凭据） */
+  summary: string
+  /** 面向用户展示的友好提示文案 */
+  userMessage?: string
+  /** 用户可选填写的简短补充说明（最多 200 字，自动脱敏） */
+  userNote?: string
+  /** 平台标识（ios / android / windows / web） */
+  platform?: string
+  /** 客户端版本号 */
+  appVersion?: string
+  /** 耗时毫秒数（可选，如选择器异常闪退耗时） */
+  elapsedMs?: number
+  /** 客户端诊断指纹（用于服务端去重与限流） */
+  fingerprint?: string
+}
+
+export type DiagnosticDeliveryMode =
+  | 'native'
+  | 'sentry'
+  | 'relay'
+  | 'local-gh'
+  | 'github-prefill'
+
+export interface DiagnosticReportResult {
+  ok: boolean
+  reportId?: string
+  reportUrl?: string
+  deliveryMode?: DiagnosticDeliveryMode
+  deduplicated?: boolean
+  message?: string
+}
+
 export interface TarvenEnvPlugin {
   provisionAndStart(options: {
     port: number
@@ -207,10 +283,10 @@ export interface TarvenEnvPlugin {
   }>
 
   /** 读取应用级设置；instancesRoot 为当前默认实例存储根（实例是其直接子目录）。 */
-  getAppSettings(): Promise<{ instancesRoot: string; defaultInstancesRoot: string; configuredInstancesRoot?: string }>
+  getAppSettings(): Promise<{ instancesRoot?: string; defaultInstancesRoot?: string; configuredInstancesRoot?: string }>
 
   /** 设置默认实例存储根；path 留空恢复出厂默认。仅影响之后创建的实例。 */
-  setInstancesRoot(options?: { path?: string }): Promise<{ instancesRoot: string; configured: boolean }>
+  setInstancesRoot(options?: { path?: string }): Promise<{ instancesRoot: string | null; configured: boolean }>
 
   /** 调用系统图片选择器,把图片复制到 covers/{instanceId},返回可加载的文件路径。 */
   pickImage(options: { instanceId: string }): Promise<{ path: string; url?: string }>
@@ -244,9 +320,9 @@ export interface TarvenEnvPlugin {
   /** 启用/禁用酒馆 WebView 下拉刷新。 */
   setPullToRefresh(options: { enabled: boolean }): Promise<void>
 
-  /** 获取和设置酒馆沉浸式页面渲染设置（取色开关、全时/单次取色模式、点击光效）。 */
+  /** 获取和设置酒馆沉浸式页面渲染设置（取色开关、全时/单次取色模式、点击光效、性能优化预设）。 */
   getRenderEngineSettings(): Promise<RenderEngineSettings>
-  setRenderEngineSettings(options: RenderEngineSettings): Promise<void>
+  setRenderEngineSettings(options: Partial<RenderEngineSettings>): Promise<void>
 
   /** Windows: 获取和保存酒馆内容的全局打开方式。 */
   getContentOpenMode(): Promise<{ mode: ContentOpenMode }>
@@ -292,7 +368,7 @@ export interface TarvenEnvPlugin {
   }): Promise<{ online: boolean; statusCode?: number; authRequired?: boolean; error?: string }>
 
   /** 卸载实例:删除安装目录和封面图。 */
-  uninstallInstance(options: { instanceId: string; installPath?: string; port?: number }): Promise<{ success: boolean; freedBytes: number }>
+  uninstallInstance(options: { instanceId: string; installPath?: string; port?: number }): Promise<{ success: boolean; freedBytes: number; instanceId?: string; warning?: string }>
 
   /** 清理垃圾:扫描孤立文件/目录,返回可清理项。dryRun=true 仅扫描不删除。 */
   cleanGarbage(options: { dryRun: boolean; activeInstanceIds?: string[]; activeCoverPaths?: string[] }): Promise<{ items: GarbageItem[]; totalBytes: number }>
@@ -323,13 +399,7 @@ export interface TarvenEnvPlugin {
     instanceId: string
     targetPath?: string
     installPath?: string
-  }): Promise<{
-    success: boolean
-    instanceId: string
-    oldPath: string
-    newPath: string
-    unchanged?: boolean
-  }>
+  }): Promise<InstanceRelocationResult>
 
   /** 重命名实例并同步修改底层物理存储文件夹与注册表 */
   renameInstance(options: {
@@ -380,6 +450,9 @@ export interface TarvenEnvPlugin {
   /** 批量获取所有实例的密码保护状态 */
   listInstancePasswordStatus(): Promise<Record<string, boolean>>
 
+  /** 提交脱敏诊断报告（仅在真实异常且用户点击上报时触发，不含实例名、聊天数据、密码、API Key 或敏感本机路径）。 */
+  submitDiagnosticReport(options: DiagnosticReportInput): Promise<DiagnosticReportResult>
+
   addListener(
     eventName: 'log' | 'progress' | 'ready' | 'mode' | 'error',
     listenerFunc: (data: TarvenEvent) => void,
@@ -406,7 +479,7 @@ export interface TarvenEvent {
 }
 
 const nativeEnvironment = registerPlugin<TarvenEnvPlugin>('TarvenEnv',
-  import.meta.env.DEV && new URLSearchParams(window.location.search).get('nativePreview') === '1'
+  import.meta.env.DEV && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('nativePreview') === '1'
     ? { web: async () => (await import('./dev/native-preview')).nativePreview }
     : undefined,
 )

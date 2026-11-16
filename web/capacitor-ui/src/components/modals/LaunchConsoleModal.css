@@ -1,9 +1,9 @@
 .launch-console-card {
   --launch-content-gutter: 12px;
   --launch-section-space: 8px;
-  width: min(340px, calc(100vw - 2rem));
-  max-height: calc(100vh - 2rem);
-  max-height: calc(100dvh - 2rem);
+  width: min(340px, calc(var(--ui-vw, 100vw) - 2rem));
+  max-height: calc(var(--ui-vh, 100vh) - 2rem);
+  max-height: calc(var(--ui-dvh, 100dvh) - 2rem);
 }
 
 .launch-console-card__header {
@@ -148,7 +148,7 @@
 
 @media (max-height: 480px) {
   .launch-console-card .launch-console-card__logs {
-    min-height: min(180px, max(48px, calc(100dvh - 185px)));
+    min-height: min(180px, max(48px, calc(var(--ui-dvh, 100dvh) - 185px)));
   }
 }
 

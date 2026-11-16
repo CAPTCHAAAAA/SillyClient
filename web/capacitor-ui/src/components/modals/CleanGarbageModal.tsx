@@ -1,11 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { LayerBackdrop } from "../common/LayerBackdrop";
+import { ActionButton } from "../common/ActionButton";
+import { ErrorReportAlert } from "../common/ErrorReportAlert";
 import type { GarbageItem } from "../../capacitor-plugin";
 import { executeGarbagePlan } from "../../lib/garbage-plan";
+import { reportGlobalError } from "../../lib/global-error-store";
+import {
+  createDiagnosticContext,
+  humanizeNativeError,
+  type DiagnosticContext,
+} from "../../lib/native-errors";
 
 export interface CleanGarbageModalProps {
   isOpen: boolean;
@@ -19,6 +27,7 @@ export interface CleanGarbageModalProps {
   setGarbageItems: React.Dispatch<React.SetStateAction<GarbageItem[]>>;
   error: string | null;
   setError: (value: string | null) => void;
+  diagnostic?: DiagnosticContext | null;
 }
 
 /**
@@ -37,7 +46,16 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
   setGarbageItems,
   error,
   setError,
+  diagnostic,
 }) => {
+  const [deleteDiagnostic, setDeleteDiagnostic] = useState<DiagnosticContext | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !error) {
+      setDeleteDiagnostic(null);
+    }
+  }, [error, isOpen]);
+
   if (!isOpen && !isClosing) return null;
 
   return (
@@ -52,7 +70,7 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
       />
       <div
         className={cn(
-          "ios-task-surface fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
+          "ios-task-surface reading-flat-surface fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
           glassBg,
           isLight && "is-light",
           isClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
@@ -62,15 +80,12 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "min(420px, calc(100vw - 2rem))",
-          maxHeight: "min(80vh, calc(100vh - 4rem))",
+          width: "min(420px, calc(var(--ui-vw, 100vw) - 2rem))",
+          maxHeight: "min(calc(var(--ui-vh, 100vh) * 0.8), calc(var(--ui-vh, 100vh) - 4rem))",
         }}
       >
         <div
-          className={cn(
-            "flex items-center justify-between px-5 h-12 flex-shrink-0 border-b",
-            isLight ? "border-black/[0.06]" : "border-white/[0.06]"
-          )}
+          className="flex items-center justify-between px-5 h-12 flex-shrink-0"
         >
           <span
             className={cn(
@@ -96,7 +111,13 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 scrollbar-subtle">
-          {error && <div role="alert" className="mb-3 text-xs text-red-400 whitespace-pre-wrap break-words">{error}</div>}
+          <ErrorReportAlert
+            error={error}
+            diagnostic={diagnostic ?? deleteDiagnostic}
+            area="cleanup"
+            isLight={isLight}
+            className="mb-3"
+          />
           {cleaningGarbage && garbageItems.length === 0 ? (
             <div
               className={cn(
@@ -121,10 +142,10 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
                 <div
                   key={i}
                   className={cn(
-                    "flex items-center justify-between gap-3 p-3 rounded-xl border",
+                    "flex items-center justify-between gap-3 p-3 rounded-xl",
                     isLight
-                      ? "bg-black/[0.03] border-black/[0.06]"
-                      : "bg-white/[0.03] border-white/[0.06]"
+                      ? "bg-black/[0.035]"
+                      : "bg-white/[0.04]"
                   )}
                 >
                   <div className="flex-1 min-w-0">
@@ -167,49 +188,75 @@ export const CleanGarbageModal: React.FC<CleanGarbageModalProps> = ({
           )}
         </div>
 
-        <div
-          className={cn(
-            "flex items-center justify-end gap-2 px-5 py-3 border-t flex-shrink-0",
-            isLight ? "border-black/[0.06]" : "border-white/[0.06]"
-          )}
-        >
-          <button
+        <div className="flex items-center justify-end gap-2 px-5 py-3 flex-shrink-0">
+          <ActionButton
             onClick={onClose}
             disabled={cleaningGarbage}
             className={cn(
-              "flat-capsule motion-control px-4 h-8 rounded-full text-[11px] font-medium border-0 disabled:opacity-50",
+              "!h-8 px-4 text-[11px] font-medium",
               isLight
                 ? "text-[#1a1625]/60 hover:text-[#1a1625]"
                 : "text-white/60 hover:text-white"
             )}
           >
             取消
-          </button>
-          <button
+          </ActionButton>
+          <ActionButton
             onClick={async () => {
               setCleaningGarbage(true);
               setError(null);
+              setDeleteDiagnostic(null);
               try {
                 const result = await executeGarbagePlan(garbageItems, options => TarvenEnv.deleteGarbageItem(options));
                 setGarbageItems(result.failed);
-                if (result.errors.length) setError(result.errors.join("\n"));
-                else onClose();
+                if (result.errors.length) {
+                  const rawErrors = result.errors.join("\n");
+                  const friendly = result.errors.map(item => humanizeNativeError(item)).join("\n");
+                  const context = createDiagnosticContext(rawErrors, {
+                    area: "cleanup",
+                    stage: "delete-garbage",
+                    userMessage: friendly,
+                  });
+                  setError(friendly);
+                  setDeleteDiagnostic(context);
+                  reportGlobalError(rawErrors, {
+                    area: "cleanup",
+                    stage: "delete-garbage",
+                    userMessage: friendly,
+                    diagnostic: context,
+                  });
+                } else {
+                  onClose();
+                }
               } catch (e) {
-                setError(e instanceof Error ? e.message : String(e));
+                const friendly = humanizeNativeError(e);
+                const context = createDiagnosticContext(e, {
+                  area: "cleanup",
+                  stage: "delete-garbage",
+                  userMessage: friendly,
+                });
+                setError(friendly);
+                setDeleteDiagnostic(context);
+                reportGlobalError(e, {
+                  area: "cleanup",
+                  stage: "delete-garbage",
+                  userMessage: friendly,
+                  diagnostic: context,
+                });
               } finally {
                 setCleaningGarbage(false);
               }
             }}
             disabled={cleaningGarbage || garbageItems.length === 0}
             className={cn(
-              "motion-control px-4 h-8 rounded-full text-[11px] font-semibold transition-colors disabled:opacity-50",
+              "!h-8 px-4 text-[11px] font-semibold",
               isLight
-                ? "bg-[#1a1625] text-[#f5f3ef]/80 hover:text-[#f5f3ef]"
-                : "bg-white/90 text-[#1a1625]/80 hover:text-[#1a1625]"
+                ? "text-[#1a1625]/80 hover:text-[#1a1625]"
+                : "text-white/85 hover:text-white"
             )}
           >
             全部清理
-          </button>
+          </ActionButton>
         </div>
       </div>
     </>

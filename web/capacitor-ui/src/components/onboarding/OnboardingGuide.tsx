@@ -8,6 +8,7 @@ import {
 } from "react";
 import { getGuideSteps, type GuidePlatform, type GuideStep } from "./guide-content";
 import { completeOnboardingOperation, notifyOnboardingStarted } from "./onboarding-runtime";
+import { getCalloutPosition, getViewportBounds } from "./onboarding-viewport";
 import { useOnboardingTarget, type TargetGeometry } from "./useOnboardingTarget";
 import "./OnboardingGuide.css";
 
@@ -38,6 +39,7 @@ interface Presentation {
 
 const TARGET_GAP = 18;
 const CALLOUT_WIDTH = 292;
+const SPOTLIGHT_SETTLE_TIMEOUT_MS = 900;
 
 function getEventElement(target: EventTarget | null) {
   if (target instanceof Element) return target;
@@ -75,7 +77,6 @@ export default function OnboardingGuide({
   const currentIndex = presentation?.index ?? 0;
   const step = steps[currentIndex];
   const transitioning = !presentation || targetIndex !== currentIndex;
-  const inputReady = !transitioning && settledStepId === step.id;
   const targetGeometry = presentation?.geometry ?? null;
   const {
     targetRef: targetElementRef,
@@ -83,6 +84,7 @@ export default function OnboardingGuide({
     tracking,
     ready,
   } = useOnboardingTarget(targetStep.target, targetStep.id);
+  const inputReady = !transitioning && ready && settledStepId === step.id;
 
   useEffect(() => {
     if (!inputReady || startedRef.current) return;
@@ -91,21 +93,27 @@ export default function OnboardingGuide({
   }, [inputReady]);
 
   useLayoutEffect(() => {
-    if (!presentation) return;
-    let frameId: number;
+    if (!presentation || !ready || tracking || transitioning) {
+      setSettledStepId((current) => current === step.id ? null : current);
+      return;
+    }
+    let frameId: number | null = null;
+    const startedAt = performance.now();
     const waitForSpotlight = () => {
       const moving = ringRef.current?.getAnimations().some((animation) =>
         animation.playState === "running" || animation.pending,
       );
-      if (moving) {
+      if (moving && performance.now() - startedAt < SPOTLIGHT_SETTLE_TIMEOUT_MS) {
         frameId = window.requestAnimationFrame(waitForSpotlight);
       } else {
         setSettledStepId(step.id);
       }
     };
     frameId = window.requestAnimationFrame(waitForSpotlight);
-    return () => window.cancelAnimationFrame(frameId);
-  }, [presentation?.index, step.id]);
+    return () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+    };
+  }, [presentation?.geometry, presentation?.index, ready, step.id, tracking, transitioning]);
 
   useLayoutEffect(() => {
     prepareStepRef.current(targetStep);
@@ -125,11 +133,22 @@ export default function OnboardingGuide({
   useLayoutEffect(() => {
     const callout = calloutRef.current;
     if (!callout) return;
-    const measure = () => setCalloutHeight(callout.getBoundingClientRect().height);
-    const observer = new ResizeObserver(measure);
-    observer.observe(callout);
+    const measure = () => {
+      const height = callout.getBoundingClientRect().height;
+      setCalloutHeight((current) => Math.abs(current - height) < 0.5 ? current : height);
+    };
+    const observer = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(measure);
+    observer?.observe(callout);
+    window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
     measure();
-    return () => observer.disconnect();
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+    };
   }, [Boolean(presentation)]);
 
   const requestClose = useCallback((complete: boolean) => {
@@ -417,16 +436,18 @@ export default function OnboardingGuide({
 
   const calloutPosition = targetGeometry
     ? (() => {
-      const width = Math.min(CALLOUT_WIDTH, window.innerWidth - 32);
-      const left = Math.max(
-        16,
-        Math.min(targetGeometry.left, window.innerWidth - width - 16),
+      const viewport = getViewportBounds(
+        window.visualViewport,
+        window.innerWidth,
+        window.innerHeight,
       );
-      const belowTop = targetGeometry.bottom + TARGET_GAP;
-      const top = belowTop + calloutHeight <= window.innerHeight - 16
-        ? belowTop
-        : Math.max(16, targetGeometry.top - calloutHeight - TARGET_GAP);
-      return { left, top };
+      return getCalloutPosition(
+        targetGeometry,
+        CALLOUT_WIDTH,
+        calloutHeight,
+        viewport,
+        TARGET_GAP,
+      );
     })()
     : null;
 

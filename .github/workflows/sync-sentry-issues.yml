@@ -1,0 +1,33 @@
+name: Sync Sentry Issues to GitHub
+
+on:
+  schedule:
+    # Run every 2 hours (jittered off the top of the hour) while Open-Source plan is pending/transitional.
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: sync-sentry-issues
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22.16.0"
+      - name: Sync unresolved Sentry issues into GitHub Issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL || 'https://us.sentry.io' }}
+          SENTRY_ORG_SLUG: ${{ vars.SENTRY_ORG_SLUG || 'sillyclient' }}
+          SENTRY_PROJECT_SLUG: ${{ vars.SENTRY_PROJECT_SLUG || 'sillyclient-console' }}
+        run: node scripts/sync-sentry-issues.mjs

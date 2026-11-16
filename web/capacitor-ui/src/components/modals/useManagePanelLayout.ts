@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import { getAppliedUiScale, getScaledViewportMetrics } from "../../lib/ui-scale";
 import type { ManageTab } from "../../types";
 
 export const MANAGE_VISUAL_SCALE = 0.67;
@@ -19,11 +20,7 @@ interface ManagePanelLayoutOptions {
 }
 
 function viewportSize(isPortrait = false) {
-  const viewport = isPortrait ? window.visualViewport : null;
-  if (viewport && viewport.scale === 1) {
-    return { width: viewport.width, height: viewport.height, left: viewport.offsetLeft, top: viewport.offsetTop };
-  }
-  return { width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 };
+  return getScaledViewportMetrics(window, document, isPortrait);
 }
 
 function intrinsicHeight(content: HTMLElement) {
@@ -176,10 +173,11 @@ export function useManagePanelLayout({
     event.preventDefault();
     event.stopPropagation();
     resizeCleanupRef.current?.();
+    const scale = getAppliedUiScale();
     const startX = event.clientX;
     const startY = event.clientY;
-    const startWidth = bounds.width;
-    const startHeight = bounds.height;
+    const startWidth = bounds.width / scale;
+    const startHeight = bounds.height / scale;
     const initialBox = { width: startWidth, height: startHeight };
     pendingBoxRef.current = null;
     latestBoxRef.current = initialBox;
@@ -188,8 +186,8 @@ export function useManagePanelLayout({
     const onMove = (moveEvent: PointerEvent) => {
       const available = viewportSize();
       const nextBox = {
-        width: Math.round(Math.min(available.width - VIEW_GUTTER * 2, Math.max(MIN_WIDTH, startWidth + moveEvent.clientX - startX))),
-        height: Math.round(Math.min(available.height - VIEW_GUTTER * 2, Math.max(300, startHeight + moveEvent.clientY - startY))),
+        width: Math.round(Math.min(available.width - VIEW_GUTTER * 2, Math.max(MIN_WIDTH, startWidth + (moveEvent.clientX - startX) / scale))),
+        height: Math.round(Math.min(available.height - VIEW_GUTTER * 2, Math.max(300, startHeight + (moveEvent.clientY - startY) / scale))),
       };
       latestBoxRef.current = nextBox;
       pendingBoxRef.current = nextBox;

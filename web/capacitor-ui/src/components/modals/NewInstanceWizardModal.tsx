@@ -1,10 +1,19 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
-import { AlertTriangle, ChevronDown, Info, LoaderCircle } from "lucide-react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ChevronDown, Info, LoaderCircle } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
 import type { PreinstalledExtensionId } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { PreinstallOptions } from "../instance/PreinstallOptions";
+import { ActionButton } from "../common/ActionButton";
+import { ErrorReportAlert } from "../common/ErrorReportAlert";
+import { reportGlobalError } from "../../lib/global-error-store";
+import {
+  createDiagnosticContext,
+  humanizeNativeError,
+  isUserCancellationError,
+  type DiagnosticContext,
+} from "../../lib/native-errors";
 
 export type WizardMode = "local" | "remote";
 
@@ -21,6 +30,7 @@ export interface NewInstanceWizardModalProps {
   isLight: boolean;
   glassBg: string;
   isWindows: boolean;
+  isIOS?: boolean;
   newInstanceName: string;
   setNewInstanceName: (value: string) => void;
   newInstanceMode: WizardMode;
@@ -45,6 +55,7 @@ export interface NewInstanceWizardModalProps {
   newRemoteAuthPassword: string;
   setNewRemoteAuthPassword: (value: string) => void;
   newInstanceError: string | null;
+  newInstanceDiagnostic?: DiagnosticContext | null;
   isCreatingInstance: boolean;
   createInstance: () => void;
   releases: any[];
@@ -92,8 +103,8 @@ function InfoBadgeButton({
         "motion-control relative flex h-4 w-4 items-center justify-center rounded-full transition-colors duration-200",
         isUnread
           ? isLight
-            ? "border border-rose-500/30 bg-rose-500/10 text-rose-600/75 hover:text-rose-600"
-            : "border border-rose-500/30 bg-rose-500/15 text-rose-400/75 hover:text-rose-400"
+            ? "bg-red-900/[0.06] text-red-900/60 hover:text-red-900/85"
+            : "bg-red-400/[0.08] text-red-300/75 hover:text-red-200"
           : isOpen
           ? isLight
             ? "bg-black/10 text-[#1a1625]"
@@ -107,7 +118,7 @@ function InfoBadgeButton({
         <span
           className={cn(
             "select-none font-mono text-[10px] font-bold leading-none",
-            isLight ? "text-rose-600" : "text-rose-400"
+            isLight ? "text-red-900/70" : "text-red-300/80"
           )}
         >
           !
@@ -187,10 +198,10 @@ function NewInstanceField({
           <div className="motion-accordion-inner">
             <div
               className={cn(
-                "mb-2.5 rounded-xl border p-2.5 text-[11px] leading-relaxed",
+                "mb-2.5 rounded-xl p-2.5 text-[11px] leading-relaxed",
                 isLight
-                  ? "border-black/[0.06] bg-black/[0.03] text-[#1a1625]/65"
-                  : "border-white/[0.06] bg-white/[0.03] text-white/65"
+                  ? "bg-black/[0.035] text-[#1a1625]/65"
+                  : "bg-white/[0.04] text-white/65"
               )}
             >
               {info}
@@ -211,6 +222,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   isLight,
   glassBg,
   isWindows,
+  isIOS = false,
   newInstanceName,
   setNewInstanceName,
   newInstanceMode,
@@ -235,6 +247,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
   newRemoteAuthPassword,
   setNewRemoteAuthPassword,
   newInstanceError,
+  newInstanceDiagnostic,
   isCreatingInstance,
   createInstance,
   releases,
@@ -256,6 +269,19 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     top: false,
     bottom: false,
   });
+  const [releasesError, setReleasesError] = useState<string | null>(null);
+  const [releasesDiagnostic, setReleasesDiagnostic] = useState<DiagnosticContext | null>(null);
+  const [localPickerError, setLocalPickerError] = useState<string | null>(null);
+  const [localPickerDiagnostic, setLocalPickerDiagnostic] = useState<DiagnosticContext | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setReleasesError(null);
+      setReleasesDiagnostic(null);
+      setLocalPickerError(null);
+      setLocalPickerDiagnostic(null);
+    }
+  }, [isOpen]);
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -313,6 +339,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
     newInstanceMode,
     wizardHeight,
     newInstanceError,
+    newInstanceDiagnostic,
     newInstanceCompanionPresetEnabled,
     newRemoteAuthEnabled,
   ]);
@@ -350,8 +377,8 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: "min(460px, calc(100vw - 2rem))",
-        maxHeight: "min(85vh, calc(100vh - 4rem))",
+        width: "min(460px, calc(var(--ui-vw, 100vw) - 2rem))",
+        maxHeight: "min(calc(var(--ui-vh, 100vh) * 0.85), calc(var(--ui-vh, 100vh) - 4rem))",
       }}
     >
       <div
@@ -384,17 +411,17 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           className="scrollbar-hidden min-h-0 space-y-5 overflow-y-auto p-5"
           style={{ flex: "1 1 auto" }}
         >
-          <NewInstanceField label="名称" isLight={isLight}>
+              <NewInstanceField label="名称" isLight={isLight}>
             <input
               type="text"
               value={newInstanceName}
               onChange={(event) => setNewInstanceName(event.target.value)}
               placeholder="我的酒馆"
               className={cn(
-                "h-9 w-full rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                "h-9 w-full rounded-xl border-0 px-3 text-sm transition-colors focus:outline-none focus:ring-0",
                 isLight
-                  ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                  : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                  ? "bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                  : "bg-white/[0.04] text-white placeholder:text-white/25"
               )}
             />
           </NewInstanceField>
@@ -413,7 +440,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 type="button"
                 onClick={() => handleSwitchMode("local")}
                 aria-pressed={newInstanceMode === "local"}
-                className="ios-choice-control flex items-center justify-center gap-1.5 border py-2 text-xs font-medium transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                className="ios-choice-control flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
               >
                 本地实例
               </button>
@@ -421,7 +448,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 type="button"
                 onClick={() => handleSwitchMode("remote")}
                 aria-pressed={newInstanceMode === "remote"}
-                className="ios-choice-control flex items-center justify-center gap-1.5 border py-2 text-xs font-medium transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                className="ios-choice-control flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
               >
                 远程连接
               </button>
@@ -444,7 +471,15 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
               aria-hidden={newInstanceMode !== "local"}
               inert={newInstanceMode !== "local"}
             >
-              <NewInstanceField label="安装目录" isLight={isLight}>
+              <NewInstanceField
+                label="安装目录"
+                isLight={isLight}
+                desc={
+                  isIOS
+                    ? "必选：点「浏览」选择存放文件夹（iOS 请进入目标文件夹后点击右上角「打开」确认），实例会创建在该文件夹内。"
+                    : undefined
+                }
+              >
                 <div className="flex w-full items-center gap-2">
                   <input
                     type="text"
@@ -452,10 +487,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                     onChange={(event) => setNewInstanceDir(event.target.value)}
                     placeholder="选择或输入路径"
                     className={cn(
-                      "h-9 min-w-0 flex-1 rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                      "h-9 min-w-0 flex-1 rounded-xl border-0 px-3 text-sm transition-colors focus:outline-none focus:ring-0",
                       isLight
-                        ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                        : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                        ? "bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                        : "bg-white/[0.04] text-white placeholder:text-white/25"
                     )}
                   />
                   <button
@@ -485,11 +520,23 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                       }
                       if (releases.length === 0 && !fetchingReleases) {
                         setFetchingReleases(true);
+                        setReleasesError(null);
+                        setReleasesDiagnostic(null);
                         try {
                           const { releases: fetchedReleases } =
                             await TarvenEnv.fetchReleases();
                           setReleases(fetchedReleases);
-                        } catch {
+                        } catch (error) {
+                          const friendly = humanizeNativeError(error);
+                          setReleasesError(`获取版本列表失败，当前可直接使用内置版；${friendly}`);
+                          setReleasesDiagnostic(
+                            createDiagnosticContext(error, {
+                              area: "update",
+                              stage: "fetch-releases",
+                              platform: isIOS ? "ios" : isWindows ? "windows" : "android",
+                              userMessage: friendly,
+                            })
+                          );
                           addTerminalLog("> 获取版本列表失败，使用内置版", "info");
                         } finally {
                           setFetchingReleases(false);
@@ -499,10 +546,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                       if (trigger) openVersionDropdown(trigger);
                     }}
                     className={cn(
-                      "ios-field-control motion-control flex h-9 min-w-0 flex-1 items-center justify-between rounded-xl border px-3 text-left text-sm transition-colors",
+                      "ios-field-control motion-control flex h-9 min-w-0 flex-1 items-center justify-between rounded-xl border-0 px-3 text-left text-sm transition-colors",
                       isLight
-                        ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625]"
-                        : "border-white/[0.08] bg-white/[0.04] text-white"
+                        ? "bg-black/[0.04] text-[#1a1625]"
+                        : "bg-white/[0.04] text-white"
                     )}
                   >
                     <span className="truncate">
@@ -523,12 +570,15 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                       )}
                     />
                   </button>
+                  {!isIOS && (
                   <button
                     type="button"
                     onClick={async () => {
+                      setLocalPickerError(null);
+                      setLocalPickerDiagnostic(null);
                       try {
                         const { path, sizeBytes } =
-                          await TarvenEnv.pickZipFile();
+                          await TarvenEnv.pickZipFile({ purpose: "instanceSource" });
                         setNewInstanceLocalZip(path);
                         setNewInstanceVersion("local");
                         addTerminalLog(
@@ -537,8 +587,26 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                           )}MB)`,
                           "info"
                         );
-                      } catch {
-                        return;
+                      } catch (error) {
+                        if (isUserCancellationError(error, isIOS)) return;
+                        const friendly = humanizeNativeError(error);
+                        const context = createDiagnosticContext(error, {
+                          area: "picker",
+                          stage: "pick-zip",
+                          platform: isWindows ? "windows" : "android",
+                          userMessage: friendly,
+                          extraSecrets: [newInstanceName, newInstanceDir],
+                        });
+                        setLocalPickerError(friendly);
+                        setLocalPickerDiagnostic(context);
+                        reportGlobalError(error, {
+                          area: "picker",
+                          stage: "pick-zip",
+                          platform: isWindows ? "windows" : "android",
+                          userMessage: friendly,
+                          diagnostic: context,
+                          extraSecrets: [newInstanceName, newInstanceDir],
+                        });
                       }
                     }}
                     className={cn(
@@ -550,7 +618,18 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                   >
                     {newInstanceLocalZip ? "更换" : "导入 ZIP"}
                   </button>
+                  )}
                 </div>
+                <ErrorReportAlert
+                  error={releasesError}
+                  diagnostic={releasesDiagnostic}
+                  area="update"
+                  stage="fetch-releases"
+                  platform={isIOS ? "ios" : isWindows ? "windows" : "android"}
+                  isLight={isLight}
+                  compact
+                  className="mt-2"
+                />
               </NewInstanceField>
 
               <PreinstallOptions
@@ -582,10 +661,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                   autoCapitalize="none"
                   autoCorrect="off"
                   className={cn(
-                    "h-9 w-full rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                    "h-9 w-full rounded-xl border-0 px-3 text-sm transition-colors focus:outline-none focus:ring-0",
                     isLight
-                      ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                      : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                      ? "bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                      : "bg-white/[0.04] text-white placeholder:text-white/25"
                   )}
                 />
               </NewInstanceField>
@@ -658,10 +737,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                           autoComplete="username"
                           disabled={!newRemoteAuthEnabled}
                           className={cn(
-                            "h-9 min-w-0 rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                            "h-9 min-w-0 rounded-xl border-0 px-3 text-sm transition-colors focus:outline-none focus:ring-0",
                             isLight
-                              ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                              : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                              ? "bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "bg-white/[0.04] text-white placeholder:text-white/25"
                           )}
                         />
                         <input
@@ -674,10 +753,10 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                           autoComplete="current-password"
                           disabled={!newRemoteAuthEnabled}
                           className={cn(
-                            "h-9 min-w-0 rounded-xl border px-3 text-sm transition-colors focus:outline-none focus:ring-0",
+                            "h-9 min-w-0 rounded-xl border-0 px-3 text-sm transition-colors focus:outline-none focus:ring-0",
                             isLight
-                              ? "border-black/[0.08] bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
-                              : "border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/25"
+                              ? "bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                              : "bg-white/[0.04] text-white placeholder:text-white/25"
                           )}
                         />
                       </div>
@@ -705,44 +784,37 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
           isLight ? "border-black/[0.06]" : "border-white/[0.06]"
         )}
       >
-        {newInstanceError && (
-          <div
-            className={cn(
-              "mb-3 flex items-start gap-2 rounded-xl border px-3 py-2 text-[11px] leading-relaxed",
-              isLight
-                ? "border-red-900/10 bg-red-900/[0.04] text-red-900/65"
-                : "border-red-400/10 bg-red-400/[0.05] text-red-300/75"
-            )}
-          >
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-            <span>{newInstanceError}</span>
-          </div>
-        )}
+        <ErrorReportAlert
+          error={newInstanceError || localPickerError}
+          diagnostic={newInstanceError ? newInstanceDiagnostic : localPickerDiagnostic}
+          area="create"
+          platform={isIOS ? "ios" : isWindows ? "windows" : "android"}
+          isLight={isLight}
+          extraSecrets={[newInstanceName, newInstanceDir, newInstanceUrl, newInstanceLocalZip]}
+          className="mb-3"
+        />
         <div className="flex items-center justify-end gap-2">
-          <button
-            type="button"
+          <ActionButton
             disabled={isCreatingInstance}
             onClick={() => {
               closeVersionDropdown();
               onClose();
             }}
             className={cn(
-              "flat-capsule motion-control h-8 rounded-full border-0 px-4 text-xs font-medium",
-              "disabled:pointer-events-none disabled:opacity-40",
+              "!h-8 px-4 text-xs font-medium",
               isLight
                 ? "text-[#1a1625]/60 hover:text-[#1a1625]"
                 : "text-white/60 hover:text-white"
             )}
           >
             取消
-          </button>
-          <button
-            type="button"
+          </ActionButton>
+          <ActionButton
             onClick={createInstance}
             data-onboarding-target="create-submit"
             disabled={isCreatingInstance}
             className={cn(
-              "flat-capsule motion-control flex h-8 items-center gap-1.5 rounded-full border-0 px-5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50",
+              "!h-8 px-5 text-xs font-semibold",
               isLight
                 ? "text-[#1a1625]/70 hover:text-[#1a1625]"
                 : "text-white/70 hover:text-white"
@@ -756,7 +828,7 @@ export const NewInstanceWizardModal: React.FC<NewInstanceWizardModalProps> = ({
                 ? "验证连接"
                 : "获取当前版本"
               : "创建"}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>

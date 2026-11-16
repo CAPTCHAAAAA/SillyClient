@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Lock, Eye, EyeOff, Loader2, AlertCircle, X } from "lucide-react";
+import { Lock, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { TarvenEnv } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { LayerBackdrop } from "../common/LayerBackdrop";
+import { ActionButton } from "../common/ActionButton";
+import { ErrorReportAlert } from "../common/ErrorReportAlert";
+import { reportGlobalError } from "../../lib/global-error-store";
+import {
+  createDiagnosticContext,
+  humanizeNativeError,
+  type DiagnosticContext,
+} from "../../lib/native-errors";
 import type { TavernInstance } from "../../types";
 
 export interface UnlockInstanceModalProps {
@@ -32,6 +40,7 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unlockDiagnostic, setUnlockDiagnostic] = useState<DiagnosticContext | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +50,7 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
       setPassword("");
       setShowPassword(false);
       setError(null);
+      setUnlockDiagnostic(null);
       setVerifying(false);
       setIsShaking(false);
       const timer = setTimeout(() => {
@@ -58,12 +68,14 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
     const cleanPassword = password.trim();
     if (!cleanPassword) {
       setError("请输入访问密码");
+      setUnlockDiagnostic(null);
       triggerShake();
       return;
     }
 
     setVerifying(true);
     setError(null);
+    setUnlockDiagnostic(null);
 
     try {
       const res = await TarvenEnv.verifyInstancePassword({
@@ -75,12 +87,28 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
         onUnlockSuccess(instance);
       } else {
         setError("密码错误，请重新输入");
+        setUnlockDiagnostic(null);
         triggerShake();
         inputRef.current?.focus();
         inputRef.current?.select();
       }
     } catch (err: any) {
-      setError(err?.message || "密码校验失败");
+      const friendly = humanizeNativeError(err);
+      const context = createDiagnosticContext(err, {
+        area: "auth",
+        stage: "verify-password",
+        userMessage: friendly,
+        extraSecrets: [instance.subtitle, instance.name, instance.installPath, cleanPassword],
+      });
+      setError(friendly);
+      setUnlockDiagnostic(context);
+      reportGlobalError(err, {
+        area: "auth",
+        stage: "verify-password",
+        userMessage: friendly,
+        diagnostic: context,
+        extraSecrets: [instance.subtitle, instance.name, instance.installPath, cleanPassword],
+      });
       triggerShake();
     } finally {
       setVerifying(false);
@@ -102,18 +130,14 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
         onClick={verifying ? undefined : onClose}
         zIndex={LAYERS.DIALOG_BACKDROP}
         blur={true}
-        className={cn(
-          "transition-all duration-300",
-          isLight ? "bg-black/25 backdrop-blur-[12px]" : "bg-black/55 backdrop-blur-[12px]"
-        )}
+        style={{ "--overlay-blur": "12px" } as React.CSSProperties}
+        className={isLight ? "bg-black/25 backdrop-blur-[12px]" : "bg-black/55 backdrop-blur-[12px]"}
       />
       <div
         className={cn(
-          "ios-task-surface fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180 shadow-2xl border",
+          "ios-task-surface reading-flat-surface fixed rounded-2xl flex flex-col overflow-hidden backdrop-blur-[40px] saturate-180",
           glassBg,
-          isLight
-            ? "is-light border-black/[0.08]"
-            : "border-white/[0.08]",
+          isLight && "is-light",
           isClosing ? "animate-modal-dialog-exit" : "animate-modal-dialog"
         )}
         style={{
@@ -121,16 +145,13 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "min(360px, calc(100vw - 2rem))",
+          width: "min(360px, calc(var(--ui-vw, 100vw) - 2rem))",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 顶部标题栏 */}
         <div
-          className={cn(
-            "flex items-center justify-between px-5 h-12 flex-shrink-0 border-b",
-            isLight ? "border-black/[0.06]" : "border-white/[0.06]"
-          )}
+          className="flex items-center justify-between px-5 h-12 flex-shrink-0"
         >
           <div className="flex items-center gap-2">
             <div
@@ -179,10 +200,10 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
               </span>
               <span
                 className={cn(
-                  "px-1.5 py-0.2 rounded text-[10px] font-medium border opacity-70",
+                  "px-1.5 py-0.2 rounded text-[10px] font-medium opacity-70",
                   isLight
-                    ? "bg-black/[0.04] text-[#1a1625] border-black/[0.06]"
-                    : "bg-white/[0.06] text-white border-white/[0.08]"
+                    ? "bg-black/[0.045] text-[#1a1625]"
+                    : "bg-white/[0.07] text-white"
                 )}
               >
                 {instance.type === "remote" ? "远程连接" : "本地实例"}
@@ -211,10 +232,10 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
                 }}
                 placeholder="输入访问密码"
                 className={cn(
-                  "ios-field-control motion-control w-full h-9 pl-3 pr-9 rounded-xl border text-xs transition-colors",
+                  "ios-field-control motion-control w-full h-9 pl-3 pr-9 rounded-xl border-0 text-xs transition-colors focus:outline-none",
                   isLight
-                    ? "bg-black/[0.04] border-black/[0.08] text-[#1a1625] placeholder:text-[#1a1625]/25 focus:border-black/20"
-                    : "bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-white/20"
+                    ? "bg-black/[0.04] text-[#1a1625] placeholder:text-[#1a1625]/25"
+                    : "bg-white/[0.04] text-white placeholder:text-white/25"
                 )}
               />
               <button
@@ -230,41 +251,39 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
             </div>
           </div>
 
-          {error && (
-            <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-start gap-2">
-              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span className="leading-tight">{error}</span>
-            </div>
-          )}
+          <ErrorReportAlert
+            error={error}
+            diagnostic={unlockDiagnostic}
+            area="auth"
+            stage="unlock-instance"
+            isLight={isLight}
+            compact
+            extraSecrets={[instance.subtitle, instance.name, instance.installPath, password]}
+          />
         </div>
 
         {/* 底部按钮栏 */}
-        <div
-          className={cn(
-            "flex items-center justify-end gap-2 px-5 py-3 border-t flex-shrink-0",
-            isLight ? "border-black/[0.06]" : "border-white/[0.06]"
-          )}
-        >
-          <button
+        <div className="flex items-center justify-end gap-2 px-5 py-3 flex-shrink-0">
+          <ActionButton
             onClick={onClose}
             disabled={verifying}
             className={cn(
-              "flat-capsule motion-control h-8 px-3.5 rounded-full text-xs font-medium border-0",
+              "!h-8 px-3.5 text-xs font-medium",
               isLight
                 ? "text-[#1a1625]/60 hover:text-[#1a1625]"
                 : "text-white/60 hover:text-white"
             )}
           >
             取消
-          </button>
-          <button
+          </ActionButton>
+          <ActionButton
             onClick={handleUnlock}
             disabled={verifying || !password.trim()}
             className={cn(
-              "motion-control h-8 px-4 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40",
+              "!h-8 px-4 text-xs font-semibold",
               isLight
-                ? "bg-black text-white/80 hover:text-white"
-                : "bg-white text-[#14101e]/80 hover:text-[#14101e]"
+                ? "text-[#1a1625]/85 hover:text-[#1a1625]"
+                : "text-white/85 hover:text-white"
             )}
           >
             {verifying ? (
@@ -275,7 +294,7 @@ export const UnlockInstanceModal: React.FC<UnlockInstanceModalProps> = ({
             ) : (
               <span>解锁并{actionText}</span>
             )}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </>

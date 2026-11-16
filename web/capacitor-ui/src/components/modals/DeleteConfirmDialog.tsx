@@ -1,8 +1,11 @@
 import React from "react";
-import { X, AlertTriangle } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { LAYERS } from "../../constants/layers";
 import { LayerBackdrop } from "../common/LayerBackdrop";
+import { ActionButton } from "../common/ActionButton";
+import { ErrorReportAlert } from "../common/ErrorReportAlert";
+import type { DiagnosticContext } from "../../lib/native-errors";
 import type { TavernInstance } from "../../types";
 
 export interface DeleteConfirmDialogProps {
@@ -13,6 +16,7 @@ export interface DeleteConfirmDialogProps {
   glassBg: string;
   isDeleting: boolean;
   deleteError: string | null;
+  deleteDiagnostic?: DiagnosticContext | null;
   onConfirm: () => Promise<void>;
 }
 
@@ -28,6 +32,7 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   glassBg,
   isDeleting,
   deleteError,
+  deleteDiagnostic,
   onConfirm,
 }) => {
   if (!isOpen || !instance) return null;
@@ -43,7 +48,7 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
       />
       <div
         className={cn(
-          "ios-task-surface fixed overflow-hidden rounded-2xl backdrop-blur-[40px] saturate-180 animate-clone-panel",
+          "ios-task-surface reading-flat-surface fixed overflow-hidden rounded-2xl backdrop-blur-[40px] saturate-180 animate-clone-panel",
           glassBg,
           isLight && "is-light"
         )}
@@ -52,14 +57,11 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "min(380px, calc(100vw - 2rem))",
+          width: "min(380px, calc(var(--ui-vw, 100vw) - 2rem))",
         }}
       >
         <div
-          className={cn(
-            "flex h-12 items-center justify-between border-b px-5",
-            isLight ? "border-black/[0.06]" : "border-white/[0.06]"
-          )}
+          className="flex h-12 items-center justify-between px-5"
         >
           <span
             className={cn(
@@ -143,52 +145,37 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
               </p>
             </div>
           )}
-          {deleteError && (
-            <div
-              className={cn(
-                "mt-4 flex items-start gap-2 rounded-xl border px-3 py-2 text-[11px] leading-relaxed",
-                isLight
-                  ? "border-[#a12c4c]/10 bg-[#a12c4c]/[0.04] text-[#783047]/65"
-                  : "border-[#e88ca5]/10 bg-white/[0.025] text-[#e8a2b5]/75"
-              )}
-            >
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-              <span>{deleteError}</span>
-            </div>
-          )}
+          <ErrorReportAlert
+            error={deleteError}
+            diagnostic={deleteDiagnostic}
+            area="manage"
+            stage="delete-instance"
+            isLight={isLight}
+            extraSecrets={[instance.subtitle, instance.name, instance.installPath]}
+            className="mt-4"
+          />
         </div>
-        <div
-          className={cn(
-            "flex items-center justify-end gap-2 border-t px-5 py-3",
-            isLight ? "border-black/[0.06]" : "border-white/[0.06]"
-          )}
-        >
-          <button
-            type="button"
+        <div className="flex items-center justify-end gap-2 px-5 py-3">
+          <ActionButton
             disabled={isDeleting}
             onClick={onClose}
             className={cn(
-              "flat-capsule motion-control h-8 rounded-full px-4 text-xs font-medium border-0 disabled:pointer-events-none disabled:opacity-40",
+              "!h-8 px-4 text-xs font-medium",
               isLight
                 ? "text-[#1a1625]/60 hover:text-[#1a1625]"
                 : "text-white/60 hover:text-white"
             )}
           >
             取消
-          </button>
-          <button
-            type="button"
+          </ActionButton>
+          <ActionButton
+            tone="danger"
             disabled={isDeleting}
             onClick={onConfirm}
-            className={cn(
-              "flat-capsule motion-control flex h-8 items-center justify-center gap-1.5 rounded-full px-5 text-xs font-semibold border-0 disabled:pointer-events-none disabled:opacity-50",
-              isLight
-                ? "text-red-900/60 hover:text-red-900"
-                : "text-red-300/75 hover:text-red-200"
-            )}
+            className="!h-8 px-5 text-xs font-semibold"
           >
             {isDeleting ? "正在删除" : "删除"}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </>

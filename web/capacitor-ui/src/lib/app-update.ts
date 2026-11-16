@@ -5,6 +5,7 @@ interface Release {
   tag_name?: unknown;
   html_url?: unknown;
   published_at?: unknown;
+  body?: unknown;
   draft?: unknown;
   prerelease?: unknown;
   assets?: { name?: unknown; browser_download_url?: unknown; size?: unknown; state?: unknown }[];
@@ -56,14 +57,115 @@ export function hasReleaseAsset(release: Release, platform: UpdatePlatform): boo
     } catch { return false; }
   });
 }
+function cleanReleaseMarkdown(text: string): string {
+  return text
+    .replace(/!\[([^\]]*)\]\([^)\s]+(?:\s+"[^"]*")?\)/g, "$1")
+    .replace(/\[([^\]]+)\]\((?:https?:\/\/|\/|#)[^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\[[^\]]*\]/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/~~([^~]+)~~/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/(^|[^\w])_([^_\s][^_]*?)_(?=[^\w]|$)/g, "$1$2")
+    .replace(/(^|[^\w])\*([^*\s][^*]*?)\*(?=[^\w]|$)/g, "$1$2")
+    .replace(/<\/?[a-zA-Z][^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * 从 GitHub Release Markdown 正文中提取版本总览摘要：
+ * 1. 优先取正文顶部 `>` 引用块（SillyClient 标准发布摘要段落）；
+ * 2. 若缺失引用块，则兜底提取首个非标题/非代码块的普通段落；
+ * 3. 清洗链接、行内代码等 Markdown 标记，便于桌面/移动端直接排版展示。
+ */
+export function extractReleaseSummary(body: unknown): string | undefined {
+  if (typeof body !== "string") return undefined;
+  const lines = body.replace(/\r\n?/g, "\n").split("\n");
+
+  const collectBlockquote = (stopAtSectionHeading: boolean): string[] => {
+    const collected: string[] = [];
+    let inFence = false;
+    let capturing = false;
+    for (const rawLine of lines) {
+      const trimmed = rawLine.trim();
+      if (/^(?:```|~~~)/.test(trimmed)) {
+        if (capturing) break;
+        inFence = !inFence;
+        continue;
+      }
+      if (inFence) continue;
+      if (stopAtSectionHeading && /^#{2,6}\s+/.test(trimmed)) break;
+      const quoteMatch = /^\s*>\s?(.*)$/.exec(rawLine);
+      if (quoteMatch) {
+        const cleanedLine = quoteMatch[1].trim();
+        if (!cleanedLine) {
+          if (capturing) break;
+          continue;
+        }
+        capturing = true;
+        collected.push(cleanedLine);
+        continue;
+      }
+      if (capturing) break;
+    }
+    return collected;
+  };
+
+  const collectParagraph = (stopAtSectionHeading: boolean): string[] => {
+    const collected: string[] = [];
+    let inFence = false;
+    let capturing = false;
+    for (const rawLine of lines) {
+      const trimmed = rawLine.trim();
+      if (/^(?:```|~~~)/.test(trimmed)) {
+        if (capturing) break;
+        inFence = !inFence;
+        continue;
+      }
+      if (inFence) continue;
+      if (stopAtSectionHeading && /^#{2,6}\s+/.test(trimmed)) break;
+      if (!trimmed) {
+        if (capturing) break;
+        continue;
+      }
+      if (/^(?:#{1,6}\s|<!--|[-*_]{3,}$|\||>)/.test(trimmed)) {
+        if (capturing) break;
+        continue;
+      }
+      const strippedBullet = trimmed.replace(/^(?:[-*+]\s+|\d+\.\s+)/, "");
+      capturing = true;
+      collected.push(strippedBullet);
+    }
+    return collected;
+  };
+
+  // Prefer intro blockquote before section headings, then intro paragraph, then anywhere in body.
+  const candidates = [
+    collectBlockquote(true),
+    collectParagraph(true),
+    collectBlockquote(false),
+    collectParagraph(false),
+  ];
+  for (const part of candidates) {
+    if (part.length === 0) continue;
+    const cleaned = cleanReleaseMarkdown(part.join(" "));
+    if (cleaned) return cleaned;
+  }
+
+  return undefined;
+}
+
 export function appUpdateInfo(currentVersion: string, raw: Release, platform: UpdatePlatform): AppUpdateInfo {
   const latestVersion = typeof raw.tag_name === "string" ? raw.tag_name.replace(/^v/i, "").trim() : "";
   if (!version(latestVersion)) throw new Error("Release version is invalid");
+  const releaseSummary = extractReleaseSummary(raw.body);
   return {
     currentVersion, latestVersion,
     updateAvailable: isAppUpgrade(currentVersion, latestVersion, hasReleaseAsset(raw, platform)),
     releaseUrl: `https://github.com/${REPOSITORY}/releases/tag/${encodeURIComponent(String(raw.tag_name))}`,
     ...(typeof raw.published_at === "string" ? { publishedAt: raw.published_at } : {}),
+    ...(releaseSummary ? { releaseSummary } : {}),
   };
 }
 async function timedRequest(url: string, request: typeof fetch) {

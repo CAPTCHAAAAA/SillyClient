@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
+import { reportGlobalError } from "../../lib/global-error-store";
 import { cn } from "../../lib/utils";
 import "./InstanceRenameField.css";
 
@@ -112,7 +113,22 @@ export function InstanceRenameField({ state, isLight }: InstanceRenameFieldProps
       </button>
       {state.error && (
         <div id={errorId} role="alert" className="instance-rename-field__error">
-          {state.error}
+          <span className="min-w-0 flex-1">{state.error}</span>
+          <button
+            type="button"
+            onClick={() =>
+              reportGlobalError(state.error, {
+                area: "rename",
+                stage: "rename-instance",
+                userMessage: state.error || undefined,
+                extraSecrets: [state.value],
+                force: true,
+              })
+            }
+            className="instance-rename-field__report flat-capsule motion-control"
+          >
+            反馈
+          </button>
         </div>
       )}
     </form>

@@ -126,6 +126,9 @@ const methods = {
   async sendCommand({ instanceId, text }) {
     emit("log", { instanceId, message: `练习模式：未执行命令 ${text}`, source: "command", level: "info" });
   },
+  async submitDiagnosticReport() {
+    return { ok: true, reportId: "SC-ONBOARDING", message: "练习模式：已模拟发送脱敏摘要" };
+  },
 } satisfies Partial<TarvenEnvPlugin>;
 
 export const onboardingEnvironment = new Proxy({} as TarvenEnvPlugin, {

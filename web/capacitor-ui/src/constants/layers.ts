@@ -35,6 +35,10 @@ export const LAYERS = {
 
   // 5. 悬浮菜单 (80)
   POPOVER_MENU: 80,
+
+  // 6. 全局置顶虚化反馈浮层（高于 Onboarding 1002 与 Dev 调试条 99）
+  GLOBAL_ALERT_BACKDROP: 1100,
+  GLOBAL_ALERT_SURFACE: 1102,
 } as const;
 
 export type LayerLevel = keyof typeof LAYERS;

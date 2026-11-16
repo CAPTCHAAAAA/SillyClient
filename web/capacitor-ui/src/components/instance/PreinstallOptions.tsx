@@ -30,7 +30,7 @@ export function PreinstallOptions({
       >
         <span>预设安装</span>
         <ChevronDown className={cn(
-          "w-3.5 h-3.5 flex-shrink-0 opacity-40 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "w-3.5 h-3.5 flex-shrink-0 opacity-40 transition-transform duration-[400ms] ease-[cubic-bezier(0.23,1,0.32,1)]",
           expanded && "rotate-180",
         )} />
       </button>

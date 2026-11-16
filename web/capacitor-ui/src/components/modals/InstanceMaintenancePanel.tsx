@@ -7,6 +7,13 @@ import { cn } from "../../lib/utils";
 import { defaultMaintenanceSelection, maintenanceRemaining, maintenanceSelection, MaintenanceSession } from "../../lib/maintenance-plan";
 import { LAYERS } from "../../constants/layers";
 import { LayerBackdrop } from "../common/LayerBackdrop";
+import { ErrorReportAlert } from "../common/ErrorReportAlert";
+import { reportGlobalError } from "../../lib/global-error-store";
+import {
+  createDiagnosticContext,
+  humanizeNativeError,
+  type DiagnosticContext,
+} from "../../lib/native-errors";
 
 interface Props {
   instance: TavernInstance | null;
@@ -35,9 +42,30 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expired, setExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDiagnostic, setErrorDiagnostic] = useState<DiagnosticContext | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [summary, setSummary] = useState<string | null>(null);
   const [activeRun, setActiveRun] = useState<Awaited<ReturnType<typeof TarvenEnv.getStatus>> | null>(null);
+  const secrets = [instance?.subtitle, instance?.name, instance?.installPath];
+
+  const recordError = useCallback((failure: unknown, stage: string) => {
+    const friendly = humanizeNativeError(failure);
+    const context = createDiagnosticContext(failure, {
+      area: "maintenance",
+      stage,
+      userMessage: friendly,
+      extraSecrets: [instance?.subtitle, instance?.name, instance?.installPath],
+    });
+    setError(friendly);
+    setErrorDiagnostic(context);
+    reportGlobalError(failure, {
+      area: "maintenance",
+      stage,
+      userMessage: friendly,
+      diagnostic: context,
+      extraSecrets: [instance?.subtitle, instance?.name, instance?.installPath],
+    });
+  }, [instance?.installPath, instance?.name, instance?.subtitle]);
   const text = isLight ? "text-[#1a1625]/70" : "text-white/70";
   const subtle = isLight ? "text-[#1a1625]/40" : "text-white/40";
   const control = cn("flat-capsule motion-control h-8 rounded-full px-3 text-[11px] font-medium border-0 disabled:opacity-40 disabled:pointer-events-none",
@@ -59,6 +87,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
     const ticket = session.current.next();
     setBusy(true);
     setError(null);
+    setErrorDiagnostic(null);
     setSummary(null);
     setWarnings([]);
     setScan(null);
@@ -85,11 +114,11 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
         setExpired(result.expiresAt <= Date.now());
       }
     } catch (failure) {
-      if (session.current.current(ticket)) setError(failure instanceof Error ? failure.message : String(failure));
+      if (session.current.current(ticket)) recordError(failure, `refresh-${view}`);
     } finally {
       if (session.current.current(ticket)) setBusy(false);
     }
-  }, [instanceId, instance?.type]);
+  }, [instanceId, instance?.installPath, instance?.type, recordError]);
 
   useEffect(() => {
     session.current.switchTo(isOpen && instance?.type === "local" ? instanceId : null);
@@ -120,7 +149,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
       className={cn("ios-task-surface fixed rounded-2xl flex flex-col backdrop-blur-[40px] saturate-180",
         closing ? "animate-clone-panel-exit" : "animate-clone-panel", glassBg, isLight && "is-light")}
       style={{ zIndex: LAYERS.DIALOG_SURFACE, top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-        width: "min(460px, calc(100vw - 2rem))", maxHeight: "min(84vh, calc(100dvh - 3rem))" }}>
+        width: "min(460px, calc(var(--ui-vw, 100vw) - 2rem))", maxHeight: "min(calc(var(--ui-vh, 100vh) * 0.84), calc(var(--ui-dvh, 100dvh) - 3rem))" }}>
       <header className="flex items-center justify-between gap-3 px-5 h-14 flex-shrink-0">
         <div className="min-w-0">
           <h2 className={cn("text-sm font-semibold", text)}>实例维护</h2>
@@ -141,7 +170,14 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
         </div>
       </div>
       <div className="min-h-0 overflow-y-auto px-5 pb-4 scrollbar-hidden">
-        {error && <div role="alert" className="text-xs text-red-400 whitespace-pre-wrap break-words mb-3">{error}</div>}
+        <ErrorReportAlert
+          error={error}
+          diagnostic={errorDiagnostic}
+          area="maintenance"
+          isLight={isLight}
+          extraSecrets={secrets}
+          className="mb-3"
+        />
         {summary && <div role="status" className={cn("text-xs mb-3", text)}>{summary}</div>}
         {warnings.map((warning, index) => <div key={index} className={cn("text-[10px] break-words mb-2", subtle)}>{warning}</div>)}
         {expired && tab === "scan" && <div role="status" className={cn("text-[11px] mb-3", subtle)}>扫描已过期</div>}
@@ -154,7 +190,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
               await TarvenEnv.closeTavern({ instanceId, operationId: activeRun.operationId });
               if (session.current.current(ticket)) await refresh(tab);
             } catch (failure) {
-              if (session.current.current(ticket)) setError(failure instanceof Error ? failure.message : String(failure));
+              if (session.current.current(ticket)) recordError(failure, "close-running");
             } finally { if (session.current.current(ticket)) setBusy(false); }
           }}>停止实例</button>}
         {busy && <div role="status" className={cn("text-xs py-5 text-center", subtle)}>处理中...</div>}
@@ -186,7 +222,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
             <div className="text-xs font-medium break-words">{item.description}</div>
             <div className={cn("text-[10px] break-all mt-1", subtle)}>{item.relativePath}</div>
             <div className={cn("text-[10px] mt-1", subtle)}>{size(item.sizeBytes)} · {new Date(item.createdAt).toLocaleString()}</div>
-            {item.conflict && <div className="text-[10px] text-red-400 mt-1 break-words">{item.conflict}</div>}
+            {item.conflict && <div className={cn("text-[10px] mt-1 break-words", isLight ? "text-red-900/75" : "text-red-300/80")}>{item.conflict}</div>}
           </div>
           <button type="button" title="恢复" aria-label={`恢复 ${item.description}`}
             disabled={busy || !item.canRestore || !item.token} className={cn(control, "px-2")}
@@ -195,6 +231,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
               const ticket = session.current.next();
               setBusy(true);
               setError(null);
+              setErrorDiagnostic(null);
               try {
                 const result = await TarvenEnv.restoreInstanceMaintenance({
                   instanceId, recoveryId: item.recoveryId, token: item.token, installPath: instance?.installPath,
@@ -207,7 +244,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
                 setWarnings(records.warnings);
                 setSummary("已恢复");
               } catch (failure) {
-                if (session.current.current(ticket)) setError(failure instanceof Error ? failure.message : String(failure));
+                if (session.current.current(ticket)) recordError(failure, "restore");
               } finally { if (session.current.current(ticket)) setBusy(false); }
             }}><RotateCcw className="h-3.5 w-3.5" /></button>
         </div>)}
@@ -220,6 +257,7 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
             const ticket = session.current.next();
             setBusy(true);
             setError(null);
+            setErrorDiagnostic(null);
             try {
               const result = await TarvenEnv.applyInstanceMaintenance({
                 instanceId, scanId: scan.scanId, items: maintenanceSelection(scan, selected),
@@ -231,12 +269,24 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
               setSelected(new Set());
               setExpired(true);
               const errors = result.results.filter(item => !item.success).map(item => item.error || "项目未处理");
-              if (errors.length) setError(errors.join("\n"));
+              if (errors.length) {
+                const rawCombined = errors.join("\n");
+                const friendly = errors.map(item => humanizeNativeError(item)).join("\n");
+                setError(friendly);
+                setErrorDiagnostic(
+                  createDiagnosticContext(rawCombined, {
+                    area: "maintenance",
+                    stage: "apply-items",
+                    userMessage: friendly,
+                    extraSecrets: secrets,
+                  })
+                );
+              }
               const completed = result.results.filter(item => item.success).length;
               setSummary(`已处理 ${completed} 项 · 已隔离 ${size(result.quarantinedBytes)}`);
             } catch (failure) {
               if (session.current.current(ticket)) {
-                setError(failure instanceof Error ? failure.message : String(failure));
+                recordError(failure, "apply");
                 setSelected(new Set());
                 setExpired(true);
               }

@@ -112,7 +112,7 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
         <div className="self-start flex items-center gap-1.5 w-fit">
           <span
             className={cn(
-              "px-2 py-0.5 rounded-md text-[10px] font-medium tracking-wide border border-transparent",
+              "px-2 py-0.5 rounded-md text-[10px] font-medium tracking-wide",
               isLight
                 ? "bg-black/[0.035] text-[#1a1625]/60"
                 : "bg-white/[0.07] text-white/70"
@@ -124,10 +124,10 @@ export const InstanceStoppedCard: React.FC<InstanceStoppedCardProps> = ({
             <span
               title="已设置访问密码"
               className={cn(
-                "px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide border inline-flex items-center gap-1",
+                "px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide inline-flex items-center gap-1",
                 isLight
-                  ? "bg-black/[0.06] text-[#1a1625]/60 border-black/[0.08]"
-                  : "bg-white/[0.08] text-white/60 border-white/[0.08]"
+                  ? "bg-black/[0.045] text-[#1a1625]/60"
+                  : "bg-white/[0.07] text-white/60"
               )}
             >
               <Lock className="w-2.5 h-2.5" />

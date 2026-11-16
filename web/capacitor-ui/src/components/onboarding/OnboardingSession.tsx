@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ONBOARDING_CHANNEL, ONBOARDING_STARTUP_TIMEOUT_MS, type OnboardingSeed } from "../../lib/onboarding-mode";
 import { MENU_GLASS_FILTER, menuShellBackground } from "../../lib/menu-surface";
+import { reportGlobalError } from "../../lib/global-error-store";
 import { ActionButton } from "../common/ActionButton";
 import { LayerBackdrop } from "../common/LayerBackdrop";
 
@@ -118,6 +119,16 @@ export default function OnboardingSession({ onComplete, onCancel, ...seed }: Onb
     setSessionId(createSessionId());
   };
 
+  useEffect(() => {
+    if (status !== "error") return;
+    reportGlobalError(new Error("引导加载超时或未能就绪"), {
+      area: "onboarding",
+      stage: "startup",
+      platform: seedRef.current.platform,
+      userMessage: "引导暂时没有打开，请稍后重试或提交反馈协助排查",
+    });
+  }, [status]);
+
   return createPortal(
     <>
       {status !== "error" && <iframe
@@ -161,7 +172,24 @@ export default function OnboardingSession({ onComplete, onCancel, ...seed }: Onb
           {status === "error" && <p className="mt-2 text-xs opacity-65">可以重试，也可以先返回首页。</p>}
           <div className="mt-5 flex items-center justify-end gap-2">
             <ActionButton onClick={onCancel}>返回</ActionButton>
-            {status === "error" && <ActionButton onClick={retry}>重试</ActionButton>}
+            {status === "error" && (
+              <>
+                <ActionButton
+                  onClick={() =>
+                    reportGlobalError(new Error("引导加载超时或未能就绪"), {
+                      area: "onboarding",
+                      stage: "startup",
+                      platform: seedRef.current.platform,
+                      userMessage: "引导暂时没有打开，请稍后重试或提交反馈协助排查",
+                      force: true,
+                    })
+                  }
+                >
+                  反馈
+                </ActionButton>
+                <ActionButton onClick={retry}>重试</ActionButton>
+              </>
+            )}
           </div>
         </div>
       </div>}

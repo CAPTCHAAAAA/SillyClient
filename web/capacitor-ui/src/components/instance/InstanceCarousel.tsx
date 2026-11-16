@@ -218,6 +218,7 @@ export interface InstanceCarouselProps {
   onOpenMenu: (instance: TavernInstance, rect: DOMRect) => void;
   rename?: InstanceRenameState;
   isWindows?: boolean;
+  isIOS?: boolean;
   isWeb?: boolean;
   isShowcase?: boolean;
   isLocalPreview?: boolean;
@@ -254,6 +255,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
   onOpenMenu,
   rename,
   isWindows = false,
+  isIOS = false,
   isWeb = false,
   isShowcase = false,
   isLocalPreview = false,
@@ -1122,6 +1124,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
                 onOpenMenu={onOpenMenu}
                 rename={rename?.instanceId === instance.id ? rename : undefined}
                 isWindows={isWindows}
+                isIOS={isIOS}
                 onLongPress={onLongPressCard}
               />
             );

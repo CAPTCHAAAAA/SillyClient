@@ -3,6 +3,8 @@ import { Play } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ActionButton } from "../common/ActionButton";
 import { TerminalWell } from "../common/TerminalWell";
+import { reportGlobalError } from "../../lib/global-error-store";
+import { createDiagnosticContext, type DiagnosticContext } from "../../lib/native-errors";
 import { LAYERS } from "../../constants/layers";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
 import "../common/console-card.css";
@@ -15,6 +17,7 @@ export interface LaunchConsoleModalProps {
   glassBg: string;
   operationPurpose: "launch" | "create" | "restart";
   launchError: string | null;
+  launchDiagnostic?: DiagnosticContext | null;
   launchProgress: { pct: number; text: string } | null;
   lastLaunchParams: any;
   logKey: string | null;
@@ -38,6 +41,7 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
   glassBg,
   operationPurpose,
   launchError,
+  launchDiagnostic,
   launchProgress,
   lastLaunchParams,
   logKey,
@@ -55,6 +59,15 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
   const isDynamic = glassBg.includes("1c1420");
   const titleId = React.useId();
   const statusId = React.useId();
+  const fallbackDiagnostic = React.useMemo(() => {
+    if (launchDiagnostic || !launchError) return null;
+    return createDiagnosticContext(launchError, {
+      area: operationPurpose === "create" ? "create" : "launch",
+      stage: operationPurpose,
+      userMessage: launchError,
+    });
+  }, [launchDiagnostic, launchError, operationPurpose]);
+  const resolvedDiagnostic = launchDiagnostic ?? fallbackDiagnostic;
   if (!isOpen && !isClosing) return null;
 
   const progress = Math.min(100, Math.max(0, launchProgress?.pct || 0));
@@ -146,6 +159,27 @@ export const LaunchConsoleModal: React.FC<LaunchConsoleModalProps> = ({
               >
                 重试
               </ActionButton>
+              {resolvedDiagnostic && (
+                <ActionButton
+                  onClick={() =>
+                    reportGlobalError(resolvedDiagnostic.summary || launchError, {
+                      area: operationPurpose === "create" ? "create" : "launch",
+                      stage: operationPurpose,
+                      userMessage: launchError,
+                      diagnostic: resolvedDiagnostic,
+                      extraSecrets: [
+                        lastLaunchParams?.subtitle,
+                        lastLaunchParams?.name,
+                        lastLaunchParams?.installPath,
+                        lastLaunchParams?.url,
+                      ],
+                      force: true,
+                    })
+                  }
+                >
+                  反馈
+                </ActionButton>
+              )}
               <ActionButton
                 onClick={onClose}
                 tone="danger"

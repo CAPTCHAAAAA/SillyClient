@@ -2,7 +2,10 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { TarvenEnv } from "../../capacitor-plugin";
 import { cn } from "../../lib/utils";
+import { toUnscaledPx } from "../../lib/ui-scale";
 import { LAYERS } from "../../constants/layers";
+import { reportGlobalError } from "../../lib/global-error-store";
+import { humanizeNativeError } from "../../lib/native-errors";
 import type { TavernInstance } from "../../types";
 
 export interface CardActionMenuProps {
@@ -57,8 +60,8 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
         )}
         style={{
           zIndex: LAYERS.POPOVER_MENU,
-          top: Math.max(Math.min(menuPos.top, window.innerHeight - 240), 16),
-          left: Math.max(Math.min(menuPos.left + 8, window.innerWidth - 192), 16),
+          top: Math.max(Math.min(menuPos.top, toUnscaledPx(window.innerHeight) - 240), 16),
+          left: Math.max(Math.min(menuPos.left + 8, toUnscaledPx(window.innerWidth) - 192), 16),
           transform: "translateY(-50%)",
         }}
       >
@@ -72,6 +75,13 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
                   await TarvenEnv.returnToTavern();
                 } catch (err) {
                   console.error("[returnToTavern]", err);
+                  const friendly = humanizeNativeError(err);
+                  reportGlobalError(err, {
+                    area: "launch",
+                    stage: "return-to-tavern",
+                    userMessage: friendly,
+                    extraSecrets: [instance.subtitle, instance.name, instance.installPath],
+                  });
                 }
               }}
               className={cn(
@@ -91,6 +101,13 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
                   await TarvenEnv.closeTavern();
                 } catch (err) {
                   console.error("[closeTavern]", err);
+                  const friendly = humanizeNativeError(err);
+                  reportGlobalError(err, {
+                    area: "launch",
+                    stage: "close-tavern",
+                    userMessage: friendly,
+                    extraSecrets: [instance.subtitle, instance.name, instance.installPath],
+                  });
                 }
               }}
               className={cn(

@@ -3,6 +3,7 @@ export interface RenderEngineSettings {
   immersiveColor: boolean;
   colorExtractionMode: "realtime" | "once";
   clickEffect: boolean;
+  performancePreset: boolean;
 }
 
 export function normalizeRenderEngineSettings(
@@ -15,5 +16,6 @@ export function normalizeRenderEngineSettings(
     immersiveColor,
     colorExtractionMode,
     clickEffect: immersiveColor && input?.clickEffect !== false,
+    performancePreset: input?.performancePreset !== false,
   };
 }

@@ -8,6 +8,7 @@ interface LayerBackdropProps {
   onClick?: () => void;
   zIndex?: number;
   className?: string;
+  style?: React.CSSProperties;
   blur?: boolean;
 }
 
@@ -21,14 +22,21 @@ export const LayerBackdrop: React.FC<LayerBackdropProps> = ({
   onClick,
   zIndex = LAYERS.MODAL_BACKDROP,
   className,
+  style,
   blur = true,
 }) => {
   if (!isOpen && !isClosing) return null;
 
+  const backdropStyle = {
+    ...(blur ? undefined : { "--overlay-blur": "0px" }),
+    ...style,
+    zIndex,
+  } as React.CSSProperties;
+
   return (
     <div
       onClick={onClick}
-      style={{ zIndex }}
+      style={backdropStyle}
       className={cn(
         "fixed inset-0 overlay-backdrop",
         blur ? "bg-black/25 backdrop-blur-[2px]" : "bg-black/15",

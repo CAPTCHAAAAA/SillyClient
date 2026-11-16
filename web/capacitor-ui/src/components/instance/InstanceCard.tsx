@@ -22,6 +22,7 @@ export interface InstanceCardProps {
   onOpenMenu: (instance: TavernInstance, rect: DOMRect) => void;
   rename?: InstanceRenameState;
   isWindows?: boolean;
+  isIOS?: boolean;
   onLongPress?: (instance: TavernInstance) => void;
   style?: React.CSSProperties;
   className?: string;
@@ -119,6 +120,7 @@ export const InstanceCard = React.memo<InstanceCardProps>((props) => {
           onToggleExpand={toggleExpand}
           active={isRunning}
           isWindows={props.isWindows}
+          isIOS={props.isIOS}
         />
       }
     />

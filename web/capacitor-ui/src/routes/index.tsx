@@ -8,20 +8,22 @@ import {
   Folder,
   Cloud,
   Terminal,
+  AlertTriangle,
 } from "lucide-react";
 import { cn, normalizeStoredVersion } from "@/lib/utils";
+import { applyUiScale, loadUiScale, saveUiScale, toUnscaledPx } from "@/lib/ui-scale";
 import { Capacitor } from "@capacitor/core";
 import { TarvenEnv, DEFAULT_CONFIG, normalizeRenderEngineSettings } from "@/capacitor-plugin";
 import { openExternalUrl } from "@/lib/external-links";
-import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, GithubRelease, GarbageItem, TarvenEvent, PreinstalledExtensionId, RenderEngineSettings } from "@/capacitor-plugin";
-import { buildInstanceSubfolder, cleanInstallPath, installationSelection, instanceParentPath, sanitizeFolderName } from "@/lib/install-location";
-import { humanizeNativeError } from "@/lib/native-errors";
+import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, InstallPathMode, GithubRelease, GarbageItem, TarvenEvent, PreinstalledExtensionId, RenderEngineSettings } from "@/capacitor-plugin";
+import { buildInstanceSubfolder, cleanInstallPath, exactInstallTarget, installationSelection, instanceParentPath, normalizeInstanceIdentity, sanitizeFolderName, shouldShowDirectoryPickerError, validateInstallPathInput } from "@/lib/install-location";
+import { createDiagnosticContext, extractErrorMessage, humanizeNativeError, sanitizeDiagnosticText, type DiagnosticContext } from "@/lib/native-errors";
 import { selectTavernRelease } from "@/lib/tavern-release";
 import { normalizeStoredInstances, serializeInstanceRecords, type StoredInstance } from "@/lib/instance-persistence";
 import { GLOBAL_LOG_KEY, instanceLogs, type LogLine } from "@/lib/log-store";
 import { OperationCoordinator, OperationCancelledError, type OperationContext } from "@/lib/operation-coordinator";
 import { APP_VERSION } from "@/constants/app-version";
-import { fetchAppUpdate } from "@/lib/app-update";
+import { extractReleaseSummary, fetchAppUpdate } from "@/lib/app-update";
 import { isOnboardingSandbox } from "@/lib/onboarding-mode";
 import type { GuideStep } from "@/components/onboarding/guide-content";
 import OnboardingSession from "@/components/onboarding/OnboardingSession";
@@ -30,6 +32,9 @@ import { LAYERS } from "@/constants/layers";
 import { useLayerStack } from "@/hooks/useLayerStack";
 import { useBackgroundMode } from "@/hooks/useBackgroundMode";
 import { LayerBackdrop } from "@/components/common/LayerBackdrop";
+import { ActionButton } from "@/components/common/ActionButton";
+import { GlobalErrorReportOverlay } from "@/components/common/GlobalErrorReportOverlay";
+import { reportGlobalError } from "@/lib/global-error-store";
 import { InstanceCarousel, type InstanceCarouselRef } from "@/components/instance/InstanceCarousel";
 import type { InstanceRenameState } from "@/components/instance/InstanceRenameField";
 import { NewInstanceWizardModal } from "@/components/modals/NewInstanceWizardModal";
@@ -61,6 +66,7 @@ const ONBOARDING_KEY = "sillyclient.onboarding.version";
 const ONBOARDING_VERSION = "6";
 const CREATE_CARD_SLOT_KEY = "sillyclient.createCardSlot";
 const CURRENT_VERSION = 2;
+const DEV_FAULT_TEST_INSTANCE_ID = "__dev-fault-test-card__";
 const BACKGROUND_PANEL_EXIT_MS = 300;
 const PANEL_EXIT_MS = 300;
 const POPOVER_EXIT_MS = 300;
@@ -137,7 +143,10 @@ function normalizeStoredCover(cover?: string) {
 /** 持久化实例列表(icon 不持久化,加载时还原)。 */
 function saveInstances(list: TavernInstance[]) {
   try {
-    localStorage.setItem(INSTANCES_KEY, JSON.stringify(serializeInstanceRecords(list)));
+    const persistable = import.meta.env.DEV
+      ? list.filter((item) => item.id !== DEV_FAULT_TEST_INSTANCE_ID)
+      : list;
+    localStorage.setItem(INSTANCES_KEY, JSON.stringify(serializeInstanceRecords(persistable)));
   } catch {
     /* ignore */
   }
@@ -164,6 +173,24 @@ const DEMO_RUNNING_INSTANCES: TavernInstance[] = [
   { ...DEMO_INSTANCE, id: "demo-running-third", name: "SillyTavern", subtitle: "备用酒馆 · 运行中", version: "stable", port: 8002 },
 ];
 
+const DEV_FAULT_TEST_INSTANCE: TavernInstance | null = import.meta.env.DEV
+  ? {
+      id: DEV_FAULT_TEST_INSTANCE_ID,
+      name: "异常自动捕获测试",
+      subtitle: "点击展开 · 点启动必报错",
+      version: "dev",
+      status: "error",
+      type: "remote",
+      url: "http://127.0.0.1:59999",
+      createdAt: "测试卡片",
+      lastUsed: "点开后点击启动",
+      totalUsage: "0s",
+      color: "#8b3a52",
+      port: 59999,
+      icon: <AlertTriangle className="w-5 h-5" />,
+    }
+  : null;
+
 const DEBUG_LAUNCH_LOG_KEY = "__sillyclient_debug_launch_console__";
 const DEBUG_OPEN_INSTANCE: TavernInstance = {
   ...DEMO_INSTANCE,
@@ -185,8 +212,15 @@ const DEBUG_CREATE_INSTANCE: TavernInstance = {
 
 const SC_BORDEAUX_PRESET: CompanionPresetSelection = {
   bundleId: "sc-bordeaux",
-  revision: 1,
+  revision: 3,
 };
+
+class ClientValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ClientValidationError";
+  }
+}
 
 const LOGO_FONTS = [
   { name: "Yummy", family: "'Yummy', sans-serif" },
@@ -253,8 +287,10 @@ function SillyClientLauncher() {
   const isAndroid = Capacitor.getPlatform() === "android";
   const isIOS = Capacitor.getPlatform() === "ios";
   const isMobile = isAndroid || isIOS;
+  const platformTag = isWindows ? "windows" : isIOS ? "ios" : isAndroid ? "android" : "web";
   const isDemoPreview = isWeb && !isWindows && !isShowcase && !isNativePreview
     && (import.meta.env.DEV || (isLocalPreview && window.location.port === "8768"));
+  const canPreviewIssueReport = isDemoPreview || (isNativePreview && !isShowcase);
   const terminalTitle = isWindows ? "Windows 控制台" : isIOS ? "iOS 控制台" : "Android 终端";
   const terminalPrompt = isWindows ? "C:\\>" : isIOS ? "ios >" : "~ $";
   const terminalBanner = isWindows
@@ -271,8 +307,14 @@ function SillyClientLauncher() {
   const [isRelocateModalClosing, setIsRelocateModalClosing] = useState(false);
   const [instances, setInstances] = useState<TavernInstance[]>(() => {
     if (isShowcase) return [];
-    const loaded = loadInstances();
-    return isDemoPreview ? [...DEMO_RUNNING_INSTANCES, ...loaded] : loaded;
+    const rawLoaded = loadInstances();
+    const loaded = import.meta.env.DEV
+      ? rawLoaded.filter((item) => item.id !== DEV_FAULT_TEST_INSTANCE_ID)
+      : rawLoaded;
+    if (!isDemoPreview) return loaded;
+    return import.meta.env.DEV && DEV_FAULT_TEST_INSTANCE
+      ? [DEV_FAULT_TEST_INSTANCE, ...DEMO_RUNNING_INSTANCES, ...loaded]
+      : [...DEMO_RUNNING_INSTANCES, ...loaded];
   });
   const [showBgPanel, setShowBgPanel] = useState(false);
   const [isPanelClosing, setIsPanelClosing] = useState(false);
@@ -288,6 +330,7 @@ function SillyClientLauncher() {
   const [showLaunchPanel, setShowLaunchPanel] = useState(false);
   const [isLaunchPanelClosing, setIsLaunchPanelClosing] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
+  const [launchDiagnostic, setLaunchDiagnostic] = useState<DiagnosticContext | null>(null);
   const setLaunchLogs = useCallback((value: LogLine[] | ((previous: LogLine[]) => LogLine[])) => {
     const key = operations.current?.logKey || GLOBAL_LOG_KEY;
     instanceLogs.update(key, value);
@@ -338,6 +381,7 @@ function SillyClientLauncher() {
   const [newInstanceMode, setNewInstanceMode] = useState<"local" | "remote">("local");
   const [newInstanceName, setNewInstanceName] = useState("");
   const [newInstanceDir, setNewInstanceDir] = useState("");
+  const [newInstancePathMode, setNewInstancePathMode] = useState<InstallPathMode>("exact");
   const directoryPickerGeneration = useRef(0);
   const [newInstanceUrl, setNewInstanceUrl] = useState("http://");
   const [newRemoteAuthEnabled, setNewRemoteAuthEnabled] = useState(false);
@@ -348,6 +392,7 @@ function SillyClientLauncher() {
   const [newInstanceExtensionIds, setNewInstanceExtensionIds] = useState<PreinstalledExtensionId[]>([]);
   const [newInstanceLocalZip, setNewInstanceLocalZip] = useState<string | null>(null);
   const [newInstanceError, setNewInstanceError] = useState<string | null>(null);
+  const [newInstanceDiagnostic, setNewInstanceDiagnostic] = useState<DiagnosticContext | null>(null);
   const [isCreatingInstance, setIsCreatingInstance] = useState(false);
   // GitHub releases 真实数据
   const [releases, setReleases] = useState<GithubRelease[]>([]);
@@ -415,43 +460,112 @@ function SillyClientLauncher() {
     () => (canPreviewRenderSettings ? normalizeRenderEngineSettings(null) : null),
   );
   const renderHydrated = useRef(canPreviewRenderSettings);
+  const renderSettingsRef = useRef(renderSettings);
+  const renderSavePending = useRef(false);
+  const renderSettingsGeneration = useRef(0);
+  const [renderSettingsPending, setRenderSettingsPending] = useState(false);
+  const [renderSettingsError, setRenderSettingsError] = useState<string | null>(null);
+  const [renderSettingsDiagnostic, setRenderSettingsDiagnostic] = useState<DiagnosticContext | null>(null);
   const commitRenderSettings = useCallback(
-    (next: RenderEngineSettings) => {
-      if ((!isMobile && !canPreviewRenderSettings) || !renderHydrated.current) return;
+    async (next: RenderEngineSettings) => {
+      if ((!isMobile && !canPreviewRenderSettings) || !renderHydrated.current
+        || renderSavePending.current) return;
+      const previous = renderSettingsRef.current;
       const normalized = normalizeRenderEngineSettings(next);
+      renderSettingsGeneration.current++;
+      renderSavePending.current = true;
+      setRenderSettingsPending(true);
+      setRenderSettingsError(null);
+      setRenderSettingsDiagnostic(null);
+      renderSettingsRef.current = normalized;
       setRenderSettings(normalized);
-      if (isMobile) {
-        TarvenEnv.setRenderEngineSettings(normalized).catch(() => {});
+      try {
+        if (isMobile) await TarvenEnv.setRenderEngineSettings(normalized);
+      } catch (error) {
+        renderSettingsRef.current = previous;
+        setRenderSettings(previous);
+        const friendly = `设置保存失败：${humanizeNativeError(error)}`;
+        const context = createDiagnosticContext(error, {
+          area: "settings",
+          stage: "save-render-settings",
+          platform: platformTag,
+          userMessage: friendly,
+        });
+        setRenderSettingsError(friendly);
+        setRenderSettingsDiagnostic(context);
+        reportGlobalError(error, {
+          area: "settings",
+          stage: "save-render-settings",
+          platform: platformTag,
+          userMessage: friendly,
+          diagnostic: context,
+        });
+      } finally {
+        renderSavePending.current = false;
+        setRenderSettingsPending(false);
       }
     },
-    [isMobile, canPreviewRenderSettings],
+    [isMobile, canPreviewRenderSettings, platformTag],
   );
   useEffect(() => {
     if (!isMobile) return;
     let cancelled = false;
+    const generation = renderSettingsGeneration.current;
     TarvenEnv.getRenderEngineSettings()
       .then((settings) => {
-        if (cancelled) return;
-        setRenderSettings(normalizeRenderEngineSettings(settings));
+        if (cancelled || generation !== renderSettingsGeneration.current || renderSavePending.current) return;
+        const normalized = normalizeRenderEngineSettings(settings);
+        renderSettingsRef.current = normalized;
+        setRenderSettings(normalized);
         renderHydrated.current = true;
+        setRenderSettingsError(null);
+        setRenderSettingsDiagnostic(null);
       })
-      .catch(() => {});
+      .catch((error) => {
+        if (cancelled || generation !== renderSettingsGeneration.current) return;
+        const friendly = `设置读取失败：${humanizeNativeError(error)}`;
+        const context = createDiagnosticContext(error, {
+          area: "settings",
+          stage: "load-render-settings",
+          platform: platformTag,
+          userMessage: friendly,
+        });
+        setRenderSettingsError(friendly);
+        setRenderSettingsDiagnostic(context);
+        reportGlobalError(error, {
+          area: "settings",
+          stage: "load-render-settings",
+          platform: platformTag,
+          userMessage: friendly,
+          diagnostic: context,
+        });
+      });
     return () => {
       cancelled = true;
     };
-  }, [isMobile]);
+  }, [isMobile, platformTag]);
   const [contentOpenMode, setContentOpenMode] = useState<ContentOpenMode>("webview");
+  const [uiScale, setUiScale] = useState<number>(() => (isOnboardingSandbox ? 1 : loadUiScale()));
+  const handleUiScaleChange = useCallback((scale: number) => {
+    const applied = applyUiScale(saveUiScale(scale));
+    setUiScale(applied);
+  }, []);
   const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo | null>(() => import.meta.env.DEV
     ? {
         currentVersion: APP_VERSION,
-        latestVersion: "1.8.3",
+        latestVersion: "1.14.4",
         updateAvailable: true,
         releaseUrl: "https://github.com/CAPTCHAAAAA/SillyClient/releases/latest",
+        releaseSummary: extractReleaseSummary(
+          "# SillyClient v1.14.4\n\n> iOS 紧急修复版（`1.14.4` / Build `49`）：在 `v1.14.3` 基础上继续修复“部分用户可用、留空/中文实例名或外置目录仍创建失败”的分化故障——恢复 iOS 实例安全目录 ID 归一化，并将系统文件选择器的安全作用域获取提前至 `didPickDocumentsAt` 主线程同步完成。本版为紧急补丁，仅更新 iOS，连续跳过 Windows 与 Android（继续使用 [`v1.14.1`](https://github.com/CAPTCHAAAAA/SillyClient/releases/tag/v1.14.1)，后续统一整合）。"
+        ),
       }
     : null);
   const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "current" | "available" | "error">(
     () => import.meta.env.DEV ? "available" : "idle"
   );
+  const [appUpdateError, setAppUpdateError] = useState<string | null>(null);
+  const [appUpdateDiagnostic, setAppUpdateDiagnostic] = useState<DiagnosticContext | null>(null);
   const [updatePromptDismissed, setUpdatePromptDismissed] = useState(false);
   const [updateBannerRight, setUpdateBannerRight] = useState(28);
   const [verDropdownOpen, setVerDropdownOpen] = useState(false);
@@ -465,6 +579,9 @@ function SillyClientLauncher() {
   const middleDebugPressTimerRef = useRef<number | null>(null);
   const middleDebugPressStartRef = useRef<{ x: number; y: number } | null>(null);
   const middleDebugLongPressRef = useRef(false);
+  const logoDebugPressTimerRef = useRef<number | null>(null);
+  const logoDebugPressStartRef = useRef<{ x: number; y: number } | null>(null);
+  const logoDebugLongPressRef = useRef(false);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const cardMenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const managePanelOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -495,16 +612,19 @@ function SillyClientLauncher() {
   const [draftRemoteAuthPassword, setDraftRemoteAuthPassword] = useState("");
   const [storedRemoteAuthUsername, setStoredRemoteAuthUsername] = useState("");
   const [manageSaveError, setManageSaveError] = useState<string | null>(null);
+  const [manageSaveDiagnostic, setManageSaveDiagnostic] = useState<DiagnosticContext | null>(null);
   const [isSavingManagePanel, setIsSavingManagePanel] = useState(false);
   // 清理垃圾
   const [showCleanPanel, setShowCleanPanel] = useState(false);
   const [isCleanPanelClosing, setIsCleanPanelClosing] = useState(false);
   const [garbageItems, setGarbageItems] = useState<GarbageItem[]>([]);
   const [garbageError, setGarbageError] = useState<string | null>(null);
+  const [garbageDiagnostic, setGarbageDiagnostic] = useState<DiagnosticContext | null>(null);
   const [cleaningGarbage, setCleaningGarbage] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<TavernInstance | null>(null);
   const [isDeletingInstance, setIsDeletingInstance] = useState(false);
   const [deleteInstanceError, setDeleteInstanceError] = useState<string | null>(null);
+  const [deleteDiagnostic, setDeleteDiagnostic] = useState<DiagnosticContext | null>(null);
 
   const isBackgroundInteractionBlocked = Boolean(
     showRelocateModal
@@ -532,6 +652,22 @@ function SillyClientLauncher() {
       || isCleanPanelClosing
       || pendingDelete
       || maintenanceInstance
+  );
+  const isBackgroundInteractionClosing = isBackgroundInteractionBlocked && !(
+    (showRelocateModal && !isRelocateModalClosing)
+    || (showBgPanel && !isPanelClosing)
+    || (showTerminal && !isTerminalClosing)
+    || (showLaunchPanel && !isLaunchPanelClosing)
+    || (isUnlockModalOpen && !isUnlockModalClosing)
+    || Boolean(activeCardMenu && !isCardMenuClosing)
+    || Boolean(showManagePanel && !isManagePanelClosing)
+    || (showAppMenu && !isAppMenuClosing)
+    || (showNewInstancePanel && !isNewInstancePanelClosing)
+    || isCreatingInstance
+    || (verDropdownOpen && !isVerDropdownClosing)
+    || (showCleanPanel && !isCleanPanelClosing)
+    || Boolean(pendingDelete)
+    || Boolean(maintenanceInstance)
   );
   const isPullGestureBlocked = isBackgroundInteractionBlocked
     || showOnboarding
@@ -584,6 +720,7 @@ function SillyClientLauncher() {
     if (managePanelCloseTimerRef.current) clearTimeout(managePanelCloseTimerRef.current);
     if (terminalDebugPressTimerRef.current) clearTimeout(terminalDebugPressTimerRef.current);
     if (middleDebugPressTimerRef.current) clearTimeout(middleDebugPressTimerRef.current);
+    if (logoDebugPressTimerRef.current) clearTimeout(logoDebugPressTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -593,9 +730,11 @@ function SillyClientLauncher() {
       .catch(() => setContentOpenMode("webview"));
   }, [isWindows]);
 
-  const checkForAppUpdate = useCallback(async () => {
+  const checkForAppUpdate = useCallback(async (options?: { interactive?: boolean }) => {
     if (isOnboardingSandbox) return null;
     setAppUpdateState("checking");
+    setAppUpdateError(null);
+    setAppUpdateDiagnostic(null);
     try {
       const result = await fetchAppUpdate(APP_VERSION, isWindows ? "windows" : Capacitor.getPlatform() === "ios" ? "ios" : isWeb ? "web" : "android");
       setAppUpdateInfo(result);
@@ -604,10 +743,28 @@ function SillyClientLauncher() {
       return result;
     } catch (error) {
       console.warn("[checkAppUpdate]", error);
+      const friendly = humanizeNativeError(error);
+      const context = createDiagnosticContext(error, {
+        area: "update",
+        stage: "check-update",
+        platform: platformTag,
+        userMessage: friendly,
+      });
+      setAppUpdateError(friendly);
+      setAppUpdateDiagnostic(context);
       setAppUpdateState("error");
+      if (options?.interactive) {
+        reportGlobalError(error, {
+          area: "update",
+          stage: "check-update",
+          platform: platformTag,
+          userMessage: friendly,
+          diagnostic: context,
+        });
+      }
       return null;
     }
-  }, [isWindows, isWeb]);
+  }, [isWindows, isWeb, platformTag]);
 
   useEffect(() => {
     if (isShowcase || import.meta.env.DEV) return;
@@ -620,13 +777,13 @@ function SillyClientLauncher() {
     const updateRight = () => {
       const el = settingsBtnRef.current;
       if (el) {
-        setUpdateBannerRight(Math.max(0, window.innerWidth - el.getBoundingClientRect().right));
+        setUpdateBannerRight(Math.max(0, Math.round(toUnscaledPx(window.innerWidth - el.getBoundingClientRect().right))));
       }
     };
     updateRight();
     window.addEventListener("resize", updateRight);
     return () => window.removeEventListener("resize", updateRight);
-  }, [appUpdateState]);
+  }, [appUpdateState, uiScale]);
 
   // 支持通过 URL 参数直接唤起向导指定面板
   useEffect(() => {
@@ -653,10 +810,10 @@ function SillyClientLauncher() {
 
   // 液态玻璃底色:动态偏红紫,黑夜保持 #1a1625 深蓝紫,白天白色。黑夜不再用近黑 #0d0d12。
   const glassBg = isLight
-    ? "bg-white/70 border-black/5 shadow-[0_16px_60px_rgba(0,0,0,0.10)]"
+    ? "bg-white/70 shadow-[0_16px_60px_rgba(0,0,0,0.10)]"
     : isDynamic
-      ? "bg-[#1c1420]/70 border-white/10 shadow-[0_16px_60px_rgba(0,0,0,0.30)]"
-      : "bg-[#1a1625]/80 border-white/[0.08] shadow-[0_16px_60px_rgba(26,22,37,0.45)]";
+      ? "bg-[#1c1420]/70 shadow-[0_16px_60px_rgba(0,0,0,0.30)]"
+      : "bg-[#1a1625]/80 shadow-[0_16px_60px_rgba(26,22,37,0.45)]";
 
 
 
@@ -816,11 +973,35 @@ function SillyClientLauncher() {
     return () => { directoryPickerGeneration.current += 1; };
   }, [showNewInstancePanel, newInstanceMode]);
 
+  useEffect(() => {
+    if (!showNewInstancePanel || !(isAndroid || isIOS)) return;
+    if (isIOS && newInstanceMode !== "local") return;
+    const generation = directoryPickerGeneration.current;
+    let cancelled = false;
+    TarvenEnv.getAppSettings()
+      .then((settings) => {
+        if (cancelled || generation !== directoryPickerGeneration.current) return;
+        const raw = settings?.configuredInstancesRoot?.trim();
+        if (!raw) return;
+        const saved = isIOS ? raw : cleanInstallPath(raw);
+        if (!saved) return;
+        setNewInstanceDir((current) => {
+          if (cancelled || current.trim()) return current;
+          if (isIOS) setNewInstancePathMode("root");
+          return saved;
+        });
+      })
+      .catch(() => { /* Keep directory selection required when settings are unavailable. */ });
+    return () => { cancelled = true; };
+  }, [isAndroid, isIOS, newInstanceMode, showNewInstancePanel]);
+
   const handleSetNewInstanceDir = useCallback((value: string) => {
     const clean = value.replace(/^["']|["']$/g, "").trim();
-    setNewInstanceDir(clean);
-    setNewInstanceError(null);
     directoryPickerGeneration.current += 1;
+    setNewInstanceDir(clean);
+    setNewInstancePathMode("exact");
+    setNewInstanceError(null);
+    setNewInstanceDiagnostic(null);
   }, []);
 
   // 向导中的存放位置一律是"实例存放文件夹"（父目录）：先落成实例根；
@@ -829,38 +1010,96 @@ function SillyClientLauncher() {
     rawValue: string, emptyMessage: string, instanceName: string,
   ): Promise<string> => {
     const parent = instanceParentPath(rawValue);
-    if (!parent) throw new Error(emptyMessage);
+    if (!parent) throw new ClientValidationError(emptyMessage);
     try {
       await TarvenEnv.setInstancesRoot({ path: parent });
     } catch (error) {
-      const reason = humanizeNativeError(error instanceof Error ? error.message : String(error));
-      throw new Error(`该文件夹不能作为实例存放位置：${reason}`);
+      const reason = humanizeNativeError(error);
+      const wrapped = new Error(`该文件夹不能作为实例存放位置：${reason}`) as Error & { cause?: unknown; code?: unknown };
+      wrapped.cause = error;
+      if (typeof error === "object" && error !== null && "code" in error) {
+        wrapped.code = (error as { code?: unknown }).code;
+      }
+      throw wrapped;
     }
     return buildInstanceSubfolder(parent, instanceName);
   }, []);
 
   const handlePickInstallFolder = useCallback(async () => {
     const generation = ++directoryPickerGeneration.current;
+    const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
     try {
-      const selection = installationSelection(await TarvenEnv.pickDirectory({ purpose: "installation" }));
+      const rawSelection = await TarvenEnv.pickDirectory({ purpose: "installation" });
       if (generation !== directoryPickerGeneration.current) return;
+      const elapsedMs = Math.max(
+        0,
+        Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt)
+      );
+      if (!rawSelection?.path?.trim()) {
+        throw new Error(
+          isIOS && elapsedMs < 800
+            ? "PICKER_ABNORMAL_DISMISS: System picker dismissed without selection"
+            : "No directory was selected"
+        );
+      }
+      const selection = installationSelection(rawSelection);
       setNewInstanceDir(selection.path);
+      setNewInstancePathMode(selection.mode);
       setNewInstanceError(null);
+      setNewInstanceDiagnostic(null);
       if (isAndroid) {
         try {
           await TarvenEnv.setInstancesRoot({ path: selection.path });
         } catch (error) {
-          const reason = humanizeNativeError(error instanceof Error ? error.message : String(error));
+          const reason = humanizeNativeError(error);
+          const friendly = `该文件夹不能作为实例存放位置：${reason}`;
+          const context = createDiagnosticContext(error, {
+            area: "picker",
+            stage: "set-instances-root",
+            platform: platformTag,
+            userMessage: friendly,
+            extraSecrets: [selection.path, newInstanceName],
+          });
           setNewInstanceDir("");
-          setNewInstanceError(`该文件夹不能作为实例存放位置：${reason}`);
+          setNewInstanceError(friendly);
+          setNewInstanceDiagnostic(context);
+          reportGlobalError(error, {
+            area: "picker",
+            stage: "set-instances-root",
+            platform: platformTag,
+            userMessage: friendly,
+            diagnostic: context,
+            extraSecrets: [selection.path, newInstanceName],
+          });
         }
       }
     } catch (error) {
       if (generation !== directoryPickerGeneration.current) return;
-      const message = error instanceof Error ? error.message : String(error);
-      if (!/cancel/i.test(message)) setNewInstanceError(message);
+      const elapsedMs = Math.max(
+        0,
+        Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt)
+      );
+      if (shouldShowDirectoryPickerError(error, isIOS)) {
+        const friendly = humanizeNativeError(error);
+        const context = createDiagnosticContext(error, {
+          area: "picker",
+          platform: platformTag,
+          elapsedMs,
+          userMessage: friendly,
+          extraSecrets: [newInstanceName, newInstanceDir],
+        });
+        setNewInstanceError(friendly);
+        setNewInstanceDiagnostic(context);
+        reportGlobalError(error, {
+          area: "picker",
+          platform: platformTag,
+          userMessage: friendly,
+          diagnostic: context,
+          extraSecrets: [newInstanceName, newInstanceDir],
+        });
+      }
     }
-  }, [isAndroid]);
+  }, [isAndroid, isIOS, newInstanceDir, newInstanceName, platformTag]);
 
   // 实例列表持久化到 localStorage
   useEffect(() => {
@@ -869,7 +1108,9 @@ function SillyClientLauncher() {
 
   // 远程实例在线状态检测(用原生 pingUrl 绕过 WebView CORS)
   const checkRemoteStatus = useCallback(async () => {
-    const remotes = instances.filter(t => t.type === "remote" && t.url);
+    const remotes = instances.filter(
+      (t) => t.type === "remote" && t.url && !(import.meta.env.DEV && t.id === DEV_FAULT_TEST_INSTANCE_ID)
+    );
     if (remotes.length === 0) return;
     const results = await Promise.all(remotes.map(async (r) => {
       try {
@@ -1104,6 +1345,7 @@ function SillyClientLauncher() {
 
     setLaunchProgress({ pct: 0, text: "初始化" });
     setLaunchError(null);
+    setLaunchDiagnostic(null);
     setLaunchLogs([{ msg: `启动 ${instance.name} (${instance.type})`, level: "info" }]);
     setLaunchLogs(prev => [...prev, { msg: `准备 Node 环境 [${instanceId}] :${port}`, level: "info" }]);
 
@@ -1212,6 +1454,10 @@ function SillyClientLauncher() {
     const url = instance.url || "http://127.0.0.1:8000";
     setLaunchLogs([{ msg: `检查 ${url}`, level: "info" }]);
     setLaunchProgress({ pct: 25, text: "正在验证远程连接" });
+    if (import.meta.env.DEV && isWeb && instance.id === DEV_FAULT_TEST_INSTANCE_ID) {
+      await operation.delay(260);
+      await operation.wait(fetch(url, { mode: "no-cors", signal: AbortSignal.timeout(1200) }));
+    }
     const result = await operation.wait(TarvenEnv.pingUrl({ url, instanceId: instance.id }));
     if (!result.online) {
       throw new Error(result.error || "远程实例当前不可访问");
@@ -1231,13 +1477,15 @@ function SillyClientLauncher() {
       showGestureHint: instance.pendingTavernGestureHint === true,
     }));
     setLaunchProgress({ pct: 100, text: "远程实例已打开" });
-  }, [contentOpenMode, setLaunchLogs]);
+  }, [contentOpenMode, isWeb, setLaunchLogs]);
 
   // 启动实例直接执行入口 (跳过密码阻断，在已完成密码校验或无密码时调用)
   const launchTavernDirect = useCallback(async (instance: TavernInstance) => {
     if (operations.busy) return;
     const operation = operations.begin(instance.installDir || instance.id, "launch");
     setLaunchLogKey(operation.logKey);
+    setLaunchError(null);
+    setLaunchDiagnostic(null);
     setLaunchingId(instance.id);
     if (instance.type === "local") {
       setInstances(prev => prev.map(t => t.id === instance.id ? { ...t, status: "running" } : t));
@@ -1253,8 +1501,7 @@ function SillyClientLauncher() {
           installPath: instance.installPathMode === "root" ? undefined : instance.installPath,
           port: result.port,
         }));
-        setInstances(prev => prev.map(t => t.id === instance.id ? {
-          ...t,
+        setInstances(prev => prev.map(t => t.id === instance.id ? { ...t,
           status: "running",
           port: result.port,
           version: info.version && info.version !== "unknown" ? normalizeStoredVersion(info.version) : t.version,
@@ -1286,11 +1533,40 @@ function SillyClientLauncher() {
       }
     } catch (err: any) {
       if (!operation.isCurrent || err instanceof OperationCancelledError) return;
-      const msg = err?.message || String(err);
+      const isValidation = err instanceof ClientValidationError;
+      const rawFaultMessage = sanitizeDiagnosticText(extractErrorMessage(err), [
+        instance.subtitle,
+        instance.name,
+        instance.installPath,
+        instance.url,
+      ]);
+      const msg = isValidation
+        ? err.message
+        : instance.id === DEV_FAULT_TEST_INSTANCE_ID && rawFaultMessage
+          ? rawFaultMessage
+          : humanizeNativeError(err);
+      const diagnostic = isValidation
+        ? null
+        : createDiagnosticContext(err, {
+            area: "launch",
+            platform: platformTag,
+            userMessage: msg,
+            extraSecrets: [instance.subtitle, instance.name, instance.installPath, instance.url],
+          });
       setLaunchError(msg);
+      setLaunchDiagnostic(diagnostic);
       setLaunchProgress(null);
       setLaunchLogs(prev => [...prev, { msg: `失败: ${msg}`, level: "error" }]);
       setInstances(prev => prev.map(t => t.id === instance.id ? { ...t, status: "error" } : t));
+      if (diagnostic) {
+        reportGlobalError(err, {
+          area: "launch",
+          platform: platformTag,
+          userMessage: msg,
+          diagnostic,
+          extraSecrets: [instance.subtitle, instance.name, instance.installPath, instance.url],
+        });
+      }
       try { await operation.wait(TarvenEnv.exitImmersive()); } catch {}
     } finally {
       if (operation.isCurrent) {
@@ -1298,7 +1574,7 @@ function SillyClientLauncher() {
         setLaunchingId(null);
       }
     }
-  }, [operations, doLaunch, openRemoteInstance, setLaunchLogs]);
+  }, [operations, doLaunch, openRemoteInstance, platformTag, setLaunchLogs]);
 
   // 启动实例入口 (含访问密码保险开关拦截)
   const launchTavern = useCallback(async (instance: TavernInstance) => {
@@ -1336,12 +1612,20 @@ function SillyClientLauncher() {
     try {
       await TarvenEnv.closeTavern({ instanceId, operationId: cancelled?.id });
     } catch (error) {
-      instanceLogs.append(instanceId, { msg: `停止失败: ${error instanceof Error ? error.message : String(error)}`, level: "error" });
+      const friendly = humanizeNativeError(error);
+      instanceLogs.append(instanceId, { msg: `停止失败: ${friendly}`, level: "error" });
+      reportGlobalError(error, {
+        area: "launch",
+        stage: "stop-instance",
+        platform: platformTag,
+        userMessage: `停止实例失败：${friendly}`,
+        extraSecrets: [instance.subtitle, instance.name, instance.installPath],
+      });
       return;
     }
     if (operations.current !== remainingOperation) return;
     setInstances(prev => prev.map(t => t.id === instance.id ? { ...t, status: "stopped" } : t));
-  }, [operations]);
+  }, [operations, platformTag]);
 
   const provisionCreatedInstance = useCallback(async (instance: TavernInstance, operation: OperationContext) => {
     if (isWeb) {
@@ -1401,11 +1685,25 @@ function SillyClientLauncher() {
   const createInstance = useCallback(async () => {
     if (operations.busy) {
       setNewInstanceError("请先等待当前任务完成，再创建新实例");
+      setNewInstanceDiagnostic(null);
       return;
     }
-    if (isAndroid && newInstanceMode === "local" && !newInstanceDir.trim()) {
-      setNewInstanceError("请先选择实例存放文件夹（必选）：点击「浏览」选择后，实例会创建在该文件夹下");
+    if ((isAndroid || isIOS) && newInstanceMode === "local" && !cleanInstallPath(newInstanceDir)) {
+      setNewInstanceError(
+        isIOS
+          ? "请先点「浏览」选择实例安装目录（必选）"
+          : "请先选择实例存放文件夹（必选）：点击「浏览」选择后，实例会创建在该文件夹下"
+      );
+      setNewInstanceDiagnostic(null);
       return;
+    }
+    if (newInstanceMode === "local") {
+      const pathIssue = validateInstallPathInput(newInstanceDir, { isIOS });
+      if (pathIssue) {
+        setNewInstanceError(pathIssue);
+        setNewInstanceDiagnostic(null);
+        return;
+      }
     }
     const rawGivenName = newInstanceName.trim();
     let instanceDisplayName: string;
@@ -1419,10 +1717,11 @@ function SillyClientLauncher() {
       );
       if (isDuplicate) {
         setNewInstanceError(`已存在名为「${rawGivenName}」的实例，请使用其他名称`);
+        setNewInstanceDiagnostic(null);
         return;
       }
       instanceDisplayName = rawGivenName;
-      safeCandidateId = sanitizeFolderName(rawGivenName);
+      safeCandidateId = isIOS ? normalizeInstanceIdentity(rawGivenName) : sanitizeFolderName(rawGivenName);
     } else {
       // 未输入名称时自动编号：新实例、新实例 (2)、新实例 (3)...
       const baseName = "新实例";
@@ -1435,22 +1734,24 @@ function SillyClientLauncher() {
         chosenName = `${baseName} (${counter++})`;
       }
       instanceDisplayName = chosenName;
-      safeCandidateId = sanitizeFolderName(chosenName);
+      safeCandidateId = isIOS ? normalizeInstanceIdentity(chosenName) : sanitizeFolderName(chosenName);
     }
 
     let candidateId = safeCandidateId;
     let counter = 2;
     const existingIds = new Set(instances.map(i => (i.installDir || i.id).toLowerCase()));
     while (existingIds.has(candidateId.toLowerCase())) {
-      candidateId = `${safeCandidateId} (${counter++})`;
+      candidateId = isIOS ? `${safeCandidateId.slice(0, 120)}-${counter++}` : `${safeCandidateId} (${counter++})`;
     }
     const instanceId = candidateId;
     const operation = operations.begin(instanceId, "create");
     setNewInstanceError(null);
+    setNewInstanceDiagnostic(null);
     setIsCreatingInstance(true);
     let operationStarted = false;
     let remoteCredentialsSaved = false;
     let pendingInstanceId: string | null = null;
+    let effectiveInstallPathForReport: string | undefined;
 
     try {
       const installDir = instanceId;
@@ -1458,11 +1759,13 @@ function SillyClientLauncher() {
       const customParentDir = cleanInstallPath(newInstanceDir);
       const resolvedCustomPath = (newInstanceMode === "local" && isAndroid)
         ? await resolveInstanceParent(newInstanceDir, "请先选择实例存放文件夹（必选）：点击「浏览」选择后，实例会创建在该文件夹下", instanceDisplayName)
-        : (customParentDir ? buildInstanceSubfolder(customParentDir, instanceDisplayName) : undefined);
+        : (customParentDir ? exactInstallTarget(customParentDir, newInstancePathMode, instanceId) : undefined);
+      effectiveInstallPathForReport = resolvedCustomPath || undefined;
       let selectedVersion = newInstanceVersion;
       let selectedZipballUrl: string | undefined;
+      const selectedLocalZip = isIOS ? undefined : (newInstanceLocalZip || undefined);
 
-      if (newInstanceMode === "local" && !newInstanceLocalZip) {
+      if (newInstanceMode === "local" && !selectedLocalZip) {
         let availableReleases = releases;
         if (availableReleases.length === 0) {
           try {
@@ -1471,7 +1774,7 @@ function SillyClientLauncher() {
             setReleases(availableReleases);
           } catch (error) {
             if (error instanceof OperationCancelledError) throw error;
-            throw new Error("无法获取 SillyTavern 版本，请重新获取列表或导入本地 ZIP");
+            throw (error instanceof Error ? error : new Error("无法获取 SillyTavern 版本，请重新获取列表或导入本地 ZIP"));
           }
         }
         const selectedRelease = selectTavernRelease(availableReleases, selectedVersion);
@@ -1485,15 +1788,22 @@ function SillyClientLauncher() {
 
       let remoteUrl = newInstanceUrl.trim();
       if (newInstanceMode === "remote") {
-        const parsed = new URL(remoteUrl);
-        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("连接地址必须使用 HTTP 或 HTTPS");
+        let parsed: URL;
+        try {
+          parsed = new URL(remoteUrl);
+        } catch {
+          throw new ClientValidationError("连接地址格式无效，请检查后重试");
+        }
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+          throw new ClientValidationError("连接地址必须使用 HTTP 或 HTTPS");
+        }
         if (parsed.username || parsed.password) {
-          throw new Error("请不要把账号密码写入连接地址，改用下方的 Basic Auth 配置");
+          throw new ClientValidationError("请不要把账号密码写入连接地址，改用下方的 Basic Auth 配置");
         }
         remoteUrl = parsed.toString();
         if (newRemoteAuthEnabled) {
-          if (!newRemoteAuthUsername.trim()) throw new Error("请输入 Basic Auth 用户名");
-          if (!newRemoteAuthPassword) throw new Error("请输入 Basic Auth 密码");
+          if (!newRemoteAuthUsername.trim()) throw new ClientValidationError("请输入 Basic Auth 用户名");
+          if (!newRemoteAuthPassword) throw new ClientValidationError("请输入 Basic Auth 密码");
         }
         const preflight = await operation.wait(TarvenEnv.pingUrl({
           url: remoteUrl,
@@ -1514,7 +1824,7 @@ function SillyClientLauncher() {
           return inst.installPath.toLowerCase().replace(/[\\/]+$/, "") === normTarget;
         });
         if (conflictingInstance) {
-          throw new Error(`目标路径「${effectiveInstallPath}」已被实例「${conflictingInstance.subtitle || conflictingInstance.name}」使用，无法重复创建`);
+          throw new ClientValidationError(`目标路径「${effectiveInstallPath}」已被实例「${conflictingInstance.subtitle || conflictingInstance.name}」使用，无法重复创建`);
         }
       }
 
@@ -1524,7 +1834,7 @@ function SillyClientLauncher() {
         id: instanceId,
         name: "SillyTavern",
         subtitle: instanceDisplayName,
-        version: newInstanceLocalZip ? "local" : normalizeStoredVersion(selectedVersion),
+        version: selectedLocalZip ? "local" : normalizeStoredVersion(selectedVersion),
         type: newInstanceMode === "remote" ? "remote" : "local",
         status: newInstanceMode === "remote" ? "offline" : "stopped",
         icon: newInstanceMode === "remote" ? <Cloud className="w-5 h-5" /> : <Folder className="w-5 h-5" />,
@@ -1546,7 +1856,7 @@ function SillyClientLauncher() {
               installPath: effectiveInstallPath,
               installPathMode: "exact" as const,
               zipballUrl: selectedZipballUrl,
-              localZipPath: newInstanceLocalZip || undefined,
+              localZipPath: selectedLocalZip,
               companionPreset: allowPreinstall && newInstanceCompanionPresetEnabled ? SC_BORDEAUX_PRESET : undefined,
               preinstall: allowPreinstall && newInstanceExtensionIds.length > 0
                 ? { revision: 1, extensionIds: [...newInstanceExtensionIds] }
@@ -1570,6 +1880,10 @@ function SillyClientLauncher() {
         remoteCredentialsSaved = true;
       }
 
+      if (newInstanceMode === "local" && newInstancePathMode === "root" && customParentDir) {
+        void TarvenEnv.setInstancesRoot({ path: customParentDir }).catch(() => {});
+      }
+
       setShowNewInstancePanel(false);
       setIsNewInstancePanelClosing(false);
       setVerDropdownOpen(false);
@@ -1578,6 +1892,7 @@ function SillyClientLauncher() {
       setLaunchLogKey(operation.logKey);
       setShowLaunchPanel(true);
       setLaunchError(null);
+      setLaunchDiagnostic(null);
       setLaunchProgress({
         pct: 0,
         text: newInstanceMode === "local"
@@ -1590,6 +1905,8 @@ function SillyClientLauncher() {
       await provisionCreatedInstance(instance, operation);
       setNewInstanceName("");
       setNewInstanceDir("");
+      setNewInstancePathMode("exact");
+      setNewInstanceDiagnostic(null);
       setNewInstanceUrl("http://");
       setNewRemoteAuthEnabled(false);
       setNewRemoteAuthUsername("");
@@ -1600,17 +1917,53 @@ function SillyClientLauncher() {
       setNewInstanceLocalZip(null);
     } catch (err: any) {
       if (!operation.isCurrent || err instanceof OperationCancelledError) return;
-      const message = err?.message || String(err);
+      const isValidation = err instanceof ClientValidationError;
+      const message = isValidation ? err.message : humanizeNativeError(err);
+      const diagnostic = isValidation
+        ? null
+        : createDiagnosticContext(err, {
+            area: "create",
+            platform: platformTag,
+            userMessage: message,
+            extraSecrets: [
+              instanceDisplayName,
+              newInstanceDir,
+              effectiveInstallPathForReport,
+              newInstanceUrl,
+              newInstanceLocalZip,
+              newRemoteAuthUsername,
+              newRemoteAuthPassword,
+            ],
+          });
       if (!operationStarted) {
         if (remoteCredentialsSaved && pendingInstanceId) {
           try { await operation.wait(TarvenEnv.clearRemoteBasicAuth({ instanceId: pendingInstanceId })); } catch {}
           if (!operation.isCurrent) return;
         }
         setNewInstanceError(message);
+        setNewInstanceDiagnostic(diagnostic);
       } else {
         setLaunchError(message);
+        setLaunchDiagnostic(diagnostic);
         setLaunchProgress(null);
         setLaunchLogs(prev => [...prev, { msg: `创建失败: ${message}`, level: "error" }]);
+      }
+      if (diagnostic) {
+        reportGlobalError(err, {
+          area: "create",
+          platform: platformTag,
+          userMessage: message,
+          diagnostic,
+          extraSecrets: [
+            instanceDisplayName,
+            newInstanceDir,
+            effectiveInstallPathForReport,
+            newInstanceUrl,
+            newInstanceLocalZip,
+            newRemoteAuthUsername,
+            newRemoteAuthPassword,
+          ],
+        });
       }
     } finally {
       if (operation.isCurrent) {
@@ -1622,9 +1975,11 @@ function SillyClientLauncher() {
   }, [
     instances,
     isAndroid,
+    isIOS,
     isWeb,
     operations,
     newInstanceDir,
+    newInstancePathMode,
     newInstanceCompanionPresetEnabled,
     newInstanceExtensionIds,
     newInstanceLocalZip,
@@ -1635,6 +1990,7 @@ function SillyClientLauncher() {
     newRemoteAuthEnabled,
     newRemoteAuthPassword,
     newRemoteAuthUsername,
+    platformTag,
     provisionCreatedInstance,
     resolveInstanceParent,
     setLaunchLogs,
@@ -1647,6 +2003,7 @@ function SillyClientLauncher() {
     const operation = operations.begin(lastLaunchParams.installDir || lastLaunchParams.id, operationPurpose);
     setLaunchLogKey(operation.logKey);
     setLaunchError(null);
+    setLaunchDiagnostic(null);
     setLaunchProgress({ pct: 0, text: operationPurpose === "create" ? "重新创建" : "重新启动" });
     if (operationPurpose === "launch" && lastLaunchParams.type === "local") {
       setInstances(prev => prev.map(t => t.id === lastLaunchParams.id ? { ...t, status: "running" } : t));
@@ -1666,12 +2023,51 @@ function SillyClientLauncher() {
       }
     } catch (err: any) {
       if (!operation.isCurrent || err instanceof OperationCancelledError) return;
-      const msg = err?.message || String(err);
+      const isValidation = err instanceof ClientValidationError;
+      const rawFaultMessage = sanitizeDiagnosticText(extractErrorMessage(err), [
+        lastLaunchParams.subtitle,
+        lastLaunchParams.name,
+        lastLaunchParams.installPath,
+        lastLaunchParams.url,
+      ]);
+      const msg = isValidation
+        ? err.message
+        : lastLaunchParams.id === DEV_FAULT_TEST_INSTANCE_ID && rawFaultMessage
+          ? rawFaultMessage
+          : humanizeNativeError(err);
+      const diagnostic = isValidation
+        ? null
+        : createDiagnosticContext(err, {
+            area: operationPurpose === "create" ? "create" : "launch",
+            platform: platformTag,
+            userMessage: msg,
+            extraSecrets: [
+              lastLaunchParams.subtitle,
+              lastLaunchParams.name,
+              lastLaunchParams.installPath,
+              lastLaunchParams.url,
+            ],
+          });
       setLaunchError(msg);
+      setLaunchDiagnostic(diagnostic);
       setLaunchProgress(null);
       setLaunchLogs(prev => [...prev, { msg: `重试失败: ${msg}`, level: "error" }]);
       if (operationPurpose === "launch") {
         setInstances(prev => prev.map(t => t.id === lastLaunchParams.id ? { ...t, status: "error" } : t));
+      }
+      if (diagnostic) {
+        reportGlobalError(err, {
+          area: operationPurpose === "create" ? "create" : "launch",
+          platform: platformTag,
+          userMessage: msg,
+          diagnostic,
+          extraSecrets: [
+            lastLaunchParams.subtitle,
+            lastLaunchParams.name,
+            lastLaunchParams.installPath,
+            lastLaunchParams.url,
+          ],
+        });
       }
     } finally {
       if (operation.isCurrent) {
@@ -1679,7 +2075,7 @@ function SillyClientLauncher() {
         setLaunchingId(null);
       }
     }
-  }, [lastLaunchParams, operationPurpose, doLaunch, openRemoteInstance, provisionCreatedInstance, operations, setLaunchLogs]);
+  }, [lastLaunchParams, operationPurpose, doLaunch, openRemoteInstance, platformTag, provisionCreatedInstance, operations, setLaunchLogs]);
 
   const closeCardMenu = useCallback((onClosed?: () => void) => {
     if (cardMenuCloseTimerRef.current) clearTimeout(cardMenuCloseTimerRef.current);
@@ -1711,8 +2107,28 @@ function SillyClientLauncher() {
         : current);
     } catch (err) {
       console.error("[pickImage]", err);
+      if (shouldShowDirectoryPickerError(err, isIOS)) {
+        const friendly = humanizeNativeError(err);
+        const context = createDiagnosticContext(err, {
+          area: "picker",
+          stage: "pick-image",
+          platform: platformTag,
+          userMessage: friendly,
+          extraSecrets: [instance.subtitle, instance.name, instance.installPath],
+        });
+        setManageSaveError(friendly);
+        setManageSaveDiagnostic(context);
+        reportGlobalError(err, {
+          area: "picker",
+          stage: "pick-image",
+          platform: platformTag,
+          userMessage: friendly,
+          diagnostic: context,
+          extraSecrets: [instance.subtitle, instance.name, instance.installPath],
+        });
+      }
     }
-  }, [isWindows]);
+  }, [isIOS, isWindows, platformTag]);
 
   const closeInstanceRename = useCallback(() => {
     if (!renamingId || isRenameClosing) return;
@@ -1812,15 +2228,31 @@ function SillyClientLauncher() {
       if (ok) {
         closeInstanceRename();
       } else {
-        setRenameError("重命名未完成，请检查实例状态后重试");
+        const message = "重命名未完成，请检查实例状态后重试";
+        setRenameError(message);
+        reportGlobalError(new Error(message), {
+          area: "rename",
+          stage: "rename-instance",
+          platform: platformTag,
+          userMessage: message,
+          extraSecrets: [renameValue.trim()],
+        });
       }
     } catch (error) {
-      setRenameError(error instanceof Error ? error.message : "重命名实例失败，请检查文件夹权限");
+      const friendly = humanizeNativeError(error);
+      setRenameError(friendly);
+      reportGlobalError(error, {
+        area: "rename",
+        stage: "rename-instance",
+        platform: platformTag,
+        userMessage: friendly,
+        extraSecrets: [renameValue.trim()],
+      });
     } finally {
       renameSavingRef.current = false;
       setIsRenamingSaving(false);
     }
-  }, [renamingId, renameValue, isRenameClosing, executeRenameInstance, closeInstanceRename]);
+  }, [renamingId, renameValue, isRenameClosing, executeRenameInstance, closeInstanceRename, platformTag]);
 
   const cancelInstanceRename = useCallback(() => {
     if (!renameSavingRef.current) closeInstanceRename();
@@ -1908,8 +2340,8 @@ function SillyClientLauncher() {
     if (btn) {
       const rect = btn.getBoundingClientRect();
       const settingsRect = settingsBtn?.getBoundingClientRect();
-      const rightEdge = settingsRect ? window.innerWidth - settingsRect.right : 16;
-      setTerminalPos({ left: rect.left, right: Math.max(8, rightEdge) });
+      const rightEdge = settingsRect ? toUnscaledPx(window.innerWidth - settingsRect.right) : 16;
+      setTerminalPos({ left: toUnscaledPx(rect.left), right: Math.max(8, rightEdge) });
     }
     if (!instance) {
       setTerminalInstanceId(null);
@@ -2102,13 +2534,31 @@ function SillyClientLauncher() {
         level: "success",
       }]);
       setPendingDelete(null);
+      setDeleteDiagnostic(null);
       setActiveSlide(current => Math.max(0, Math.min(current, instances.length - 1)));
     } catch (err: any) {
-      setDeleteInstanceError(err?.message || String(err));
+      const friendly = humanizeNativeError(err);
+      const context = createDiagnosticContext(err, {
+        area: "manage",
+        stage: "delete-instance",
+        platform: platformTag,
+        userMessage: friendly,
+        extraSecrets: [pendingDelete.subtitle, pendingDelete.name, pendingDelete.installPath],
+      });
+      setDeleteInstanceError(friendly);
+      setDeleteDiagnostic(context);
+      reportGlobalError(err, {
+        area: "manage",
+        stage: "delete-instance",
+        platform: platformTag,
+        userMessage: friendly,
+        diagnostic: context,
+        extraSecrets: [pendingDelete.subtitle, pendingDelete.name, pendingDelete.installPath],
+      });
     } finally {
       setIsDeletingInstance(false);
     }
-  }, [instances.length, isDeletingInstance, isWeb, pendingDelete, operations, setTerminalLogs]);
+  }, [instances.length, isDeletingInstance, isWeb, pendingDelete, platformTag, operations, setTerminalLogs]);
 
   /** 更新当前管理面板实例的 config 字段。 */
   const updateManagedConfig = (patch: Partial<InstanceConfig>) => {
@@ -2143,9 +2593,16 @@ function SillyClientLauncher() {
       try {
         await TarvenEnv.closeTavern({ instanceId: cancelled.instanceId, operationId: cancelled.id });
       } catch (error) {
+        const friendly = humanizeNativeError(error);
         instanceLogs.append(cancelled.instanceId, {
-          msg: `取消失败: ${error instanceof Error ? error.message : String(error)}`,
+          msg: `取消失败: ${friendly}`,
           level: "error",
+        });
+        reportGlobalError(error, {
+          area: "launch",
+          stage: "cancel-operation",
+          platform: platformTag,
+          userMessage: `取消操作失败：${friendly}`,
         });
       }
       if (operations.current !== expected) return;
@@ -2165,9 +2622,10 @@ function SillyClientLauncher() {
       setShowLaunchPanel(false);
       setIsLaunchPanelClosing(false);
       setLaunchError(null);
+      setLaunchDiagnostic(null);
       setLaunchProgress(null);
     }, PANEL_EXIT_MS);
-  }, [instances, isLaunchPanelClosing, lastLaunchParams, operationPurpose, operations]);
+  }, [instances, isLaunchPanelClosing, lastLaunchParams, operationPurpose, operations, platformTag]);
 
   const closeCleanPanel = useCallback(() => {
     if (cleaningGarbage || isCleanPanelClosing) return;
@@ -2181,14 +2639,15 @@ function SillyClientLauncher() {
   const saveManagedInstance = useCallback(async () => {
     if (!showManagePanel || isSavingManagePanel) return;
     setManageSaveError(null);
+    setManageSaveDiagnostic(null);
     setIsSavingManagePanel(true);
     try {
       if (showManagePanel.type === "remote") {
         const username = draftRemoteAuthUsername.trim();
         if (draftRemoteAuthEnabled) {
-          if (!username) throw new Error("请输入 Basic Auth 用户名");
+          if (!username) throw new ClientValidationError("请输入 Basic Auth 用户名");
           if (!draftRemoteAuthPassword && storedRemoteAuthUsername && username !== storedRemoteAuthUsername) {
-            throw new Error("更改 Basic Auth 用户名时，请重新输入密码");
+            throw new ClientValidationError("更改 Basic Auth 用户名时，请重新输入密码");
           }
           const verification = await TarvenEnv.pingUrl({
             url: showManagePanel.url || "",
@@ -2226,7 +2685,43 @@ function SillyClientLauncher() {
       }
       closeManagePanel();
     } catch (error: any) {
-      setManageSaveError(error?.message || String(error));
+      if (error instanceof ClientValidationError) {
+        setManageSaveError(error.message);
+        setManageSaveDiagnostic(null);
+      } else {
+        const friendly = humanizeNativeError(error);
+        const context = createDiagnosticContext(error, {
+          area: "manage",
+          stage: "save-instance",
+          platform: platformTag,
+          userMessage: friendly,
+          extraSecrets: [
+            showManagePanel.subtitle,
+            showManagePanel.name,
+            showManagePanel.installPath,
+            showManagePanel.url,
+            draftRemoteAuthUsername,
+            draftRemoteAuthPassword,
+          ],
+        });
+        setManageSaveError(friendly);
+        setManageSaveDiagnostic(context);
+        reportGlobalError(error, {
+          area: "manage",
+          stage: "save-instance",
+          platform: platformTag,
+          userMessage: friendly,
+          diagnostic: context,
+          extraSecrets: [
+            showManagePanel.subtitle,
+            showManagePanel.name,
+            showManagePanel.installPath,
+            showManagePanel.url,
+            draftRemoteAuthUsername,
+            draftRemoteAuthPassword,
+          ],
+        });
+      }
     } finally {
       setIsSavingManagePanel(false);
     }
@@ -2238,6 +2733,7 @@ function SillyClientLauncher() {
     draftRemoteAuthPassword,
     draftRemoteAuthUsername,
     isSavingManagePanel,
+    platformTag,
     showManagePanel,
     storedRemoteAuthUsername,
   ]);
@@ -2335,6 +2831,7 @@ function SillyClientLauncher() {
       setDraftConfig(showManagePanel.config ?? DEFAULT_CONFIG);
       setDraftPort(showManagePanel.port ?? 8000);
       setManageSaveError(null);
+      setManageSaveDiagnostic(null);
       setDraftRemoteAuthEnabled(Boolean(showManagePanel.basicAuth));
       setDraftRemoteAuthUsername(showManagePanel.basicAuth?.username || "");
       setDraftRemoteAuthPassword("");
@@ -2354,15 +2851,32 @@ function SillyClientLauncher() {
 
   const openVersionDropdown = useCallback((trigger: HTMLElement) => {
     const r = trigger.getBoundingClientRect();
+    const top = toUnscaledPx(r.top);
+    const left = toUnscaledPx(r.left);
+    const width = toUnscaledPx(r.width);
+    const vw = toUnscaledPx(window.innerWidth);
+    const vh = toUnscaledPx(window.innerHeight);
     setVerDropdownPos({
-      bottom: window.innerHeight - r.top + 4,
-      left: Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8)),
-      width: r.width,
-      maxHeight: Math.max(0, Math.min(360, r.top - 12)),
+      bottom: vh - top + 4,
+      left: Math.max(8, Math.min(left, vw - width - 8)),
+      width,
+      maxHeight: Math.max(0, Math.min(360, top - 12)),
     });
     setIsVerDropdownClosing(false);
     setVerDropdownOpen(true);
   }, []);
+
+  const closeNewInstancePanel = useCallback(() => {
+    if (isCreatingInstance) return;
+    closeVersionDropdown();
+    setIsNewInstancePanelClosing(true);
+    setTimeout(() => {
+      setShowNewInstancePanel(false);
+      setIsNewInstancePanelClosing(false);
+      setNewInstanceError(null);
+      setNewInstanceDiagnostic(null);
+    }, PANEL_EXIT_MS);
+  }, [closeVersionDropdown, isCreatingInstance]);
 
   // 统一浮层管理器注册 (ESC 键与 Android 原生物理返回键)
   const { registerLayer } = useLayerStack();
@@ -2393,14 +2907,8 @@ function SillyClientLauncher() {
   }, [showManagePanel, registerLayer, closeManagePanel]);
 
   useEffect(() => {
-    if (showNewInstancePanel) return registerLayer("new_instance", () => {
-      if (!isCreatingInstance) {
-        closeVersionDropdown();
-        setIsNewInstancePanelClosing(true);
-        setTimeout(() => { setShowNewInstancePanel(false); setIsNewInstancePanelClosing(false); }, PANEL_EXIT_MS);
-      }
-    });
-  }, [showNewInstancePanel, registerLayer, isCreatingInstance, closeVersionDropdown]);
+    if (showNewInstancePanel) return registerLayer("new_instance", closeNewInstancePanel);
+  }, [showNewInstancePanel, registerLayer, closeNewInstancePanel]);
 
   useEffect(() => {
     if (showLaunchPanel) return registerLayer("launch_panel", dismissLaunchPanel);
@@ -2428,23 +2936,30 @@ function SillyClientLauncher() {
     if (showRelocateModal) return registerLayer("relocate_modal", closeRelocateModal);
   }, [showRelocateModal, registerLayer, closeRelocateModal]);
 
+  useEffect(() => {
+    if (isAndroid && showOnboarding && !isOnboardingSandbox) {
+      return registerLayer("onboarding", cancelOnboarding);
+    }
+  }, [isAndroid, showOnboarding, registerLayer, cancelOnboarding]);
+
   const handleCardMenuOpen = useCallback((instance: TavernInstance, rect: DOMRect) => {
+    const bottom = toUnscaledPx(rect.bottom);
+    const left = toUnscaledPx(rect.left);
+    const vw = toUnscaledPx(window.innerWidth);
+    const vh = toUnscaledPx(window.innerHeight);
     setMenuPos({
-      top: Math.min(rect.bottom + 6, window.innerHeight - 200),
-      left: Math.max(12, Math.min(rect.left - 60, window.innerWidth - 160)),
+      top: Math.min(bottom + 6, vh - 200),
+      left: Math.max(12, Math.min(left - 60, vw - 160)),
     });
     setActiveCardMenu(instance.id);
     setIsCardMenuClosing(false);
   }, []);
 
-  const openNewInstancePanel = useCallback(() => {
-    if (isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV) {
-      void openExternalUrl("https://github.com/CAPTCHAAAAA/SillyClient/releases/latest").catch(() => {});
-      return;
-    }
+  const resetNewInstanceFields = useCallback((initialName = "") => {
     setNewInstanceMode("local");
-    setNewInstanceName("");
+    setNewInstanceName(initialName);
     setNewInstanceDir("");
+    setNewInstancePathMode("exact");
     setNewInstanceUrl("http://");
     setNewRemoteAuthEnabled(false);
     setNewRemoteAuthUsername("");
@@ -2453,9 +2968,101 @@ function SillyClientLauncher() {
     setNewInstanceCompanionPresetEnabled(false);
     setNewInstanceExtensionIds([]);
     setNewInstanceLocalZip(null);
+  }, []);
+
+  const openNewInstancePanel = useCallback(() => {
+    if (isWeb && !isShowcase && !isLocalPreview && !import.meta.env.DEV) {
+      void openExternalUrl("https://github.com/CAPTCHAAAAA/SillyClient/releases/latest").catch(() => {});
+      return;
+    }
+    resetNewInstanceFields("");
     setNewInstanceError(null);
+    setNewInstanceDiagnostic(null);
     setShowNewInstancePanel(true);
-  }, [isWeb, isShowcase, isLocalPreview]);
+  }, [isWeb, isShowcase, isLocalPreview, resetNewInstanceFields]);
+
+  const openIssueReportPreview = useCallback(() => {
+    if (!canPreviewIssueReport) return;
+    const queryPlatform = new URLSearchParams(window.location.search).get("platform")?.trim();
+    const previewPlatform = queryPlatform || (platformTag === "web" ? "windows" : platformTag);
+    const previewError = Object.assign(
+      new Error("TypeError: Cannot read properties of undefined (reading 'servicePort') at startTavernRuntime"),
+      { stage: "runtimeInit", code: "ERR_UNHANDLED_RUNTIME" },
+    );
+    const diagnostic = createDiagnosticContext(previewError, {
+      area: "runtime",
+      stage: "runtimeInit",
+      elapsedMs: 1420,
+      platform: previewPlatform,
+    });
+    closeVersionDropdown();
+    reportGlobalError(previewError, {
+      area: "runtime",
+      stage: "runtimeInit",
+      platform: previewPlatform,
+      diagnostic,
+      force: true,
+    });
+  }, [canPreviewIssueReport, closeVersionDropdown, platformTag]);
+
+  const clearLogoDebugTimer = useCallback(() => {
+    if (logoDebugPressTimerRef.current) {
+      clearTimeout(logoDebugPressTimerRef.current);
+      logoDebugPressTimerRef.current = null;
+    }
+    logoDebugPressStartRef.current = null;
+  }, []);
+
+  const handleLogoClick = useCallback(() => {
+    if (logoDebugLongPressRef.current) {
+      logoDebugLongPressRef.current = false;
+      return;
+    }
+    setLogoFontIndex(prev => (prev + 1) % LOGO_FONTS.length);
+  }, []);
+
+  const handleLogoDebugPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!canPreviewIssueReport || (event.pointerType === "mouse" && event.button !== 0)) return;
+    clearLogoDebugTimer();
+    logoDebugLongPressRef.current = false;
+    logoDebugPressStartRef.current = { x: event.clientX, y: event.clientY };
+    logoDebugPressTimerRef.current = window.setTimeout(() => {
+      logoDebugPressTimerRef.current = null;
+      logoDebugPressStartRef.current = null;
+      logoDebugLongPressRef.current = true;
+      openIssueReportPreview();
+      window.addEventListener(
+        "pointerup",
+        () => {
+          window.setTimeout(() => {
+            logoDebugLongPressRef.current = false;
+          }, 60);
+        },
+        { once: true },
+      );
+    }, 620);
+  }, [canPreviewIssueReport, clearLogoDebugTimer, openIssueReportPreview]);
+
+  const handleLogoDebugPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const start = logoDebugPressStartRef.current;
+    if (!start) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) {
+      clearLogoDebugTimer();
+    }
+  }, [clearLogoDebugTimer]);
+
+  const handleLogoDebugPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    clearLogoDebugTimer();
+    if (logoDebugLongPressRef.current) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, [clearLogoDebugTimer]);
+
+  const handleLogoDebugPointerCancel = useCallback(() => {
+    clearLogoDebugTimer();
+    logoDebugLongPressRef.current = false;
+  }, [clearLogoDebugTimer]);
 
   return (
     <div
@@ -2514,7 +3121,7 @@ function SillyClientLauncher() {
 
       {/* 顶部导航 */}
       <header className="fixed left-0 right-0 z-50 px-4" style={{ top: `max(env(safe-area-inset-top), ${safeInsetTop + 4}px)` }}>
-        <div className={cn("h-12 flex items-center px-3 rounded-[var(--radius-3xl)] border backdrop-blur-[40px] saturate-180 transition-colors", isLight ? "bg-white/60 border-black/5 shadow-[0_4px_16px_rgba(0,0,0,0.06)]" : "glass-panel")}>
+        <div className={cn("ios-floating-menu h-12 flex items-center px-3 rounded-[var(--radius-3xl)] border-0 backdrop-blur-[40px] saturate-180 transition-colors", isLight && "is-light")}>
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
               ref={terminalBtnRef}
@@ -2549,7 +3156,7 @@ function SillyClientLauncher() {
               }}
               aria-label={isDemoPreview ? "打开背景设置，长按查看创建实例控制台" : "打开背景设置"}
               data-onboarding-target="background"
-              className={cn("group flex items-center gap-2 px-4 py-1.5 rounded-full transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] max-w-[200px] border", isLight ? "border-black/10 text-[#1a1625]/80 hover:text-[#1a1625] shadow-[inset_0_1px_2px_rgba(0,0,0,0.05),0_1px_2px_rgba(255,255,255,0.5)]" : "border-white/10 text-white/80 hover:text-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.2),0_1px_2px_rgba(255,255,255,0.1)]")}
+              className={cn("group flex items-center gap-2 px-3 h-8 rounded-full border-0 transition-colors duration-300 max-w-[200px]", isLight ? "text-[#1a1625]/75 hover:text-[#1a1625]" : "text-white/75 hover:text-white")}
             >
               <span className="text-sm font-medium truncate">
                 {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
@@ -2580,46 +3187,63 @@ function SillyClientLauncher() {
         </div>
       </header>
 
-      {/* 新版本提示胶囊 (严格与右上角设置按钮右边框对齐) */}
+      {/* 新版本提示浮层 (严格与右上角设置按钮右边框对齐，宽度固定、高度随内容自适应并限高省略) */}
       {appUpdateState === "available" && appUpdateInfo && !updatePromptDismissed && (
         <div
           className={cn(
-            "fixed z-[41] flex items-center gap-2 h-10 pl-3.5 pr-1.5 rounded-2xl border backdrop-blur-[40px] saturate-180 shadow-[0_16px_50px_rgba(0,0,0,0.35)]",
-            glassBg
+            "ios-floating-menu animate-popover [--popover-origin:translateY(0)] fixed z-[41] w-[320px] px-3.5 py-3 rounded-2xl border-0 backdrop-blur-[40px] saturate-180 flex flex-col gap-2",
+            isLight && "is-light"
           )}
           style={{
             top: `calc(max(env(safe-area-inset-top), ${safeInsetTop}px) + 60px)`,
             right: updateBannerRight,
+            maxWidth: `calc(var(--ui-vw, 100vw) - ${Math.max(16, updateBannerRight + 16)}px)`,
           }}
         >
-          <div className={cn("text-xs font-medium whitespace-nowrap", isLight ? "text-[#1a1625]/85" : "text-white/85")}>
-            发现新版本 v{appUpdateInfo.latestVersion}
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className={cn("text-xs font-semibold tracking-tight truncate", isLight ? "text-[#1a1625]/88" : "text-white/90")}>
+              发现新版本 v{appUpdateInfo.latestVersion}
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <ActionButton
+                onClick={() => {
+                  const url = appUpdateInfo.releaseUrl || "https://github.com/CAPTCHAAAAA/SillyClient/releases/latest";
+                  void openExternalUrl(url).catch(() => {});
+                  setUpdatePromptDismissed(true);
+                }}
+                className={cn(
+                  "!h-7 !min-w-0 px-3 text-xs font-semibold",
+                  isLight
+                    ? "text-[#1a1625]/70 hover:text-[#1a1625]"
+                    : "text-white/75 hover:text-white"
+                )}
+              >
+                查看
+              </ActionButton>
+              <button
+                type="button"
+                onClick={() => setUpdatePromptDismissed(true)}
+                aria-label="关闭更新提示"
+                className={cn(
+                  "motion-control w-7 h-7 rounded-full flex items-center justify-center transition-colors",
+                  isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/85" : "text-white/40 hover:text-white/85"
+                )}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => {
-              const url = appUpdateInfo.releaseUrl || "https://github.com/CAPTCHAAAAA/SillyClient/releases/latest";
-              void openExternalUrl(url).catch(() => {});
-              setUpdatePromptDismissed(true);
-            }}
-            className={cn(
-              "flat-capsule motion-control h-7 px-3 rounded-full text-xs font-semibold border-0",
-              isLight
-                ? "text-[#1a1625]/70 hover:text-[#1a1625]"
-                : "text-white/70 hover:text-white"
-            )}
-          >
-            查看
-          </button>
-          <button
-            onClick={() => setUpdatePromptDismissed(true)}
-            aria-label="关闭更新提示"
-            className={cn(
-              "motion-control w-7 h-7 rounded-full flex items-center justify-center transition-all",
-              isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/85" : "text-white/40 hover:text-white/85"
-            )}
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          {appUpdateInfo.releaseSummary && (
+            <p
+              className={cn(
+                "update-banner-summary text-[11.5px] leading-[1.6]",
+                isLight ? "text-[#1a1625]/68" : "text-white/70"
+              )}
+              title={appUpdateInfo.releaseSummary}
+            >
+              {appUpdateInfo.releaseSummary}
+            </p>
+          )}
         </div>
       )}
 
@@ -2635,7 +3259,24 @@ function SillyClientLauncher() {
         }}
       >
         {/* Logo */}
-        <div className="mb-4 text-center select-none cursor-pointer group" onClick={() => setLogoFontIndex(prev => (prev + 1) % LOGO_FONTS.length)} title={`点击切换字体 (${LOGO_FONTS[logoFontIndex].name})`}>
+        <div
+          className="mb-4 text-center select-none cursor-pointer group"
+          onClick={handleLogoClick}
+          onPointerDown={handleLogoDebugPointerDown}
+          onPointerMove={handleLogoDebugPointerMove}
+          onPointerUp={handleLogoDebugPointerUp}
+          onPointerCancel={handleLogoDebugPointerCancel}
+          onContextMenu={(event) => {
+            if (canPreviewIssueReport && (logoDebugLongPressRef.current || logoDebugPressTimerRef.current)) {
+              event.preventDefault();
+            }
+          }}
+          title={
+            canPreviewIssueReport
+              ? `点击切换字体 (${LOGO_FONTS[logoFontIndex].name}) · 长按预览问题上报`
+              : `点击切换字体 (${LOGO_FONTS[logoFontIndex].name})`
+          }
+        >
           <span
             className="inline-block text-[clamp(3rem,10vw,7.5rem)] font-normal leading-none transition-all duration-300"
             style={{
@@ -2649,7 +3290,7 @@ function SillyClientLauncher() {
           <div className={cn(
             "text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
             isLight ? "text-[#1a1625]/25" : "text-white/25"
-          )}>{LOGO_FONTS[logoFontIndex].name}</div>
+          )}>{canPreviewIssueReport ? `${LOGO_FONTS[logoFontIndex].name} · 长按预览上报` : LOGO_FONTS[logoFontIndex].name}</div>
         </div>
 
         {/* 搜索栏 */}
@@ -2677,7 +3318,7 @@ function SillyClientLauncher() {
             />
           </div>
           {searchQuery && (
-            <div className="motion-menu-list animate-dropdown absolute top-full left-0 right-0 mt-2 rounded-2xl border overflow-hidden z-30 max-h-64 overflow-y-auto scrollbar-subtle">
+            <div className={cn("ios-floating-menu motion-menu-list animate-dropdown absolute top-full left-0 right-0 mt-2 rounded-2xl border-0 overflow-hidden z-30 max-h-64 overflow-y-auto scrollbar-subtle", isLight && "is-light")}>
               {searchResults.map(t => (
                 <button
                   key={t.id}
@@ -2688,7 +3329,7 @@ function SillyClientLauncher() {
                   }}
                   className={cn(
                     "motion-menu-item w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors",
-                    isLight ? "bg-[#f5f3ef]/95 text-[#1a1625]/60 hover:text-[#1a1625]" : "bg-[#1a1625]/95 text-white/60 hover:text-white"
+                    isLight ? "text-[#1a1625]/60 hover:text-[#1a1625]" : "text-white/60 hover:text-white"
                   )}
                 >
                   <span className="scale-75">{t.icon}</span>
@@ -2697,7 +3338,7 @@ function SillyClientLauncher() {
                 </button>
               ))}
               {searchResults.length === 0 && (
-                <div className={cn("px-4 py-3 text-sm", isLight ? "bg-[#f5f3ef]/95 text-[#1a1625]/40" : "bg-[#1a1625]/95 text-white/40")}>无匹配实例</div>
+                <div className={cn("px-4 py-3 text-sm", isLight ? "text-[#1a1625]/40" : "text-white/40")}>无匹配实例</div>
               )}
             </div>
           )}
@@ -2723,6 +3364,7 @@ function SillyClientLauncher() {
           createCardSlot={createCardSlot}
           onCreateCardSlotChange={setCreateCardSlot}
           isWindows={isWindows}
+          isIOS={isIOS}
           isWeb={isWeb}
           isShowcase={isShowcase}
           isLocalPreview={isLocalPreview}
@@ -2765,6 +3407,7 @@ function SillyClientLauncher() {
       {/* 统一背景交互锁：浮层打开或退场期间，背景不可点击、不可滚动触发刷新。 */}
       <LayerBackdrop
         isOpen={isBackgroundInteractionBlocked}
+        isClosing={isBackgroundInteractionClosing}
         blur={false}
         zIndex={LAYERS.DRAWER_BACKDROP}
         className="!bg-transparent touch-none"
@@ -2793,6 +3436,8 @@ function SillyClientLauncher() {
         customWallpaperUrl={customWallpaperUrl}
         setCustomWallpaperUrl={setCustomWallpaperUrl}
         onSelectWallpaperFile={() => wallpaperInputRef.current?.click()}
+        uiScale={uiScale}
+        onUiScaleChange={handleUiScaleChange}
       />
 
       {/* 解耦业务组件: 终端面板 */}
@@ -2846,6 +3491,10 @@ function SillyClientLauncher() {
         pullToRefresh={pullToRefresh}
         setPullToRefresh={setPullToRefresh}
         renderSettings={renderSettings}
+        canSetPerformancePreset={isAndroid || (isWeb && canPreviewRenderSettings)}
+        renderSettingsPending={renderSettingsPending}
+        renderSettingsError={renderSettingsError}
+        renderSettingsDiagnostic={renderSettingsDiagnostic}
         onRenderSettingsChange={commitRenderSettings}
         contentOpenMode={contentOpenMode}
         setContentOpenMode={setContentOpenMode}
@@ -2855,6 +3504,8 @@ function SillyClientLauncher() {
         setInstances={setInstances}
         appUpdateState={appUpdateState}
         appUpdateInfo={appUpdateInfo}
+        appUpdateError={appUpdateError}
+        appUpdateDiagnostic={appUpdateDiagnostic}
         checkForAppUpdate={checkForAppUpdate}
         openProjectPage={openProjectPage}
         onOpenCleanGarbage={async () => {
@@ -2863,6 +3514,7 @@ function SillyClientLauncher() {
           setShowCleanPanel(true);
           setGarbageItems([]);
           setGarbageError(null);
+          setGarbageDiagnostic(null);
           try {
             const { items } = await TarvenEnv.cleanGarbage({
               dryRun: true,
@@ -2871,7 +3523,22 @@ function SillyClientLauncher() {
             });
             setGarbageItems(items);
           } catch (e) {
-            setGarbageError(e instanceof Error ? e.message : String(e));
+            const friendly = humanizeNativeError(e);
+            const context = createDiagnosticContext(e, {
+              area: "cleanup",
+              stage: "scan-garbage",
+              platform: platformTag,
+              userMessage: friendly,
+            });
+            setGarbageError(friendly);
+            setGarbageDiagnostic(context);
+            reportGlobalError(e, {
+              area: "cleanup",
+              stage: "scan-garbage",
+              platform: platformTag,
+              userMessage: friendly,
+              diagnostic: context,
+            });
           }
           setCleaningGarbage(false);
         }}
@@ -2899,12 +3566,14 @@ function SillyClientLauncher() {
           if (!isDeletingInstance) {
             setPendingDelete(null);
             setDeleteInstanceError(null);
+            setDeleteDiagnostic(null);
           }
         }}
         isLight={isLight}
         glassBg={glassBg}
         isDeleting={isDeletingInstance}
         deleteError={deleteInstanceError}
+        deleteDiagnostic={deleteDiagnostic}
         onConfirm={confirmDeleteInstance}
       />
 
@@ -2914,12 +3583,7 @@ function SillyClientLauncher() {
         isClosing={(isNewInstancePanelClosing || isLaunchPanelClosing) && (!showNewInstancePanel || isNewInstancePanelClosing) && (!showLaunchPanel || isLaunchPanelClosing)}
         onClick={() => {
           if (showNewInstancePanel && !isCreatingInstance) {
-            closeVersionDropdown();
-            setIsNewInstancePanelClosing(true);
-            setTimeout(() => {
-              setShowNewInstancePanel(false);
-              setIsNewInstancePanelClosing(false);
-            }, PANEL_EXIT_MS);
+            closeNewInstancePanel();
           } else if (showLaunchPanel && (launchError || (operationPurpose === "create" && launchProgress?.pct === 100))) {
             dismissLaunchPanel();
           }
@@ -2934,6 +3598,7 @@ function SillyClientLauncher() {
         glassBg={glassBg}
         operationPurpose={operationPurpose}
         launchError={launchError}
+        launchDiagnostic={launchDiagnostic}
         launchProgress={launchProgress}
         lastLaunchParams={lastLaunchParams}
         logKey={launchLogKey}
@@ -2967,6 +3632,7 @@ function SillyClientLauncher() {
         garbageItems={garbageItems}
         setGarbageItems={setGarbageItems}
         error={garbageError}
+        diagnostic={garbageDiagnostic}
         setError={setGarbageError}
       />
 
@@ -2974,19 +3640,11 @@ function SillyClientLauncher() {
       <NewInstanceWizardModal
         isOpen={showNewInstancePanel}
         isClosing={isNewInstancePanelClosing}
-        onClose={() => {
-          if (!isCreatingInstance) {
-            closeVersionDropdown();
-            setIsNewInstancePanelClosing(true);
-            setTimeout(() => {
-              setShowNewInstancePanel(false);
-              setIsNewInstancePanelClosing(false);
-            }, PANEL_EXIT_MS);
-          }
-        }}
+        onClose={closeNewInstancePanel}
         isLight={isLight}
         glassBg={glassBg}
         isWindows={isWindows}
+        isIOS={isIOS}
         newInstanceName={newInstanceName}
         setNewInstanceName={setNewInstanceName}
         newInstanceMode={newInstanceMode}
@@ -3011,6 +3669,7 @@ function SillyClientLauncher() {
         newRemoteAuthPassword={newRemoteAuthPassword}
         setNewRemoteAuthPassword={setNewRemoteAuthPassword}
         newInstanceError={newInstanceError}
+        newInstanceDiagnostic={newInstanceDiagnostic}
         isCreatingInstance={isCreatingInstance}
         createInstance={createInstance}
         releases={releases}
@@ -3082,6 +3741,8 @@ function SillyClientLauncher() {
         setDraftRemoteAuthPassword={setDraftRemoteAuthPassword}
         isSavingManagePanel={isSavingManagePanel}
         manageSaveError={manageSaveError}
+        manageSaveDiagnostic={manageSaveDiagnostic}
+        isIOS={isIOS}
         onSaveManagedInstance={saveManagedInstance}
         terminalDisplayPrompt={terminalDisplayPrompt}
         terminalPlaceholder={terminalPlaceholder}
@@ -3123,6 +3784,8 @@ function SillyClientLauncher() {
         onClose={closeRelocateModal}
         isLight={isLight}
         glassBg={glassBg}
+        isWindows={isWindows}
+        isIOS={isIOS}
         onRelocated={handleInstanceRelocated}
       />
 
@@ -3130,7 +3793,7 @@ function SillyClientLauncher() {
       {import.meta.env.DEV && !isNativePreview && !isOnboardingSandbox && (
         <div
           title="【视觉测试专用】仅用于本地开发、设计走查与过渡动效测试，正式生产原生端不包含"
-          className="fixed bottom-4 right-4 z-[99] flex flex-wrap items-center gap-1.5 p-1.5 rounded-full border backdrop-blur-[32px] saturate-180 shadow-[0_8px_32px_rgba(0,0,0,0.4)] select-none text-[11px] transition-all bg-[#14101e]/85 border-white/10"
+          className={cn("ios-floating-menu fixed bottom-4 right-4 z-[99] flex flex-wrap items-center gap-1.5 p-1.5 rounded-full border-0 select-none text-[11px] transition-all", isLight && "is-light")}
         >
           <div className="flex items-center gap-1.5 pl-2.5 pr-1 text-white/50 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
@@ -3143,7 +3806,7 @@ function SillyClientLauncher() {
               setShowNewInstancePanel(true);
               setIsNewInstancePanelClosing(false);
             }}
-            className="motion-control h-7 px-3 rounded-full border border-white/10 bg-white/10 text-white/70 hover:text-white active:bg-white/25 font-medium transition-colors"
+            className="flat-capsule motion-control h-7 px-3 rounded-full border-0 text-white/70 hover:text-white font-medium"
           >
             打开向导
           </button>
@@ -3162,7 +3825,7 @@ function SillyClientLauncher() {
                 { msg: "解压运行时与核心组件...", level: "info" },
               ]);
             }}
-            className="motion-control h-7 px-3 rounded-full border border-white/10 bg-white/10 text-white/70 hover:text-white active:bg-white/25 font-medium transition-colors"
+            className="flat-capsule motion-control h-7 px-3 rounded-full border-0 text-white/70 hover:text-white font-medium"
           >
             模拟过渡
           </button>
@@ -3180,7 +3843,7 @@ function SillyClientLauncher() {
                 { msg: "服务可访问，实例创建完成", level: "success" },
               ]);
             }}
-            className="motion-control h-7 px-3 rounded-full border border-white/20 bg-white/20 text-white/80 hover:text-white active:bg-white/35 font-semibold transition-colors"
+            className="flat-capsule motion-control h-7 px-3 rounded-full border-0 text-white/80 hover:text-white font-semibold"
           >
             模拟完成态
           </button>
@@ -3197,6 +3860,13 @@ function SillyClientLauncher() {
           </button>
         </div>
       )}
+
+      {/* 全局置顶虚化问题反馈菜单（商业软件评分/反馈交互模式） */}
+      <GlobalErrorReportOverlay
+        isLight={isLight}
+        glassBg={glassBg}
+        registerLayer={registerLayer}
+      />
     </div>
   );
 }

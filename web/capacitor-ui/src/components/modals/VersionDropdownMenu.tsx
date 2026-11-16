@@ -61,10 +61,11 @@ export const VersionDropdownMenu: React.FC<VersionDropdownMenuProps> = ({
         blur={false}
       />
       <div
+        data-legacy-glass={Boolean(glassBg)}
         className={cn(
-          "motion-menu-list fixed rounded-md overflow-hidden backdrop-blur-[40px] saturate-180",
-          isClosing ? "animate-dropdown-up-exit" : "animate-dropdown-up",
-          glassBg
+          "ios-floating-menu motion-menu-list fixed rounded-2xl overflow-hidden backdrop-blur-[40px] saturate-180",
+          isLight && "is-light",
+          isClosing ? "animate-dropdown-up-exit" : "animate-dropdown-up"
         )}
         style={{
           zIndex: LAYERS.POPOVER_MENU,

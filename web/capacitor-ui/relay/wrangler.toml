@@ -1,0 +1,19 @@
+name = "sillyclient-diagnostic-relay"
+main = "cloudflare-worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+GITHUB_REPOSITORY = "CAPTCHAAAAA/SillyClient"
+# "*" supports native shells (Windows Electron app://, iOS capacitor://localhost, Android https://localhost) and web previews.
+# To restrict origins strictly, set e.g.:
+# ALLOWED_ORIGIN = "capacitor://localhost,https://localhost,http://localhost,app://-,https://captchaaaaa.github.io"
+ALLOWED_ORIGIN = "*"
+RATE_LIMIT_MAX_PER_HOUR = "10"
+FINGERPRINT_COOLDOWN_SECONDS = "600"
+
+# Set secrets via Wrangler CLI (never commit tokens):
+#   pnpm dlx wrangler secret put GITHUB_TOKEN
+# Optional:
+#   pnpm dlx wrangler secret put TURNSTILE_SECRET_KEY
+#   pnpm dlx wrangler secret put RELAY_APP_KEY

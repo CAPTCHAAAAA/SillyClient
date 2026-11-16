@@ -1,6 +1,14 @@
 import { Capacitor } from "@capacitor/core";
-import type { TarvenEnvPlugin, TarvenEvent, GarbageItem, MaintenanceItem, MaintenanceScan, MaintenanceRecovery } from "../capacitor-plugin";
+import type {
+  TarvenEnvPlugin,
+  TarvenEvent,
+  GarbageItem,
+  MaintenanceItem,
+  MaintenanceScan,
+  MaintenanceRecovery,
+} from "../capacitor-plugin";
 import { normalizeRenderEngineSettings } from "../lib/render-settings";
+import type { RenderEngineSettings } from "../lib/render-settings";
 import { exactInstallTarget } from "../lib/install-location";
 import { validateExternalUrl } from "../lib/external-url";
 
@@ -16,6 +24,25 @@ let failCommands = false;
 let status: Awaited<ReturnType<TarvenEnvPlugin["getStatus"]>> = { serverReady: false, mode: "launcher" };
 let openMode: "webview" | "browser" = "webview";
 let renderEngineSettings = normalizeRenderEngineSettings(null);
+interface RenderSettingsFixture {
+  settings?: Partial<RenderEngineSettings>;
+  readDelay?: number;
+  writeDelay?: number;
+  readError?: string | null;
+  writeError?: string | null;
+}
+let renderSettingsFixture: RenderSettingsFixture = {};
+interface DiagnosticReportFixture {
+  ok?: boolean;
+  reportId?: string;
+  message?: string;
+  delay?: number;
+  rejectMessage?: string | null;
+}
+let diagnosticReportFixture: DiagnosticReportFixture = {};
+let reportCounter = 1041;
+let directoryError: string | { message: string; code?: string; stage?: string } | null = null;
+let provisionError: string | null = null;
 let migrated = new Map<string, string>();
 let scannedInstanceIds = ["preview-local", "preview-second"];
 type DirectorySelection = Awaited<ReturnType<TarvenEnvPlugin["pickDirectory"]>>;
@@ -30,7 +57,7 @@ let exportRejectMessage: string | null = null;
 
 function syntheticRoot() {
   return platform === "windows" ? "D:\\Synthetic" : platform === "android"
-    ? "/data/user/0/com.sillyclient/files/tarven/installations" : "/private/Synthetic/Documents/Installations";
+    ? "/data/user/0/com.sillyclient/files/tarven/installations" : "/private/Synthetic/Documents/instances";
 }
 interface MaintenanceFixture {
   failIds?: string[];
@@ -66,8 +93,18 @@ function complete(operationId: string, ready = true) {
   operation.resolve({ ready });
 }
 
+function redactRecordedOptions(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactRecordedOptions);
+  if (!value || typeof value !== "object") return value;
+  const result: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    result[key] = /password|secret|token/i.test(key) ? "[redacted]" : redactRecordedOptions(entry);
+  }
+  return result;
+}
+
 function record(method: string, options?: unknown) {
-  calls.push({ method, options });
+  calls.push({ method, options: redactRecordedOptions(options) });
 }
 
 function scopedMaintenance(instanceId: string): MaintenanceItem[] {
@@ -88,6 +125,14 @@ function maintenanceStopped() {
   if (status.serverReady || status.operationId) throw new Error("Synthetic runtime is busy");
 }
 
+function buildNativeError(input: string | { message: string; code?: string; stage?: string }): Error {
+  if (typeof input === "string") return new Error(input);
+  const error = new Error(input.message) as Error & { code?: string; stage?: string };
+  if (input.code) error.code = input.code;
+  if (input.stage) error.stage = input.stage;
+  return error;
+}
+
 export const nativePreview: TarvenEnvPlugin = {
   async addListener(name, callback) {
     if (listenerDelay) await new Promise(resolve => setTimeout(resolve, listenerDelay));
@@ -98,6 +143,12 @@ export const nativePreview: TarvenEnvPlugin = {
   },
   async provisionAndStart(options) {
     record("provisionAndStart", options);
+    if (platform === "ios" && options.localZipPath) {
+      throw new Error("iOS 不支持从 ZIP 安装运行时");
+    }
+    if (provisionError) {
+      throw new Error(provisionError);
+    }
     const operationId = options.operationId || "legacy-preview";
     status = { serverReady: false, mode: "launcher", instanceId: options.instanceId, operationId };
     emit("log", { instanceId: options.instanceId, operationId, message: "合成运行时：准备启动", level: "info" });
@@ -139,7 +190,15 @@ export const nativePreview: TarvenEnvPlugin = {
   async exitImmersive() { record("exitImmersive"); status = { ...status, mode: "launcher" }; },
   async returnToTavern() { record("returnToTavern"); },
   async getStatus() { record("getStatus"); return { ...status }; },
-  async fetchReleases() { return { releases: [{ tag: "1.19.0", zipballUrl: "https://example.test/synthetic.zip", prerelease: false }] }; },
+  async fetchReleases() {
+    return {
+      releases: [{
+        tag: "1.19.0",
+        zipballUrl: platform === "ios" ? "" : "https://example.test/synthetic.zip",
+        prerelease: false,
+      }],
+    };
+  },
   async getAppSettings() {
     record("getAppSettings", {});
     const instancesRoot = syntheticRoot();
@@ -152,17 +211,28 @@ export const nativePreview: TarvenEnvPlugin = {
   },
   async pickDirectory(options) {
     record("pickDirectory", options);
+    if (directoryDelay) await new Promise(resolve => setTimeout(resolve, directoryDelay));
+    if (directoryError) {
+      throw buildNativeError(directoryError);
+    }
     const selection = directorySelection === undefined ? {
       name: "Synthetic", path: platform === "windows" ? "D:\\Synthetic\\Tavern" : syntheticRoot(),
       ...(options?.purpose === "installation" ? { installPathMode: "root" as const } : {}),
     } : directorySelection;
-    if (directoryDelay) await new Promise(resolve => setTimeout(resolve, directoryDelay));
-    if (selection === null) throw new Error("cancelled");
+    if (selection === null) {
+      const cancelError = new Error("cancelled") as Error & { code?: string };
+      cancelError.code = "PICKER_CANCELLED";
+      throw cancelError;
+    }
     return { ...selection };
   },
   async pickImage() { return { path: "" }; },
   async pickZipFile() {
-    if (zipSelection === null) throw new Error("cancelled");
+    if (zipSelection === null) {
+      const cancelError = new Error("cancelled") as Error & { code?: string };
+      cancelError.code = "PICKER_CANCELLED";
+      throw cancelError;
+    }
     return zipSelection || { path: "D:\\Synthetic\\backup.zip", sizeBytes: 1 };
   },
   async scanInstances() {
@@ -205,8 +275,19 @@ export const nativePreview: TarvenEnvPlugin = {
   },
   async getSafeInsets() { return { top: 0, bottom: 0, left: 0, right: 0 }; },
   async setPullToRefresh() {},
-  async getRenderEngineSettings() { return { ...renderEngineSettings }; },
-  async setRenderEngineSettings(options) { renderEngineSettings = normalizeRenderEngineSettings(options); },
+  async getRenderEngineSettings() {
+    record("getRenderEngineSettings");
+    const settings = { ...renderEngineSettings };
+    if (renderSettingsFixture.readDelay) await new Promise(resolve => setTimeout(resolve, renderSettingsFixture.readDelay));
+    if (renderSettingsFixture.readError) throw new Error(renderSettingsFixture.readError);
+    return settings;
+  },
+  async setRenderEngineSettings(options) {
+    record("setRenderEngineSettings", options);
+    if (renderSettingsFixture.writeDelay) await new Promise(resolve => setTimeout(resolve, renderSettingsFixture.writeDelay));
+    if (renderSettingsFixture.writeError) throw new Error(renderSettingsFixture.writeError);
+    renderEngineSettings = normalizeRenderEngineSettings({ ...renderEngineSettings, ...options });
+  },
   async getContentOpenMode() { return { mode: openMode }; },
   async setContentOpenMode(options) { openMode = options.mode; return options; },
   async setRemoteBasicAuth(options) {
@@ -219,7 +300,13 @@ export const nativePreview: TarvenEnvPlugin = {
   },
   async clearRemoteBasicAuth(options) { credentials.delete(options.instanceId); return { success: true }; },
   async pingUrl() { return { online: true }; },
-  async uninstallInstance(options) { record("uninstallInstance", options); return { success: true, freedBytes: 1 }; },
+  async uninstallInstance(options) {
+    record("uninstallInstance", options);
+    migrated.delete(options.instanceId);
+    credentials.delete(`pwd:${options.instanceId}`);
+    scannedInstanceIds = scannedInstanceIds.filter(id => id !== options.instanceId);
+    return { success: true, freedBytes: 1, instanceId: options.instanceId };
+  },
   async cleanGarbage(options) { record("cleanGarbage", options); return { items: garbage.map(item => ({ ...item })), totalBytes: 3072 }; },
   async deleteGarbageItem(options) {
     record("deleteGarbageItem", options);
@@ -291,24 +378,40 @@ export const nativePreview: TarvenEnvPlugin = {
   },
   async relocateInstance(options) {
     record("relocateInstance", options);
+    maintenanceStopped();
+    const oldPath = migrated.get(options.instanceId)
+      || options.installPath
+      || exactInstallTarget(syntheticRoot(), "root", options.instanceId)!;
     const newPath = options.targetPath || exactInstallTarget(syntheticRoot(), "root", options.instanceId)!;
-    return { success: true, instanceId: options.instanceId, oldPath: "C:\\AppData\\Legacy", newPath };
+    migrated.set(options.instanceId, newPath);
+    if (!scannedInstanceIds.includes(options.instanceId)) scannedInstanceIds.push(options.instanceId);
+    return { success: true, instanceId: options.instanceId, oldPath, newPath, unchanged: oldPath === newPath };
   },
   async renameInstance(options) {
     record("renameInstance", options);
-    const newId = options.newName.trim().replace(/[\\/:*?"<>|\x00-\x1f]/g, "-").slice(0, 100) || "instance";
+    maintenanceStopped();
+    const oldPath = migrated.get(options.instanceId)
+      || options.installPath
+      || exactInstallTarget(syntheticRoot(), "root", options.instanceId)!;
+    const folderName = options.newName.trim().replace(/[\\/:*?"<>|\x00-\x1f]/g, "-").slice(0, 100) || "instance";
+    const newId = platform === "ios" ? options.instanceId : folderName;
+    const separatorAt = Math.max(oldPath.lastIndexOf("/"), oldPath.lastIndexOf("\\"));
+    const newPath = oldPath.slice(0, separatorAt + 1) + folderName;
+    migrated.delete(options.instanceId);
+    migrated.set(newId, newPath);
+    scannedInstanceIds = [...new Set(scannedInstanceIds.map(id => id === options.instanceId ? newId : id))];
     return {
       success: true,
       oldId: options.instanceId,
       newId,
-      oldPath: options.installPath || `D:\\Software\\AI\\Entertainment\\SillyClient\\instances\\${options.instanceId}`,
-      newPath: `D:\\Software\\AI\\Entertainment\\SillyClient\\instances\\${newId}`,
+      oldPath,
+      newPath,
     };
   },
   async setInstancePassword(options) {
     record("setInstancePassword", options);
     const existing = credentials.get(`pwd:${options.instanceId}`);
-    if (existing && options.oldPassword && options.oldPassword !== existing) {
+    if (existing && (!options.oldPassword || options.oldPassword !== existing)) {
       throw new Error("原访问密码错误，无法更改或解除");
     }
     if (!options.password || !options.password.trim()) {
@@ -331,7 +434,7 @@ export const nativePreview: TarvenEnvPlugin = {
   async clearInstancePassword(options) {
     record("clearInstancePassword", options);
     const existing = credentials.get(`pwd:${options.instanceId}`);
-    if (existing && options.oldPassword && options.oldPassword !== existing) {
+    if (existing && (!options.oldPassword || options.oldPassword !== existing)) {
       throw new Error("原访问密码错误，无法解除密码保护");
     }
     credentials.delete(`pwd:${options.instanceId}`);
@@ -347,6 +450,22 @@ export const nativePreview: TarvenEnvPlugin = {
     }
     return result;
   },
+  async submitDiagnosticReport(options) {
+    record("submitDiagnosticReport", options);
+    const delay = diagnosticReportFixture.delay ?? 260;
+    if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay));
+    if (diagnosticReportFixture.rejectMessage) {
+      throw new Error(diagnosticReportFixture.rejectMessage);
+    }
+    if (diagnosticReportFixture.ok === false) {
+      return {
+        ok: false,
+        message: diagnosticReportFixture.message || "反馈服务暂时不可用，请稍后重试",
+      };
+    }
+    const reportId = diagnosticReportFixture.reportId || `SC-${++reportCounter}`;
+    return { ok: true, reportId };
+  },
 };
 
 export function installNativePreview() {
@@ -361,11 +480,16 @@ export function installNativePreview() {
       platform?: "windows" | "android" | "ios";
       directorySelection?: DirectorySelection | null;
       directoryDelay?: number;
+      directoryError?: string | { message: string; code?: string; stage?: string } | null;
+      provisionError?: string | null;
       zipSelection?: ZipSelection | null;
       exportResult?: ExportResult | null;
       exportRejectMessage?: string | null;
+      renderSettings?: RenderSettingsFixture;
+      diagnosticReport?: DiagnosticReportFixture;
     };
   };
+  const params = new URLSearchParams(window.location?.search || "");
   if (global.__SILLYCLIENT_PREVIEW_FIXTURE__?.scannedInstanceIds) {
     scannedInstanceIds = [...global.__SILLYCLIENT_PREVIEW_FIXTURE__.scannedInstanceIds];
   }
@@ -378,9 +502,38 @@ export function installNativePreview() {
   if (global.__SILLYCLIENT_PREVIEW_FIXTURE__?.maintenance) {
     maintenanceFixture = { ...global.__SILLYCLIENT_PREVIEW_FIXTURE__.maintenance };
   }
-  platform = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.platform || "windows";
+  const queryPlatform = params.get("platform");
+  platform = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.platform
+    || (queryPlatform === "ios" || queryPlatform === "android" || queryPlatform === "windows" ? queryPlatform : "windows");
   directorySelection = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.directorySelection;
   directoryDelay = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.directoryDelay || 0;
+
+  const pickerErrorParam = params.get("pickerError");
+  if (global.__SILLYCLIENT_PREVIEW_FIXTURE__?.directoryError !== undefined) {
+    directoryError = global.__SILLYCLIENT_PREVIEW_FIXTURE__.directoryError;
+  } else if (pickerErrorParam === "permission") {
+    directoryError = {
+      message: "Installation folder selection failed at coordinate-selected-directory [NSCocoaErrorDomain:257]: The operation couldn't be completed.",
+      code: "NSCocoaErrorDomain:257",
+      stage: "coordinate-selected-directory",
+    };
+  } else if (pickerErrorParam === "abnormal") {
+    directoryError = {
+      message: "Picker dismissed unexpectedly without selection",
+      code: "PICKER_ABNORMAL_DISMISS",
+      stage: "present-document-picker",
+    };
+  } else if (pickerErrorParam === "cancel") {
+    directoryError = {
+      message: "User cancelled directory picker",
+      code: "PICKER_CANCELLED",
+    };
+  }
+
+  const provisionErrorParam = params.get("provisionError");
+  provisionError = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.provisionError
+    ?? (provisionErrorParam ? "ETIMEDOUT: failed to fetch release archive" : null);
+
   if ("zipSelection" in (global.__SILLYCLIENT_PREVIEW_FIXTURE__ || {})) {
     zipSelection = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.zipSelection;
   }
@@ -388,6 +541,20 @@ export function installNativePreview() {
     exportResult = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.exportResult || null;
   }
   exportRejectMessage = global.__SILLYCLIENT_PREVIEW_FIXTURE__?.exportRejectMessage || null;
+  renderSettingsFixture = { ...global.__SILLYCLIENT_PREVIEW_FIXTURE__?.renderSettings };
+  renderEngineSettings = normalizeRenderEngineSettings(renderSettingsFixture.settings);
+
+  const reportModeParam = params.get("reportMode");
+  if (global.__SILLYCLIENT_PREVIEW_FIXTURE__?.diagnosticReport) {
+    diagnosticReportFixture = { ...global.__SILLYCLIENT_PREVIEW_FIXTURE__.diagnosticReport };
+  } else if (reportModeParam === "timeout") {
+    diagnosticReportFixture = { delay: 150, rejectMessage: "Request timed out while uploading diagnostic summary" };
+  } else if (reportModeParam === "error") {
+    diagnosticReportFixture = { ok: false, delay: 150, message: "上报通道繁忙，请稍后再试" };
+  } else {
+    diagnosticReportFixture = {};
+  }
+
   global.__SILLYCLIENT_PLATFORM__ = platform;
   Capacitor.isNativePlatform = () => true;
   Capacitor.getPlatform = () => platform;
@@ -401,9 +568,13 @@ export function installNativePreview() {
       status?: Awaited<ReturnType<TarvenEnvPlugin["getStatus"]>>;
       directorySelection?: DirectorySelection | null;
       directoryDelay?: number;
+      directoryError?: string | { message: string; code?: string; stage?: string } | null;
+      provisionError?: string | null;
       zipSelection?: ZipSelection | null;
       exportResult?: ExportResult | null;
       exportRejectMessage?: string | null;
+      renderSettings?: RenderSettingsFixture;
+      diagnosticReport?: DiagnosticReportFixture;
     }) {
       manualProvision = options.manualProvision ?? manualProvision;
       listenerDelay = options.listenerDelay ?? listenerDelay;
@@ -414,14 +585,25 @@ export function installNativePreview() {
       if (options.status) status = { ...options.status };
       if ("directorySelection" in options) directorySelection = options.directorySelection;
       if (options.directoryDelay !== undefined) directoryDelay = options.directoryDelay;
+      if ("directoryError" in options) directoryError = options.directoryError ?? null;
+      if ("provisionError" in options) provisionError = options.provisionError ?? null;
       if ("zipSelection" in options) zipSelection = options.zipSelection;
       if ("exportResult" in options) exportResult = options.exportResult || null;
       if (options.exportRejectMessage !== undefined) exportRejectMessage = options.exportRejectMessage;
+      if (options.renderSettings) {
+        renderSettingsFixture = { ...renderSettingsFixture, ...options.renderSettings };
+        if (options.renderSettings.settings) {
+          renderEngineSettings = normalizeRenderEngineSettings({ ...renderEngineSettings, ...options.renderSettings.settings });
+        }
+      }
+      if (options.diagnosticReport) {
+        diagnosticReportFixture = { ...diagnosticReportFixture, ...options.diagnosticReport };
+      }
     },
     pending: () => Array.from(pending.keys()),
     listeners: () => Object.fromEntries(Array.from(listeners, ([name, group]) => [name, group.size])),
   };
-  localStorage.setItem("sillyclient.onboarding.version", "3");
+  localStorage.setItem("sillyclient.onboarding.version", "6");
   localStorage.setItem("sillyclient.instances.version", "2");
   if (!localStorage.getItem("sillyclient.instances")) {
     localStorage.setItem("sillyclient.instances", JSON.stringify(["preview-local", "preview-second"].map((id, index) => ({

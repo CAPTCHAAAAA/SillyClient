@@ -220,12 +220,11 @@ body::-webkit-scrollbar,
   background: var(--glass);
   backdrop-filter: blur(20px) saturate(1.6);
   -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border: 0.5px solid var(--glass-border);
+  border: 0;
   border-radius: var(--radius-3xl);
   box-shadow:
     0 8px 32px oklch(0 0 0 / 0.08),
-    inset 0 1px 0 oklch(1 0 0 / 0.60),
-    inset 0 -1px 0 oklch(0 0 0 / 0.04),
+    inset 0 1px 0 oklch(1 0 0 / 0.48),
     inset 0 2px 12px oklch(0 0 0 / 0.03);
 }
 
@@ -468,13 +467,11 @@ body::-webkit-scrollbar,
 }
 
 .ios-toggle-track-active {
-  background: #34c759;
+  background: rgba(255, 255, 255, 0.3);
   border-color: transparent;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow:
-    0 0 12px rgba(52, 199, 89, 0.4),
-    0 0 4px rgba(52, 199, 89, 0.2);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.18);
 }
 
 .ios-floating-menu.is-light .ios-toggle-track {
@@ -486,13 +483,11 @@ body::-webkit-scrollbar,
 }
 
 .ios-floating-menu.is-light .ios-toggle-track-active {
-  background: #34c759;
+  background: rgba(26, 22, 37, 0.58);
   border-color: transparent;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow:
-    0 0 12px rgba(52, 199, 89, 0.4),
-    0 0 4px rgba(52, 199, 89, 0.2);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.16);
 }
 
 .ios-toggle-thumb {
@@ -702,7 +697,7 @@ header span[class*="truncate"] {
   pointer-events: none;
 }
 
-/* 遮罩背景 — 进退场平滑关键帧过渡 */
+/* 遮罩背景 — 进退场平滑关键帧过渡；退场前移于 78% 收净，避免面板已退而遮罩滞后消失 */
 @keyframes overlay-fade-in {
   0% {
     opacity: 0;
@@ -722,6 +717,11 @@ header span[class*="truncate"] {
     backdrop-filter: blur(var(--overlay-blur, 2px));
     -webkit-backdrop-filter: blur(var(--overlay-blur, 2px));
   }
+  78% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
   100% {
     opacity: 0;
     backdrop-filter: blur(0px);
@@ -730,11 +730,13 @@ header span[class*="truncate"] {
 }
 
 .overlay-backdrop {
+  backdrop-filter: blur(var(--overlay-blur, 2px));
+  -webkit-backdrop-filter: blur(var(--overlay-blur, 2px));
   animation: overlay-fade-in 340ms var(--motion-present-ease) forwards;
 }
 
 .overlay-backdrop.overlay-backdrop-exit {
-  animation: overlay-fade-out var(--motion-dismiss) var(--motion-ease-out) forwards;
+  animation: overlay-fade-out var(--motion-dismiss) var(--motion-present-ease) forwards;
   pointer-events: none;
 }
 
@@ -1072,10 +1074,46 @@ header span[class*="truncate"] {
   transform: none !important;
 }
 
+@property --motion-edge-feather {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes motion-stack-feather {
+  0% {
+    --motion-edge-feather: 24px;
+  }
+  80% {
+    --motion-edge-feather: 14px;
+  }
+  100% {
+    --motion-edge-feather: 0px;
+  }
+}
+
 .motion-panel-stack {
   position: relative;
   overflow: hidden;
   transition: height var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+.motion-panel-stack[data-dissolving="true"] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--motion-edge-feather)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--motion-edge-feather)),
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: motion-stack-feather var(--motion-dissolve) var(--motion-dissolve-ease) forwards;
 }
 
 .motion-panel-face {
@@ -1108,7 +1146,7 @@ header span[class*="truncate"] {
   pointer-events: none !important;
 }
 
-/* 高度未知的内容使用 grid 行连续展开，允许中途反向。 */
+/* 高度未知的内容使用 grid 行连续展开，保持原版 3px 轻溶解并仅对底部裁切边缘做柔化，允许中途反向。 */
 .motion-accordion {
   display: grid;
   grid-template-rows: 0fr;
@@ -1116,8 +1154,35 @@ header span[class*="truncate"] {
   transition: grid-template-rows 320ms var(--motion-ease-out);
 }
 
+.motion-accordion:not(.instance-card-drawer) {
+  --motion-edge-feather: 22px;
+  will-change: grid-template-rows, --motion-edge-feather;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--motion-edge-feather)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--motion-edge-feather)),
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  transition:
+    grid-template-rows 320ms var(--motion-ease-out),
+    --motion-edge-feather 320ms var(--motion-ease-out);
+}
+
 .motion-accordion.is-open {
   grid-template-rows: 1fr;
+}
+
+.motion-accordion:not(.instance-card-drawer).is-open {
+  --motion-edge-feather: 0px;
 }
 
 .motion-accordion-inner {
@@ -1137,6 +1202,58 @@ header span[class*="truncate"] {
   opacity: 1;
   transform: translateY(0);
   filter: blur(0);
+}
+
+/* 背景设置“界面缩放”展开/收起：对齐 --motion-dissolve (780ms) 溶解曲线与底部边缘羽化 */
+.motion-accordion.bg-ui-scale-accordion {
+  --motion-edge-feather: 22px;
+  overflow: hidden;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  will-change: grid-template-rows, --motion-edge-feather;
+  transition:
+    grid-template-rows var(--motion-dissolve) var(--motion-dissolve-ease),
+    --motion-edge-feather var(--motion-dissolve) cubic-bezier(0.12, 1, 0.28, 1);
+}
+
+.motion-accordion.bg-ui-scale-accordion.is-open {
+  --motion-edge-feather: 0px;
+  transition:
+    grid-template-rows var(--motion-dissolve) var(--motion-dissolve-ease),
+    --motion-edge-feather var(--motion-dissolve) cubic-bezier(0.72, 0, 0.88, 1);
+}
+
+.motion-accordion.bg-ui-scale-accordion > .motion-accordion-inner {
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(3px);
+  transition:
+    opacity var(--motion-dissolve) var(--motion-dissolve-ease),
+    transform var(--motion-dissolve) var(--motion-dissolve-ease),
+    filter var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+.motion-accordion.bg-ui-scale-accordion.is-open > .motion-accordion-inner {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+button[aria-controls="bg-ui-scale-panel"] svg {
+  transition: transform var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-accordion.bg-ui-scale-accordion,
+  .motion-accordion.bg-ui-scale-accordion.is-open,
+  .motion-accordion.bg-ui-scale-accordion > .motion-accordion-inner,
+  button[aria-controls="bg-ui-scale-panel"] svg {
+    transition: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+    filter: none;
+    transform: none;
+  }
 }
 /* 已审核的创建实例主题预设行。 */
 .companion-preset {
@@ -1253,11 +1370,13 @@ header span[class*="truncate"] {
 
 .companion-preset__switch[aria-checked="true"] {
   border-color: transparent;
-  background: #34c759;
-  box-shadow:
-    0 0 10px rgba(52, 199, 89, 0.3),
-    0 0 3px rgba(52, 199, 89, 0.18),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.18);
+}
+
+.companion-preset.is-light .companion-preset__switch[aria-checked="true"] {
+  background: rgba(26, 22, 37, 0.58);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.16);
 }
 
 .companion-preset__switch:focus-visible {
@@ -1287,9 +1406,7 @@ header span[class*="truncate"] {
 .companion-preset__switch[aria-checked="true"] .companion-preset__knob {
   transform: translateX(16px);
   background: #fff;
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.2),
-    0 0 5px rgba(255, 255, 255, 0.18);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .companion-preset__details {
@@ -1429,8 +1546,13 @@ header span[class*="truncate"] {
     animation-duration: 1ms !important;
   }
 
-  .motion-panel-stack {
+  .motion-panel-stack,
+  .motion-panel-stack[data-dissolving="true"],
+  .motion-accordion:not(.instance-card-drawer) {
     transition: none;
+    animation: none;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .motion-panel-face,
@@ -1606,38 +1728,38 @@ select option {
 /* Floating menus share the lighter, more transparent material used by the time menu. */
 .ios-floating-menu {
   background: var(--glass) !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.035) !important;
+  border: 0 !important;
+  border-color: transparent !important;
   backdrop-filter: blur(32px) saturate(1.55);
   -webkit-backdrop-filter: blur(32px) saturate(1.55);
   box-shadow:
     0 12px 34px rgba(0, 0, 0, 0.2),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.075),
-    inset 0 -0.5px 0 rgba(0, 0, 0, 0.1);
+    inset 0 1px 2px rgba(255, 255, 255, 0.04);
 }
 
 .dark .ios-floating-menu {
   box-shadow:
     0 12px 34px rgba(0, 0, 0, 0.2),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.075),
-    inset 0 -0.5px 0 rgba(0, 0, 0, 0.1);
+    inset 0 1px 2px rgba(255, 255, 255, 0.04);
 }
 
 .ios-floating-menu.is-light {
   background: rgba(255, 255, 255, 0.5) !important;
-  border-color: rgba(28, 18, 24, 0.035) !important;
+  border: 0 !important;
+  border-color: transparent !important;
   box-shadow:
     0 12px 30px rgba(30, 18, 25, 0.1),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.68),
-    inset 0 -0.5px 0 rgba(28, 18, 24, 0.055);
+    inset 0 1px 2px rgba(255, 255, 255, 0.36);
 }
 
 .ios-floating-menu button.border {
+  border: 0 !important;
   border-color: transparent !important;
-  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.025);
+  box-shadow: none;
 }
 
 .ios-floating-menu.is-light button.border {
-  box-shadow: 0 0 0 0.5px rgba(28, 18, 24, 0.025);
+  box-shadow: none;
 }
 
 .ios-floating-menu .ios-choice-control[aria-pressed="false"] {
@@ -1797,7 +1919,8 @@ select option {
 }
 
 .ios-task-surface button.border:not(.ios-choice-control):not(.ios-field-control) {
-  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.022);
+  border: 0 !important;
+  box-shadow: none;
 }
 
 .ios-task-surface.is-light input.border {
@@ -1808,7 +1931,8 @@ select option {
 }
 
 .ios-task-surface.is-light button.border:not(.ios-choice-control):not(.ios-field-control) {
-  box-shadow: 0 0 0 0.5px rgba(28, 18, 24, 0.022);
+  border: 0 !important;
+  box-shadow: none;
 }
 
 .ios-task-surface .ios-field-control {
@@ -2197,19 +2321,30 @@ select option {
   color: rgba(255, 255, 255, 0.62);
 }
 
-.ios-task-surface.is-light .action-button {
+.ios-task-surface.is-light .action-button,
+.ios-floating-menu.is-light .action-button,
+.reading-flat-surface.is-light .action-button,
+.is-light .action-button {
   --manage-action-fill: rgba(255, 255, 255, 0.34);
   --manage-action-hover: rgba(26, 22, 37, 0.075);
   --manage-action-pressed: rgba(26, 22, 37, 0.09);
-  color: rgba(26, 22, 37, 0.5);
+  color: rgba(26, 22, 37, 0.62);
 }
 
 .action-button.is-warning {
-  color: rgba(235, 182, 108, 0.72);
+  color: rgba(235, 182, 108, 0.68);
+}
+
+.is-light .action-button.is-warning {
+  color: rgba(120, 74, 18, 0.68);
 }
 
 .action-button.is-danger {
-  color: rgba(238, 127, 151, 0.74);
+  color: rgba(248, 165, 178, 0.72);
+}
+
+.is-light .action-button.is-danger {
+  color: rgba(127, 29, 29, 0.62);
 }
 
 .app-settings-row.is-pending {
@@ -2302,16 +2437,27 @@ select option {
     color: rgba(255, 255, 255, 0.9);
   }
 
-  .ios-task-surface.is-light .action-button:hover {
+  .ios-task-surface.is-light .action-button:hover,
+  .ios-floating-menu.is-light .action-button:hover,
+  .reading-flat-surface.is-light .action-button:hover,
+  .is-light .action-button:hover {
     color: rgba(26, 22, 37, 0.9);
   }
 
   .action-button.is-warning:hover {
-    color: rgba(244, 194, 124, 0.98);
+    color: rgba(244, 194, 124, 0.9);
+  }
+
+  .is-light .action-button.is-warning:hover {
+    color: rgba(120, 74, 18, 0.92);
   }
 
   .action-button.is-danger:hover {
-    color: rgba(246, 145, 166, 0.98);
+    color: rgba(252, 192, 202, 0.92);
+  }
+
+  .is-light .action-button.is-danger:hover {
+    color: rgba(127, 29, 29, 0.88);
   }
 }
 
@@ -2460,8 +2606,8 @@ button.flat-capsule:active:not(:disabled) {
   background: rgba(255, 255, 255, 0.045) !important;
   background-color: rgba(255, 255, 255, 0.045) !important;
   border-style: solid !important;
-  border-width: 1px !important;
-  border-color: rgba(255, 255, 255, 0.03) !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
   box-shadow: none !important;
 }
 
@@ -2471,7 +2617,7 @@ button.flat-capsule:active:not(:disabled) {
 .reading-flat-surface.is-light button.border:not(.ios-choice-control):not(.rounded-full):not(.flat-capsule) {
   background: rgba(26, 22, 37, 0.04) !important;
   background-color: rgba(26, 22, 37, 0.04) !important;
-  border-color: rgba(26, 22, 37, 0.04) !important;
+  border-color: transparent !important;
 }
 
 /* 管理分类沿用控制岛 / App 设置的连体沟槽。高度跟顶栏走，所以做成满圆胶囊。 */
@@ -2498,8 +2644,14 @@ button.flat-capsule:active:not(:disabled) {
   border-radius: 9999px !important;
 }
 
+.manage-panel-surface .manage-choice-track.is-portrait {
+  container-type: inline-size;
+}
+
 .manage-panel-surface .manage-choice-track.is-portrait > .ios-choice-control {
   flex: 1 1 0;
+  font-size: 12px;
+  font-size: clamp(9.5px, 4.5cqw, 12px);
 }
 
 /* 管理菜单悬停跟控制岛、实例菜单一样：只走字色，500ms，不缩放、不改底。 */
@@ -2633,19 +2785,13 @@ button.flat-capsule:active:not(:disabled) {
 @media (prefers-reduced-motion: reduce) {
   .motion-slot,
   .motion-slot-face,
-  .motion-slot.is-open .motion-slot-face,
-  .manage-panel-surface .motion-panel-face,
-  .manage-panel-surface .motion-panel-face.is-active {
+  .motion-slot.is-open .motion-slot-face {
     filter: none;
     transform: none;
     animation: none;
     transition:
       opacity 120ms var(--motion-ease-out),
       visibility 0s linear 120ms;
-  }
-
-  .manage-panel-surface .motion-panel-face.is-active {
-    transition-delay: 0s;
   }
 }
 
@@ -2752,4 +2898,196 @@ body:has(.ambient-glow-container) .manage-panel-surface:not(.is-light) .manage-c
 
 .manage-panel-surface.is-light aside .motion-instance-card:focus-visible {
   outline-color: rgba(26, 22, 37, 0.42);
+}
+
+/* 新版本浮层摘要：固定 5 行最大高度并按整行末尾省略，防止跨行半截裁切 */
+.update-banner-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+  max-height: calc(1.6em * 5);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 全局错误反馈单行输入框：在阅读扁平表面内保持 13px 字阶与轻柔悬停/聚焦反馈，严禁外发光 */
+.reading-flat-surface.ios-task-surface input[type="text"].global-error-note-input {
+  font-size: 13px;
+  letter-spacing: 0;
+  transition:
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .reading-flat-surface.ios-task-surface input[type="text"].global-error-note-input:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06) !important;
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .reading-flat-surface.ios-task-surface.is-light input[type="text"].global-error-note-input:hover:not(:disabled) {
+    background: rgba(26, 22, 37, 0.055) !important;
+    background-color: rgba(26, 22, 37, 0.055) !important;
+  }
+}
+
+.reading-flat-surface.ios-task-surface input[type="text"].global-error-note-input:focus:not(:disabled) {
+  background: rgba(255, 255, 255, 0.075) !important;
+  background-color: rgba(255, 255, 255, 0.075) !important;
+}
+
+.reading-flat-surface.ios-task-surface.is-light input[type="text"].global-error-note-input:focus:not(:disabled) {
+  background: rgba(26, 22, 37, 0.07) !important;
+  background-color: rgba(26, 22, 37, 0.07) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-flat-surface.ios-task-surface input[type="text"].global-error-note-input {
+    transition: none;
+  }
+}
+
+/* 跨端界面缩放：保持视口基准变量、顶栏、全出血轮播与底背景严格贴合物理视口 */
+:root {
+  --ui-scale: 1;
+  --ui-vw: 100vw;
+  --ui-vh: 100vh;
+  --ui-dvh: 100dvh;
+}
+
+html[data-ui-scaled="true"] {
+  --ui-vw: calc(100vw / var(--ui-scale, 1));
+  --ui-vh: calc(100vh / var(--ui-scale, 1));
+  --ui-dvh: calc(100dvh / var(--ui-scale, 1));
+}
+
+html[data-ui-scaled="true"] [data-theme-tone],
+html[data-ui-scaled="true"] main.min-h-screen {
+  min-height: var(--ui-vh);
+  min-height: var(--ui-dvh);
+}
+
+html[data-ui-scaled="true"] .cover-frozen-plate__world {
+  width: var(--ui-vw);
+  height: var(--ui-vh);
+}
+
+html[data-ui-scaled="true"] header.fixed.left-0.right-0.z-50 {
+  width: min(calc(92 * var(--ui-vw) / 100), calc(var(--ui-vw) - 2rem));
+}
+
+@media (orientation: landscape) {
+  html[data-ui-scaled="true"] header.fixed.left-0.right-0.z-50 {
+    width: min(calc(var(--ui-vw) - 2rem), 42rem);
+  }
+}
+
+html[data-ui-scaled="true"] .carousel-scrollbar-hidden {
+  width: var(--ui-vw) !important;
+  margin-left: calc(50% - var(--ui-vw) / 2) !important;
+  padding-left: calc(max(0px, (var(--ui-vw) - 1200px) / 2) + 60px) !important;
+  padding-right: calc(max(0px, (var(--ui-vw) - 1200px) / 2) + 60px) !important;
+}
+
+@media (max-width: 767px) {
+  html[data-ui-scaled="true"] .carousel-scrollbar-hidden {
+    padding-left: 52px !important;
+    padding-right: 52px !important;
+  }
+}
+
+/* 通用液态玻璃调节拨杆（对齐背景模糊度滑条视觉） */
+@property --sc-slider-t {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.sc-tactile-slider-control {
+  display: grid;
+  gap: calc(0.75rem - 5.5px);
+}
+
+.sc-tactile-slider {
+  position: relative;
+  height: 22px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: --sc-slider-t 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sc-tactile-slider.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.sc-tactile-slider:focus-visible {
+  outline: none;
+}
+
+.sc-tactile-slider__track {
+  position: relative;
+  height: 22px;
+  border-radius: 999px;
+  overflow: hidden;
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.07), transparent 42%, rgba(0, 0, 0, 0.08) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.035) 90%, rgba(255, 255, 255, 0.09) 100%);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.28);
+}
+
+.sc-tactile-slider__fill {
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 0;
+  width: calc(20px + (100% - 22px) * var(--sc-slider-t, 0));
+  max-width: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08) calc(100% - 18px), rgba(255, 255, 255, 0));
+}
+
+.sc-tactile-slider__knob {
+  --t: var(--sc-slider-t, 0);
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: calc(11px + (100% - 22px) * var(--t, 0));
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.sc-tactile-slider.is-light .sc-tactile-slider__track,
+body[data-preview-light] .sc-tactile-slider__track {
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.34), transparent 46%, rgba(28, 18, 24, 0.05) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28) 90%, rgba(255, 255, 255, 0.48) 100%);
+  box-shadow: inset 0 1px 3px rgba(28, 18, 24, 0.14);
+}
+
+.sc-tactile-slider.is-light .sc-tactile-slider__fill,
+body[data-preview-light] .sc-tactile-slider__fill {
+  background: linear-gradient(90deg, rgba(26, 22, 37, 0.16), rgba(26, 22, 37, 0.07) calc(100% - 18px), rgba(26, 22, 37, 0));
+}
+
+.sc-tactile-slider.is-light .sc-tactile-slider__knob,
+body[data-preview-light] .sc-tactile-slider__knob {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(28, 18, 24, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-tactile-slider {
+    transition: none;
+  }
 }

@@ -276,13 +276,13 @@
               inset 0 0.5px 0 rgba(255, 255, 255, 0.56) !important;
           }
 
-          /* 2b — 菜单弹出/收回动画：显式启用应用自带的 panel-pop 序列 */
+          /* 2b — 菜单弹出/收回动画：显式启用应用自带的 panel-pop 序列，退场对齐 --motion-dismiss 同步节奏 */
           .ios-floating-menu.bg-panel-enter {
             animation: panel-pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both !important;
           }
 
           .ios-floating-menu.bg-panel-exit {
-            animation: panel-pop-out 0.3s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+            animation: panel-pop-out var(--motion-dismiss, 280ms) var(--motion-present-ease, cubic-bezier(0.5, 0, 0.2, 1)) both !important;
           }
 
           @keyframes preview-panel-fade-in {
@@ -774,7 +774,7 @@
 
           .preview-blur-field {
             position: relative;
-            height: 32px;
+            height: 22px;
             touch-action: none;
             cursor: grab;
             user-select: none;
@@ -793,7 +793,7 @@
 
           .preview-blur-track {
             position: relative;
-            height: 32px;
+            height: 22px;
             border-radius: 999px;
             overflow: hidden;
             background:
@@ -812,12 +812,12 @@
             position: absolute;
             z-index: 0;
             inset: 0 auto 0 0;
-            width: calc(29px + (100% - 32px) * var(--blur-t, 0));
+            width: calc(20px + (100% - 22px) * var(--blur-t, 0));
             max-width: 100%;
             border-radius: inherit;
             pointer-events: none;
             background:
-              linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08) calc(100% - 26px), rgba(255, 255, 255, 0));
+              linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08) calc(100% - 18px), rgba(255, 255, 255, 0));
           }
 
           .preview-blur-knob {
@@ -825,20 +825,17 @@
             position: absolute;
             z-index: 2;
             top: 50%;
-            left: calc(16px + (100% - 32px) * var(--t, 0));
-            width: 26px;
-            height: 26px;
-            border: 2px solid rgba(255, 255, 255, 0.72);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.82);
-            box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.16);
+            left: calc(11px + (100% - 22px) * var(--t, 0));
+            width: 18px;
+            height: 18px;
+            border: none;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow:
+              0 1px 2px rgba(0, 0, 0, 0.16),
+              inset 0 0.5px 0 rgba(255, 255, 255, 0.9);
             transform: translate(-50%, -50%);
             pointer-events: none;
-          }
-
-          .preview-blur-field:active .preview-blur-knob,
-          .preview-blur-field.is-dragging .preview-blur-knob {
-            border-color: rgba(255, 255, 255, 0.86);
           }
 
           .preview-blur-slider {
@@ -869,14 +866,15 @@
           }
 
           body[data-preview-light] .preview-blur-knob {
-            border-color: rgba(26, 22, 37, 0.78);
-            background: rgba(255, 255, 255, 0.62);
-            box-shadow: 0 0.5px 1px rgba(28, 18, 24, 0.16);
+            background: #fff;
+            box-shadow:
+              0 1px 2px rgba(28, 18, 24, 0.14),
+              inset 0 0.5px 0 rgba(255, 255, 255, 0.9);
           }
 
           body[data-preview-light] .preview-blur-fill {
             background:
-              linear-gradient(90deg, rgba(26, 22, 37, 0.16), rgba(26, 22, 37, 0.07) calc(100% - 26px), rgba(26, 22, 37, 0));
+              linear-gradient(90deg, rgba(26, 22, 37, 0.16), rgba(26, 22, 37, 0.07) calc(100% - 18px), rgba(26, 22, 37, 0));
           }
 
           /* 4b — 壁纸导入组块：中性玻璃材质，替换原有大红大绿状态色 */
@@ -1101,44 +1099,46 @@
             }
           }
 
-          /* 4d — 壁纸导入按钮：凸态 = vision-button，导入后凹陷 = vision-url-bar 配方 */
+          /* 4d — 壁纸导入按钮：去细边框纯透玻璃态，导入后保留柔和内凹阴影 */
           [data-preview-bg-panel] [data-preview-wallpaper-import] {
-            background: oklch(1 0 0 / 0.04) !important;
-            border: 1px solid oklch(1 0 0 / 0.08) !important;
+            background: rgba(255, 255, 255, 0.045) !important;
+            border: 0 !important;
+            border-color: transparent !important;
             box-shadow: none !important;
-            transition: background-color 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
+            transition: background-color 0.2s ease, box-shadow 0.25s ease !important;
           }
 
           [data-preview-bg-panel] [data-preview-wallpaper-import]:hover {
-            background: oklch(1 0 0 / 0.1) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
           }
 
           [data-preview-bg-panel] [data-preview-wallpaper-import][data-preview-has-wallpaper] {
-            background: oklch(0.3 0.01 270 / 0.30) !important;
-            border-color: oklch(0.3 0.012 270 / 0.35) !important;
+            background: oklch(0.3 0.01 270 / 0.28) !important;
+            border: 0 !important;
+            border-color: transparent !important;
             box-shadow:
-              inset 0 2px 4px oklch(0 0 0 / 0.25),
-              inset 0 1px 2px oklch(0 0 0 / 0.2),
-              0 1px 0 oklch(1 0 0 / 0.05) !important;
+              inset 0 2px 4px oklch(0 0 0 / 0.22),
+              inset 0 1px 2px oklch(0 0 0 / 0.16) !important;
           }
 
           body[data-preview-light] [data-preview-bg-panel] [data-preview-wallpaper-import] {
-            background: oklch(1 0 0 / 0.2) !important;
-            border: 1px solid oklch(1 0 0 / 0.15) !important;
+            background: rgba(26, 22, 37, 0.04) !important;
+            border: 0 !important;
+            border-color: transparent !important;
             box-shadow: none !important;
           }
 
           body[data-preview-light] [data-preview-bg-panel] [data-preview-wallpaper-import]:hover {
-            background: oklch(1 0 0 / 0.35) !important;
+            background: rgba(26, 22, 37, 0.07) !important;
           }
 
           body[data-preview-light] [data-preview-bg-panel] [data-preview-wallpaper-import][data-preview-has-wallpaper] {
-            background: oklch(0.4 0.005 270 / 0.12) !important;
-            border-color: oklch(0.3 0.008 270 / 0.2) !important;
+            background: rgba(26, 22, 37, 0.06) !important;
+            border: 0 !important;
+            border-color: transparent !important;
             box-shadow:
-              inset 0 2px 4px oklch(0.25 0.02 260 / 0.14),
-              inset 0 1px 2px oklch(0.25 0.02 260 / 0.10),
-              0 1px 0 oklch(1 0 0 / 0.5) !important;
+              inset 0 2px 4px oklch(0.25 0.02 260 / 0.12),
+              inset 0 1px 2px oklch(0.25 0.02 260 / 0.08) !important;
           }
 
           /* 主题切换：根背景做短插值，真实主题提交后叠一层目标色淡出。
@@ -1507,8 +1507,8 @@
           }
 
           /* 修复：源码收起态 .motion-accordion-inner 自带 filter: blur(3px)，
-             卡片内部内容发虚且面板任何滑块都关不掉它，强制清除 */
-          .motion-accordion-inner {
+             仅卡片内部收起态需保持清晰，不得误伤背景设置“界面缩放”等手风琴溶解过渡 */
+          .motion-instance-card:not([data-create-card]) .motion-accordion-inner {
             filter: none !important;
           }
 
@@ -1763,7 +1763,7 @@
 
           const valueFromPointer = (event) => {
             const rect = track.getBoundingClientRect();
-            const inset = 16;
+            const inset = (rect.height || 22) / 2;
             const span = Math.max(1, rect.width - inset * 2);
             const x = Math.min(rect.width - inset, Math.max(inset, event.clientX - rect.left));
             const ratio = (x - inset) / span;

@@ -97,6 +97,11 @@
   position: absolute;
   inset-inline: 0;
   top: calc(100% + 6px);
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
   padding: 8px 10px;
   border-radius: 10px;
   background: var(--rename-error-fill);
@@ -105,6 +110,19 @@
   font-weight: 400;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+.instance-rename-field__report {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: inherit;
+  opacity: 0.85;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
