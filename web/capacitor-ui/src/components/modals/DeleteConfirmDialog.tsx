@@ -11,6 +11,7 @@ import type { TavernInstance } from "../../types";
 export interface DeleteConfirmDialogProps {
   instance: TavernInstance | null;
   isOpen: boolean;
+  isClosing?: boolean;
   onClose: () => void;
   isLight: boolean;
   glassBg: string;
@@ -27,6 +28,7 @@ export interface DeleteConfirmDialogProps {
 export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   instance,
   isOpen,
+  isClosing = false,
   onClose,
   isLight,
   glassBg,
@@ -35,22 +37,26 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   deleteDiagnostic,
   onConfirm,
 }) => {
-  if (!isOpen || !instance) return null;
+  if ((!isOpen && !isClosing) || !instance) return null;
 
   return (
     <>
       <LayerBackdrop
+        isOpen={isOpen}
+        isClosing={isClosing}
         onClick={() => {
-          if (!isDeleting) onClose();
+          if (!isDeleting && !isClosing) onClose();
         }}
         zIndex={LAYERS.DIALOG_BACKDROP}
         blur={true}
       />
       <div
+        inert={isClosing}
         className={cn(
-          "ios-task-surface reading-flat-surface fixed overflow-hidden rounded-2xl backdrop-blur-[40px] saturate-180 animate-clone-panel",
+          "ios-task-surface reading-flat-surface fixed overflow-hidden rounded-2xl backdrop-blur-[40px] saturate-180",
           glassBg,
-          isLight && "is-light"
+          isLight && "is-light",
+          isClosing ? "animate-clone-panel-exit" : "animate-clone-panel"
         )}
         style={{
           zIndex: LAYERS.DIALOG_SURFACE,

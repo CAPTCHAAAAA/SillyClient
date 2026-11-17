@@ -360,7 +360,11 @@ function SillyClientLauncher() {
   const [isCardMenuClosing, setIsCardMenuClosing] = useState(false);
   const [showManagePanel, setShowManagePanel] = useState<TavernInstance | null>(null);
   const [maintenanceInstance, setMaintenanceInstance] = useState<TavernInstance | null>(null);
-  const closeMaintenance = useCallback(() => setMaintenanceInstance(null), []);
+  const [isMaintenanceClosing, setIsMaintenanceClosing] = useState(false);
+  const closeMaintenance = useCallback(() => {
+    setMaintenanceInstance(null);
+    setIsMaintenanceClosing(false);
+  }, []);
   const [isManagePanelClosing, setIsManagePanelClosing] = useState(false);
   const [showAppMenu, setShowAppMenu] = useState(false);
   const [isAppMenuClosing, setIsAppMenuClosing] = useState(false);
@@ -622,9 +626,44 @@ function SillyClientLauncher() {
   const [garbageDiagnostic, setGarbageDiagnostic] = useState<DiagnosticContext | null>(null);
   const [cleaningGarbage, setCleaningGarbage] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<TavernInstance | null>(null);
+  const [isDeleteDialogClosing, setIsDeleteDialogClosing] = useState(false);
+  const deleteCloseTimerRef = useRef<number | null>(null);
   const [isDeletingInstance, setIsDeletingInstance] = useState(false);
   const [deleteInstanceError, setDeleteInstanceError] = useState<string | null>(null);
   const [deleteDiagnostic, setDeleteDiagnostic] = useState<DiagnosticContext | null>(null);
+
+  useEffect(() => () => {
+    if (deleteCloseTimerRef.current !== null) {
+      window.clearTimeout(deleteCloseTimerRef.current);
+      deleteCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const openDeleteDialog = useCallback((inst: TavernInstance) => {
+    if (deleteCloseTimerRef.current !== null) {
+      window.clearTimeout(deleteCloseTimerRef.current);
+      deleteCloseTimerRef.current = null;
+    }
+    setIsDeleteDialogClosing(false);
+    setDeleteInstanceError(null);
+    setDeleteDiagnostic(null);
+    setPendingDelete(inst);
+  }, []);
+
+  const closeDeleteDialog = useCallback(() => {
+    if (!pendingDelete || isDeletingInstance || isDeleteDialogClosing) return;
+    if (deleteCloseTimerRef.current !== null) {
+      window.clearTimeout(deleteCloseTimerRef.current);
+    }
+    setIsDeleteDialogClosing(true);
+    deleteCloseTimerRef.current = window.setTimeout(() => {
+      deleteCloseTimerRef.current = null;
+      setPendingDelete(null);
+      setDeleteInstanceError(null);
+      setDeleteDiagnostic(null);
+      setIsDeleteDialogClosing(false);
+    }, PANEL_EXIT_MS);
+  }, [isDeleteDialogClosing, isDeletingInstance, pendingDelete]);
 
   const isBackgroundInteractionBlocked = Boolean(
     showRelocateModal
@@ -651,6 +690,7 @@ function SillyClientLauncher() {
       || showCleanPanel
       || isCleanPanelClosing
       || pendingDelete
+      || isDeleteDialogClosing
       || maintenanceInstance
   );
   const isBackgroundInteractionClosing = isBackgroundInteractionBlocked && !(
@@ -666,8 +706,8 @@ function SillyClientLauncher() {
     || isCreatingInstance
     || (verDropdownOpen && !isVerDropdownClosing)
     || (showCleanPanel && !isCleanPanelClosing)
-    || Boolean(pendingDelete)
-    || Boolean(maintenanceInstance)
+    || (Boolean(pendingDelete) && !isDeleteDialogClosing)
+    || (Boolean(maintenanceInstance) && !isMaintenanceClosing)
   );
   const isPullGestureBlocked = isBackgroundInteractionBlocked
     || showOnboarding
@@ -2534,6 +2574,7 @@ function SillyClientLauncher() {
         level: "success",
       }]);
       setPendingDelete(null);
+      setIsDeleteDialogClosing(false);
       setDeleteDiagnostic(null);
       setActiveSlide(current => Math.max(0, Math.min(current, instances.length - 1)));
     } catch (err: any) {
@@ -2915,10 +2956,8 @@ function SillyClientLauncher() {
   }, [showLaunchPanel, registerLayer, dismissLaunchPanel]);
 
   useEffect(() => {
-    if (pendingDelete) return registerLayer("delete_confirm", () => {
-      if (!isDeletingInstance) setPendingDelete(null);
-    });
-  }, [pendingDelete, registerLayer, isDeletingInstance]);
+    if (pendingDelete) return registerLayer("delete_confirm", closeDeleteDialog);
+  }, [pendingDelete, registerLayer, closeDeleteDialog]);
 
   useEffect(() => {
     if (renamingId) return registerLayer("instance_rename", cancelInstanceRename);
@@ -3397,18 +3436,17 @@ function SillyClientLauncher() {
             }}
             onDelete={(inst) => {
               closeCardMenu();
-              setDeleteInstanceError(null);
-              setPendingDelete(inst);
+              openDeleteDialog(inst);
             }}
           />
         );
       })()}
 
-      {/* 统一背景交互锁：浮层打开或退场期间，背景不可点击、不可滚动触发刷新。 */}
+      {/* 统一背景交互锁：浮层打开或退场期间保留全屏 2px 虚化遮罩并同步退场，背景不可点击、不可滚动触发刷新。 */}
       <LayerBackdrop
         isOpen={isBackgroundInteractionBlocked}
         isClosing={isBackgroundInteractionClosing}
-        blur={false}
+        blur
         zIndex={LAYERS.DRAWER_BACKDROP}
         className="!bg-transparent touch-none"
       />
@@ -3561,14 +3599,9 @@ function SillyClientLauncher() {
       {/* 解耦业务组件: 高阻断级删除确认对话框 */}
       <DeleteConfirmDialog
         instance={pendingDelete}
-        isOpen={!!pendingDelete}
-        onClose={() => {
-          if (!isDeletingInstance) {
-            setPendingDelete(null);
-            setDeleteInstanceError(null);
-            setDeleteDiagnostic(null);
-          }
-        }}
+        isOpen={!!pendingDelete && !isDeleteDialogClosing}
+        isClosing={isDeleteDialogClosing}
+        onClose={closeDeleteDialog}
         isLight={isLight}
         glassBg={glassBg}
         isDeleting={isDeletingInstance}
@@ -3717,7 +3750,10 @@ function SillyClientLauncher() {
           if (maintenanceInstance) setMaintenanceInstance(inst.type === "local" ? inst : null);
         }}
         onOpenMaintenance={(inst) => {
-          if (inst.type === "local") setMaintenanceInstance(inst);
+          if (inst.type === "local") {
+            setIsMaintenanceClosing(false);
+            setMaintenanceInstance(inst);
+          }
         }}
         onOpenRelocate={openRelocateModal}
         onLaunchInstance={(inst) => {
@@ -3750,7 +3786,8 @@ function SillyClientLauncher() {
       />
 
       <InstanceMaintenancePanel instance={maintenanceInstance} isOpen={!!maintenanceInstance}
-        onClose={closeMaintenance} isLight={isLight} glassBg={glassBg} registerLayer={registerLayer} />
+        onClose={closeMaintenance} onClosingChange={setIsMaintenanceClosing}
+        isLight={isLight} glassBg={glassBg} registerLayer={registerLayer} />
 
       {/* 首次引导 */}
       {showOnboarding && (

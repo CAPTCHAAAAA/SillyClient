@@ -697,7 +697,7 @@ header span[class*="truncate"] {
   pointer-events: none;
 }
 
-/* 遮罩背景 — 进退场平滑关键帧过渡；退场前移于 78% 收净，避免面板已退而遮罩滞后消失 */
+/* 遮罩背景 — 进退场平滑关键帧过渡；退场前置于面板末段前先以 ease-out 散净虚化与压暗，避免面板消失后遮罩滞留 */
 @keyframes overlay-fade-in {
   0% {
     opacity: 0;
@@ -717,11 +717,6 @@ header span[class*="truncate"] {
     backdrop-filter: blur(var(--overlay-blur, 2px));
     -webkit-backdrop-filter: blur(var(--overlay-blur, 2px));
   }
-  78% {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-    -webkit-backdrop-filter: blur(0px);
-  }
   100% {
     opacity: 0;
     backdrop-filter: blur(0px);
@@ -736,7 +731,7 @@ header span[class*="truncate"] {
 }
 
 .overlay-backdrop.overlay-backdrop-exit {
-  animation: overlay-fade-out var(--motion-dismiss) var(--motion-present-ease) forwards;
+  animation: overlay-fade-out calc(var(--motion-dismiss) * 0.78) var(--motion-ease-out) forwards;
   pointer-events: none;
 }
 

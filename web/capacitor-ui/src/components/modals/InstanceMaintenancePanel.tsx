@@ -19,6 +19,7 @@ interface Props {
   instance: TavernInstance | null;
   isOpen: boolean;
   onClose: () => void;
+  onClosingChange?: (closing: boolean) => void;
   isLight: boolean;
   glassBg: string;
   registerLayer: (id: string, onClose: () => void) => () => void;
@@ -30,7 +31,7 @@ function size(bytes: number) {
   return `${bytes} B`;
 }
 
-export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, glassBg, registerLayer }: Props) {
+export function InstanceMaintenancePanel({ instance, isOpen, onClose, onClosingChange, isLight, glassBg, registerLayer }: Props) {
   const instanceId = instance?.installDir || instance?.id || null;
   const session = useRef(new MaintenanceSession());
   const [tab, setTab] = useState<"scan" | "recovery">("scan");
@@ -75,8 +76,9 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
     if (busy || closing) return;
     session.current.switchTo(null);
     setClosing(true);
+    onClosingChange?.(true);
     closeTimer.current = setTimeout(onClose, 300);
-  }, [busy, closing, onClose]);
+  }, [busy, closing, onClose, onClosingChange]);
 
   useEffect(() => {
     if (isOpen) return registerLayer("instance_maintenance", requestClose);
@@ -125,14 +127,16 @@ export function InstanceMaintenancePanel({ instance, isOpen, onClose, isLight, g
     if (closeTimer.current) clearTimeout(closeTimer.current);
     closeTimer.current = null;
     setClosing(false);
+    onClosingChange?.(false);
     setTab("scan");
     setActiveRun(null);
     if (isOpen && instance?.type === "local") void refresh("scan");
     return () => {
       session.current.switchTo(null);
       if (closeTimer.current) clearTimeout(closeTimer.current);
+      onClosingChange?.(false);
     };
-  }, [instanceId, instance?.type, isOpen, refresh]);
+  }, [instanceId, instance?.type, isOpen, onClosingChange, refresh]);
 
   useEffect(() => {
     if (!scan) return;
