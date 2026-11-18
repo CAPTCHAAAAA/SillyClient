@@ -1546,12 +1546,11 @@
             }
           }
 
-          /* 8 — 卡片轮播左右两侧渐进模糊：复刻 GradualBlur 组件配方。
-             5 层遮罩带 + 递增 backdrop-filter 叠加，
-             越靠近屏幕边缘模糊越强，卡片滑出时被渐进虚化而非硬切。 */
+          /* 8 — 卡片轮播左右两侧渐进模糊：宽域四层无平台累计光学虚化，
+             全程连续过渡至屏幕边缘，消除遮罩分界线与灰阶条带。 */
           .preview-edge-blur {
             position: fixed;
-            width: clamp(30px, 8vw, 36px);
+            width: clamp(54px, 13.5vw, 172px);
             pointer-events: none;
             z-index: 28;
           }
@@ -1880,35 +1879,37 @@
           if (toneChanged) playThemeWash(doc, nextTone);
         };
 
-        // —— 卡片左右两侧渐进模糊：严格复刻 GradualBlur 组件的层叠配方 ——
-        // 7 层 div，每层一条渐变遮罩带 + 递增 backdrop-filter，
-        // 遮罩带从边缘向内阶梯排布，叠加出“越靠边越糊”的连续渐变。
-        const EDGE_BLUR_DIVS = 7;
-        const EDGE_BLUR_STRENGTH = 1.2;
+        // —— 卡片左右两侧渐进模糊 ——
+        // 4 层全跨度顺滑渐进层：全部从各自的起模糊点延续至 100% 屏幕边缘，
+        // 中途不设任何硬停平台，避免 Skia 离屏叠加在浅色表面产生竖向条纹或边界感。
+        const EDGE_BLUR_LAYERS = [
+          { start: 0, blur: 1.4 },
+          { start: 22, blur: 3.2 },
+          { start: 46, blur: 6.0 },
+          { start: 68, blur: 9.5 },
+        ];
 
         const buildEdgeBlurDivs = (doc, position) => {
           const direction = position === "left" ? "to left" : "to right";
-          const increment = 100 / EDGE_BLUR_DIVS;
-          const divs = [];
-          for (let i = 1; i <= EDGE_BLUR_DIVS; i++) {
-            const progress = i / EDGE_BLUR_DIVS;
-            const blur = 0.0625 * (progress * EDGE_BLUR_DIVS + 1) * EDGE_BLUR_STRENGTH;
-            const p1 = Math.round((increment * i - increment) * 10) / 10;
-            const p2 = Math.round(increment * i * 10) / 10;
-            const p3 = Math.round((increment * i + increment) * 10) / 10;
-            const p4 = Math.round((increment * i + increment * 2) * 10) / 10;
-            let gradient = `transparent ${p1}%, black ${p2}%`;
-            if (p3 <= 100) gradient += `, black ${p3}%`;
-            if (p4 <= 100) gradient += `, transparent ${p4}%`;
+          return EDGE_BLUR_LAYERS.map(({ start, blur }) => {
+            const span = 100 - start;
+            const p = (t) => +(start + span * t).toFixed(1);
+            const gradient =
+              `transparent ${start}%,` +
+              `rgba(0,0,0,0.025) ${p(0.16)}%,` +
+              `rgba(0,0,0,0.11) ${p(0.34)}%,` +
+              `rgba(0,0,0,0.29) ${p(0.52)}%,` +
+              `rgba(0,0,0,0.56) ${p(0.70)}%,` +
+              `rgba(0,0,0,0.84) ${p(0.86)}%,` +
+              `#000 100%`;
             const div = doc.createElement("div");
             div.style.cssText =
               `-webkit-mask-image:linear-gradient(${direction},${gradient});` +
               `mask-image:linear-gradient(${direction},${gradient});` +
-              `-webkit-backdrop-filter:blur(${blur.toFixed(3)}rem);` +
-              `backdrop-filter:blur(${blur.toFixed(3)}rem);`;
-            divs.push(div);
-          }
-          return divs;
+              `-webkit-backdrop-filter:blur(${blur}px);` +
+              `backdrop-filter:blur(${blur}px);`;
+            return div;
+          });
         };
 
         const ensureEdgeBlurs = (doc) => {

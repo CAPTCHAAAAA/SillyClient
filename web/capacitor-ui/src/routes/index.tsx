@@ -8,7 +8,6 @@ import {
   Folder,
   Cloud,
   Terminal,
-  AlertTriangle,
 } from "lucide-react";
 import { cn, normalizeStoredVersion } from "@/lib/utils";
 import { applyUiScale, loadUiScale, saveUiScale, toUnscaledPx } from "@/lib/ui-scale";
@@ -17,13 +16,13 @@ import { TarvenEnv, DEFAULT_CONFIG, normalizeRenderEngineSettings } from "@/capa
 import { openExternalUrl } from "@/lib/external-links";
 import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, InstallPathMode, GithubRelease, GarbageItem, TarvenEvent, PreinstalledExtensionId, RenderEngineSettings } from "@/capacitor-plugin";
 import { buildInstanceSubfolder, cleanInstallPath, exactInstallTarget, installationSelection, instanceParentPath, normalizeInstanceIdentity, sanitizeFolderName, shouldShowDirectoryPickerError, validateInstallPathInput } from "@/lib/install-location";
-import { createDiagnosticContext, extractErrorMessage, humanizeNativeError, sanitizeDiagnosticText, type DiagnosticContext } from "@/lib/native-errors";
+import { createDiagnosticContext, humanizeNativeError, type DiagnosticContext } from "@/lib/native-errors";
 import { selectTavernRelease } from "@/lib/tavern-release";
 import { normalizeStoredInstances, serializeInstanceRecords, type StoredInstance } from "@/lib/instance-persistence";
 import { GLOBAL_LOG_KEY, instanceLogs, type LogLine } from "@/lib/log-store";
 import { OperationCoordinator, OperationCancelledError, type OperationContext } from "@/lib/operation-coordinator";
 import { APP_VERSION } from "@/constants/app-version";
-import { extractReleaseSummary, fetchAppUpdate } from "@/lib/app-update";
+import { fetchAppUpdate } from "@/lib/app-update";
 import { isOnboardingSandbox } from "@/lib/onboarding-mode";
 import type { GuideStep } from "@/components/onboarding/guide-content";
 import OnboardingSession from "@/components/onboarding/OnboardingSession";
@@ -31,6 +30,7 @@ import { RelocateInstanceModal } from "@/components/modals/RelocateInstanceModal
 import { LAYERS } from "@/constants/layers";
 import { useLayerStack } from "@/hooks/useLayerStack";
 import { useBackgroundMode } from "@/hooks/useBackgroundMode";
+import { HeaderClock } from "@/components/common/HeaderClock";
 import { LayerBackdrop } from "@/components/common/LayerBackdrop";
 import { ActionButton } from "@/components/common/ActionButton";
 import { GlobalErrorReportOverlay } from "@/components/common/GlobalErrorReportOverlay";
@@ -49,7 +49,7 @@ import { VersionDropdownMenu } from "@/components/modals/VersionDropdownMenu";
 import { CardActionMenu } from "@/components/modals/CardActionMenu";
 import { LaunchConsoleModal } from "@/components/modals/LaunchConsoleModal";
 import { UnlockInstanceModal } from "@/components/modals/UnlockInstanceModal";
-import type { TavernInstance, OperationPurpose } from "@/types";
+import type { TavernInstance, OperationPurpose, LauncherDevHost, LauncherPreviewConsoleOptions } from "@/types";
 
 const OnboardingGuide = lazy(() => import("@/components/onboarding/OnboardingGuide"));
 
@@ -66,7 +66,6 @@ const ONBOARDING_KEY = "sillyclient.onboarding.version";
 const ONBOARDING_VERSION = "6";
 const CREATE_CARD_SLOT_KEY = "sillyclient.createCardSlot";
 const CURRENT_VERSION = 2;
-const DEV_FAULT_TEST_INSTANCE_ID = "__dev-fault-test-card__";
 const BACKGROUND_PANEL_EXIT_MS = 300;
 const PANEL_EXIT_MS = 300;
 const POPOVER_EXIT_MS = 300;
@@ -143,72 +142,11 @@ function normalizeStoredCover(cover?: string) {
 /** 持久化实例列表(icon 不持久化,加载时还原)。 */
 function saveInstances(list: TavernInstance[]) {
   try {
-    const persistable = import.meta.env.DEV
-      ? list.filter((item) => item.id !== DEV_FAULT_TEST_INSTANCE_ID)
-      : list;
-    localStorage.setItem(INSTANCES_KEY, JSON.stringify(serializeInstanceRecords(persistable)));
+    localStorage.setItem(INSTANCES_KEY, JSON.stringify(serializeInstanceRecords(list)));
   } catch {
     /* ignore */
   }
 }
-
-const DEMO_INSTANCE: TavernInstance = {
-  id: "demo-instance",
-  name: "演示实例",
-  subtitle: "本地演示 · 可展开",
-  version: "1.12.4",
-  status: "running",
-  type: "local",
-  createdAt: "2026-08-22",
-  lastUsed: "刚刚",
-  totalUsage: "3 小时",
-  color: "#a3e635",
-  port: 8000,
-  icon: <Folder className="w-5 h-5" />,
-};
-
-const DEMO_RUNNING_INSTANCES: TavernInstance[] = [
-  { ...DEMO_INSTANCE, subtitle: "主酒馆 · 运行中" },
-  { ...DEMO_INSTANCE, id: "demo-running-second", name: "SillyTavern", subtitle: "测试酒馆 · 运行中", version: "1.19.0", port: 8001 },
-  { ...DEMO_INSTANCE, id: "demo-running-third", name: "SillyTavern", subtitle: "备用酒馆 · 运行中", version: "stable", port: 8002 },
-];
-
-const DEV_FAULT_TEST_INSTANCE: TavernInstance | null = import.meta.env.DEV
-  ? {
-      id: DEV_FAULT_TEST_INSTANCE_ID,
-      name: "异常自动捕获测试",
-      subtitle: "点击展开 · 点启动必报错",
-      version: "dev",
-      status: "error",
-      type: "remote",
-      url: "http://127.0.0.1:59999",
-      createdAt: "测试卡片",
-      lastUsed: "点开后点击启动",
-      totalUsage: "0s",
-      color: "#8b3a52",
-      port: 59999,
-      icon: <AlertTriangle className="w-5 h-5" />,
-    }
-  : null;
-
-const DEBUG_LAUNCH_LOG_KEY = "__sillyclient_debug_launch_console__";
-const DEBUG_OPEN_INSTANCE: TavernInstance = {
-  ...DEMO_INSTANCE,
-  id: "debug-open-instance",
-  name: "演示打开实例",
-  subtitle: "打开实例 · 调试预览",
-  version: "1.14.1",
-  port: 8003,
-};
-const DEBUG_CREATE_INSTANCE: TavernInstance = {
-  ...DEMO_INSTANCE,
-  id: "debug-create-instance",
-  name: "演示创建实例",
-  subtitle: "创建实例 · 调试预览",
-  version: "1.14.1",
-  port: 8004,
-};
-
 
 const SC_BORDEAUX_PRESET: CompanionPresetSelection = {
   bundleId: "sc-bordeaux",
@@ -274,8 +212,6 @@ function SillyClientLauncher() {
   const isWeb = !Capacitor.isNativePlatform();
   const showcaseParams = new URLSearchParams(window.location.search);
   const isShowcase = showcaseParams.get("showcase") === "1";
-  const isLocalPreview = /^(127\.0\.0\.1|localhost)$/.test(window.location.hostname);
-  const isNativePreview = import.meta.env.DEV && showcaseParams.get("nativePreview") === "1";
   const showcaseSafeTop = isShowcase
     ? Math.max(0, Number(showcaseParams.get("safeTop")) || 52)
     : 0;
@@ -287,10 +223,9 @@ function SillyClientLauncher() {
   const isAndroid = Capacitor.getPlatform() === "android";
   const isIOS = Capacitor.getPlatform() === "ios";
   const isMobile = isAndroid || isIOS;
+  const isLocalPreview = isWeb && !isWindows && /^(127\.0\.0\.1|localhost)$/.test(window.location.hostname);
   const platformTag = isWindows ? "windows" : isIOS ? "ios" : isAndroid ? "android" : "web";
-  const isDemoPreview = isWeb && !isWindows && !isShowcase && !isNativePreview
-    && (import.meta.env.DEV || (isLocalPreview && window.location.port === "8768"));
-  const canPreviewIssueReport = isDemoPreview || (isNativePreview && !isShowcase);
+  const previewModeRef = useRef(false);
   const terminalTitle = isWindows ? "Windows 控制台" : isIOS ? "iOS 控制台" : "Android 终端";
   const terminalPrompt = isWindows ? "C:\\>" : isIOS ? "ios >" : "~ $";
   const terminalBanner = isWindows
@@ -300,22 +235,12 @@ function SillyClientLauncher() {
     : `SillyClient ${APP_VERSION} · Android shell`;
   const terminalPlaceholder = isWindows ? "输入 Windows 命令" : isIOS ? "iOS 进程内环境（可查看服务运行日志）" : "输入 Android shell 命令";
   const [showOnboarding, setShowOnboarding] = useState(
-    () => isOnboardingSandbox || ((!isWeb || isWindows || isDemoPreview) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION),
+    () => isOnboardingSandbox || ((!isWeb || isWindows || (import.meta.env.DEV && isLocalPreview)) && !isShowcase && localStorage.getItem(ONBOARDING_KEY) !== ONBOARDING_VERSION),
   );
   const [relocatingInstance, setRelocatingInstance] = useState<TavernInstance | null>(null);
   const [showRelocateModal, setShowRelocateModal] = useState(false);
   const [isRelocateModalClosing, setIsRelocateModalClosing] = useState(false);
-  const [instances, setInstances] = useState<TavernInstance[]>(() => {
-    if (isShowcase) return [];
-    const rawLoaded = loadInstances();
-    const loaded = import.meta.env.DEV
-      ? rawLoaded.filter((item) => item.id !== DEV_FAULT_TEST_INSTANCE_ID)
-      : rawLoaded;
-    if (!isDemoPreview) return loaded;
-    return import.meta.env.DEV && DEV_FAULT_TEST_INSTANCE
-      ? [DEV_FAULT_TEST_INSTANCE, ...DEMO_RUNNING_INSTANCES, ...loaded]
-      : [...DEMO_RUNNING_INSTANCES, ...loaded];
-  });
+  const [instances, setInstances] = useState<TavernInstance[]>(() => (isShowcase ? [] : loadInstances()));
   const [showBgPanel, setShowBgPanel] = useState(false);
   const [isPanelClosing, setIsPanelClosing] = useState(false);
   const { bgMode, setBgMode, themeStyle, setThemeStyle, dynamicPaused, setDynamicPaused, switchThemeMode } = useBackgroundMode();
@@ -554,20 +479,8 @@ function SillyClientLauncher() {
     const applied = applyUiScale(saveUiScale(scale));
     setUiScale(applied);
   }, []);
-  const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo | null>(() => import.meta.env.DEV
-    ? {
-        currentVersion: APP_VERSION,
-        latestVersion: "1.14.4",
-        updateAvailable: true,
-        releaseUrl: "https://github.com/CAPTCHAAAAA/SillyClient/releases/latest",
-        releaseSummary: extractReleaseSummary(
-          "# SillyClient v1.14.4\n\n> iOS 紧急修复版（`1.14.4` / Build `49`）：在 `v1.14.3` 基础上继续修复“部分用户可用、留空/中文实例名或外置目录仍创建失败”的分化故障——恢复 iOS 实例安全目录 ID 归一化，并将系统文件选择器的安全作用域获取提前至 `didPickDocumentsAt` 主线程同步完成。本版为紧急补丁，仅更新 iOS，连续跳过 Windows 与 Android（继续使用 [`v1.14.1`](https://github.com/CAPTCHAAAAA/SillyClient/releases/tag/v1.14.1)，后续统一整合）。"
-        ),
-      }
-    : null);
-  const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "current" | "available" | "error">(
-    () => import.meta.env.DEV ? "available" : "idle"
-  );
+  const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo | null>(null);
+  const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "current" | "available" | "error">("idle");
   const [appUpdateError, setAppUpdateError] = useState<string | null>(null);
   const [appUpdateDiagnostic, setAppUpdateDiagnostic] = useState<DiagnosticContext | null>(null);
   const [updatePromptDismissed, setUpdatePromptDismissed] = useState(false);
@@ -577,15 +490,6 @@ function SillyClientLauncher() {
   const [verDropdownPos, setVerDropdownPos] = useState({ bottom: 0, left: 0, width: 0, maxHeight: 360 });
   const carouselRef = useRef<InstanceCarouselRef>(null);
   const terminalBtnRef = useRef<HTMLButtonElement>(null);
-  const terminalDebugPressTimerRef = useRef<number | null>(null);
-  const terminalDebugPressStartRef = useRef<{ x: number; y: number } | null>(null);
-  const terminalDebugLongPressRef = useRef(false);
-  const middleDebugPressTimerRef = useRef<number | null>(null);
-  const middleDebugPressStartRef = useRef<{ x: number; y: number } | null>(null);
-  const middleDebugLongPressRef = useRef(false);
-  const logoDebugPressTimerRef = useRef<number | null>(null);
-  const logoDebugPressStartRef = useRef<{ x: number; y: number } | null>(null);
-  const logoDebugLongPressRef = useRef(false);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const cardMenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const managePanelOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -665,50 +569,27 @@ function SillyClientLauncher() {
     }, PANEL_EXIT_MS);
   }, [isDeleteDialogClosing, isDeletingInstance, pendingDelete]);
 
-  const isBackgroundInteractionBlocked = Boolean(
-    showRelocateModal
-      || isRelocateModalClosing
-      || showBgPanel
-      || isPanelClosing
-      || showTerminal
-      || isTerminalClosing
-      || showLaunchPanel
-      || isLaunchPanelClosing
-      || isUnlockModalOpen
-      || isUnlockModalClosing
-      || activeCardMenu
-      || isCardMenuClosing
-      || showManagePanel
-      || isManagePanelClosing
-      || showAppMenu
-      || isAppMenuClosing
-      || showNewInstancePanel
-      || isNewInstancePanelClosing
-      || isCreatingInstance
-      || verDropdownOpen
-      || isVerDropdownClosing
-      || showCleanPanel
-      || isCleanPanelClosing
-      || pendingDelete
-      || isDeleteDialogClosing
-      || maintenanceInstance
-  );
-  const isBackgroundInteractionClosing = isBackgroundInteractionBlocked && !(
-    (showRelocateModal && !isRelocateModalClosing)
-    || (showBgPanel && !isPanelClosing)
-    || (showTerminal && !isTerminalClosing)
-    || (showLaunchPanel && !isLaunchPanelClosing)
-    || (isUnlockModalOpen && !isUnlockModalClosing)
-    || Boolean(activeCardMenu && !isCardMenuClosing)
-    || Boolean(showManagePanel && !isManagePanelClosing)
-    || (showAppMenu && !isAppMenuClosing)
-    || (showNewInstancePanel && !isNewInstancePanelClosing)
-    || isCreatingInstance
-    || (verDropdownOpen && !isVerDropdownClosing)
-    || (showCleanPanel && !isCleanPanelClosing)
-    || (Boolean(pendingDelete) && !isDeleteDialogClosing)
-    || (Boolean(maintenanceInstance) && !isMaintenanceClosing)
-  );
+  const interactionLocks: readonly [boolean, boolean][] = [
+    [showRelocateModal, isRelocateModalClosing],
+    [showBgPanel, isPanelClosing],
+    [showTerminal, isTerminalClosing],
+    [showLaunchPanel, isLaunchPanelClosing],
+    [isUnlockModalOpen, isUnlockModalClosing],
+    [Boolean(activeCardMenu), isCardMenuClosing],
+    [Boolean(showManagePanel), isManagePanelClosing],
+    [showAppMenu, isAppMenuClosing],
+    [showNewInstancePanel, isNewInstancePanelClosing],
+    [verDropdownOpen, isVerDropdownClosing],
+    [showCleanPanel, isCleanPanelClosing],
+    [Boolean(pendingDelete), isDeleteDialogClosing],
+    [Boolean(maintenanceInstance), isMaintenanceClosing],
+  ];
+  const isBackgroundInteractionBlocked =
+    isCreatingInstance || interactionLocks.some(([open, closing]) => open || closing);
+  const isBackgroundInteractionClosing =
+    isBackgroundInteractionBlocked
+    && !isCreatingInstance
+    && !interactionLocks.some(([open, closing]) => open && !closing);
   const isPullGestureBlocked = isBackgroundInteractionBlocked
     || showOnboarding
     || Boolean(renamingId || isRenameClosing);
@@ -758,9 +639,6 @@ function SillyClientLauncher() {
     if (cardMenuCloseTimerRef.current) clearTimeout(cardMenuCloseTimerRef.current);
     if (managePanelOpenTimerRef.current) clearTimeout(managePanelOpenTimerRef.current);
     if (managePanelCloseTimerRef.current) clearTimeout(managePanelCloseTimerRef.current);
-    if (terminalDebugPressTimerRef.current) clearTimeout(terminalDebugPressTimerRef.current);
-    if (middleDebugPressTimerRef.current) clearTimeout(middleDebugPressTimerRef.current);
-    if (logoDebugPressTimerRef.current) clearTimeout(logoDebugPressTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -915,7 +793,7 @@ function SillyClientLauncher() {
 
   // 原生进程被系统结束后，持久化的 running 状态可能已经失效。
   useEffect(() => {
-    if (isShowcase || isDemoPreview) return;
+    if (isShowcase || previewModeRef.current) return;
     (async () => {
       try {
         const status = await TarvenEnv.getStatus();
@@ -930,7 +808,7 @@ function SillyClientLauncher() {
         /* 浏览器环境没有原生运行状态。 */
       }
     })();
-  }, [isShowcase, isDemoPreview]);
+  }, [isShowcase]);
 
   // 安全 insets(挖孔避让) — 原生返回物理像素,需除以 devicePixelRatio 转为 CSS 像素
   // 用 useLayoutEffect + 轮询确保 insets 就绪(首次 mount 时可能返回 0)
@@ -1143,18 +1021,29 @@ function SillyClientLauncher() {
 
   // 实例列表持久化到 localStorage
   useEffect(() => {
-    if (!isShowcase && !isDemoPreview) saveInstances(instances);
-  }, [instances, isShowcase, isDemoPreview]);
+    if (!isShowcase && !previewModeRef.current) saveInstances(instances);
+  }, [instances, isShowcase]);
+
+  const remoteTargets = useMemo(
+    () => instances
+      .filter((t): t is TavernInstance & { url: string } => t.type === "remote" && Boolean(t.url))
+      .map((t) => ({ id: t.id, url: t.url, username: t.basicAuth?.username || "" })),
+    [instances],
+  );
+  const remoteTargetsKey = useMemo(
+    () => remoteTargets.map((t) => `${t.id}\0${t.url}\0${t.username}`).join("\n"),
+    [remoteTargets],
+  );
+  const remoteTargetsRef = useRef(remoteTargets);
+  remoteTargetsRef.current = remoteTargets;
 
   // 远程实例在线状态检测(用原生 pingUrl 绕过 WebView CORS)
   const checkRemoteStatus = useCallback(async () => {
-    const remotes = instances.filter(
-      (t) => t.type === "remote" && t.url && !(import.meta.env.DEV && t.id === DEV_FAULT_TEST_INSTANCE_ID)
-    );
+    const remotes = remoteTargetsRef.current;
     if (remotes.length === 0) return;
     const results = await Promise.all(remotes.map(async (r) => {
       try {
-        const res = await TarvenEnv.pingUrl({ url: r.url!, instanceId: r.id });
+        const res = await TarvenEnv.pingUrl({ url: r.url, instanceId: r.id });
         return { id: r.id, online: res.online };
       } catch {
         return { id: r.id, online: false };
@@ -1174,14 +1063,15 @@ function SillyClientLauncher() {
       });
       return changed ? next : prev;
     });
-  }, [instances.filter(t => t.type === "remote").map(t => `${t.id}${t.url}${t.basicAuth?.username || ""}`).join(",")]);
+  }, [remoteTargetsKey]);
 
-  // 启动时 + 每15s 轮询
+  // 启动时 + 每15s 轮询（仅存在远程实例时触发）
   useEffect(() => {
+    if (remoteTargets.length === 0) return;
     checkRemoteStatus();
     const interval = setInterval(checkRemoteStatus, 15000);
     return () => clearInterval(interval);
-  }, [checkRemoteStatus]);
+  }, [checkRemoteStatus, remoteTargets.length]);
 
   // 启动时同步各实例密码保护状态
   useEffect(() => {
@@ -1218,8 +1108,8 @@ function SillyClientLauncher() {
   // 手机桌面级长按拖拽重排持久化
   const handleReorderInstances = useCallback((newInstances: TavernInstance[]) => {
     setInstances(newInstances);
-    saveInstances(newInstances);
-  }, []);
+    if (!isShowcase && !previewModeRef.current) saveInstances(newInstances);
+  }, [isShowcase]);
 
   // 下拉刷新:触发远程状态检测与本地实例同步
   const handlePullRefresh = useCallback(async () => {
@@ -1494,10 +1384,6 @@ function SillyClientLauncher() {
     const url = instance.url || "http://127.0.0.1:8000";
     setLaunchLogs([{ msg: `检查 ${url}`, level: "info" }]);
     setLaunchProgress({ pct: 25, text: "正在验证远程连接" });
-    if (import.meta.env.DEV && isWeb && instance.id === DEV_FAULT_TEST_INSTANCE_ID) {
-      await operation.delay(260);
-      await operation.wait(fetch(url, { mode: "no-cors", signal: AbortSignal.timeout(1200) }));
-    }
     const result = await operation.wait(TarvenEnv.pingUrl({ url, instanceId: instance.id }));
     if (!result.online) {
       throw new Error(result.error || "远程实例当前不可访问");
@@ -1517,7 +1403,7 @@ function SillyClientLauncher() {
       showGestureHint: instance.pendingTavernGestureHint === true,
     }));
     setLaunchProgress({ pct: 100, text: "远程实例已打开" });
-  }, [contentOpenMode, isWeb, setLaunchLogs]);
+  }, [contentOpenMode, setLaunchLogs]);
 
   // 启动实例直接执行入口 (跳过密码阻断，在已完成密码校验或无密码时调用)
   const launchTavernDirect = useCallback(async (instance: TavernInstance) => {
@@ -1574,17 +1460,7 @@ function SillyClientLauncher() {
     } catch (err: any) {
       if (!operation.isCurrent || err instanceof OperationCancelledError) return;
       const isValidation = err instanceof ClientValidationError;
-      const rawFaultMessage = sanitizeDiagnosticText(extractErrorMessage(err), [
-        instance.subtitle,
-        instance.name,
-        instance.installPath,
-        instance.url,
-      ]);
-      const msg = isValidation
-        ? err.message
-        : instance.id === DEV_FAULT_TEST_INSTANCE_ID && rawFaultMessage
-          ? rawFaultMessage
-          : humanizeNativeError(err);
+      const msg = isValidation ? err.message : humanizeNativeError(err);
       const diagnostic = isValidation
         ? null
         : createDiagnosticContext(err, {
@@ -2064,17 +1940,7 @@ function SillyClientLauncher() {
     } catch (err: any) {
       if (!operation.isCurrent || err instanceof OperationCancelledError) return;
       const isValidation = err instanceof ClientValidationError;
-      const rawFaultMessage = sanitizeDiagnosticText(extractErrorMessage(err), [
-        lastLaunchParams.subtitle,
-        lastLaunchParams.name,
-        lastLaunchParams.installPath,
-        lastLaunchParams.url,
-      ]);
-      const msg = isValidation
-        ? err.message
-        : lastLaunchParams.id === DEV_FAULT_TEST_INSTANCE_ID && rawFaultMessage
-          ? rawFaultMessage
-          : humanizeNativeError(err);
+      const msg = isValidation ? err.message : humanizeNativeError(err);
       const diagnostic = isValidation
         ? null
         : createDiagnosticContext(err, {
@@ -2334,43 +2200,28 @@ function SillyClientLauncher() {
     setShowTerminal(true);
   }, []);
 
-  const openLaunchConsolePreview = useCallback((purpose: OperationPurpose) => {
-    if (!isDemoPreview) return;
-    const previewInstance = purpose === "create" ? DEBUG_CREATE_INSTANCE : DEBUG_OPEN_INSTANCE;
-    const logs = purpose === "create"
-      ? [
-          { msg: "创建实例 · 演示环境", level: "info" },
-          { msg: "准备安装 SillyTavern 1.14.1", level: "info" },
-          { msg: "正在下载当前版本 · 68%", level: "info" },
-        ]
-      : [
-          { msg: "打开实例 · 正在启动", level: "info" },
-          { msg: "SillyTavern 1.14.1", level: "success" },
-          { msg: "正在确认实例可运行", level: "info" },
-        ];
-    instanceLogs.update(DEBUG_LAUNCH_LOG_KEY, logs);
-    setLaunchLogKey(DEBUG_LAUNCH_LOG_KEY);
-    setLaunchError(null);
-    setLaunchProgress(
-      purpose === "create"
-        ? { pct: 68, text: "正在下载当前版本 · 68%" }
-        : { pct: 42, text: "正在确认实例可运行" },
-    );
-    setOperationPurpose(purpose);
-    setLastLaunchParams(previewInstance);
-    setIsLaunchPanelClosing(false);
-    setShowLaunchPanel(true);
-  }, [isDemoPreview]);
+  const closeBgPanel = useCallback(() => {
+    if (!showBgPanel || isPanelClosing) return;
+    setIsPanelClosing(true);
+    setTimeout(() => {
+      setShowBgPanel(false);
+      setIsPanelClosing(false);
+    }, BACKGROUND_PANEL_EXIT_MS);
+  }, [isPanelClosing, showBgPanel]);
+
+  const closeTerminalPanel = useCallback(() => {
+    if (!showTerminal || isTerminalClosing) return;
+    setIsTerminalClosing(true);
+    setTimeout(() => {
+      setShowTerminal(false);
+      setIsTerminalClosing(false);
+    }, PANEL_EXIT_MS);
+  }, [isTerminalClosing, showTerminal]);
 
   const handleTerminalButtonClick = useCallback(() => {
-    if (terminalDebugLongPressRef.current) {
-      terminalDebugLongPressRef.current = false;
-      return;
-    }
     if (isWeb && !isWindows && !isShowcase && !isLocalPreview) return;
     if (showTerminal) {
-      setIsTerminalClosing(true);
-      setTimeout(() => { setShowTerminal(false); setIsTerminalClosing(false); }, PANEL_EXIT_MS);
+      closeTerminalPanel();
       return;
     }
 
@@ -2393,6 +2244,7 @@ function SillyClientLauncher() {
     openInstanceTerminal(instance);
   }, [
     activeInstance,
+    closeTerminalPanel,
     isLocalPreview,
     isShowcase,
     isWeb,
@@ -2402,105 +2254,9 @@ function SillyClientLauncher() {
     showTerminal,
   ]);
 
-  const handleTerminalDebugPointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isDemoPreview || (event.pointerType === "mouse" && event.button !== 0)) return;
-    if (terminalDebugPressTimerRef.current) clearTimeout(terminalDebugPressTimerRef.current);
-    terminalDebugLongPressRef.current = false;
-    terminalDebugPressStartRef.current = { x: event.clientX, y: event.clientY };
-    terminalDebugPressTimerRef.current = window.setTimeout(() => {
-      terminalDebugPressTimerRef.current = null;
-      terminalDebugLongPressRef.current = true;
-      terminalDebugPressStartRef.current = null;
-      openLaunchConsolePreview("launch");
-    }, 620);
-  }, [isDemoPreview, openLaunchConsolePreview]);
-
-  const handleTerminalDebugPointerMove = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    const start = terminalDebugPressStartRef.current;
-    if (!start) return;
-    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) {
-      if (terminalDebugPressTimerRef.current) {
-        clearTimeout(terminalDebugPressTimerRef.current);
-        terminalDebugPressTimerRef.current = null;
-      }
-      terminalDebugPressStartRef.current = null;
-    }
-  }, []);
-
-  const handleTerminalDebugPointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (terminalDebugPressTimerRef.current) {
-      clearTimeout(terminalDebugPressTimerRef.current);
-      terminalDebugPressTimerRef.current = null;
-    }
-    terminalDebugPressStartRef.current = null;
-    if (terminalDebugLongPressRef.current) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }, []);
-
-  const handleTerminalDebugPointerCancel = useCallback(() => {
-    if (terminalDebugPressTimerRef.current) {
-      clearTimeout(terminalDebugPressTimerRef.current);
-      terminalDebugPressTimerRef.current = null;
-    }
-    terminalDebugPressStartRef.current = null;
-    terminalDebugLongPressRef.current = false;
-  }, []);
-
   const handleBackgroundButtonClick = useCallback(() => {
-    if (middleDebugLongPressRef.current) {
-      middleDebugLongPressRef.current = false;
-      return;
-    }
     toggleBgPanel();
   }, [showBgPanel]);
-
-  const handleBackgroundDebugPointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isDemoPreview || (event.pointerType === "mouse" && event.button !== 0)) return;
-    if (middleDebugPressTimerRef.current) clearTimeout(middleDebugPressTimerRef.current);
-    middleDebugLongPressRef.current = false;
-    middleDebugPressStartRef.current = { x: event.clientX, y: event.clientY };
-    middleDebugPressTimerRef.current = window.setTimeout(() => {
-      middleDebugPressTimerRef.current = null;
-      middleDebugLongPressRef.current = true;
-      middleDebugPressStartRef.current = null;
-      openLaunchConsolePreview("create");
-    }, 620);
-  }, [isDemoPreview, openLaunchConsolePreview]);
-
-  const handleBackgroundDebugPointerMove = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    const start = middleDebugPressStartRef.current;
-    if (!start) return;
-    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) {
-      if (middleDebugPressTimerRef.current) {
-        clearTimeout(middleDebugPressTimerRef.current);
-        middleDebugPressTimerRef.current = null;
-      }
-      middleDebugPressStartRef.current = null;
-    }
-  }, []);
-
-  const handleBackgroundDebugPointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (middleDebugPressTimerRef.current) {
-      clearTimeout(middleDebugPressTimerRef.current);
-      middleDebugPressTimerRef.current = null;
-    }
-    middleDebugPressStartRef.current = null;
-    if (middleDebugLongPressRef.current) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }, []);
-
-  const handleBackgroundDebugPointerCancel = useCallback(() => {
-    if (middleDebugPressTimerRef.current) {
-      clearTimeout(middleDebugPressTimerRef.current);
-      middleDebugPressTimerRef.current = null;
-    }
-    middleDebugPressStartRef.current = null;
-    middleDebugLongPressRef.current = false;
-  }, []);
 
   const openManagePanel = useCallback((instance: TavernInstance) => {
     if (managePanelOpenTimerRef.current) {
@@ -2851,7 +2607,7 @@ function SillyClientLauncher() {
         }
         return inst;
       });
-      saveInstances(updated);
+      if (!isShowcase && !previewModeRef.current) saveInstances(updated);
       return updated;
     });
 
@@ -2923,25 +2679,16 @@ function SillyClientLauncher() {
   const { registerLayer } = useLayerStack();
 
   useEffect(() => {
-    if (showBgPanel) return registerLayer("bg_panel", () => {
-      setIsPanelClosing(true);
-      setTimeout(() => { setShowBgPanel(false); setIsPanelClosing(false); }, BACKGROUND_PANEL_EXIT_MS);
-    });
-  }, [showBgPanel, registerLayer]);
+    if (showBgPanel) return registerLayer("bg_panel", closeBgPanel);
+  }, [showBgPanel, registerLayer, closeBgPanel]);
 
   useEffect(() => {
-    if (showTerminal) return registerLayer("terminal", () => {
-      setIsTerminalClosing(true);
-      setTimeout(() => { setShowTerminal(false); setIsTerminalClosing(false); }, PANEL_EXIT_MS);
-    });
-  }, [showTerminal, registerLayer]);
+    if (showTerminal) return registerLayer("terminal", closeTerminalPanel);
+  }, [showTerminal, registerLayer, closeTerminalPanel]);
 
   useEffect(() => {
-    if (showAppMenu) return registerLayer("app_menu", () => {
-      setIsAppMenuClosing(true);
-      setTimeout(() => { setShowAppMenu(false); setIsAppMenuClosing(false); }, PANEL_EXIT_MS);
-    });
-  }, [showAppMenu, registerLayer]);
+    if (showAppMenu) return registerLayer("app_menu", closeAppMenu);
+  }, [showAppMenu, registerLayer, closeAppMenu]);
 
   useEffect(() => {
     if (showManagePanel) return registerLayer("manage_panel", closeManagePanel);
@@ -3020,88 +2767,71 @@ function SillyClientLauncher() {
     setShowNewInstancePanel(true);
   }, [isWeb, isShowcase, isLocalPreview, resetNewInstanceFields]);
 
-  const openIssueReportPreview = useCallback(() => {
-    if (!canPreviewIssueReport) return;
-    const queryPlatform = new URLSearchParams(window.location.search).get("platform")?.trim();
-    const previewPlatform = queryPlatform || (platformTag === "web" ? "windows" : platformTag);
-    const previewError = Object.assign(
-      new Error("TypeError: Cannot read properties of undefined (reading 'servicePort') at startTavernRuntime"),
-      { stage: "runtimeInit", code: "ERR_UNHANDLED_RUNTIME" },
-    );
-    const diagnostic = createDiagnosticContext(previewError, {
-      area: "runtime",
-      stage: "runtimeInit",
-      elapsedMs: 1420,
-      platform: previewPlatform,
-    });
-    closeVersionDropdown();
-    reportGlobalError(previewError, {
-      area: "runtime",
-      stage: "runtimeInit",
-      platform: previewPlatform,
-      diagnostic,
-      force: true,
-    });
-  }, [canPreviewIssueReport, closeVersionDropdown, platformTag]);
-
-  const clearLogoDebugTimer = useCallback(() => {
-    if (logoDebugPressTimerRef.current) {
-      clearTimeout(logoDebugPressTimerRef.current);
-      logoDebugPressTimerRef.current = null;
-    }
-    logoDebugPressStartRef.current = null;
-  }, []);
-
   const handleLogoClick = useCallback(() => {
-    if (logoDebugLongPressRef.current) {
-      logoDebugLongPressRef.current = false;
-      return;
-    }
     setLogoFontIndex(prev => (prev + 1) % LOGO_FONTS.length);
   }, []);
 
-  const handleLogoDebugPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!canPreviewIssueReport || (event.pointerType === "mouse" && event.button !== 0)) return;
-    clearLogoDebugTimer();
-    logoDebugLongPressRef.current = false;
-    logoDebugPressStartRef.current = { x: event.clientX, y: event.clientY };
-    logoDebugPressTimerRef.current = window.setTimeout(() => {
-      logoDebugPressTimerRef.current = null;
-      logoDebugPressStartRef.current = null;
-      logoDebugLongPressRef.current = true;
-      openIssueReportPreview();
-      window.addEventListener(
-        "pointerup",
-        () => {
-          window.setTimeout(() => {
-            logoDebugLongPressRef.current = false;
-          }, 60);
-        },
-        { once: true },
-      );
-    }, 620);
-  }, [canPreviewIssueReport, clearLogoDebugTimer, openIssueReportPreview]);
+  const devCallbacksRef = useRef<{
+    openWizard: () => void;
+    previewLaunchConsole: (options: LauncherPreviewConsoleOptions) => void;
+    dismissPreviewPanels: () => void;
+    setMockAppUpdate: (info: AppUpdateInfo | null) => void;
+  } | null>(null);
 
-  const handleLogoDebugPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const start = logoDebugPressStartRef.current;
-    if (!start) return;
-    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) {
-      clearLogoDebugTimer();
-    }
-  }, [clearLogoDebugTimer]);
+  devCallbacksRef.current = {
+    openWizard: () => {
+      setShowLaunchPanel(false);
+      setIsLaunchPanelClosing(false);
+      setShowNewInstancePanel(true);
+      setIsNewInstancePanelClosing(false);
+    },
+    previewLaunchConsole: (options) => {
+      setShowNewInstancePanel(false);
+      setIsNewInstancePanelClosing(false);
+      const logKey = options.instance.installDir || options.instance.id;
+      instanceLogs.update(logKey, options.logs);
+      setLaunchLogKey(logKey);
+      setOperationPurpose(options.purpose);
+      setLastLaunchParams(options.instance);
+      setLaunchProgress(options.progress);
+      setLaunchError(options.error ?? null);
+      setLaunchDiagnostic(options.diagnostic ?? null);
+      setIsLaunchPanelClosing(false);
+      setShowLaunchPanel(true);
+    },
+    dismissPreviewPanels: () => {
+      dismissLaunchPanel();
+      setShowNewInstancePanel(false);
+      setIsNewInstancePanelClosing(false);
+    },
+    setMockAppUpdate: (info) => {
+      setAppUpdateInfo(info);
+      setAppUpdateState(info ? "available" : "idle");
+      setUpdatePromptDismissed(false);
+    },
+  };
 
-  const handleLogoDebugPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    clearLogoDebugTimer();
-    if (logoDebugLongPressRef.current) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }, [clearLogoDebugTimer]);
-
-  const handleLogoDebugPointerCancel = useCallback(() => {
-    clearLogoDebugTimer();
-    logoDebugLongPressRef.current = false;
-  }, [clearLogoDebugTimer]);
+  useEffect(() => {
+    if (!import.meta.env.DEV || isShowcase || isOnboardingSandbox) return;
+    const host: LauncherDevHost = {
+      setPreviewMode: (enabled) => {
+        previewModeRef.current = enabled;
+      },
+      setInstances: (updater) => setInstances(updater),
+      openWizard: () => devCallbacksRef.current?.openWizard(),
+      previewLaunchConsole: (options) => devCallbacksRef.current?.previewLaunchConsole(options),
+      dismissPreviewPanels: () => devCallbacksRef.current?.dismissPreviewPanels(),
+      setMockAppUpdate: (info) => devCallbacksRef.current?.setMockAppUpdate(info),
+    };
+    window.__SILLYCLIENT_DEV_HOST__ = host;
+    window.dispatchEvent(new Event("sillyclient:dev-host-ready"));
+    return () => {
+      if (window.__SILLYCLIENT_DEV_HOST__ === host) {
+        delete window.__SILLYCLIENT_DEV_HOST__;
+      }
+      previewModeRef.current = false;
+    };
+  }, [isShowcase]);
 
   return (
     <div
@@ -3165,14 +2895,7 @@ function SillyClientLauncher() {
             <button
               ref={terminalBtnRef}
               onClick={handleTerminalButtonClick}
-              onPointerDown={handleTerminalDebugPointerDown}
-              onPointerMove={handleTerminalDebugPointerMove}
-              onPointerUp={handleTerminalDebugPointerUp}
-              onPointerCancel={handleTerminalDebugPointerCancel}
-              onContextMenu={event => {
-                if (isDemoPreview) event.preventDefault();
-              }}
-              aria-label={isDemoPreview ? "打开终端，长按查看打开实例控制台" : "打开终端"}
+              aria-label="打开终端"
               data-onboarding-target="terminal"
               className={cn(
                 "ios-glass-btn px-3 h-8 flex items-center justify-center text-xs font-medium transition-all",
@@ -3186,20 +2909,11 @@ function SillyClientLauncher() {
           <div className="flex-1 flex items-center justify-center">
             <button
               onClick={handleBackgroundButtonClick}
-              onPointerDown={handleBackgroundDebugPointerDown}
-              onPointerMove={handleBackgroundDebugPointerMove}
-              onPointerUp={handleBackgroundDebugPointerUp}
-              onPointerCancel={handleBackgroundDebugPointerCancel}
-              onContextMenu={event => {
-                if (isDemoPreview) event.preventDefault();
-              }}
-              aria-label={isDemoPreview ? "打开背景设置，长按查看创建实例控制台" : "打开背景设置"}
+              aria-label="打开背景设置"
               data-onboarding-target="background"
               className={cn("group flex items-center gap-2 px-3 h-8 rounded-full border-0 transition-colors duration-300 max-w-[200px]", isLight ? "text-[#1a1625]/75 hover:text-[#1a1625]" : "text-white/75 hover:text-white")}
             >
-              <span className="text-sm font-medium truncate">
-                {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              <HeaderClock />
               <ChevronDown className={cn("w-4 h-4 flex-shrink-0 text-current transition-transform", showBgPanel && "rotate-180")} />
             </button>
           </div>
@@ -3301,20 +3015,7 @@ function SillyClientLauncher() {
         <div
           className="mb-4 text-center select-none cursor-pointer group"
           onClick={handleLogoClick}
-          onPointerDown={handleLogoDebugPointerDown}
-          onPointerMove={handleLogoDebugPointerMove}
-          onPointerUp={handleLogoDebugPointerUp}
-          onPointerCancel={handleLogoDebugPointerCancel}
-          onContextMenu={(event) => {
-            if (canPreviewIssueReport && (logoDebugLongPressRef.current || logoDebugPressTimerRef.current)) {
-              event.preventDefault();
-            }
-          }}
-          title={
-            canPreviewIssueReport
-              ? `点击切换字体 (${LOGO_FONTS[logoFontIndex].name}) · 长按预览问题上报`
-              : `点击切换字体 (${LOGO_FONTS[logoFontIndex].name})`
-          }
+          title={`点击切换字体 (${LOGO_FONTS[logoFontIndex].name})`}
         >
           <span
             className="inline-block text-[clamp(3rem,10vw,7.5rem)] font-normal leading-none transition-all duration-300"
@@ -3329,7 +3030,7 @@ function SillyClientLauncher() {
           <div className={cn(
             "text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
             isLight ? "text-[#1a1625]/25" : "text-white/25"
-          )}>{canPreviewIssueReport ? `${LOGO_FONTS[logoFontIndex].name} · 长按预览上报` : LOGO_FONTS[logoFontIndex].name}</div>
+          )}>{LOGO_FONTS[logoFontIndex].name}</div>
         </div>
 
         {/* 搜索栏 */}
@@ -3455,13 +3156,7 @@ function SillyClientLauncher() {
       <BackgroundSettingsDrawer
         isOpen={showBgPanel}
         isClosing={isPanelClosing}
-        onClose={() => {
-          setIsPanelClosing(true);
-          setTimeout(() => {
-            setShowBgPanel(false);
-            setIsPanelClosing(false);
-          }, BACKGROUND_PANEL_EXIT_MS);
-        }}
+        onClose={closeBgPanel}
         isLight={isLight}
         safeInsetTop={safeInsetTop}
         bgMode={bgMode}
@@ -3482,25 +3177,13 @@ function SillyClientLauncher() {
       <LayerBackdrop
         isOpen={showTerminal || isTerminalClosing}
         isClosing={isTerminalClosing}
-        onClick={() => {
-          setIsTerminalClosing(true);
-          setTimeout(() => {
-            setShowTerminal(false);
-            setIsTerminalClosing(false);
-          }, PANEL_EXIT_MS);
-        }}
+        onClick={closeTerminalPanel}
         zIndex={LAYERS.MODAL_BACKDROP}
       />
       <TerminalModal
         isOpen={showTerminal}
         isClosing={isTerminalClosing}
-        onClose={() => {
-          setIsTerminalClosing(true);
-          setTimeout(() => {
-            setShowTerminal(false);
-            setIsTerminalClosing(false);
-          }, PANEL_EXIT_MS);
-        }}
+        onClose={closeTerminalPanel}
         isLight={isLight}
         glassBg={glassBg}
         safeInsetTop={safeInsetTop}
@@ -3516,13 +3199,7 @@ function SillyClientLauncher() {
       <AppSettingsDrawer
         isOpen={showAppMenu}
         isClosing={isAppMenuClosing}
-        onClose={() => {
-          setIsAppMenuClosing(true);
-          setTimeout(() => {
-            setShowAppMenu(false);
-            setIsAppMenuClosing(false);
-          }, PANEL_EXIT_MS);
-        }}
+        onClose={closeAppMenu}
         isLight={isLight}
         glassBg={glassBg}
         isWindows={isWindows}
@@ -3825,78 +3502,6 @@ function SillyClientLauncher() {
         isIOS={isIOS}
         onRelocated={handleInstanceRelocated}
       />
-
-      {/* 【视觉与动效测试专用】底部悬浮调试板：仅在本地开发走查环境可见，用于设计验收与过渡动效测试，在任何正式生产构建（Windows/Android/Pages）中自动剔除 */}
-      {import.meta.env.DEV && !isNativePreview && !isOnboardingSandbox && (
-        <div
-          title="【视觉测试专用】仅用于本地开发、设计走查与过渡动效测试，正式生产原生端不包含"
-          className={cn("ios-floating-menu fixed bottom-4 right-4 z-[99] flex flex-wrap items-center gap-1.5 p-1.5 rounded-full border-0 select-none text-[11px] transition-all", isLight && "is-light")}
-        >
-          <div className="flex items-center gap-1.5 pl-2.5 pr-1 text-white/50 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
-            <span>调试板 (视觉测试专用)</span>
-          </div>
-          <button
-            onClick={() => {
-              setShowLaunchPanel(false);
-              setIsLaunchPanelClosing(false);
-              setShowNewInstancePanel(true);
-              setIsNewInstancePanelClosing(false);
-            }}
-            className="flat-capsule motion-control h-7 px-3 rounded-full border-0 text-white/70 hover:text-white font-medium"
-          >
-            打开向导
-          </button>
-          <button
-            onClick={() => {
-              setShowNewInstancePanel(false);
-              setIsNewInstancePanelClosing(false);
-              setOperationPurpose("create");
-              setLastLaunchParams({ ...DEMO_INSTANCE, id: "demo-test", name: "体验新实例", type: "local" });
-              setShowLaunchPanel(true);
-              setIsLaunchPanelClosing(false);
-              setLaunchError(null);
-              setLaunchProgress({ pct: 45, text: "正在下载运行环境..." });
-              setLaunchLogs([
-                { msg: "开始创建 体验新实例", level: "info" },
-                { msg: "解压运行时与核心组件...", level: "info" },
-              ]);
-            }}
-            className="flat-capsule motion-control h-7 px-3 rounded-full border-0 text-white/70 hover:text-white font-medium"
-          >
-            模拟过渡
-          </button>
-          <button
-            onClick={() => {
-              setShowNewInstancePanel(false);
-              setIsNewInstancePanelClosing(false);
-              setOperationPurpose("create");
-              setLastLaunchParams({ ...DEMO_INSTANCE, id: "demo-test", name: "体验新实例", type: "local" });
-              setShowLaunchPanel(true);
-              setIsLaunchPanelClosing(false);
-              setLaunchError(null);
-              setLaunchProgress({ pct: 100, text: "创建完成，可以运行" });
-              setLaunchLogs([
-                { msg: "服务可访问，实例创建完成", level: "success" },
-              ]);
-            }}
-            className="flat-capsule motion-control h-7 px-3 rounded-full border-0 text-white/80 hover:text-white font-semibold"
-          >
-            模拟完成态
-          </button>
-          <button
-            onClick={() => {
-              dismissLaunchPanel();
-              setShowNewInstancePanel(false);
-              setIsNewInstancePanelClosing(false);
-            }}
-            title="关闭弹层"
-            className="motion-control w-7 h-7 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-colors"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      )}
 
       {/* 全局置顶虚化问题反馈菜单（商业软件评分/反馈交互模式） */}
       <GlobalErrorReportOverlay

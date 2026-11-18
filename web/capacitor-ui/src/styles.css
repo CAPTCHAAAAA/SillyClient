@@ -215,27 +215,6 @@ body::-webkit-scrollbar,
   height: 0;
 }
 
-/* 玻璃面板 - Liquid Glass */
-.glass-panel {
-  background: var(--glass);
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border: 0;
-  border-radius: var(--radius-3xl);
-  box-shadow:
-    0 8px 32px oklch(0 0 0 / 0.08),
-    inset 0 1px 0 oklch(1 0 0 / 0.48),
-    inset 0 2px 12px oklch(0 0 0 / 0.03);
-}
-
-.dark .glass-panel {
-  box-shadow:
-    0 8px 32px oklch(0 0 0 / 0.2),
-    inset 0 1px 0 oklch(1 0 0 / 0.15),
-    inset 0 -1px 0 oklch(0 0 0 / 0.1),
-    inset 0 2px 12px oklch(0 0 0 / 0.08);
-}
-
 /* 隐藏外露滚动条，彻底杜绝滑动栏露出与宽度挤压 */
 .scrollbar-subtle {
   scrollbar-width: none;
@@ -1129,16 +1108,6 @@ header span[class*="truncate"] {
   filter: blur(0);
   visibility: visible;
   transition-delay: 0s;
-}
-
-.manage-settings-outgoing {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 2;
-  width: auto !important;
-  height: auto !important;
-  margin: 0 !important;
-  pointer-events: none !important;
 }
 
 /* 高度未知的内容使用 grid 行连续展开，保持原版 3px 轻溶解并仅对底部裁切边缘做柔化，允许中途反向。 */
@@ -2615,38 +2584,12 @@ button.flat-capsule:active:not(:disabled) {
   border-color: transparent !important;
 }
 
-/* 管理分类沿用控制岛 / App 设置的连体沟槽。高度跟顶栏走，所以做成满圆胶囊。 */
-.manage-panel-surface .manage-choice-track {
-  border-radius: 9999px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.manage-panel-surface.is-light .manage-choice-track {
-  box-shadow: inset 0 1px 2px rgba(28, 18, 24, 0.06);
-}
-
 .manage-panel-surface .ios-choice-track > .ios-choice-control[aria-pressed="true"]::before {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
 .manage-panel-surface.is-light .ios-choice-track > .ios-choice-control[aria-pressed="true"]::before {
   box-shadow: inset 0 1px 2px rgba(28, 18, 24, 0.1);
-}
-
-.manage-panel-surface .manage-choice-track > .ios-choice-control {
-  flex: 0 0 auto;
-  align-self: stretch;
-  border-radius: 9999px !important;
-}
-
-.manage-panel-surface .manage-choice-track.is-portrait {
-  container-type: inline-size;
-}
-
-.manage-panel-surface .manage-choice-track.is-portrait > .ios-choice-control {
-  flex: 1 1 0;
-  font-size: 12px;
-  font-size: clamp(9.5px, 4.5cqw, 12px);
 }
 
 /* 管理菜单悬停跟控制岛、实例菜单一样：只走字色，500ms，不缩放、不改底。 */
@@ -2721,14 +2664,26 @@ button.flat-capsule:active:not(:disabled) {
 .manage-panel-surface aside .motion-instance-card.is-expanded:hover,
 .manage-panel-surface aside .motion-instance-card.is-expanded:active {
   box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.18),
-    0 3px 8px rgba(0, 0, 0, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 16px 32px rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.manage-panel-surface.is-light aside .motion-instance-card.is-expanded,
+.manage-panel-surface.is-light aside .motion-instance-card.is-expanded:hover,
+.manage-panel-surface.is-light aside .motion-instance-card.is-expanded:active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 14px 28px rgba(26, 22, 37, 0.14),
+    0 3px 8px rgba(26, 22, 37, 0.08);
 }
 
 .manage-panel-surface aside .motion-instance-card {
   transition:
-    width 500ms cubic-bezier(0.4, 0, 0.2, 1),
-    height 500ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+    width var(--motion-dissolve) var(--motion-dissolve-ease),
+    height var(--motion-dissolve) var(--motion-dissolve-ease),
+    box-shadow var(--motion-dissolve) var(--motion-dissolve-ease),
+    opacity var(--motion-dissolve) var(--motion-dissolve-ease) !important;
 }
 
 .motion-slot {
@@ -2790,70 +2745,73 @@ button.flat-capsule:active:not(:disabled) {
   }
 }
 
+.manage-panel-surface aside .motion-instance-card[data-frozen-plate] .cover-frozen-plate {
+  opacity: 1;
+}
+
 .manage-card-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--motion-dissolve) var(--motion-dissolve-ease);
 }
 
-/* 管理页未选中加重底边，名字压在更实的遮罩上。选中仍收短。 */
+.manage-card-cover-tint {
+  background: rgba(var(--sf-cover-rgb, 18 16 20) / var(--sf-cover, 0.2));
+}
+
+.manage-panel-surface.is-light .manage-card-cover-tint {
+  background: rgba(var(--sf-lg-rgb, 244 240 237) / 0.16);
+}
+
+.manage-card-cover-wash {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 36%, transparent 62%);
+}
+
+.manage-panel-surface.is-light .manage-card-cover-wash {
+  background: linear-gradient(135deg, oklch(1 0 0 / 0.4) 0%, oklch(1 0 0 / 0.25) 100%);
+}
+
+/* 对齐首页实例卡片梯度弥散遮罩：直接使用同一套 --sf-grad-* / --sf-lg-* 色板与全高弥散曲线，保证阅读与视觉统一。 */
 .manage-card-scrim {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-grad-rgb, 30 15 24) / max(0.9, var(--sf-grad-bc, 0.55))) 0%,
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(max(0.9, var(--sf-grad-bc, 0.55)) * 0.66)) calc(var(--sf-grad-hc, 40%) * 0.9),
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(max(0.9, var(--sf-grad-bc, 0.55)) * 0.26)) min(70%, calc(var(--sf-grad-hc, 40%) * 1.6)),
-    transparent min(78%, calc(var(--sf-grad-hc, 40%) * 2))
+    rgba(var(--sf-grad-rgb, 30 15 24) / var(--sf-grad-bc, 0.92)) 0%,
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.92) * 0.54)) calc(max(52%, var(--sf-grad-hc, 52%)) * 0.56),
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.92) * 0.14)) max(52%, var(--sf-grad-hc, 52%)),
+    transparent 100%
   );
 }
 
-/* 选中收短，封面成为焦点。不用首页展开高度。 */
 .manage-card-scrim.is-focus {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.78)) 0%,
-    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-bc, 0.55) * 0.28)) calc(var(--sf-grad-hc, 40%) * 0.36),
-    transparent calc(var(--sf-grad-hc, 40%) * 0.66)
+    rgba(var(--sf-grad-rgb, 30 15 24) / var(--sf-grad-be, 0.96)) 0%,
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-be, 0.96) * 0.62)) calc(var(--sf-grad-he, 74%) * 0.65),
+    rgba(var(--sf-grad-rgb, 30 15 24) / calc(var(--sf-grad-be, 0.96) * 0.17)) var(--sf-grad-he, 74%),
+    transparent 100%
   );
 }
 
 .manage-panel-surface.is-light .manage-card-scrim {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-lg-rgb, 244 240 237) / max(0.94, var(--sf-lg-bc, 0.86))) 0%,
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(max(0.94, var(--sf-lg-bc, 0.86)) * 0.7)) calc(var(--sf-lg-hc, 28%) * 1.15),
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(max(0.94, var(--sf-lg-bc, 0.86)) * 0.3)) min(56%, calc(var(--sf-lg-hc, 28%) * 2.15)),
-    transparent min(66%, calc(var(--sf-lg-hc, 28%) * 2.7))
+    rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-bc, 0.86)) 0%,
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.86) * 0.85)) calc(max(56%, var(--sf-lg-hc, 56%)) * 0.6),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.86) * 0.36)) max(56%, var(--sf-lg-hc, 56%)),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.86) * 0.12)) calc(max(56%, var(--sf-lg-hc, 56%)) * 1.25),
+    transparent 100%
   );
 }
 
 .manage-panel-surface.is-light .manage-card-scrim.is-focus {
   background: linear-gradient(
     to top,
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.86) * 0.78)) 0%,
-    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-bc, 0.86) * 0.3)) calc(var(--sf-lg-hc, 28%) * 0.46),
-    transparent calc(var(--sf-lg-hc, 28%) * 0.92)
-  );
-}
-
-/* 动态模式管理卡底边仍是中性灰，只把这一层加实。菜单底色不动。 */
-body:has(.ambient-glow-container) .manage-panel-surface:not(.is-light) .manage-card-scrim {
-  background: linear-gradient(
-    to top,
-    rgba(78, 78, 84, 0.97) 0%,
-    rgba(78, 78, 84, 0.74) calc(var(--sf-grad-hc, 40%) * 0.9),
-    rgba(78, 78, 84, 0.32) min(70%, calc(var(--sf-grad-hc, 40%) * 1.6)),
-    transparent min(78%, calc(var(--sf-grad-hc, 40%) * 2))
-  );
-}
-
-body:has(.ambient-glow-container) .manage-panel-surface:not(.is-light) .manage-card-scrim.is-focus {
-  background: linear-gradient(
-    to top,
-    rgba(78, 78, 84, 0.86) 0%,
-    rgba(78, 78, 84, 0.34) calc(var(--sf-grad-hc, 40%) * 0.36),
-    transparent calc(var(--sf-grad-hc, 40%) * 0.66)
+    rgba(var(--sf-lg-rgb, 244 240 237) / var(--sf-lg-be, 0.96)) 0%,
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.92)) calc(var(--sf-lg-he, 76%) * 0.67),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.47)) var(--sf-lg-he, 76%),
+    rgba(var(--sf-lg-rgb, 244 240 237) / calc(var(--sf-lg-be, 0.96) * 0.16)) calc(var(--sf-lg-he, 76%) * 1.16),
+    transparent 100%
   );
 }
 
@@ -2877,8 +2835,20 @@ body:has(.ambient-glow-container) .manage-panel-surface:not(.is-light) .manage-c
   max-width: none;
   object-fit: cover;
   transform: none !important;
-  filter: none;
+  opacity: calc(var(--sf-img-op, 1) * 0.78);
+  filter: var(--sf-img-filter, none);
   border-radius: 0;
+  transition:
+    opacity var(--motion-dissolve) var(--motion-dissolve-ease),
+    filter var(--motion-dissolve) var(--motion-dissolve-ease);
+}
+
+.manage-panel-surface aside .motion-instance-card:hover img {
+  opacity: calc(var(--sf-img-op, 1) * 0.92);
+}
+
+.manage-panel-surface aside .motion-instance-card.is-expanded img {
+  opacity: var(--sf-img-op, 1);
 }
 
 .manage-panel-surface aside .motion-instance-card > .absolute,
@@ -2998,11 +2968,6 @@ html[data-ui-scaled="true"] .carousel-scrollbar-hidden {
   syntax: "<number>";
   inherits: true;
   initial-value: 0;
-}
-
-.sc-tactile-slider-control {
-  display: grid;
-  gap: calc(0.75rem - 5.5px);
 }
 
 .sc-tactile-slider {

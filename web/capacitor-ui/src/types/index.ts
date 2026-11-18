@@ -1,10 +1,12 @@
 import React from "react";
 import type {
+  AppUpdateInfo,
   CompanionPresetSelection,
   PreinstallSelection,
   InstanceConfig,
   InstallPathMode,
 } from "../capacitor-plugin";
+import type { DiagnosticContext } from "../lib/native-errors";
 
 export interface TavernInstance {
   id: string;
@@ -53,3 +55,27 @@ export type ManageTab = "launch" | "storage" | "terminal" | "about";
 export type BgMode = "dynamic" | "custom";
 export type ThemeStyle = "dark" | "light";
 export type OperationPurpose = "launch" | "create";
+
+export interface LauncherPreviewConsoleOptions {
+  purpose: OperationPurpose;
+  instance: TavernInstance;
+  progress: { pct: number; text: string } | null;
+  logs: { msg: string; level?: string }[];
+  error?: string | null;
+  diagnostic?: DiagnosticContext | null;
+}
+
+export interface LauncherDevHost {
+  setPreviewMode: (enabled: boolean) => void;
+  setInstances: (updater: (previous: TavernInstance[]) => TavernInstance[]) => void;
+  openWizard: () => void;
+  previewLaunchConsole: (options: LauncherPreviewConsoleOptions) => void;
+  dismissPreviewPanels: () => void;
+  setMockAppUpdate: (info: AppUpdateInfo | null) => void;
+}
+
+declare global {
+  interface Window {
+    __SILLYCLIENT_DEV_HOST__?: LauncherDevHost;
+  }
+}

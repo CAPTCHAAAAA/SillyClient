@@ -1,0 +1,58 @@
+.corner-resize-curve {
+  color: rgba(255, 255, 255, 0.46);
+  transition: color 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.corner-resize-curve.is-light {
+  color: rgba(26, 22, 37, 0.50);
+}
+
+.corner-resize-curve:hover {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.corner-resize-curve.is-light:hover {
+  color: rgba(26, 22, 37, 0.82);
+}
+
+.corner-resize-curve[data-active="true"] {
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.corner-resize-curve.is-light[data-active="true"] {
+  color: #1a1625;
+}
+
+.corner-resize-curve-arc {
+  stroke-width: 3px;
+  stroke-dasharray: var(--arc-rest) var(--arc-total);
+  stroke-dashoffset: var(--arc-offset-rest);
+  transition:
+    stroke-dasharray 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    stroke-dashoffset 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    stroke-width 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.corner-resize-curve:hover .corner-resize-curve-arc {
+  stroke-width: 3.3px;
+  stroke-dasharray: var(--arc-hover) var(--arc-total);
+  stroke-dashoffset: var(--arc-offset-hover);
+}
+
+.corner-resize-curve[data-active="true"] .corner-resize-curve-arc {
+  stroke-width: 3.6px;
+  stroke-dasharray: var(--arc-hot) var(--arc-total);
+  stroke-dashoffset: var(--arc-offset-hot);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corner-resize-curve,
+  .corner-resize-curve-arc {
+    transition: none;
+  }
+}
+
+.corner-resize-curve.animate-manage-panel-exit,
+.corner-resize-curve.animate-manage-panel-exit * {
+  pointer-events: none;
+}

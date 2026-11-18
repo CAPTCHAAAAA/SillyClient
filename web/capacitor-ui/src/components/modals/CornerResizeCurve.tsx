@@ -1,145 +1,145 @@
 import React from "react";
+import { cn } from "../../lib/utils";
+import "./CornerResizeCurve.css";
 
 type CornerResizeCurveProps = {
   isLight: boolean;
   label: string;
   active?: boolean;
+  className?: string;
+  /** 宿主卡片外圆角（屏幕 px），缺省按 Terminal 卡片 16px 对齐。 */
+  cornerRadius?: number;
   onPointerDown: (event: React.PointerEvent<SVGSVGElement>) => void;
 };
 
-/** 弧线外移的距离：手柄落在卡片外侧，贴着圆角走，不压住卡片内容。 */
-const OUTSET = 12;
-/** 端点圆头与外侧柔光需要的余量。 */
-const MARGIN = 10;
-const ARC_RADIUS = 32 + OUTSET;
-const BOX = ARC_RADIUS + MARGIN;
-const CENTER = OUTSET;
-
-/** 静息露出中段，悬停与拖动时沿外圆角向两端展开。 */
-const REST_ARC_DEG = 48;
-const FULL_ARC_DEG = 78;
-const ARC_START_DEG = 6;
-const REST_STROKE = 2.6;
-const HOT_STROKE = 3.4;
+/** 弧线轻盈外移 10px，清晰落在窗体影晕之外，既一眼可辨又不遮挡内部内容。 */
+const CORNER_OUTSET = 10;
+const SVG_MARGIN = 4;
 const HIT_STROKE = 24;
 
-export const CORNER_RESIZE_SAFE_INSET = OUTSET + HIT_STROKE / 2;
+export const CORNER_RESIZE_SAFE_INSET = CORNER_OUTSET + HIT_STROKE / 2;
 
-const MOTION = "320ms cubic-bezier(0.22, 1, 0.36, 1)";
+interface CornerArcGeometry {
+  box: number;
+  offset: number;
+  path: string;
+  totalLen: number;
+  restLen: number;
+  hoverLen: number;
+  hotLen: number;
+  restOffset: number;
+  hoverOffset: number;
+  hotOffset: number;
+}
+
+const arcGeometryCache = new Map<number, CornerArcGeometry>();
+
+function getCornerArcGeometry(cornerRadius: number): CornerArcGeometry {
+  const normalizedRadius = Math.max(12, Math.round(cornerRadius));
+  const cached = arcGeometryCache.get(normalizedRadius);
+  if (cached) return cached;
+
+  const arcRadius = normalizedRadius + CORNER_OUTSET;
+  const center = SVG_MARGIN;
+  const box = arcRadius + SVG_MARGIN * 2;
+  const offset = -(CORNER_OUTSET + SVG_MARGIN);
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  // 较小圆角（如终端 16px）自动采用更大弧度张角，确保物理弧长保持在 ~29–36px 舒适可读尺寸。
+  const isCompactCorner = normalizedRadius < 24;
+  const fullDeg = isCompactCorner ? 84 : 74;
+  const hoverDeg = isCompactCorner ? 74 : 61;
+  const restDeg = isCompactCorner ? 64 : 48;
+  const startDeg = (90 - fullDeg) / 2;
+  const endDeg = startDeg + fullDeg;
+
+  const ax = center + arcRadius * Math.cos(toRad(startDeg));
+  const ay = center + arcRadius * Math.sin(toRad(startDeg));
+  const bx = center + arcRadius * Math.cos(toRad(endDeg));
+  const by = center + arcRadius * Math.sin(toRad(endDeg));
+  const path = `M ${ax.toFixed(2)} ${ay.toFixed(2)} A ${arcRadius} ${arcRadius} 0 0 1 ${bx.toFixed(2)} ${by.toFixed(2)}`;
+
+  const totalLen = (arcRadius * fullDeg * Math.PI) / 180;
+  const hoverLen = (arcRadius * hoverDeg * Math.PI) / 180;
+  const restLen = (arcRadius * restDeg * Math.PI) / 180;
+
+  const geometry: CornerArcGeometry = {
+    box,
+    offset,
+    path,
+    totalLen,
+    restLen,
+    hoverLen,
+    hotLen: totalLen,
+    restOffset: -(totalLen - restLen) / 2,
+    hoverOffset: -(totalLen - hoverLen) / 2,
+    hotOffset: 0,
+  };
+  arcGeometryCache.set(normalizedRadius, geometry);
+  return geometry;
+}
 
 /**
- * 右下角缩放手柄。弧线与卡片外圆角同心，整体外移 OUTSET 落在卡片外侧，
- * 看上去是贴着圆角长出来的一道玻璃高边，而不是单独浮着的一条线。
- * 露出长度由 stroke-dasharray 控制，悬停与拖动时变长、变粗、提亮。
+ * 极简扁平同心缩放手柄：
+ * - 单层纯色圆头扁平外弧线，零高斯模糊、零双重高光描边、零渐变节点；
+ * - 悬停与拖动舒展完全走纯 CSS 状态机与 GPU 合成，不触发 React 状态重渲染。
  */
-export function CornerResizeCurve({
+export const CornerResizeCurve = React.memo(function CornerResizeCurve({
   isLight,
   label,
   active = false,
+  className,
+  cornerRadius = 16,
   onPointerDown,
 }: CornerResizeCurveProps) {
-  const [hover, setHover] = React.useState(false);
-  const hot = hover || active;
+  const geom = getCornerArcGeometry(cornerRadius);
 
-  const gradientId = React.useId().replace(/:/g, "");
-  const ink = isLight ? "26, 22, 37" : "255, 255, 255";
-
-  // SVG 的 y 轴朝下，右下角圆弧对应角度 0 到 90 度这一段
-  const arc = (fromDeg: number, toDeg: number) => {
-    const rad = (deg: number) => (deg * Math.PI) / 180;
-    const ax = CENTER + ARC_RADIUS * Math.cos(rad(fromDeg));
-    const ay = CENTER + ARC_RADIUS * Math.sin(rad(fromDeg));
-    const bx = CENTER + ARC_RADIUS * Math.cos(rad(toDeg));
-    const by = CENTER + ARC_RADIUS * Math.sin(rad(toDeg));
-    return `M ${ax.toFixed(2)} ${ay.toFixed(2)} A ${ARC_RADIUS} ${ARC_RADIUS} 0 0 1 ${bx.toFixed(2)} ${by.toFixed(2)}`;
-  };
-
-  const path = arc(ARC_START_DEG, ARC_START_DEG + FULL_ARC_DEG);
-  const totalLength = ARC_RADIUS * (FULL_ARC_DEG * Math.PI) / 180;
-  const visibleLength = ARC_RADIUS * ((hot ? FULL_ARC_DEG : REST_ARC_DEG) * Math.PI) / 180;
-  const dashOffset = -Math.max(0, (totalLength - visibleLength) / 2);
-
-  const dashStyle: React.CSSProperties = {
-    strokeDasharray: `${visibleLength.toFixed(2)} ${totalLength.toFixed(2)}`,
-    strokeDashoffset: dashOffset.toFixed(2),
-    transition: `stroke-dasharray ${MOTION}, stroke-dashoffset ${MOTION}, stroke-width ${MOTION}, opacity ${MOTION}`,
-  };
+  const svgStyle = {
+    position: "absolute",
+    right: geom.offset,
+    bottom: geom.offset,
+    width: geom.box,
+    height: geom.box,
+    overflow: "visible",
+    pointerEvents: "none",
+    zIndex: 30,
+    "--arc-total": `${geom.totalLen.toFixed(2)}px`,
+    "--arc-rest": `${geom.restLen.toFixed(2)}px`,
+    "--arc-hover": `${geom.hoverLen.toFixed(2)}px`,
+    "--arc-hot": `${geom.hotLen.toFixed(2)}px`,
+    "--arc-offset-rest": `${geom.restOffset.toFixed(2)}px`,
+    "--arc-offset-hover": `${geom.hoverOffset.toFixed(2)}px`,
+    "--arc-offset-hot": `${geom.hotOffset.toFixed(2)}px`,
+  } as React.CSSProperties;
 
   return (
     <svg
       role="button"
       aria-label={label}
-      className="touch-none select-none"
-      style={{
-        position: "absolute",
-        right: -MARGIN,
-        bottom: -MARGIN,
-        width: BOX,
-        height: BOX,
-        overflow: "visible",
-        pointerEvents: "none",
-        zIndex: 30,
-      }}
-      onPointerEnter={() => setHover(true)}
-      onPointerLeave={() => setHover(false)}
+      data-active={active ? "true" : "false"}
+      className={cn("corner-resize-curve touch-none select-none", isLight && "is-light", className)}
+      style={svgStyle}
       onPointerDown={onPointerDown}
     >
-      <defs>
-        <linearGradient id={gradientId} gradientUnits="userSpaceOnUse" x1={BOX} y1={MARGIN} x2={MARGIN} y2={BOX}>
-          <stop offset="0%" stopColor={`rgb(${ink})`} stopOpacity={hot ? 0.5 : 0.24} />
-          <stop offset="50%" stopColor={`rgb(${ink})`} stopOpacity={hot ? 1 : 0.82} />
-          <stop offset="100%" stopColor={`rgb(${ink})`} stopOpacity={hot ? 0.5 : 0.24} />
-        </linearGradient>
-      </defs>
-
-      {/* 抓取热区：跟着可见弧线加粗，只有这一圈接事件 */}
+      {/* 透明抓手热区：足够宽裕且仅局限在圆角弧段 */}
       <path
-        d={path}
+        d={geom.path}
         fill="none"
         stroke="transparent"
         strokeWidth={HIT_STROKE}
         strokeLinecap="round"
         pointerEvents="stroke"
         className="cursor-nwse-resize"
-        style={dashStyle}
-        onPointerEnter={() => setHover(true)}
-        onPointerLeave={() => setHover(false)}
       />
-
-      {/* 外侧柔光：让弧线像浮在玻璃上的一道光，而不是一根硬线 */}
+      {/* 单层扁平可视弧线：清楚大方且保持柔和哑光质感，悬停/拖动自然延展 */}
       <path
-        d={path}
+        d={geom.path}
         fill="none"
-        stroke={`rgba(${ink}, ${hot ? 0.2 : 0.1})`}
-        strokeWidth={hot ? 9 : 7}
+        stroke="currentColor"
         strokeLinecap="round"
         pointerEvents="none"
-        transform="translate(-1.4 -1.4)"
-        style={{ ...dashStyle, filter: "blur(2.5px)" }}
-      />
-
-      {/* 主弧线：中点最亮、两端收淡，形成一道玻璃高边 */}
-      <path
-        d={path}
-        fill="none"
-        stroke={`url(#${gradientId})`}
-        strokeWidth={hot ? HOT_STROKE : REST_STROKE}
-        style={dashStyle}
-        strokeLinecap="round"
-        pointerEvents="none"
-      />
-
-      {/* 内侧高光发丝：给弧线一点厚度，像嵌进玻璃的边缘 */}
-      <path
-        d={path}
-        fill="none"
-        stroke={isLight ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.3)"}
-        strokeWidth={0.8}
-        strokeLinecap="round"
-        pointerEvents="none"
-        transform="translate(-1.4 -1.4)"
-        style={{ ...dashStyle, opacity: hot ? 0.9 : 0.55 }}
+        className="corner-resize-curve-arc"
       />
     </svg>
   );
-}
+});

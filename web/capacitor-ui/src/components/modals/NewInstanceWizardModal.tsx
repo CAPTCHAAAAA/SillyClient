@@ -17,12 +17,6 @@ import {
 
 export type WizardMode = "local" | "remote";
 
-export interface DiscoveredTavern {
-  name: string;
-  version: string;
-  path: string;
-}
-
 export interface NewInstanceWizardModalProps {
   isOpen: boolean;
   isClosing?: boolean;

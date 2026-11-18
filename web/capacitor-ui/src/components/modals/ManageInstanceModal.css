@@ -1,15 +1,40 @@
 .manage-window {
   transition:
-    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    width var(--motion-dissolve) var(--motion-dissolve-ease),
     height var(--motion-dissolve) var(--motion-dissolve-ease);
 }
 
 .manage-window.is-resizing {
+  transition: none !important;
+}
+
+/* 实例管理页四页设置项禁用 CSS 整页溶解，由文件夹方向滑移与净场转场接管 */
+.manage-panel-surface .motion-panel-stack,
+.manage-panel-surface .motion-panel-stack[data-dissolving="true"] {
+  -webkit-mask-image: none;
+  mask-image: none;
+  animation: none;
   transition: none;
 }
 
+.manage-panel-surface .motion-panel-face {
+  filter: none;
+  transform: none;
+  transition: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.manage-panel-surface .motion-panel-face.is-active {
+  filter: none;
+  transform: none;
+  transition: none;
+  visibility: visible;
+  opacity: 1;
+}
+
 .manage-panel-surface {
-  --manage-well-fill: rgba(0, 0, 0, 0.1);
+  --manage-well-fill: rgba(0, 0, 0, 0.125);
   --manage-field-fill: rgba(0, 0, 0, 0.09);
   --manage-action-fill: rgba(255, 255, 255, 0.055);
   --manage-action-hover: rgba(255, 255, 255, 0.085);
@@ -17,7 +42,7 @@
 }
 
 .manage-panel-surface.is-light {
-  --manage-well-fill: rgba(26, 22, 37, 0.028);
+  --manage-well-fill: rgba(26, 22, 37, 0.036);
   --manage-field-fill: rgba(26, 22, 37, 0.045);
   --manage-action-fill: rgba(26, 22, 37, 0.055);
   --manage-action-hover: rgba(26, 22, 37, 0.08);
@@ -26,6 +51,15 @@
 
 .manage-panel-surface .manage-well {
   background: var(--manage-well-fill);
+  box-shadow:
+    inset 0 1.8px 5px rgba(0, 0, 0, 0.16),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.04);
+}
+
+.manage-panel-surface.is-light .manage-well {
+  box-shadow:
+    inset 0 1.8px 5px rgba(26, 22, 37, 0.06),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .manage-content {
@@ -34,7 +68,7 @@
 }
 
 .manage-panel-surface.is-portrait {
-  --manage-card-height: clamp(68px, calc(var(--manage-viewport-height) * 0.11), 84px);
+  --manage-card-height: clamp(100px, calc(var(--manage-viewport-height) * 0.145), 124px);
   --manage-value-size: 13px;
   --manage-action-size: 12px;
   --manage-action-height: 32px;
@@ -58,8 +92,58 @@
   line-height: 1.5;
 }
 
+.manage-folder-scroller {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.manage-folder-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.manage-folder-scroller.has-fade-left {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0, 0, 0, 0.24) 7px, rgba(0, 0, 0, 0.72) 14px, #000 20px, #000 100%);
+  mask-image: linear-gradient(to right, transparent 0, rgba(0, 0, 0, 0.24) 7px, rgba(0, 0, 0, 0.72) 14px, #000 20px, #000 100%);
+}
+
+.manage-folder-scroller.has-fade-right {
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0.72) calc(100% - 14px), rgba(0, 0, 0, 0.24) calc(100% - 7px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0.72) calc(100% - 14px), rgba(0, 0, 0, 0.24) calc(100% - 7px), transparent 100%);
+}
+
+.manage-folder-scroller.has-fade-left.has-fade-right {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0, 0, 0, 0.24) 7px, rgba(0, 0, 0, 0.72) 14px, #000 20px, #000 calc(100% - 20px), rgba(0, 0, 0, 0.72) calc(100% - 14px), rgba(0, 0, 0, 0.24) calc(100% - 7px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, rgba(0, 0, 0, 0.24) 7px, rgba(0, 0, 0, 0.72) 14px, #000 20px, #000 calc(100% - 20px), rgba(0, 0, 0, 0.72) calc(100% - 14px), rgba(0, 0, 0, 0.24) calc(100% - 7px), transparent 100%);
+}
+
+.manage-folder-tab {
+  min-width: max-content;
+  cursor: pointer;
+  transition:
+    color 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform var(--motion-release) var(--motion-ease-release);
+}
+
+.manage-folder-scroll-btn {
+  cursor: pointer;
+  border-radius: 12px;
+  transition-property: color, opacity !important;
+  transition-duration: 500ms !important;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.manage-folder-scroll-btn.is-disabled {
+  opacity: 0.24;
+  pointer-events: none;
+  cursor: default;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .manage-window {
-    transition: none;
+  .manage-window,
+  .manage-folder-scroll-btn,
+  .manage-panel-surface .motion-panel-face {
+    transform: none !important;
+    transition: none !important;
   }
 }

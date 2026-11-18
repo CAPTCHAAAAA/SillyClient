@@ -10,6 +10,7 @@ import { ErrorReportAlert } from "../common/ErrorReportAlert";
 import { ToggleSwitch } from "../common/ToggleSwitch";
 import { SegmentedSwitch } from "../common/SegmentedSwitch";
 import { reportGlobalError } from "../../lib/global-error-store";
+import { isNativeUnimplementedError } from "../../lib/diagnostic-report";
 import {
   createDiagnosticContext,
   humanizeNativeError,
@@ -20,13 +21,7 @@ import { openExternalUrl } from "../../lib/external-links";
 
 
 function isWebUnimplementedError(error: unknown): boolean {
-  if (Capacitor.isNativePlatform()) return false;
-  const code =
-    error && typeof error === "object" && "code" in error
-      ? String((error as { code?: unknown }).code ?? "")
-      : "";
-  const message = error instanceof Error ? error.message : String(error ?? "");
-  return code === "UNIMPLEMENTED" || /not implemented on web/i.test(message);
+  return !Capacitor.isNativePlatform() && isNativeUnimplementedError(error);
 }
 
 export interface AppSettingsDrawerProps {

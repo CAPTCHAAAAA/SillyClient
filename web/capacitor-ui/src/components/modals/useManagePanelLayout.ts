@@ -5,7 +5,8 @@ import type { ManageTab } from "../../types";
 
 export const MANAGE_VISUAL_SCALE = 0.67;
 const DEFAULT_WIDTH = 940 * MANAGE_VISUAL_SCALE;
-const MIN_WIDTH = 580;
+const MIN_WIDTH = 560;
+const MIN_HEIGHT = 460;
 const VIEW_GUTTER = 32;
 
 interface ManagePanelLayoutOptions {
@@ -51,11 +52,14 @@ export function useManagePanelLayout({
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const pendingBoxRef = useRef<{ width: number; height: number } | null>(null);
   const latestBoxRef = useRef<{ width: number; height: number } | null>(null);
+  const lastAppliedBoxRef = useRef<{ width: number; height: number } | null>(null);
   const resizeFrameRef = useRef<number | null>(null);
 
   const applyResizeBox = useCallback((box: { width: number; height: number }) => {
     const windowElement = windowRef.current;
-    if (!windowElement) return;
+    const prev = lastAppliedBoxRef.current;
+    if (!windowElement || (prev && prev.width === box.width && prev.height === box.height)) return;
+    lastAppliedBoxRef.current = box;
     windowElement.style.width = `${box.width}px`;
     windowElement.style.height = `${box.height}px`;
   }, []);
@@ -122,15 +126,15 @@ export function useManagePanelLayout({
     if (!visible || !ready || (manualBox && !isPortrait)) return;
     const surface = surfaceRef.current;
     const pane = paneRef.current;
-    const header = surface?.querySelector<HTMLElement>(".manage-header");
+    const header = isPortrait ? surface?.querySelector<HTMLElement>(".manage-header") ?? null : null;
     const body = surface?.querySelector<HTMLElement>(".manage-body");
+    const folderTop = pane?.parentElement?.querySelector<HTMLElement>(":scope > .manage-folder-top") ?? null;
     const face = pane?.querySelector<HTMLElement>(".motion-panel-face.is-active");
-    if (!surface || !pane || !header || !body || !face) return;
+    if (!surface || !pane || !body || !face || (isPortrait && !header)) return;
     const content = face.querySelector<HTMLElement>(".manage-content");
     const scroller = content?.parentElement;
     const actions = face.querySelector<HTMLElement>(".manage-actions");
     const sidebar = body.querySelector<HTMLElement>("aside");
-    const tabs = body.querySelector<HTMLElement>(":scope > .manage-choice-track");
     const measure = () => {
       const scale = isPortrait ? 1 : MANAGE_VISUAL_SCALE;
       const surfaceStyle = getComputedStyle(surface);
@@ -139,21 +143,26 @@ export function useManagePanelLayout({
         ? parseFloat(scrollStyle.paddingTop) + parseFloat(scrollStyle.paddingBottom)
         : 0;
       const readingHeight = tab === "terminal"
-        ? isLocal ? (isPortrait ? 280 : 560) : (isPortrait ? 128 : 240)
+        ? isLocal ? (isPortrait ? 300 : 560) : (isPortrait ? 240 : 460)
         : (content ? intrinsicHeight(content) : 0) + contentPadding + (actions?.offsetHeight ?? 0);
-      const paneHeight = Math.max(isPortrait ? 152 : 320, readingHeight);
+      const paneHeight = Math.max(isPortrait ? 300 : 582, readingHeight);
+      const tabChrome = folderTop?.offsetHeight ?? (isPortrait ? 40 : 54);
+      const bodyGap = parseFloat(getComputedStyle(body).rowGap) || 0;
       const bodyExtra = isPortrait
-        ? (sidebar?.offsetHeight ?? 0) + (tabs?.offsetHeight ?? 0) + parseFloat(getComputedStyle(body).rowGap) * 2
+        ? (sidebar?.offsetHeight ?? 0) + bodyGap + tabChrome
+        : tabChrome;
+      const headerChrome = isPortrait && header
+        ? header.offsetHeight + (parseFloat(getComputedStyle(header).marginBottom) || 0)
         : 0;
       const chrome = parseFloat(surfaceStyle.paddingTop) + parseFloat(surfaceStyle.paddingBottom)
-        + header.offsetHeight + parseFloat(getComputedStyle(header).marginBottom) + bodyExtra;
+        + headerChrome + bodyExtra;
       const next = Math.ceil((chrome + paneHeight) * scale);
       setContentHeight(current => current === next ? current : next);
     };
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
-    [header, isPortrait ? sidebar : null, tabs, content, actions].forEach(node => {
+    [header, isPortrait ? sidebar : null, folderTop, content, actions].forEach(node => {
       if (node) observer.observe(node);
     });
     return () => observer.disconnect();
@@ -163,8 +172,16 @@ export function useManagePanelLayout({
   const maxHeight = Math.max(1, isPortrait
     ? Math.min(720, viewport.height * 0.85, viewport.height - VIEW_GUTTER * 2)
     : viewport.height - VIEW_GUTTER * 2);
-  const width = Math.min(maxWidth, isPortrait ? 460 : manualBox?.width ?? DEFAULT_WIDTH);
-  const height = Math.min(maxHeight, !isPortrait && manualBox ? manualBox.height : contentHeight);
+  const minWidth = Math.min(maxWidth, MIN_WIDTH);
+  const minHeight = Math.min(maxHeight, MIN_HEIGHT);
+  const width = Math.min(
+    maxWidth,
+    isPortrait ? 460 : Math.max(minWidth, manualBox?.width ?? DEFAULT_WIDTH)
+  );
+  const height = Math.min(
+    maxHeight,
+    Math.max(minHeight, !isPortrait && manualBox ? manualBox.height : contentHeight)
+  );
 
   const onResizePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (event.button !== 0 && event.pointerType === "mouse") return;
@@ -173,7 +190,19 @@ export function useManagePanelLayout({
     event.preventDefault();
     event.stopPropagation();
     resizeCleanupRef.current?.();
+    const captureTarget = event.currentTarget;
+    const pointerId = event.pointerId;
+    try {
+      captureTarget.setPointerCapture?.(pointerId);
+    } catch {
+      // 合成测试或未激活指针捕获时静默降级至 window 监听
+    }
     const scale = getAppliedUiScale();
+    const available = viewportSize();
+    const maxW = Math.max(1, available.width - VIEW_GUTTER * 2);
+    const maxH = Math.max(1, available.height - VIEW_GUTTER * 2);
+    const minW = Math.min(maxW, MIN_WIDTH);
+    const minH = Math.min(maxH, MIN_HEIGHT);
     const startX = event.clientX;
     const startY = event.clientY;
     const startWidth = bounds.width / scale;
@@ -181,13 +210,13 @@ export function useManagePanelLayout({
     const initialBox = { width: startWidth, height: startHeight };
     pendingBoxRef.current = null;
     latestBoxRef.current = initialBox;
+    lastAppliedBoxRef.current = null;
     setManualBox(initialBox);
     setIsResizing(true);
     const onMove = (moveEvent: PointerEvent) => {
-      const available = viewportSize();
       const nextBox = {
-        width: Math.round(Math.min(available.width - VIEW_GUTTER * 2, Math.max(MIN_WIDTH, startWidth + (moveEvent.clientX - startX) / scale))),
-        height: Math.round(Math.min(available.height - VIEW_GUTTER * 2, Math.max(300, startHeight + (moveEvent.clientY - startY) / scale))),
+        width: Math.round(Math.min(maxW, Math.max(minW, startWidth + (moveEvent.clientX - startX) / scale))),
+        height: Math.round(Math.min(maxH, Math.max(minH, startHeight + (moveEvent.clientY - startY) / scale))),
       };
       latestBoxRef.current = nextBox;
       pendingBoxRef.current = nextBox;
@@ -199,6 +228,13 @@ export function useManagePanelLayout({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      try {
+        if (captureTarget.hasPointerCapture?.(pointerId)) {
+          captureTarget.releasePointerCapture(pointerId);
+        }
+      } catch {
+        // 忽略释放阶段的宿主状态差异
+      }
     };
     const onUp = () => {
       if (resizeFrameRef.current !== null) {
@@ -208,6 +244,7 @@ export function useManagePanelLayout({
       pendingBoxRef.current = null;
       const finalBox = latestBoxRef.current;
       latestBoxRef.current = null;
+      lastAppliedBoxRef.current = null;
       if (finalBox) {
         applyResizeBox(finalBox);
         setManualBox(finalBox);
@@ -219,6 +256,7 @@ export function useManagePanelLayout({
     resizeCleanupRef.current = () => {
       removeListeners();
       cancelResizeFrame();
+      lastAppliedBoxRef.current = null;
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);

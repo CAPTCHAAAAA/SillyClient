@@ -10,6 +10,15 @@ import { TarvenEnv } from "../../capacitor-plugin";
 import type { ImportArchiveSummary, InstanceConfig } from "../../capacitor-plugin";
 import { cn, formatDisplayVersion } from "../../lib/utils";
 import { coverPlate, coverTone } from "../instance/coverTone";
+import { syncFrozenPlatePosition } from "../instance/frozenCoverPlate";
+import { useFrozenCoverPlate } from "../instance/useFrozenCoverPlate";
+import {
+  captureManagePageSnapshot,
+  easeSharedTransition,
+  MANAGE_PAGE_TRANSITION_MS,
+  startManageSharedTransition,
+  type CapturedManageSnapshot,
+} from "../../lib/manage-shared-transition";
 import { LAYERS } from "../../constants/layers";
 import type { TavernInstance, ManageTab, BgMode } from "../../types";
 import { useInstanceLogs } from "../../hooks/useInstanceLogs";
@@ -26,6 +35,7 @@ import {
   type DiagnosticContext,
 } from "../../lib/native-errors";
 import { CornerResizeCurve } from "./CornerResizeCurve";
+import { ManageFolderShell } from "./ManageFolderShell";
 import { MANAGE_VISUAL_SCALE, useManagePanelLayout } from "./useManagePanelLayout";
 import "./ManageInstanceModal.css";
 
@@ -37,33 +47,11 @@ const MANAGE_LABEL_PX = 20;
  */
 const MANAGE_TYPE_SCALE = 78 / 71;
 const MANAGE_FONT_PX = 16 * MANAGE_TYPE_SCALE;
-/** 长于 --motion-dissolve（780ms），让切实例时的离场层走完溶解。 */
-const MANAGE_FACE_EXIT_MS = 860;
+const CARD_CENTER_DURATION_MS = MANAGE_PAGE_TRANSITION_MS;
 /** 布局用。设计像素按 Figma 帧 1:1 落到 CSS 像素，不跟字号一起放大。 */
 const manageEm = (px: number) => `${px / MANAGE_FONT_PX}em`;
 /** 字号用。保持缩小菜单之前的像素大小。 */
 const manageFont = (px: number) => `${px * MANAGE_TYPE_SCALE}px`;
-function copyManageFaceValues(source: HTMLElement, clone: HTMLElement) {
-  const from = source.querySelectorAll("input, textarea");
-  const to = clone.querySelectorAll("input, textarea");
-  from.forEach((node, index) => {
-    const target = to[index] as HTMLInputElement | undefined;
-    if (!target) return;
-    target.value = (node as HTMLInputElement).value;
-    target.checked = (node as HTMLInputElement).checked;
-  });
-  clone.querySelectorAll<HTMLElement>("[id]").forEach((node) => node.removeAttribute("id"));
-  const scrollSelector = ".overflow-y-auto, [data-native-log-list]";
-  const scrollSources = source.querySelectorAll<HTMLElement>(scrollSelector);
-  const scrollClones = clone.querySelectorAll<HTMLElement>(scrollSelector);
-  scrollSources.forEach((node, index) => {
-    const target = scrollClones[index];
-    if (target) {
-      target.scrollTop = node.scrollTop;
-      target.scrollLeft = node.scrollLeft;
-    }
-  });
-}
 
 function manageRecessedGlass(isLight: boolean): React.CSSProperties {
   return {
@@ -76,62 +64,40 @@ function manageRecessedGlass(isLight: boolean): React.CSSProperties {
 
 const MANAGE_TABS = [
   { id: "launch", label: "启动参数" },
-  { id: "storage", label: "存储路径" },
+  { id: "storage", label: "存储路径", dataOnboardingTarget: "manage-storage" },
   { id: "terminal", label: "实例终端" },
   { id: "about", label: "关于实例" },
 ] as const;
 
-function ManageTabTrack({
-
-  manageTab,
-  setManageTab,
-  isPortrait,
-}: {
-  manageTab: ManageTab;
-  setManageTab: (tab: ManageTab) => void;
-  isPortrait: boolean;
-}) {
-  return (
-    <div
-      className={cn("ios-choice-track manage-choice-track flex-shrink-0", isPortrait && "is-portrait")}
-      role="group"
-      aria-label="管理分类"
-      style={isPortrait ? { height: 36, width: "100%" } : { height: manageEm(49) }}
-    >
-      {MANAGE_TABS.map((tab) => {
-        const isTabActive = manageTab === tab.id;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            aria-pressed={isTabActive}
-            data-onboarding-target={tab.id === "storage" ? "manage-storage" : undefined}
-            onClick={() => {
-              if (tab.id === manageTab) return;
-              setManageTab(tab.id);
-            }}
-            className="ios-choice-control motion-control flex select-none items-center justify-center whitespace-nowrap border font-medium"
-            style={{
-              width: isPortrait ? undefined : manageEm(109),
-              fontSize: isPortrait ? undefined : manageFont(16),
-            }}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 /** 右侧内容区外框圆角。内框圆角 = 外框圆角 - 边距。 */
 const MANAGE_PANE_RADIUS = 30;
 const MANAGE_NEST_INSET = 14;
+/** 桌面一体文件夹标签高度：左列搜索框 (44) + 间距 (10) = 54，与左侧边栏顶边及关闭键对齐。 */
+const MANAGE_SEARCH_HEIGHT = 44;
+const MANAGE_FOLDER_TAB_HEIGHT = 54;
+const MANAGE_FOLDER_TAB_RADIUS = 15;
+const MANAGE_FOLDER_FILLET_RADIUS = 12;
+
+const DESKTOP_SIDEBAR_W = 280;
+const DESKTOP_SIDEBAR_PAD = 22;
+const DESKTOP_CARD_W = DESKTOP_SIDEBAR_W - DESKTOP_SIDEBAR_PAD * 2;
+const DESKTOP_CARD_H = 210;
+// 展开态严格保持 3:4（与首页 240×320 正常卡片一致），避免高度拉长破坏比例
+const DESKTOP_CARD_ACTIVE_H = (DESKTOP_CARD_W * 4) / 3;
+const DESKTOP_CARD_GAP = 14;
 
 const PORTRAIT_CTRL = 44;
-const PORTRAIT_CARD_W = 148;
-const PORTRAIT_CARD_ACTIVE_W = 168;
-const PORTRAIT_CARD_GAP = 12;
+const PORTRAIT_FOLDER_TAB_HEIGHT = 40;
+const PORTRAIT_FOLDER_PANE_RADIUS = 22;
+const PORTRAIT_FOLDER_TAB_RADIUS = 12;
+const PORTRAIT_FOLDER_FILLET_RADIUS = 12;
+const PORTRAIT_CARD_MIN_H = 100;
+const PORTRAIT_CARD_MAX_H = 124;
+const PORTRAIT_CARD_VH_RATIO = 0.145;
+const PORTRAIT_CARD_WIDTH_RATIO = 1;
+const PORTRAIT_CARD_REST_HEIGHT_RATIO = 0.85;
+const PORTRAIT_CARD_REST_WIDTH_RATIO = 0.85;
+const PORTRAIT_CARD_GAP = 10;
 
 export interface ManageInstanceModalProps {
   instance: TavernInstance | null;
@@ -175,6 +141,8 @@ export interface ManageInstanceModalProps {
 function ManageItem({
   label,
   desc,
+  rowKey,
+  sharedId,
   isLight,
   isPortrait,
   stackOnPortrait = false,
@@ -182,14 +150,27 @@ function ManageItem({
 }: {
   label: string;
   desc?: string;
+  rowKey?: string;
+  sharedId?: string;
   isLight: boolean;
   isPortrait: boolean;
   stackOnPortrait?: boolean;
   children: React.ReactNode;
 }) {
   const stacked = isPortrait && stackOnPortrait;
+  const resolvedSharedId =
+    sharedId ??
+    (label === "实例位置" || label === "连接地址"
+      ? "location"
+      : label === "Basic Auth"
+        ? "remote-auth"
+        : undefined);
   return (
-    <div className={cn("manage-item", stacked && "is-stacked")}>
+    <div
+      data-manage-row={rowKey || label}
+      data-manage-shared={resolvedSharedId}
+      className={cn("manage-item", stacked && "is-stacked")}
+    >
       <div
         className={cn(
           "setting-row flex",
@@ -201,7 +182,7 @@ function ManageItem({
           paddingBlock: isPortrait ? stacked ? 12 : 6 : undefined,
         }}
       >
-      <div className="min-w-0 flex-1">
+      <div data-manage-text="" className="min-w-0 flex-1">
         <div
           className={cn(
             "setting-label font-medium leading-tight",
@@ -223,7 +204,7 @@ function ManageItem({
           </div>
         )}
       </div>
-      <div className={stacked ? "min-w-0 w-full" : isPortrait ? "min-w-0 max-w-[58%] shrink-0" : "min-w-0 max-w-[46%]"}>{children}</div>
+      <div data-manage-ctrl="" className={stacked ? "min-w-0 w-full" : isPortrait ? "min-w-0 max-w-[58%] shrink-0" : "min-w-0 max-w-[46%]"}>{children}</div>
       </div>
     </div>
   );
@@ -271,16 +252,8 @@ function formatArchiveBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function isNativeCancelError(error: unknown) {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : typeof error === "object" && error !== null && "message" in error
-          ? String((error as { message?: unknown }).message || "")
-          : "";
-  return /cancel(?:led|ed)?|取消|cancel/i.test(message);
+function isNativeCancelError(error: unknown, isIOS = false) {
+  return isUserCancellationError(error, isIOS);
 }
 
 function ManageToggle({
@@ -367,6 +340,8 @@ function managePanelFaceClass(active: boolean) {
   );
 }
 
+const MANAGE_TAB_ORDER: readonly ManageTab[] = ["launch", "storage", "terminal", "about"];
+
 function manageFaceScrollClassName(portrait: boolean) {
   return cn(
     "min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
@@ -391,10 +366,13 @@ function ManageInstanceCard({
   onSelect: (item: TavernInstance) => void;
 }) {
   const src = item.cover || "./tavern-logo.png";
+  const { rootRef, plateRef, usePlate } = useFrozenCoverPlate(isLight, isDynamic, false, src);
 
   return (
     <div
+      ref={rootRef}
       data-manage-card={item.id}
+      data-frozen-plate={usePlate ? "" : undefined}
       role="button"
       tabIndex={0}
       aria-label={item.subtitle || item.name}
@@ -407,21 +385,32 @@ function ManageInstanceCard({
       }}
       className={cn(
         "motion-instance-card group relative cursor-pointer select-none flex-shrink-0",
+        isLight && "is-light",
         !isPortrait && "w-full",
         selected && "is-expanded"
       )}
       style={{
-        width: isPortrait ? (selected ? PORTRAIT_CARD_ACTIVE_W : PORTRAIT_CARD_W) : undefined,
-        height: isPortrait ? "var(--manage-card-height)" : selected ? manageEm(196) : manageEm(152),
-        borderRadius: isPortrait ? 18 : manageEm(22),
+        width: isPortrait
+          ? selected
+            ? `calc(var(--manage-card-height) * ${PORTRAIT_CARD_WIDTH_RATIO})`
+            : `calc(var(--manage-card-height) * ${PORTRAIT_CARD_REST_WIDTH_RATIO})`
+          : undefined,
+        height: isPortrait
+          ? selected
+            ? "var(--manage-card-height)"
+            : `calc(var(--manage-card-height) * ${PORTRAIT_CARD_REST_HEIGHT_RATIO})`
+          : selected
+            ? manageEm(DESKTOP_CARD_ACTIVE_H)
+            : manageEm(DESKTOP_CARD_H),
+        borderRadius: isPortrait ? 16 : manageEm(22),
       }}
     >
-      <div className="manage-card-clip">
-        {/* 封面与遮罩：未选中加重底边。选中后收短，封面成为焦点 */}
-        {!isLight && (
+      <div className={cn("manage-card-clip", isLight && "is-light")}>
+        {/* 采样主场景实时背景层（壁纸/动态流光/深浅底板），与首页实例卡保持同一底层材质 */}
+        {usePlate ? <div ref={plateRef} className="cover-frozen-plate" /> : (
           <div
             className="manage-card-veil"
-            style={{ background: coverPlate(coverTone(false, isDynamic)) }}
+            style={{ background: coverPlate(coverTone(isLight, isDynamic)) }}
           />
         )}
         <img
@@ -432,12 +421,16 @@ function ManageInstanceCard({
             (e.target as HTMLElement).style.display = "none";
           }}
         />
+        <div className="manage-card-veil manage-card-cover-tint" />
+        <div className="manage-card-veil manage-card-cover-wash" />
+        <div className="card-volume-wash" aria-hidden="true" />
         <div className={cn("manage-card-veil manage-card-scrim", selected && "opacity-0")} />
         <div className={cn("manage-card-veil manage-card-scrim is-focus", selected ? "opacity-100" : "opacity-0")} />
-        <div className="pointer-events-none absolute left-0 top-0 z-[2] flex items-center gap-1.5" style={{ padding: isPortrait ? 10 : manageEm(14) }}>
+        <div className="pointer-events-none absolute left-0 top-0 z-[2] flex items-center gap-1.5" style={{ padding: isPortrait ? 8 : manageEm(14) }}>
           <span
             className={cn(
               "rounded-md px-2 py-0.5 text-[10px] font-medium tracking-wide",
+              isPortrait && "px-1.5 text-[9.5px]",
               isLight
                 ? "bg-black/[0.035] text-[#1a1625]/60"
                 : "bg-white/[0.07] text-white/70"
@@ -462,23 +455,24 @@ function ManageInstanceCard({
         </div>
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between"
-          style={{ paddingInline: isPortrait ? 10 : manageEm(14), paddingBottom: isPortrait ? 10 : manageEm(14), gap: manageEm(8) }}
+          style={{ paddingInline: isPortrait ? 9 : manageEm(14), paddingBottom: isPortrait ? 9 : manageEm(14), gap: isPortrait ? 5 : manageEm(8) }}
         >
           <div
             className={cn(
-              "motion-control min-w-0 flex-1 truncate text-sm font-medium leading-snug",
-              isPortrait && "text-[13px]",
+              "min-w-0 flex-1 truncate text-sm font-medium leading-snug transition-colors duration-[780ms] ease-[cubic-bezier(0.5,0,0.2,1)]",
+              isPortrait && "text-[11.5px]",
               isLight
-                ? "text-[#1a1625]/75 group-hover:text-[#1a1625]"
-                : "text-white/80 group-hover:text-white"
+                ? selected ? "text-[#1a1625]" : "text-[#1a1625]/78 group-hover:text-[#1a1625]"
+                : selected ? "text-white" : "text-white/82 group-hover:text-white"
             )}
           >
             {item.subtitle || item.name}
           </div>
           <span
             className={cn(
-              "flex shrink-0 items-end justify-center [&>svg]:h-[14px] [&>svg]:w-[14px]",
-              isLight ? "text-[#1a1625]/50" : "text-white"
+              "flex shrink-0 items-end justify-center",
+              isPortrait ? "[&>svg]:h-3 [&>svg]:w-3" : "[&>svg]:h-[14px] [&>svg]:w-[14px]",
+              isLight ? "text-[#1a1625]/55" : "text-white/88"
             )}
           >
             {item.icon}
@@ -534,10 +528,13 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [cardListFade, setCardListFade] = useState({ top: false, bottom: false });
   const rightPaneRef = useRef<HTMLElement>(null);
-  const outgoingHostRef = useRef<HTMLDivElement>(null);
-  const pendingOutgoingRef = useRef<HTMLElement | null>(null);
-  const [settingsFaceEpoch, setSettingsFaceEpoch] = useState(0);
-  const [settingsFaceReady, setSettingsFaceReady] = useState(true);
+  const stackRef = useRef<HTMLDivElement>(null);
+  const sharedOverlayRef = useRef<HTMLDivElement>(null);
+  const pendingPageSnapshotRef = useRef<{
+    snapshot: CapturedManageSnapshot;
+    instanceDirection: -1 | 1;
+  } | null>(null);
+  const sharedTransitionCleanupRef = useRef<(() => void) | null>(null);
   const rightScrollRef = useRef<HTMLDivElement>(null);
   const launchFaceRef = useRef<HTMLDivElement>(null);
   const storageFaceRef = useRef<HTMLDivElement>(null);
@@ -563,7 +560,18 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
   const [isInspectingImport, setIsInspectingImport] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   isPortraitRef.current = isPortrait;
-  const portraitScrollMode = useRef<ScrollBehavior>("auto");
+  const cardScrollMode = useRef<ScrollBehavior>("auto");
+  const userScrolledAsideRef = useRef(false);
+  const selectedInstanceIdRef = useRef<string | null>(null);
+  selectedInstanceIdRef.current = instance?.id ?? null;
+  const scrollAnimFrameRef = useRef<number | null>(null);
+  const transitionCenterUntilRef = useRef<number>(0);
+  const stopScrollAnimation = () => {
+    if (scrollAnimFrameRef.current !== null) {
+      cancelAnimationFrame(scrollAnimFrameRef.current);
+      scrollAnimFrameRef.current = null;
+    }
+  };
   useEffect(() => {
     const query = window.matchMedia("(max-width: 760px)");
     const sync = () => setIsPortrait(query.matches);
@@ -571,6 +579,13 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
+  const syncAsidePlates = () => {
+    const node = cardListRef.current;
+    if (!node) return;
+    node.querySelectorAll<HTMLElement>(".motion-instance-card[data-frozen-plate]").forEach((cardEl) => {
+      syncFrozenPlatePosition(cardEl);
+    });
+  };
   const syncCardListFade = () => {
     const node = cardListRef.current;
     if (!node) return;
@@ -582,15 +597,53 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     setCardListFade((current) => (
       current.top === top && current.bottom === bottom ? current : { top, bottom }
     ));
+    syncAsidePlates();
   };
   useLayoutEffect(() => {
     syncCardListFade();
     const node = cardListRef.current;
     if (!node || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => syncCardListFade());
+    const observer = new ResizeObserver(() => {
+      syncCardListFade();
+      if (userScrolledAsideRef.current) return;
+      // 切卡触发的 780ms 缓动滚动正在运行：禁止 ResizeObserver 打断并强制瞬移，由帧回调直接吸收实时容器尺寸
+      if (scrollAnimFrameRef.current !== null) return;
+      if (performance.now() < transitionCenterUntilRef.current) {
+        const scroller = cardListRef.current;
+        if (!scroller) return;
+        const target = computeCenteredScrollOffset(scroller);
+        if (target === null) return;
+        const cur = isPortraitRef.current ? scroller.scrollLeft : scroller.scrollTop;
+        const delta = target - cur;
+        const next = Math.abs(delta) < 0.75 ? target : cur + delta * 0.35;
+        if (isPortraitRef.current) scroller.scrollLeft = next;
+        else scroller.scrollTop = next;
+        syncCardListFade();
+        return;
+      }
+      centerSelectedCard("auto");
+    });
     observer.observe(node);
     return () => observer.disconnect();
   }, [isOpen, instance?.id, allInstances.length, manageSearchQuery, isPortrait]);
+  useEffect(() => {
+    if (!isOpen) return;
+    let frame: number | null = null;
+    const start = performance.now();
+    // 面板入场缩放或卡片选中展开（780ms）期间持续同步屏幕坐标，保证背景层采样与渐隐边缘无漂移
+    const tick = (now: number) => {
+      syncCardListFade();
+      if (now - start < 840) {
+        frame = requestAnimationFrame(tick);
+      } else {
+        frame = null;
+      }
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [isOpen, instance?.id, isPortrait, bgMode, isLight, manageSearchQuery]);
   const syncRightFade = (event?: React.UIEvent<HTMLDivElement>) => {
     const node = event?.currentTarget ?? rightScrollRef.current;
     if (!node) return;
@@ -619,53 +672,85 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     observer.observe(target);
     return () => observer.disconnect();
   }, [isOpen, manageTab, instance?.id]);
-  const centerPortraitCard = (behavior: ScrollBehavior) => {
+  const computeCenteredScrollOffset = (scroller: HTMLElement): number | null => {
+    const selectedId = selectedInstanceIdRef.current;
+    if (!selectedId) return null;
+    const index = filteredIdsRef.current.indexOf(selectedId);
+    if (index < 0) return null;
+    const count = filteredIdsRef.current.length;
+    if (isPortraitRef.current) {
+      const viewportW = scroller.clientWidth;
+      const activeH = scroller.clientHeight > 10
+        ? scroller.clientHeight
+        : Math.max(PORTRAIT_CARD_MIN_H, Math.min(PORTRAIT_CARD_MAX_H, window.innerHeight * PORTRAIT_CARD_VH_RATIO));
+      const cardW = activeH * PORTRAIT_CARD_REST_WIDTH_RATIO;
+      const activeW = activeH * PORTRAIT_CARD_WIDTH_RATIO;
+      const cardLeft = index * (cardW + PORTRAIT_CARD_GAP);
+      const totalW = Math.max(0, count - 1) * (cardW + PORTRAIT_CARD_GAP) + activeW;
+      const maxLeft = Math.max(0, totalW - viewportW);
+      const targetLeft = cardLeft + activeW / 2 - viewportW / 2;
+      return Math.max(0, Math.min(maxLeft, targetLeft));
+    }
+    if (scroller.clientHeight < 10) return null;
+    const viewportH = scroller.clientHeight;
+    const cardTop = index * (DESKTOP_CARD_H + DESKTOP_CARD_GAP);
+    const totalH = Math.max(0, count - 1) * (DESKTOP_CARD_H + DESKTOP_CARD_GAP) + DESKTOP_CARD_ACTIVE_H;
+    const maxTop = Math.max(0, totalH - viewportH);
+    const targetTop = cardTop + DESKTOP_CARD_ACTIVE_H / 2 - viewportH / 2;
+    return Math.max(0, Math.min(maxTop, targetTop));
+  };
+
+  const centerSelectedCard = (behavior: ScrollBehavior) => {
     const scroller = cardListRef.current;
-    if (!scroller || !instance?.id) return;
-    const index = filteredIdsRef.current.indexOf(instance.id);
-    if (index < 0) return;
-    const cardLeft = index * (PORTRAIT_CARD_W + PORTRAIT_CARD_GAP);
-    const left = cardLeft + PORTRAIT_CARD_ACTIVE_W / 2 - scroller.clientWidth / 2;
-    scroller.scrollTo({ left: Math.max(0, left), behavior });
+    if (!scroller) return;
+    const target = computeCenteredScrollOffset(scroller);
+    if (target === null) return;
+    const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const current = isPortraitRef.current ? scroller.scrollLeft : scroller.scrollTop;
+    if (reduced || behavior === "auto" || Math.abs(target - current) < 0.5) {
+      stopScrollAnimation();
+      if (isPortraitRef.current) scroller.scrollLeft = target;
+      else scroller.scrollTop = target;
+      syncCardListFade();
+      return;
+    }
+    stopScrollAnimation();
+    const startScroll = current;
+    const startTime = performance.now();
+    // 与右侧面板高度及内容溶解 780ms 保持同频，末尾留出轻微余量跟随 ResizeObserver 收敛
+    transitionCenterUntilRef.current = startTime + 860;
+    const step = (now: number) => {
+      const node = cardListRef.current;
+      if (!node || userScrolledAsideRef.current) {
+        scrollAnimFrameRef.current = null;
+        return;
+      }
+      const liveTarget = computeCenteredScrollOffset(node);
+      if (liveTarget === null) {
+        scrollAnimFrameRef.current = null;
+        return;
+      }
+      const progress = Math.max(0, Math.min(1, (now - startTime) / CARD_CENTER_DURATION_MS));
+      const eased = easeSharedTransition(progress);
+      const next = startScroll + (liveTarget - startScroll) * eased;
+      if (isPortraitRef.current) node.scrollLeft = next;
+      else node.scrollTop = next;
+      syncCardListFade();
+      if (progress < 1) {
+        scrollAnimFrameRef.current = requestAnimationFrame(step);
+      } else {
+        scrollAnimFrameRef.current = null;
+      }
+    };
+    scrollAnimFrameRef.current = requestAnimationFrame(step);
   };
   const filteredIdsRef = useRef<string[]>([]);
-  useLayoutEffect(() => {
-    if (settingsFaceReady) return;
-    const root = rightPaneRef.current;
-    const faces = root
-      ? [...root.querySelectorAll<HTMLElement>(":scope > .motion-panel-stack > .motion-panel-face")]
-      : [];
-    const outgoing = pendingOutgoingRef.current;
-    faces.forEach((face) => {
-      face.style.transition = "none";
-    });
-    if (outgoing) outgoing.style.transition = "none";
-    void root?.offsetWidth;
-    faces.forEach((face) => {
-      face.style.transition = "";
-    });
-    if (outgoing) outgoing.style.transition = "";
-    void root?.offsetWidth;
-    outgoing?.classList.remove("is-active");
-    pendingOutgoingRef.current = null;
-    setSettingsFaceReady(true);
-  }, [settingsFaceEpoch, settingsFaceReady]);
-  useEffect(() => {
-    const host = outgoingHostRef.current;
-    if (!host || !settingsFaceReady) return;
-    const node = host.firstElementChild;
-    if (!node) return;
-    const timer = window.setTimeout(() => {
-      if (host.firstElementChild === node) host.replaceChildren();
-    }, MANAGE_FACE_EXIT_MS);
-    return () => window.clearTimeout(timer);
-  }, [settingsFaceReady, settingsFaceEpoch]);
   const [terminalInput, setTerminalInput] = useState("");
   const [localAboutInfo, setLocalAboutInfo] = useState<{ path?: string; sizeBytes?: number; version?: string; status?: string; createdAt?: string } | null>(null);
 
   const { windowRef, width: shellW, height: shellH, viewport, isResizing, onResizePointerDown } = useManagePanelLayout({
     visible: Boolean(instance) && (isOpen || isClosing),
-    ready: settingsFaceReady,
+    ready: true,
     isPortrait,
     isLocal: instance?.type === "local",
     tab: manageTab,
@@ -748,11 +833,69 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       ))
     : allInstances;
   filteredIdsRef.current = filteredManageInstances.map((inst) => inst.id);
+  useEffect(() => {
+    if (!isOpen) {
+      userScrolledAsideRef.current = false;
+      stopScrollAnimation();
+    }
+    return () => stopScrollAnimation();
+  }, [isOpen]);
+
   useLayoutEffect(() => {
-    if (!isOpen || !isPortrait) return;
-    centerPortraitCard(portraitScrollMode.current);
-    portraitScrollMode.current = "auto";
+    if (!isOpen) return;
+    centerSelectedCard(cardScrollMode.current);
+    cardScrollMode.current = "auto";
   }, [isOpen, isPortrait, instance?.id, filteredIdsRef.current.join("|")]);
+
+  useLayoutEffect(() => {
+    sharedTransitionCleanupRef.current?.();
+    sharedTransitionCleanupRef.current = null;
+
+    if (!isOpen || isClosing) {
+      pendingPageSnapshotRef.current = null;
+      return;
+    }
+
+    const pending = pendingPageSnapshotRef.current;
+    pendingPageSnapshotRef.current = null;
+    if (!pending) return;
+
+    const stackEl = stackRef.current;
+    const overlayEl = sharedOverlayRef.current;
+    const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!stackEl || !overlayEl || reduced) return;
+
+    const toFaceEl = stackEl.querySelector<HTMLElement>(`:scope > [data-manage-tab="${manageTab}"]`);
+    if (!toFaceEl || !instance) return;
+
+    const cleanup = startManageSharedTransition({
+      stackEl,
+      overlayEl,
+      toFaceEl,
+      from: pending.snapshot,
+      toMeta: {
+        tab: manageTab,
+        instanceId: instance.id,
+        tabIndex: MANAGE_TAB_ORDER.indexOf(manageTab),
+      },
+      instanceDirection: pending.instanceDirection,
+      isPortrait,
+      isLight,
+      onFinish: () => {
+        if (sharedTransitionCleanupRef.current === cleanup) {
+          sharedTransitionCleanupRef.current = null;
+        }
+      },
+    });
+    sharedTransitionCleanupRef.current = cleanup;
+
+    return () => {
+      cleanup();
+      if (sharedTransitionCleanupRef.current === cleanup) {
+        sharedTransitionCleanupRef.current = null;
+      }
+    };
+  }, [isOpen, isClosing, manageTab, instance?.id, instance?.type, isLight]);
 
 
   if (!instance || (!isOpen && !isClosing)) return null;
@@ -765,24 +908,35 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       ? (aboutInfo?.path || localAboutInfo?.path || mp.installPath || (mp.installDir && (mp.installDir.includes("/") || mp.installDir.includes("\\")) ? mp.installDir : null) || "—")
       : (mp.url || "—");
 
-  const selectManagedInstance = (item: TavernInstance) => {
-    if (item.id === mp.id) return;
-    portraitScrollMode.current = "smooth";
-    const active = rightPaneRef.current?.querySelector<HTMLElement>(":scope > .motion-panel-stack > .motion-panel-face.is-active");
-    const host = outgoingHostRef.current;
-    if (active && host) {
-      host.replaceChildren();
-      const clone = active.cloneNode(true) as HTMLElement;
-      clone.classList.add("manage-settings-outgoing");
-      clone.style.pointerEvents = "none";
-      clone.inert = true;
-      clone.setAttribute("aria-hidden", "true");
-      host.appendChild(clone);
-      copyManageFaceValues(active, clone);
-      pendingOutgoingRef.current = clone;
+  const captureBeforeSettingsSwitch = (instanceDirection: -1 | 1 = 1) => {
+    // Prior transition must restore live opacity/transform/filter BEFORE capturing snapshot on rapid mid-flight clicks.
+    sharedTransitionCleanupRef.current?.();
+    sharedTransitionCleanupRef.current = null;
+    const stackEl = stackRef.current;
+    if (!stackEl) return;
+    const activeFace = stackEl.querySelector<HTMLElement>(`:scope > [data-manage-tab="${manageTab}"]`);
+    if (activeFace) {
+      const snapshot = captureManagePageSnapshot(stackEl, activeFace, {
+        tab: manageTab,
+        instanceId: mp.id,
+        tabIndex: MANAGE_TAB_ORDER.indexOf(manageTab),
+      });
+      pendingPageSnapshotRef.current = { snapshot, instanceDirection };
     }
-    setSettingsFaceEpoch((value) => value + 1);
-    setSettingsFaceReady(false);
+  };
+
+  const selectManagedInstance = (item: TavernInstance) => {
+    userScrolledAsideRef.current = false;
+    cardScrollMode.current = "smooth";
+    if (item.id === mp.id) {
+      centerSelectedCard("smooth");
+      return;
+    }
+    const ids = filteredIdsRef.current;
+    const prevIdx = ids.indexOf(mp.id);
+    const nextIdx = ids.indexOf(item.id);
+    const dir: -1 | 1 = prevIdx >= 0 && nextIdx >= 0 && nextIdx < prevIdx ? -1 : 1;
+    captureBeforeSettingsSwitch(dir);
     onSelectInstance(item);
   };
 
@@ -811,7 +965,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       );
     } catch (error) {
       setImportArchive(null);
-      if (isNativeCancelError(error) || isUserCancellationError(error, isIOS)) {
+      if (isNativeCancelError(error, isIOS)) {
         setImportStatus(null);
         setStorageDiagnostic(null);
       } else {
@@ -856,7 +1010,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       );
       setLocalAboutInfo(null);
     } catch (error) {
-      if (isNativeCancelError(error) || isUserCancellationError(error, isIOS)) {
+      if (isNativeCancelError(error, isIOS)) {
         setImportStatus(null);
         setStorageDiagnostic(null);
       } else {
@@ -900,7 +1054,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
       const label = result.path.split(/[/\\]/).pop() || result.path;
       setExportStatus(`已导出：${label}`);
     } catch (error) {
-      if (isNativeCancelError(error) || isUserCancellationError(error, isIOS)) {
+      if (isNativeCancelError(error, isIOS)) {
         setExportStatus(null);
         setStorageDiagnostic(null);
       } else {
@@ -936,11 +1090,173 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     : undefined;
   const cardListMask = cardListFade.top || cardListFade.bottom
     ? isPortrait
-      ? `linear-gradient(to right, ${cardListFade.top ? "transparent" : "#000"} 0, #000 24px, #000 calc(100% - 24px), ${cardListFade.bottom ? "transparent" : "#000"} 100%)`
-      : `linear-gradient(to bottom, ${cardListFade.top ? "transparent" : "#000"} 0, #000 ${manageEm(36)}, #000 calc(100% - ${manageEm(36)}), ${cardListFade.bottom ? "transparent" : "#000"} 100%)`
+      ? `linear-gradient(to right, ${cardListFade.top ? "transparent" : "#000"} 0, ${cardListFade.top ? "rgba(0,0,0,0.22)" : "#000"} 10px, ${cardListFade.top ? "rgba(0,0,0,0.68)" : "#000"} 21px, #000 34px, #000 calc(100% - 34px), ${cardListFade.bottom ? "rgba(0,0,0,0.68)" : "#000"} calc(100% - 21px), ${cardListFade.bottom ? "rgba(0,0,0,0.22)" : "#000"} calc(100% - 10px), ${cardListFade.bottom ? "transparent" : "#000"} 100%)`
+      : `linear-gradient(to bottom, ${cardListFade.top ? "transparent" : "#000"} 0, ${cardListFade.top ? "rgba(0,0,0,0.22)" : "#000"} ${manageEm(14)}, ${cardListFade.top ? "rgba(0,0,0,0.68)" : "#000"} ${manageEm(28)}, #000 ${manageEm(44)}, #000 calc(100% - ${manageEm(44)}), ${cardListFade.bottom ? "rgba(0,0,0,0.68)" : "#000"} calc(100% - ${manageEm(28)}), ${cardListFade.bottom ? "rgba(0,0,0,0.22)" : "#000"} calc(100% - ${manageEm(14)}), ${cardListFade.bottom ? "transparent" : "#000"} 100%)`
     : undefined;
 
   const manageShellStyle: React.CSSProperties = { width: shellW, height: shellH };
+
+  const searchBar = (
+    <div
+      className={cn(
+        "manage-recess overflow-hidden rounded-full flex items-center",
+        isPortrait ? "min-w-0 flex-1" : "w-full flex-shrink-0"
+      )}
+      style={{
+        height: isPortrait ? PORTRAIT_CTRL : manageEm(MANAGE_SEARCH_HEIGHT),
+        marginBottom: isPortrait ? undefined : manageEm(10),
+        paddingInline: isPortrait ? 16 : manageEm(22),
+        gap: isPortrait ? 10 : manageEm(12),
+        border: "none",
+      }}
+    >
+      <Search
+        className={cn(
+          "flex-shrink-0",
+          isLight ? "text-[#1a1625]/45" : "text-white/50"
+        )}
+        style={{ width: manageEm(19), height: manageEm(19) }}
+      />
+      <input
+        type="search"
+        aria-label="搜索管理实例"
+        value={manageSearchQuery}
+        onChange={(e) => setManageSearchQuery(e.target.value)}
+        placeholder="搜索实例..."
+        className={cn(
+          "min-w-0 flex-1 appearance-none bg-transparent text-[1em] font-normal outline-none",
+          isLight
+            ? "text-[#1a1625] placeholder:text-[#1a1625]/40"
+            : "text-white placeholder:text-white/45"
+        )}
+        style={{ fontSize: isPortrait ? 16 : undefined }}
+      />
+      <div
+        className={cn("motion-slot is-after", manageSearchQuery && "is-open")}
+        style={{ ["--slot-gap" as string]: isPortrait ? "10px" : manageEm(12) }}
+        aria-hidden={!manageSearchQuery}
+      >
+        <div className="motion-slot-clip">
+          <div className="motion-slot-face">
+            <button
+              type="button"
+              aria-label="清空实例搜索"
+              disabled={!manageSearchQuery}
+              onClick={() => setManageSearchQuery("")}
+              className={cn(
+                "motion-control rounded-full p-1",
+                isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/85" : "text-white/40 hover:text-white/85"
+              )}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const closeButton = (
+    <button
+      type="button"
+      onClick={onClose}
+      title="关闭管理面板"
+      data-onboarding-target="manage-close"
+      className={cn(
+        "manage-recess motion-control flex flex-shrink-0 select-none items-center justify-center rounded-full border-0 outline-none",
+        isLight
+          ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
+          : "text-white/60 hover:text-white/85"
+      )}
+      style={{
+        width: isPortrait ? PORTRAIT_CTRL : manageEm(MANAGE_SEARCH_HEIGHT),
+        height: isPortrait ? PORTRAIT_CTRL : manageEm(MANAGE_SEARCH_HEIGHT),
+        minHeight: isPortrait ? PORTRAIT_CTRL : manageEm(MANAGE_SEARCH_HEIGHT),
+        paddingBlock: 0,
+        lineHeight: 1,
+        boxSizing: "border-box",
+      }}
+    >
+      <X style={{ width: manageEm(19), height: manageEm(19) }} />
+    </button>
+  );
+
+  const instanceCardsAside = (
+    <aside
+      className={cn(
+        "manage-well relative flex flex-col min-h-0 overflow-hidden",
+        isPortrait ? "w-full flex-shrink-0" : "flex-1 w-full"
+      )}
+      style={{
+        height: isPortrait ? "auto" : undefined,
+        borderRadius: isPortrait ? PORTRAIT_FOLDER_PANE_RADIUS : manageEm(MANAGE_PANE_RADIUS),
+        padding: isPortrait ? "8px" : `${manageEm(DESKTOP_SIDEBAR_PAD)} ${manageEm(DESKTOP_SIDEBAR_PAD)}`,
+      }}
+    >
+      {/* 卡片容器：滚到边缘时渐隐，避免最后一张被栏体硬切 */}
+      <div
+        className={cn("min-h-0 min-w-0 overflow-hidden", isPortrait ? "w-full" : "flex-1")}
+        style={{
+          height: isPortrait ? "var(--manage-card-height)" : undefined,
+          WebkitMaskImage: cardListMask,
+          maskImage: cardListMask,
+        }}
+      >
+        <div
+          ref={cardListRef}
+          onScroll={syncCardListFade}
+          onWheel={() => {
+            userScrolledAsideRef.current = true;
+            stopScrollAnimation();
+          }}
+          onTouchStart={() => {
+            userScrolledAsideRef.current = true;
+            stopScrollAnimation();
+          }}
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) {
+              userScrolledAsideRef.current = true;
+              stopScrollAnimation();
+            }
+          }}
+          className={cn(
+            "h-full w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex select-none",
+            isPortrait ? "flex-row items-center overflow-x-auto overflow-y-hidden" : "flex-col overflow-y-auto overflow-x-hidden"
+          )}
+          style={{
+            gap: isPortrait ? PORTRAIT_CARD_GAP : manageEm(DESKTOP_CARD_GAP),
+            overflowAnchor: "none",
+          }}
+        >
+          {filteredManageInstances.length > 0 ? (
+            filteredManageInstances.map((item) => {
+              const selected = item.id === mp.id;
+              return (
+                <ManageInstanceCard
+                  key={item.id}
+                  item={item}
+                  selected={selected}
+                  isPortrait={isPortrait}
+                  isLight={isLight}
+                  isDynamic={isDynamic}
+                  onSelect={selectManagedInstance}
+                />
+              );
+            })
+          ) : (
+            <div
+              className={cn(
+                "w-full py-8 text-center text-xs",
+                isLight ? "text-[#1a1625]/35" : "text-white/35"
+              )}
+            >
+              无匹配实例
+            </div>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
 
   return (
     <div
@@ -959,7 +1275,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
     <div
       ref={windowRef}
       className={cn("manage-window relative flex flex-shrink-0", isResizing && "is-resizing")}
-      style={{ ...manageShellStyle, pointerEvents: "auto" }}
+      style={{ ...manageShellStyle, pointerEvents: isClosing ? "none" : "auto" }}
     >
     <div
       ref={surfaceRef}
@@ -983,179 +1299,57 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
         WebkitBackdropFilter: MENU_GLASS_FILTER,
       }}
     >
-      {/* 顶部统一控制栏 (Movie navigation: 1200px × 49px, 下间距 28px) */}
-      <div className="manage-header relative flex items-center w-full flex-shrink-0 select-none" style={{ height: isPortrait ? PORTRAIT_CTRL : manageEm(49), marginBottom: isPortrait ? 10 : manageEm(22), gap: isPortrait ? 10 : undefined }}>
-        {/* 左上角搜索栏。竖版跟关闭键并排，不再绝对定位盖住翻页键。 */}
+      {/* 竖版保留顶部搜索栏 + 关闭键。横版双列独立贯通，右侧分类页签直接与面板融合成文件夹轮廓。 */}
+      {isPortrait && (
         <div
-          className={cn(
-            "manage-recess overflow-hidden rounded-full flex items-center",
-            isPortrait ? "min-w-0 flex-1" : "flex-shrink-0"
-          )}
-          style={{
-            width: isPortrait ? undefined : manageEm(280),
-            height: isPortrait ? PORTRAIT_CTRL : manageEm(49),
-            paddingInline: isPortrait ? 16 : manageEm(28),
-            gap: isPortrait ? 10 : manageEm(15),
-            border: "none",
-          }}
+          className="manage-header relative flex items-center w-full flex-shrink-0 select-none"
+          style={{ height: PORTRAIT_CTRL, marginBottom: 10, gap: 10 }}
         >
-          <Search
-            className={cn(
-              "flex-shrink-0",
-              isLight ? "text-[#1a1625]/45" : "text-white/50"
-            )}
-            style={{ width: manageEm(20), height: manageEm(20) }}
-          />
-          <input
-            type="search"
-            aria-label="搜索管理实例"
-            value={manageSearchQuery}
-            onChange={(e) => setManageSearchQuery(e.target.value)}
-            placeholder="搜索实例..."
-            className={cn(
-              "min-w-0 flex-1 appearance-none bg-transparent text-[1em] font-normal outline-none",
-              isLight
-                ? "text-[#1a1625] placeholder:text-[#1a1625]/40"
-                : "text-white placeholder:text-white/45"
-            )}
-            style={{ fontSize: isPortrait ? 16 : undefined }}
-          />
-          <div
-            className={cn("motion-slot is-after", manageSearchQuery && "is-open")}
-            style={{ ["--slot-gap" as string]: isPortrait ? "10px" : manageEm(15) }}
-            aria-hidden={!manageSearchQuery}
-          >
-            <div className="motion-slot-clip">
-              <div className="motion-slot-face">
-                <button
-                  type="button"
-                  aria-label="清空实例搜索"
-                  disabled={!manageSearchQuery}
-                  onClick={() => setManageSearchQuery("")}
-                  className={cn(
-                    "motion-control rounded-full p-1",
-                    isLight ? "text-[#1a1625]/40 hover:text-[#1a1625]/85" : "text-white/40 hover:text-white/85"
-                  )}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+          {searchBar}
+          <div className="flex items-center flex-shrink-0" style={{ height: PORTRAIT_CTRL, marginLeft: "auto" }}>
+            {closeButton}
           </div>
         </div>
+      )}
 
-        {!isPortrait && (
-        <>
-        {/* 搜索栏与分类标签间距，与顶栏其余固定间距统一 */}
-        <div className="flex-shrink-0" style={{ width: manageEm(18) }} />
-
-        <ManageTabTrack manageTab={manageTab} setManageTab={setManageTab} isPortrait={false} />
-        </>
-        )}
-
-        {/* 剩余空间留给标签与右侧操作之间，操作组本身右对齐关闭键 */}
-        {!isPortrait && <div className="flex-1" style={{ minWidth: manageEm(18) }} />}
-
-        <div className="flex items-center flex-shrink-0" style={{ height: isPortrait ? PORTRAIT_CTRL : manageEm(49), marginLeft: isPortrait ? "auto" : undefined }}>
-          <button
-            type="button"
-            onClick={onClose}
-            title="关闭管理面板"
-            data-onboarding-target="manage-close"
-            className={cn(
-              "manage-recess motion-control flex flex-shrink-0 select-none items-center justify-center rounded-full border-0 outline-none",
-              isLight
-                ? "text-[#1a1625]/60 hover:text-[#1a1625]/85"
-                : "text-white/60 hover:text-white/85"
-            )}
-            style={{ width: isPortrait ? PORTRAIT_CTRL : manageEm(49), height: isPortrait ? PORTRAIT_CTRL : manageEm(49), minHeight: isPortrait ? PORTRAIT_CTRL : manageEm(49), paddingBlock: 0, lineHeight: 1, boxSizing: "border-box" }}
-          >
-            <X style={{ width: manageEm(20), height: manageEm(20) }} />
-          </button>
-        </div>
-      </div>
-
-      {/* 主体两列分屏 (Movie content: 1200px × 560px, 列间距 28px) */}
       <div className={cn("manage-body flex w-full min-h-0 flex-1", isPortrait && "flex-col")} style={{ gap: isPortrait ? 10 : manageEm(18) }}>
-        {/* 左侧实例边栏。竖版改成横向卡片带，材质不变。 */}
-        <aside
-          className={cn("manage-well relative flex-shrink-0 flex flex-col min-h-0 overflow-hidden", isPortrait && "w-full")}
-          style={{
-            width: isPortrait ? "100%" : manageEm(280),
-            height: isPortrait ? "auto" : "100%",
-            borderRadius: isPortrait ? 22 : manageEm(30),
-            padding: isPortrait ? "8px" : `${manageEm(22)} ${manageEm(22)}`,
-          }}
-        >
-          {/* 卡片容器：滚到边缘时渐隐，避免最后一张被栏体硬切 */}
+        {isPortrait ? (
+          instanceCardsAside
+        ) : (
           <div
-            className={cn("min-h-0 min-w-0 overflow-hidden", isPortrait ? "w-full" : "flex-1")}
-            style={{
-              height: isPortrait ? "var(--manage-card-height)" : undefined,
-              WebkitMaskImage: cardListMask,
-              maskImage: cardListMask,
-            }}
+            className="manage-left-col flex flex-shrink-0 flex-col min-h-0 h-full"
+            style={{ width: manageEm(DESKTOP_SIDEBAR_W) }}
           >
-          <div
-            ref={cardListRef}
-            onScroll={syncCardListFade}
-            className={cn(
-              "h-full w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex select-none",
-              isPortrait ? "flex-row overflow-x-auto overflow-y-hidden" : "flex-col overflow-y-auto overflow-x-hidden"
-            )}
-            style={{ gap: isPortrait ? PORTRAIT_CARD_GAP : manageEm(14) }}
-          >
-            {filteredManageInstances.map((item) => {
-              const selected = item.id === mp.id;
-              return (
-                <ManageInstanceCard
-                  key={item.id}
-                  item={item}
-                  selected={selected}
-                  isPortrait={isPortrait}
-                  isLight={isLight}
-                  isDynamic={isDynamic}
-                  onSelect={selectManagedInstance}
-                />
-              );
-            })}
-
-            {filteredManageInstances.length === 0 && (
-              <div
-                className={cn(
-                  "py-8 text-center text-xs",
-                  isLight ? "text-[#1a1625]/35" : "text-white/35"
-                )}
-              >
-                无匹配实例
-              </div>
-            )}
+            {searchBar}
+            {instanceCardsAside}
           </div>
-          </div>
-        </aside>
-
-        {isPortrait && (
-          <ManageTabTrack manageTab={manageTab} setManageTab={setManageTab} isPortrait />
         )}
 
-        {/* 右侧主设置面板。竖版落到卡片和分类下面，材质与溶解不变。 */}
-        <section
-          ref={rightPaneRef}
-          className={cn(
-            "manage-well relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-            isLight ? "text-[#1a1625]" : "text-white/88"
-          )}
-          style={{
-            height: isPortrait ? undefined : "100%",
-            borderRadius: isPortrait ? 22 : manageEm(MANAGE_PANE_RADIUS),
+        <ManageFolderShell
+          tabs={MANAGE_TABS}
+          activeTab={manageTab}
+          onSelectTab={(nextTab) => {
+            if (nextTab === manageTab) return;
+            captureBeforeSettingsSwitch(1);
+            setManageTab(nextTab);
           }}
+          isPortrait={isPortrait}
+          isLight={isLight}
+          tabHeight={isPortrait ? PORTRAIT_FOLDER_TAB_HEIGHT : MANAGE_FOLDER_TAB_HEIGHT}
+          paneRadius={isPortrait ? PORTRAIT_FOLDER_PANE_RADIUS : MANAGE_PANE_RADIUS}
+          tabRadius={isPortrait ? PORTRAIT_FOLDER_TAB_RADIUS : MANAGE_FOLDER_TAB_RADIUS}
+          filletRadius={isPortrait ? PORTRAIT_FOLDER_FILLET_RADIUS : MANAGE_FOLDER_FILLET_RADIUS}
+          tabFontSize={isPortrait ? 13.5 : manageFont(16)}
+          closeButton={!isPortrait ? closeButton : undefined}
+          paneRef={rightPaneRef}
         >
-            <div className="motion-panel-stack min-h-0 w-full flex-1 overflow-hidden">
+            <div ref={stackRef} className="motion-panel-stack min-h-0 w-full flex-1 overflow-hidden">
               {/* 启动与配置 */}
               <div
-                className={cn(managePanelFaceClass(manageTab === "launch" && settingsFaceReady), "flex flex-col")}
-                aria-hidden={manageTab !== "launch" || !settingsFaceReady}
-                inert={manageTab !== "launch" || !settingsFaceReady}
+                data-manage-tab="launch"
+                className={cn(managePanelFaceClass(manageTab === "launch"), "flex flex-col")}
+                aria-hidden={manageTab !== "launch"}
+                inert={manageTab !== "launch"}
               >
                 <div
                   ref={launchFaceRef}
@@ -1639,6 +1833,7 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 </div>
                 </div>
                 <div
+                  data-manage-actions=""
                   className={cn(
                     "manage-actions z-[1] flex flex-shrink-0 items-center justify-end",
                   )}
@@ -1689,9 +1884,10 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
 
               {/* 存储 */}
               <div
-                className={managePanelFaceClass(manageTab === "storage" && settingsFaceReady)}
-                aria-hidden={manageTab !== "storage" || !settingsFaceReady}
-                inert={manageTab !== "storage" || !settingsFaceReady}
+                data-manage-tab="storage"
+                className={managePanelFaceClass(manageTab === "storage")}
+                aria-hidden={manageTab !== "storage"}
+                inert={manageTab !== "storage"}
               >
                 <div
                   ref={storageFaceRef}
@@ -1873,15 +2069,17 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
               {/* 终端 */}
               <div
                 ref={terminalFaceRef}
-                className={managePanelFaceClass(manageTab === "terminal" && settingsFaceReady)}
+                data-manage-tab="terminal"
+                className={managePanelFaceClass(manageTab === "terminal")}
                 style={{
                   boxSizing: "border-box",
                   padding: manageEm(MANAGE_NEST_INSET),
                 }}
-                aria-hidden={manageTab !== "terminal" || !settingsFaceReady}
-                inert={manageTab !== "terminal" || !settingsFaceReady}
+                aria-hidden={manageTab !== "terminal"}
+                inert={manageTab !== "terminal"}
               >
                 <TerminalWell
+                  data-manage-well=""
                   isLight={isLight}
                   isDynamic={isDynamic}
                   className="flex h-full min-h-0 flex-col overflow-hidden"
@@ -1999,9 +2197,10 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
 
               {/* 关于 */}
               <div
-                className={managePanelFaceClass(manageTab === "about" && settingsFaceReady)}
-                aria-hidden={manageTab !== "about" || !settingsFaceReady}
-                inert={manageTab !== "about" || !settingsFaceReady}
+                data-manage-tab="about"
+                className={managePanelFaceClass(manageTab === "about")}
+                aria-hidden={manageTab !== "about"}
+                inert={manageTab !== "about"}
               >
                 <div
                   ref={aboutFaceRef}
@@ -2055,10 +2254,14 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
                 </div>
                 </div>
               </div>
-            <div ref={outgoingHostRef} className="pointer-events-none absolute inset-0 z-[2]" />
+            <div
+              ref={sharedOverlayRef}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-[2] overflow-hidden"
+            />
             </div>
 
-        </section>
+        </ManageFolderShell>
       </div>
     </div>
       {!isPortrait && (
@@ -2066,6 +2269,8 @@ export const ManageInstanceModal: React.FC<ManageInstanceModalProps> = ({
           isLight={isLight}
           label="拖动缩放管理菜单"
           active={isResizing}
+          className={isClosing ? "animate-manage-panel-exit" : "animate-manage-panel"}
+          cornerRadius={Math.round(49 * MANAGE_VISUAL_SCALE)}
           onPointerDown={onResizePointerDown}
         />
       )}

@@ -67,41 +67,93 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     resizeCleanup.current?.();
   }, []);
 
-  const clampBox = (next: { w: number; h: number }) => ({
-    w: Math.round(Math.min(toUnscaledPx(window.innerWidth) - VIEWPORT_SPACING, Math.max(320, next.w))),
-    h: Math.round(Math.min(toUnscaledPx(window.innerHeight) - VIEWPORT_SPACING, Math.max(200, next.h))),
-  });
-
   const onResizePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
     if (event.button !== 0 && event.pointerType === "mouse") return;
+    const modalEl = modalRef.current;
+    if (!modalEl) return;
     event.preventDefault();
     event.stopPropagation();
     resizeCleanup.current?.();
 
+    const captureTarget = event.currentTarget;
+    const pointerId = event.pointerId;
+    try {
+      captureTarget.setPointerCapture?.(pointerId);
+    } catch {
+      // 合成指针环境静默降级至 window 监听
+    }
+
     const scale = getAppliedUiScale();
+    const maxW = Math.max(320, toUnscaledPx(window.innerWidth) - VIEWPORT_SPACING);
+    const maxH = Math.max(200, toUnscaledPx(window.innerHeight) - VIEWPORT_SPACING);
     const startX = event.clientX;
     const startY = event.clientY;
-    const rect = modalRef.current?.getBoundingClientRect();
-    const startW = rect ? rect.width / scale : terminalBox.w;
-    const startH = rect ? rect.height / scale : terminalBox.h;
+    const rect = modalEl.getBoundingClientRect();
+    const startW = rect.width / scale;
+    const startH = rect.height / scale;
+
+    let frame: number | null = null;
+    let pending: { w: number; h: number } | null = null;
+    let latest: { w: number; h: number } | null = null;
+    let lastApplied: { w: number; h: number } | null = null;
+
+    const applyBox = (box: { w: number; h: number }) => {
+      if (lastApplied && lastApplied.w === box.w && lastApplied.h === box.h) return;
+      lastApplied = box;
+      modalEl.style.width = `${box.w}px`;
+      modalEl.style.height = `${box.h}px`;
+    };
+
+    const flush = () => {
+      frame = null;
+      const next = pending;
+      pending = null;
+      if (next) applyBox(next);
+    };
 
     setIsResizing(true);
 
     const onMove = (moveEvent: PointerEvent) => {
-      setTerminalBox(clampBox({
-        w: startW + (moveEvent.clientX - startX) / scale,
-        h: startH + (moveEvent.clientY - startY) / scale,
-      }));
+      const next = {
+        w: Math.round(Math.min(maxW, Math.max(320, startW + (moveEvent.clientX - startX) / scale))),
+        h: Math.round(Math.min(maxH, Math.max(200, startH + (moveEvent.clientY - startY) / scale))),
+      };
+      latest = next;
+      pending = next;
+      if (frame === null) {
+        frame = requestAnimationFrame(flush);
+      }
     };
-    const onUp = () => {
-      setIsResizing(false);
+
+    const cleanup = () => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      }
+      pending = null;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      try {
+        if (captureTarget.hasPointerCapture?.(pointerId)) {
+          captureTarget.releasePointerCapture(pointerId);
+        }
+      } catch {
+        // 忽略释放阶段的宿主状态差异
+      }
+    };
+
+    const onUp = () => {
+      cleanup();
+      if (latest) {
+        applyBox(latest);
+        setTerminalBox(latest);
+      }
+      setIsResizing(false);
       resizeCleanup.current = null;
     };
 
-    resizeCleanup.current = onUp;
+    resizeCleanup.current = cleanup;
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
@@ -120,31 +172,59 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     const startY = e.clientY;
     const initialLeft = rect.left / scale;
     const initialTop = rect.top / scale;
+    const maxLeft = Math.max(VIEWPORT_PADDING, (window.innerWidth - rect.width) / scale - CORNER_RESIZE_SAFE_INSET);
+    const maxTop = Math.max(VIEWPORT_PADDING, (window.innerHeight - rect.height) / scale - CORNER_RESIZE_SAFE_INSET);
+
+    let frame: number | null = null;
+    let pending: { x: number; y: number } | null = null;
+    let latest: { x: number; y: number } | null = null;
+
+    const flush = () => {
+      frame = null;
+      const next = pending;
+      pending = null;
+      if (!next) return;
+      modalEl.style.left = `${next.x}px`;
+      modalEl.style.top = `${next.y}px`;
+    };
 
     setIsDragging(true);
 
     const onPointerMove = (ev: PointerEvent) => {
-      const deltaX = (ev.clientX - startX) / scale;
-      const deltaY = (ev.clientY - startY) / scale;
-
-      const maxLeft = Math.max(VIEWPORT_PADDING, (window.innerWidth - rect.width) / scale - CORNER_RESIZE_SAFE_INSET);
-      const maxTop = Math.max(VIEWPORT_PADDING, (window.innerHeight - rect.height) / scale - CORNER_RESIZE_SAFE_INSET);
-
-      const nextX = Math.max(VIEWPORT_PADDING, Math.min(maxLeft, initialLeft + deltaX));
-      const nextY = Math.max(VIEWPORT_PADDING, Math.min(maxTop, initialTop + deltaY));
-
-      setDragPos({ x: nextX, y: nextY });
+      const next = {
+        x: Math.round(Math.max(VIEWPORT_PADDING, Math.min(maxLeft, initialLeft + (ev.clientX - startX) / scale))),
+        y: Math.round(Math.max(VIEWPORT_PADDING, Math.min(maxTop, initialTop + (ev.clientY - startY) / scale))),
+      };
+      latest = next;
+      pending = next;
+      if (frame === null) {
+        frame = requestAnimationFrame(flush);
+      }
     };
 
-    const onPointerUp = () => {
-      setIsDragging(false);
+    const cleanup = () => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      }
+      pending = null;
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
+    };
+
+    const onPointerUp = () => {
+      cleanup();
+      if (latest) {
+        modalEl.style.left = `${latest.x}px`;
+        modalEl.style.top = `${latest.y}px`;
+        setDragPos(latest);
+      }
+      setIsDragging(false);
       dragCleanup.current = null;
     };
 
-    dragCleanup.current = onPointerUp;
+    dragCleanup.current = cleanup;
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
     window.addEventListener("pointercancel", onPointerUp);

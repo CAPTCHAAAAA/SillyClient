@@ -15,9 +15,15 @@ async function mountApplication() {
     await installOnboardingSandbox();
   } else {
     applyUiScale(loadUiScale());
-    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("nativePreview") === "1") {
-      const { installNativePreview } = await import("./dev/native-preview");
-      installNativePreview();
+    if (import.meta.env.DEV) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("nativePreview") === "1") {
+        const { installNativePreview } = await import("./dev/native-preview");
+        installNativePreview();
+      } else if (params.get("showcase") !== "1") {
+        const { mountDevDebugOverlay } = await import("./dev/DevDebugOverlay");
+        mountDevDebugOverlay();
+      }
     }
   }
 
