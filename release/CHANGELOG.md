@@ -2,6 +2,17 @@
 
 这里只保留已经发布版本的用户可见变化。完整说明以各版本 Release 正文为准。写法与 v1.13.0 相同：先写各端一句摘要，再按端列变更。
 
+## 1.15.2 - 2026-11-19
+
+> iOS 专项更新至 `1.15.2`（iOS Build `53`，Windows 与 Android 跳过并沿用 `1.15.1`）：修复自签/新系统环境下目录选择器（`UIDocumentPickerViewController`）回调与弹窗关闭问题，补全完整可自签权限与 `CFBundleDocumentTypes`，新增直接可写容器路径回退及`<Documents>/instances` 默认「应用目录」一键切换入口。
+
+### iOS
+
+- 修复 `UIDocumentPickerViewController` 生命周期与关闭回调，完善 popover 保护及扩展名显示。
+- 补全可自签权限描述与文档类型支持，保持无受限 entitlement 以兼容各类自签重签流程。
+- 新增 `kind: "direct"` 直接可写路径支持，并在新建实例向导与迁移弹窗旁提供「应用目录」快捷按钮，避免外部选择器受阻。
+- Windows 与 Android 本次跳过构建，继续沿用 `1.15.1`。
+
 ## 1.15.1 - 2026-11-19
 
 > 三端同步 `common-frontend`（`d946b58`）更新至 `1.15.1`（Android versionCode `78`，iOS Build `52`）：实例管理升级一体 SVG 文件夹耳标页签与 780ms 同向平切转场、竖屏 1:1 方卡，并完成业务源码与开发测试隔离及性能收敛。
