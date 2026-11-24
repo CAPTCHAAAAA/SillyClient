@@ -156,6 +156,29 @@ test("sanitizeDiagnosticText and toDiagnosticReportInput redact paths, secrets, 
   assert.equal(JSON.stringify(input).includes("alice@example.com"), false);
 });
 
+test("sanitizeDiagnosticText preserves common product nouns so instance names like 酒馆 do not split fingerprints", () => {
+  const msg = "酒馆启动超时，请检查实例日志";
+  const withGenericName = nativeErrors.createDiagnosticContext(new Error(msg), {
+    area: "create",
+    platform: "android",
+    extraSecrets: ["酒馆", "SillyTavern", "新实例"],
+  });
+  const withoutGenericName = nativeErrors.createDiagnosticContext(new Error(msg), {
+    area: "create",
+    platform: "android",
+    extraSecrets: ["MyPrivatePersona"],
+  });
+  assert.equal(withGenericName.summary, msg);
+  assert.equal(withGenericName.fingerprint, withoutGenericName.fingerprint);
+
+  const customNameMsg = nativeErrors.sanitizeDiagnosticText(
+    "实例 MyPrivatePersona 启动失败于 /storage/emulated/0/MyPrivatePersona",
+    ["MyPrivatePersona"]
+  );
+  assert.equal(customNameMsg.includes("MyPrivatePersona"), false);
+  assert.equal(customNameMsg.includes("/storage/emulated/0"), false);
+});
+
 test("install-location and render-settings cross-platform helpers stay consistent", () => {
   const id = installLocation.normalizeInstanceIdentity("  我的 酒馆 / Test  ");
   assert.ok(id.length > 0);

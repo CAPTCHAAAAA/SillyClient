@@ -17,6 +17,11 @@ import { openExternalUrl } from "@/lib/external-links";
 import type { AppUpdateInfo, CompanionPresetSelection, ContentOpenMode, InstanceConfig, InstallPathMode, GithubRelease, GarbageItem, TarvenEvent, PreinstalledExtensionId, RenderEngineSettings } from "@/capacitor-plugin";
 import { buildInstanceSubfolder, cleanInstallPath, exactInstallTarget, installationSelection, instanceParentPath, normalizeInstanceIdentity, sanitizeFolderName, shouldShowDirectoryPickerError, validateInstallPathInput } from "@/lib/install-location";
 import { createDiagnosticContext, humanizeNativeError, type DiagnosticContext } from "@/lib/native-errors";
+import {
+  ProvisionTimeoutTracker,
+  formatProvisionTimeoutError,
+  resolveProvisionFailure,
+} from "@/lib/provision-timeout";
 import { selectTavernRelease } from "@/lib/tavern-release";
 import { normalizeStoredInstances, serializeInstanceRecords, type StoredInstance } from "@/lib/instance-persistence";
 import { GLOBAL_LOG_KEY, instanceLogs, type LogLine } from "@/lib/log-store";
@@ -1296,14 +1301,22 @@ function SillyClientLauncher() {
     let errorMsg: string | null = null;
     let resolvedPort = port;
     let resolvedUrl = `http://127.0.0.1:${port}/`;
+    const timeoutTracker = new ProvisionTimeoutTracker();
+
       await operation.listen(TarvenEnv.addListener("progress", d => {
         if (d.source === "command" || !operation.accepts(d)) return;
+        timeoutTracker.touch();
         const pct = d.percent ?? 0;
         const text = formatOperationStage(d.stage, pct);
         setLaunchProgress(previous => {
           if (previous?.pct === pct && previous.text === text) return previous;
           return { pct, text };
         });
+      }));
+
+      await operation.listen(TarvenEnv.addListener("log", d => {
+        if (d.source === "command" || !operation.accepts(d)) return;
+        timeoutTracker.touch();
       }));
 
       await operation.listen(TarvenEnv.addListener("error", d => {
@@ -1336,13 +1349,17 @@ function SillyClientLauncher() {
         preinstall,
         config,
       }));
-      if (provisionResult?.ready === false) {
-        throw new Error(errorMsg || "实例未能启动，请检查安装日志");
+      const failureResolution = resolveProvisionFailure(provisionResult, errorMsg);
+      if (failureResolution.kind === "cancelled") {
+        throw new OperationCancelledError();
+      }
+      if (failureResolution.kind === "error") {
+        throw new Error(failureResolution.message);
       }
       if (provisionResult?.ready === true) readyReceived = true;
+      timeoutTracker.touch();
 
-      const deadline = Date.now() + 600000;
-      while (!readyReceived && !errorMsg && Date.now() < deadline) {
+      while (!readyReceived && !errorMsg && timeoutTracker.check() === "active") {
         await operation.delay(500);
         if (readyReceived || errorMsg) break;
         try {
@@ -1362,7 +1379,12 @@ function SillyClientLauncher() {
       }
 
       if (!readyReceived) {
-        throw new Error("超时：下载/安装超过 10 分钟，检查网络后重试");
+        const timeoutStatus = timeoutTracker.check();
+        throw new Error(
+          formatProvisionTimeoutError(
+            timeoutStatus === "total-timeout" ? "total-timeout" : "idle-timeout"
+          )
+        );
       }
 
       setLaunchProgress({ pct: 100, text: enterWhenReady ? "实例已就绪" : "创建完成，可以运行" });
@@ -1384,6 +1406,12 @@ function SillyClientLauncher() {
     const url = instance.url || "http://127.0.0.1:8000";
     setLaunchLogs([{ msg: `检查 ${url}`, level: "info" }]);
     setLaunchProgress({ pct: 25, text: "正在验证远程连接" });
+    if (isWeb) {
+      await operation.delay(250);
+      setLaunchProgress({ pct: 100, text: "远程实例已打开" });
+      setLaunchLogs(prev => [...prev, { msg: "远程实例连接正常 (浏览器演示)", level: "success" }]);
+      return;
+    }
     const result = await operation.wait(TarvenEnv.pingUrl({ url, instanceId: instance.id }));
     if (!result.online) {
       throw new Error(result.error || "远程实例当前不可访问");
@@ -1403,7 +1431,7 @@ function SillyClientLauncher() {
       showGestureHint: instance.pendingTavernGestureHint === true,
     }));
     setLaunchProgress({ pct: 100, text: "远程实例已打开" });
-  }, [contentOpenMode, setLaunchLogs]);
+  }, [contentOpenMode, isWeb, setLaunchLogs]);
 
   // 启动实例直接执行入口 (跳过密码阻断，在已完成密码校验或无密码时调用)
   const launchTavernDirect = useCallback(async (instance: TavernInstance) => {
@@ -1422,21 +1450,28 @@ function SillyClientLauncher() {
     try {
       if (instance.type === "local") {
         const result = await doLaunch(instance, operation);
-        const info = await operation.wait(TarvenEnv.getInstanceInfo({
-          instanceId: instance.installDir || instance.id,
-          installPath: instance.installPathMode === "root" ? undefined : instance.installPath,
-          port: result.port,
-        }));
-        setInstances(prev => prev.map(t => t.id === instance.id ? { ...t,
-          status: "running",
-          port: result.port,
-          version: info.version && info.version !== "unknown" ? normalizeStoredVersion(info.version) : t.version,
-          installPath: info.path || t.installPath,
-          installPathMode: info.path ? "exact" : t.installPathMode,
-          createdAt: info.createdAt ? formatNativeDate(info.createdAt) : t.createdAt,
-          lastUsed: info.lastUsedAt ? formatNativeDate(info.lastUsedAt) : t.lastUsed,
-          totalUsage: info.totalUsageMs !== undefined ? formatUsageDuration(info.totalUsageMs) : t.totalUsage,
-        } : t));
+        if (isWeb) {
+          setInstances(prev => prev.map(t => t.id === instance.id ? { ...t,
+            status: "running",
+            port: result.port,
+          } : t));
+        } else {
+          const info = await operation.wait(TarvenEnv.getInstanceInfo({
+            instanceId: instance.installDir || instance.id,
+            installPath: instance.installPathMode === "root" ? undefined : instance.installPath,
+            port: result.port,
+          }));
+          setInstances(prev => prev.map(t => t.id === instance.id ? { ...t,
+            status: "running",
+            port: result.port,
+            version: info.version && info.version !== "unknown" ? normalizeStoredVersion(info.version) : t.version,
+            installPath: info.path || t.installPath,
+            installPathMode: info.path ? "exact" : t.installPathMode,
+            createdAt: info.createdAt ? formatNativeDate(info.createdAt) : t.createdAt,
+            lastUsed: info.lastUsedAt ? formatNativeDate(info.lastUsedAt) : t.lastUsed,
+            totalUsage: info.totalUsageMs !== undefined ? formatUsageDuration(info.totalUsageMs) : t.totalUsage,
+          } : t));
+        }
         operation.schedule(() => {
           setIsLaunchPanelClosing(true);
           operation.schedule(() => {
@@ -1483,14 +1518,16 @@ function SillyClientLauncher() {
           extraSecrets: [instance.subtitle, instance.name, instance.installPath, instance.url],
         });
       }
-      try { await operation.wait(TarvenEnv.exitImmersive()); } catch {}
+      if (!isWeb) {
+        try { await operation.wait(TarvenEnv.exitImmersive()); } catch {}
+      }
     } finally {
       if (operation.isCurrent) {
         operation.finish();
         setLaunchingId(null);
       }
     }
-  }, [operations, doLaunch, openRemoteInstance, platformTag, setLaunchLogs]);
+  }, [operations, doLaunch, isWeb, openRemoteInstance, platformTag, setLaunchLogs]);
 
   // 启动实例入口 (含访问密码保险开关拦截)
   const launchTavern = useCallback(async (instance: TavernInstance) => {
@@ -1504,6 +1541,7 @@ function SillyClientLauncher() {
 
   // 返回酒馆会话（无缝唤醒后台保活的酒馆 WebView）
   const handleReturnToTavern = useCallback(async (instance: TavernInstance) => {
+    if (isWeb) return;
     const expected = operations.current;
     try {
       if (expected) await expected.wait(TarvenEnv.returnToTavern());
@@ -1513,7 +1551,7 @@ function SillyClientLauncher() {
       // 容错或浏览器环境 fallback
       await launchTavern(instance);
     }
-  }, [launchTavern, operations]);
+  }, [isWeb, launchTavern, operations]);
 
   // 直接停止/关闭实例（就地停止进程并解除运行态）
   const handleStopInstance = useCallback(async (instance: TavernInstance) => {
@@ -1525,23 +1563,25 @@ function SillyClientLauncher() {
       setIsCreatingInstance(false);
       setLaunchProgress(null);
     }
-    try {
-      await TarvenEnv.closeTavern({ instanceId, operationId: cancelled?.id });
-    } catch (error) {
-      const friendly = humanizeNativeError(error);
-      instanceLogs.append(instanceId, { msg: `停止失败: ${friendly}`, level: "error" });
-      reportGlobalError(error, {
-        area: "launch",
-        stage: "stop-instance",
-        platform: platformTag,
-        userMessage: `停止实例失败：${friendly}`,
-        extraSecrets: [instance.subtitle, instance.name, instance.installPath],
-      });
-      return;
+    if (!isWeb) {
+      try {
+        await TarvenEnv.closeTavern({ instanceId, operationId: cancelled?.id });
+      } catch (error) {
+        const friendly = humanizeNativeError(error);
+        instanceLogs.append(instanceId, { msg: `停止失败: ${friendly}`, level: "error" });
+        reportGlobalError(error, {
+          area: "launch",
+          stage: "stop-instance",
+          platform: platformTag,
+          userMessage: `停止实例失败：${friendly}`,
+          extraSecrets: [instance.subtitle, instance.name, instance.installPath],
+        });
+        return;
+      }
     }
     if (operations.current !== remainingOperation) return;
     setInstances(prev => prev.map(t => t.id === instance.id ? { ...t, status: "stopped" } : t));
-  }, [operations, platformTag]);
+  }, [isWeb, operations, platformTag]);
 
   const provisionCreatedInstance = useCallback(async (instance: TavernInstance, operation: OperationContext) => {
     if (isWeb) {

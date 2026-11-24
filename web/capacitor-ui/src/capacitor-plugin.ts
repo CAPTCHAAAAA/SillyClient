@@ -237,6 +237,14 @@ export interface DiagnosticReportResult {
   message?: string
 }
 
+export interface ProvisionAndStartResult {
+  ready: boolean
+  error?: string
+  cancelled?: boolean
+  installPath?: string
+  installPathMode?: InstallPathMode
+}
+
 export interface TarvenEnvPlugin {
   provisionAndStart(options: {
     port: number
@@ -258,7 +266,7 @@ export interface TarvenEnvPlugin {
     companionPreset?: CompanionPresetSelection
     preinstall?: PreinstallSelection
     config: InstanceConfig
-  }): Promise<{ ready: boolean }>
+  }): Promise<ProvisionAndStartResult>
 
   enterImmersive(options: {
     url: string

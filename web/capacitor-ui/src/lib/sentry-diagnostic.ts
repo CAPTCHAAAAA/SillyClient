@@ -5,6 +5,30 @@ import type {
 
 export const SENTRY_DSN_STORAGE_KEY = "sillyclient.sentryDsn";
 
+export const DEFAULT_PUBLIC_SENTRY_DSN =
+  "https://ffbac1e85a0a52f4d5c1bfe949f443a1@o4512437322383360.ingest.us.sentry.io/4512437347352576";
+
+/**
+ * 生产遥测边界守卫：
+ * 仅在正式打包的原生端（Android / Windows / iOS）启用默认内置生产 Sentry DSN；
+ * 纯 Web 演示页（GitHub Pages）与本地 DEV 调试环境默认不向生产 Sentry 投递，
+ * 除非显式传入 VITE_SENTRY_DSN 环境变量（或通过 localStorage 手动调试覆写）。
+ */
+export function resolveDefaultSentryDsn(options: {
+  isNativePlatform: boolean;
+  isDev: boolean;
+  envSentryDsn?: string | null;
+}): string | undefined {
+  if (typeof options.envSentryDsn === "string") {
+    const trimmed = options.envSentryDsn.trim();
+    return trimmed || undefined;
+  }
+  if (options.isNativePlatform && !options.isDev) {
+    return DEFAULT_PUBLIC_SENTRY_DSN;
+  }
+  return undefined;
+}
+
 export interface ParsedSentryDsn {
   raw: string;
   publicKey: string;

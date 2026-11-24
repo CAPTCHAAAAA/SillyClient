@@ -156,7 +156,7 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const RESERVED_SHORT_TOKENS = new Set([
+const RESERVED_DIAGNOSTIC_TOKENS = new Set([
   "ios",
   "mac",
   "win",
@@ -170,6 +170,31 @@ const RESERVED_SHORT_TOKENS = new Set([
   "tmp",
   "var",
   "etc",
+  "server",
+  "default",
+  "local",
+  "remote",
+  "tavern",
+  "sillytavern",
+  "sillyclient",
+  "酒馆",
+  "我的酒馆",
+  "实例",
+  "新实例",
+  "本地",
+  "远程",
+  "默认",
+  "启动",
+  "目录",
+  "下载",
+  "安装",
+  "更新",
+  "设置",
+  "终端",
+  "备份",
+  "超时",
+  "失败",
+  "错误",
 ]);
 
 export function sanitizeDiagnosticText(
@@ -185,7 +210,7 @@ export function sanitizeDiagnosticText(
         .map((item) => (typeof item === "string" ? item.trim() : ""))
         .filter((item) => {
           if (item.length < 2) return false;
-          if (/^[a-z0-9]{1,3}$/i.test(item) && RESERVED_SHORT_TOKENS.has(item.toLowerCase())) {
+          if (RESERVED_DIAGNOSTIC_TOKENS.has(item.toLowerCase())) {
             return false;
           }
           return true;
