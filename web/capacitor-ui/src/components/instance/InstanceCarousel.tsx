@@ -114,13 +114,13 @@ function CreateCardFace({
             isLight ? "bg-black/[0.06]" : "bg-white/[0.08]"
           )}
         >
-          <Play className={cn("h-3.5 w-3.5 fill-current transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/80" : "text-white/40 group-hover:text-white/80")} />
+          <Play className={cn("h-3.5 w-3.5 fill-current transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/80" : "text-white/40 group-hover:text-white/80")} />
         </div>
         <div>
-          <div className={cn("mb-0.5 text-base font-semibold transition-colors", isLight ? "text-[#1a1625]" : "text-white")}>
+          <div className={cn("mb-0.5 text-base font-semibold transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]", isLight ? "text-[#1a1625]" : "text-white")}>
             {label}
           </div>
-          <div className={cn("text-xs transition-colors", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/75" : "text-white/40 group-hover:text-white/75")}>
+          <div className={cn("text-xs transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]", isLight ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/75" : "text-white/40 group-hover:text-white/75")}>
             {hint}
           </div>
         </div>
@@ -1142,7 +1142,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
             disabled={activeSlide === 0}
             aria-label="上一页"
             className={cn(
-              "motion-control w-8 h-8 rounded-full flex items-center justify-center transition-all focus:outline-none",
+              "motion-control w-8 h-8 rounded-full flex items-center justify-center focus:outline-none",
               activeSlide === 0
                 ? isLight ? "text-[#1a1625]/15 cursor-default opacity-40" : "text-white/15 cursor-default opacity-40"
                 : isLight
@@ -1195,7 +1195,7 @@ const InstanceCarouselComponent = forwardRef<InstanceCarouselRef, InstanceCarous
             disabled={activeSlide === totalSlides - 1}
             aria-label="下一页"
             className={cn(
-              "motion-control w-8 h-8 rounded-full flex items-center justify-center transition-all focus:outline-none",
+              "motion-control w-8 h-8 rounded-full flex items-center justify-center focus:outline-none",
               activeSlide === totalSlides - 1
                 ? isLight ? "text-[#1a1625]/15 cursor-default opacity-40" : "text-white/15 cursor-default opacity-40"
                 : isLight

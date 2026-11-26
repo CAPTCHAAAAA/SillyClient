@@ -110,6 +110,9 @@ select:focus-visible {
   --motion-ease-release: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* 全局悬停反馈统一节拍：前段快速响应，后段柔和落稳，消除跨组件快慢不一与硬切。 */
+  --motion-hover: 500ms;
+  --motion-hover-ease: var(--motion-ease-out);
   /* 状态切换溶解。两端都减速，不能用 --motion-ease-out，那个前段就冲完了。 */
   --motion-dissolve: 780ms;
   --motion-dissolve-ease: cubic-bezier(0.5, 0, 0.2, 1);
@@ -527,7 +530,22 @@ button {
   -webkit-tap-highlight-color: transparent;
   transition:
     transform var(--motion-release) var(--motion-ease-release),
-    filter var(--motion-release) ease;
+    filter var(--motion-release) ease,
+    color var(--motion-hover) var(--motion-hover-ease),
+    background-color var(--motion-hover) var(--motion-hover-ease),
+    border-color var(--motion-hover) var(--motion-hover-ease),
+    box-shadow var(--motion-hover) var(--motion-hover-ease),
+    opacity var(--motion-hover) var(--motion-hover-ease);
+}
+
+button[role="switch"] {
+  transition:
+    transform var(--motion-release) var(--motion-ease-release),
+    filter var(--motion-hover) var(--motion-hover-ease),
+    background-color 240ms var(--motion-ease-out),
+    border-color 240ms var(--motion-ease-out),
+    box-shadow 240ms var(--motion-ease-out),
+    opacity var(--motion-hover) var(--motion-hover-ease);
 }
 
 /* 按钮按压反馈：紧致敏捷微触感 */
@@ -536,19 +554,35 @@ button:active:not(:disabled) {
   transform: scale(0.98);
   transition:
     transform var(--motion-press) var(--motion-ease-press),
-    filter var(--motion-press) ease-out;
+    filter var(--motion-press) ease-out,
+    color var(--motion-hover) var(--motion-hover-ease),
+    background-color var(--motion-press) var(--motion-ease-press),
+    border-color var(--motion-press) var(--motion-ease-press),
+    box-shadow var(--motion-press) var(--motion-ease-press),
+    opacity var(--motion-press) var(--motion-ease-press);
 }
 
 .motion-control {
-  transition-property: transform, filter, color, background-color, border-color, box-shadow, opacity;
-  transition-duration: var(--motion-release);
-  transition-timing-function: var(--motion-ease-release);
+  transition:
+    transform var(--motion-release) var(--motion-ease-release),
+    filter var(--motion-release) var(--motion-ease-release),
+    color var(--motion-hover) var(--motion-hover-ease),
+    background-color var(--motion-hover) var(--motion-hover-ease),
+    border-color var(--motion-hover) var(--motion-hover-ease),
+    box-shadow var(--motion-hover) var(--motion-hover-ease),
+    opacity var(--motion-hover) var(--motion-hover-ease);
 }
 
 .motion-control:active:not(:disabled) {
   transform: translateY(0) scale(0.975);
-  transition-duration: var(--motion-press);
-  transition-timing-function: var(--motion-ease-press);
+  transition:
+    transform var(--motion-press) var(--motion-ease-press),
+    filter var(--motion-press) var(--motion-ease-press),
+    color var(--motion-hover) var(--motion-hover-ease),
+    background-color var(--motion-press) var(--motion-ease-press),
+    border-color var(--motion-press) var(--motion-ease-press),
+    box-shadow var(--motion-press) var(--motion-ease-press),
+    opacity var(--motion-press) var(--motion-ease-press);
 }
 
 .carousel-pagination {
@@ -579,7 +613,7 @@ button:active:not(:disabled) {
   background-color: currentColor;
   border-radius: 999px;
   opacity: 0.2;
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity var(--motion-hover) var(--motion-hover-ease);
 }
 
 .carousel-pagination__mover {
@@ -1204,7 +1238,9 @@ header span[class*="truncate"] {
 }
 
 button[aria-controls="bg-ui-scale-panel"] svg {
-  transition: transform var(--motion-dissolve) var(--motion-dissolve-ease);
+  transition:
+    transform var(--motion-dissolve) var(--motion-dissolve-ease),
+    color var(--motion-hover) var(--motion-hover-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1428,7 +1464,11 @@ button[aria-controls="bg-ui-scale-panel"] svg {
 
 
 .motion-menu-item {
-  transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease, opacity var(--motion-fast) ease;
+  transition:
+    color var(--motion-hover) var(--motion-hover-ease),
+    background-color var(--motion-hover) var(--motion-hover-ease),
+    box-shadow var(--motion-hover) var(--motion-hover-ease),
+    opacity var(--motion-hover) var(--motion-hover-ease);
 }
 
 @keyframes menu-row-in {
@@ -1457,10 +1497,11 @@ button[aria-controls="bg-ui-scale-panel"] svg {
     inset 0 -1px 0 oklch(0 0 0 / 0.08),
     0 0.5px 0 oklch(1 0 0 / 0.08);
   transition:
-    color 500ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform var(--motion-fast) var(--motion-ease-out),
-    box-shadow var(--motion-fast) ease,
-    background-color var(--motion-fast) ease;
+    color var(--motion-hover) var(--motion-hover-ease),
+    opacity var(--motion-hover) var(--motion-hover-ease),
+    transform var(--motion-release) var(--motion-ease-release),
+    box-shadow var(--motion-hover) var(--motion-hover-ease),
+    background-color var(--motion-hover) var(--motion-hover-ease);
 }
 
 .ios-glass-btn:hover {
@@ -1475,6 +1516,10 @@ button[aria-controls="bg-ui-scale-panel"] svg {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-hover: 1ms;
+  }
+
   .bg-panel-enter,
   .bg-panel-exit,
   .animate-terminal-enter,
@@ -1869,10 +1914,10 @@ select option {
 .ios-task-surface button.border {
   border-color: transparent !important;
   transition:
-    transform var(--motion-fast) var(--motion-ease-out),
-    background-color var(--motion-fast) ease,
-    box-shadow var(--motion-fast) ease,
-    color var(--motion-fast) ease;
+    transform var(--motion-release) var(--motion-ease-release),
+    background-color var(--motion-hover) var(--motion-hover-ease),
+    box-shadow var(--motion-hover) var(--motion-hover-ease),
+    color var(--motion-hover) var(--motion-hover-ease);
 }
 
 .ios-task-surface input.border {
@@ -2248,6 +2293,7 @@ select option {
 
 .app-settings-segment-btn {
   color: rgba(255, 255, 255, 0.46);
+  transition: color var(--motion-hover) var(--motion-hover-ease);
 }
 
 .app-settings-segment-btn.is-active {
@@ -2346,7 +2392,7 @@ select option {
 .setting-label,
 .setting-desc,
 .setting-value {
-  transition: color 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: color var(--motion-hover) var(--motion-hover-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2514,8 +2560,8 @@ button.flat-capsule {
   border: 0 !important;
   box-shadow: none !important;
   transition-property: color, background-color, box-shadow;
-  transition-duration: 180ms;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-duration: var(--motion-hover);
+  transition-timing-function: var(--motion-hover-ease);
 }
 
 .manage-panel-surface.is-light button.manage-flat,
@@ -2592,11 +2638,11 @@ button.flat-capsule:active:not(:disabled) {
   box-shadow: inset 0 1px 2px rgba(28, 18, 24, 0.1);
 }
 
-/* 管理菜单悬停跟控制岛、实例菜单一样：只走字色，500ms，不缩放、不改底。 */
+/* 管理菜单悬停跟控制岛、实例菜单一样：只走字色，对齐 --motion-hover，不缩放、不改底。 */
 .manage-panel-surface button.motion-control:not(.flat-capsule):not(.manage-flat) {
   transition-property: color;
-  transition-duration: 500ms;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-duration: var(--motion-hover);
+  transition-timing-function: var(--motion-hover-ease);
 }
 
 .manage-panel-surface button.motion-control:hover,
@@ -2882,8 +2928,8 @@ button.flat-capsule:active:not(:disabled) {
   font-size: 13px;
   letter-spacing: 0;
   transition:
-    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
-    color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    background-color var(--motion-hover) var(--motion-hover-ease),
+    color var(--motion-hover) var(--motion-hover-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {

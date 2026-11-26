@@ -364,7 +364,7 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
             aria-controls="bg-ui-scale-panel"
             onClick={() => setScaleExpanded((prev) => !prev)}
             className={cn(
-              "motion-control group flex w-full items-center justify-between py-0.5 text-xs font-medium transition-colors duration-200",
+              "motion-control group flex w-full items-center justify-between py-0.5 text-xs font-medium",
               isLight
                 ? scaleExpanded
                   ? "text-[#1a1625]"
@@ -379,7 +379,7 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
               <span
                 data-scale-value
                 className={cn(
-                  "text-[10px] font-normal tabular-nums transition-colors duration-200",
+                  "text-[10px] font-normal tabular-nums transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   isLight
                     ? "text-[#1a1625]/35 group-hover:text-[#1a1625]/55"
                     : "text-white/30 group-hover:text-white/50"
@@ -389,7 +389,7 @@ export const BackgroundSettingsDrawer: React.FC<BackgroundSettingsDrawerProps> =
               </span>
               <ChevronDown
                 className={cn(
-                  "w-3.5 h-3.5 flex-shrink-0 transition-transform duration-[400ms] ease-[cubic-bezier(0.23,1,0.32,1)]",
+                  "w-3.5 h-3.5 flex-shrink-0 transition-[transform,color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   isLight
                     ? "text-[#1a1625]/40 group-hover:text-[#1a1625]/70"
                     : "text-white/35 group-hover:text-white/70",

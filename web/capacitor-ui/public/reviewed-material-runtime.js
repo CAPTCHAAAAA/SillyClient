@@ -74,7 +74,9 @@
             opacity: 0.9;
             transform: none !important;
             filter: none !important;
-            transition: opacity 160ms ease !important;
+            transition:
+              color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              opacity var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)) !important;
           }
 
           header.fixed.left-0.right-0.z-50 > div.h-12 > .flex-1 > button::before {
@@ -89,8 +91,8 @@
               0 0.5px 0 rgba(255, 255, 255, 0.025);
             transform: none;
             transition:
-              background-color 160ms ease,
-              box-shadow 160ms ease,
+              background-color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              box-shadow var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
               transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
             pointer-events: none;
             z-index: -1;
@@ -124,6 +126,10 @@
               inset 0 1.75px 2.75px rgba(0, 0, 0, 0.29),
               inset 0 -0.5px 0.5px rgba(255, 255, 255, 0.045);
             transform: scale(0.985);
+            transition:
+              background-color 90ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 90ms cubic-bezier(0.2, 0, 0, 1),
+              transform 90ms cubic-bezier(0.2, 0, 0, 1);
           }
 
           /* 两侧功能键：保留原点击热区，用居中的圆形内层形成 Home 键式轻微内凹反差。 */
@@ -137,7 +143,9 @@
             backdrop-filter: none !important;
             opacity: 0.9;
             transform: none !important;
-            transition: opacity 160ms ease !important;
+            transition:
+              color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              opacity var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)) !important;
           }
 
           header.fixed.left-0.right-0.z-50 > div.h-12 .ios-glass-btn::before {
@@ -155,8 +163,8 @@
               0 0.5px 0 rgba(255, 255, 255, 0.025);
             transform: translate(-50%, -50%);
             transition:
-              background-color 160ms ease,
-              box-shadow 160ms ease,
+              background-color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              box-shadow var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
               transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
             pointer-events: none;
             z-index: -1;
@@ -184,6 +192,10 @@
               inset 0 1.75px 2.75px rgba(0, 0, 0, 0.29),
               inset 0 -0.5px 0.5px rgba(255, 255, 255, 0.045);
             transform: translate(-50%, -50%) scale(0.965);
+            transition:
+              background-color 90ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 90ms cubic-bezier(0.2, 0, 0, 1),
+              transform 90ms cubic-bezier(0.2, 0, 0, 1);
           }
 
           header.fixed.left-0.right-0.z-50 > div.h-12 .ios-glass-btn:active svg {
@@ -1105,7 +1117,10 @@
             border: 0 !important;
             border-color: transparent !important;
             box-shadow: none !important;
-            transition: background-color 0.2s ease, box-shadow 0.25s ease !important;
+            transition:
+              color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              background-color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              box-shadow var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)) !important;
           }
 
           [data-preview-bg-panel] [data-preview-wallpaper-import]:hover {

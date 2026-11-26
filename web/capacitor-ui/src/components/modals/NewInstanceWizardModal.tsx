@@ -94,7 +94,7 @@ function InfoBadgeButton({
           : readTitle || "点击查看说明"
       }
       className={cn(
-        "motion-control relative flex h-4 w-4 items-center justify-center rounded-full transition-colors duration-200",
+        "motion-control relative flex h-4 w-4 items-center justify-center rounded-full",
         isUnread
           ? isLight
             ? "bg-red-900/[0.06] text-red-900/60 hover:text-red-900/85"

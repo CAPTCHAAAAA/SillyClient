@@ -2938,7 +2938,7 @@ function SillyClientLauncher() {
               aria-label="打开终端"
               data-onboarding-target="terminal"
               className={cn(
-                "ios-glass-btn px-3 h-8 flex items-center justify-center text-xs font-medium transition-all",
+                "motion-control ios-glass-btn px-3 h-8 flex items-center justify-center text-xs font-medium",
                 isLight ? "text-[#1a1625]/70 hover:text-[#1a1625]" : "text-white/70 hover:text-white"
               )}
             >
@@ -2951,7 +2951,7 @@ function SillyClientLauncher() {
               onClick={handleBackgroundButtonClick}
               aria-label="打开背景设置"
               data-onboarding-target="background"
-              className={cn("group flex items-center gap-2 px-3 h-8 rounded-full border-0 transition-colors duration-300 max-w-[200px]", isLight ? "text-[#1a1625]/75 hover:text-[#1a1625]" : "text-white/75 hover:text-white")}
+              className={cn("motion-control group flex items-center gap-2 px-3 h-8 rounded-full border-0 max-w-[200px]", isLight ? "text-[#1a1625]/75 hover:text-[#1a1625]" : "text-white/75 hover:text-white")}
             >
               <HeaderClock />
               <ChevronDown className={cn("w-4 h-4 flex-shrink-0 text-current transition-transform", showBgPanel && "rotate-180")} />
@@ -3068,7 +3068,7 @@ function SillyClientLauncher() {
             <span style={{ color: '#e8365d' }}>Client</span>
           </span>
           <div className={cn(
-            "text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+            "text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
             isLight ? "text-[#1a1625]/25" : "text-white/25"
           )}>{LOGO_FONTS[logoFontIndex].name}</div>
         </div>

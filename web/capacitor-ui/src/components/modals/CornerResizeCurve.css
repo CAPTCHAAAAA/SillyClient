@@ -1,6 +1,6 @@
 .corner-resize-curve {
   color: rgba(255, 255, 255, 0.46);
-  transition: color 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .corner-resize-curve.is-light {
@@ -28,9 +28,9 @@
   stroke-dasharray: var(--arc-rest) var(--arc-total);
   stroke-dashoffset: var(--arc-offset-rest);
   transition:
-    stroke-dasharray 500ms cubic-bezier(0.22, 1, 0.36, 1),
-    stroke-dashoffset 500ms cubic-bezier(0.22, 1, 0.36, 1),
-    stroke-width 500ms cubic-bezier(0.22, 1, 0.36, 1);
+    stroke-dasharray var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    stroke-dashoffset var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    stroke-width var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .corner-resize-curve:hover .corner-resize-curve-arc {

@@ -119,7 +119,9 @@
   line-height: 1.2;
   cursor: pointer;
   pointer-events: auto;
-  transition: color 160ms ease, background-color 160ms ease;
+  transition:
+    color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    background-color var(--motion-hover, 500ms) var(--motion-hover-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .sc-onboarding-skip:hover {

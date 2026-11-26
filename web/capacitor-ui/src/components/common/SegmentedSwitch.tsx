@@ -59,7 +59,7 @@ export function SegmentedSwitch<T extends string>({
               onChange(option.id);
             }}
             className={cn(
-              "app-settings-segment-btn relative z-[1] h-[30px] min-w-[38px] px-2.5 rounded-full text-[11px] font-medium leading-none whitespace-nowrap transition-colors duration-200",
+              "app-settings-segment-btn relative z-[1] h-[30px] min-w-[38px] px-2.5 rounded-full text-[11px] font-medium leading-none whitespace-nowrap",
               disabled ? "cursor-not-allowed" : "cursor-pointer",
               isActive && "is-active",
             )}
