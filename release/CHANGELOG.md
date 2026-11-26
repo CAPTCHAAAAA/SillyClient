@@ -2,6 +2,15 @@
 
 这里只保留已经发布版本的用户可见变化。完整说明以各版本 Release 正文为准。写法与 v1.13.0 相同：先写各端一句摘要，再按端列变更。
 
+## 1.15.4 - 2026-11-27
+
+> 全平台扩展安装、预制插件下载与交互动效修复更新至 `1.15.4`（Android versionCode `80`，Windows `1.15.4`，iOS Build `55`）：三端落地离线纯 JS Git 桥接兜底并替换失效预制拓展镜像池，修复 iOS 背景图列表空白与缩略图失效，统一全站悬停过渡节拍。
+
+- **iOS（Build `55`）**：针对 NodeMobile 关闭 ICU 注入纯 JS `Intl` 兜底修复 `POST /api/backgrounds/all` 500 空白，无 WebAssembly 下 `src/jimp.js` 切换带 `16MP / 128MB` 内存保护的纯 JS 解码器；预制拓展插件换用可用 6 源镜像池并补齐 `Accept-Encoding: identity`、循环内 SHA-256 校验、进度回传与 `.git` 元数据；新增覆盖主线程与 `Worker`（ESM/CJS）的纯 JS Git 桥接与孤儿文件清理。
+- **Android（versionCode `80`）**：随包分发零外部依赖离线 `isomorphic-git` 桥接（`BundledGitBridge` + `NODE_OPTIONS` 预加载 + `RuntimeConfiguration` 回退，覆盖 ESM/CJS/`Worker`），修复旧版 SillyTavern `spawn git ENOENT` 并清理 `pull`/`checkout` 上游已删旧文件；预制拓展插件换用 5 节点 ZIP 镜像池并记忆批次最快源、补齐 `Accept-Encoding: identity`、循环内大小与 SHA-256 校验、下载进度心跳与 `./`/数组清单兼容。
+- **Windows**：随安装包分发 `resources/git-bridge/` 并在 `startServer` 注入 `NODE_OPTIONS` 预加载，无系统 `git.exe` 时自动接管扩展克隆与更新，有 `git.exe` 时自动接管预制扩展目录；`downloadFile` 新增 `Accept-Encoding: identity` 与首字节响应头超时，镜像池统一升级并支持循环内 SHA-256 校验与 `.git` 元数据写入。
+- **通用前端**：新增 `--motion-hover: 500ms` 令牌统一全站悬停过渡，修复顶部控制岛与壁纸导入按钮 0ms 硬切及残余过渡类冲突，保持按压即时反馈与卡片 3D 动效不变。
+
 ## 1.15.3 - 2026-11-24
 
 > 全平台稳定性与诊断修复更新至 `1.15.3`（Android versionCode `79`，Windows `1.15.3`，iOS Build `54`）：修复 iOS 重启/重装后实例目录身份误判锁死、Windows 启动报错丢失与重命名占用失败、Android 冷启动与创建超时及卸载残留、以及网页预览端兜底与诊断隔离。
